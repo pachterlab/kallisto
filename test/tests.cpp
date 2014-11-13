@@ -1,13 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include "example.h"
 #include "sequences.h"
-
-TEST_CASE("Square example", "[square]")
-{
-    REQUIRE( int(sq(3)) == 9 );
-}
 
 TEST_CASE("Test kmers", "[kmer]")
 {
@@ -21,6 +15,8 @@ TEST_CASE("Test kmers", "[kmer]")
     REQUIRE( kmers1.next() == "GGT" );
     REQUIRE( kmers1.done() );
 
+    REQUIRE_THROWS_AS( kmers1.next(), std::out_of_range );
+
     std::string seq2 {"ACG"};
     KmerView kmers2 (&seq2, 4);
     REQUIRE( kmers2.done() );
@@ -30,4 +26,6 @@ TEST_CASE("Test kmers", "[kmer]")
     REQUIRE( !kmers3.done() );
     REQUIRE( kmers3.next() == "ACG" );
     REQUIRE( kmers3.done() );
+
+
 }
