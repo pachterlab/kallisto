@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
 #include "sequences.h"
@@ -26,6 +25,4 @@ TEST_CASE("Test kmers", "[kmer]")
     REQUIRE( !kmers3.done() );
     REQUIRE( kmers3.next() == "ACG" );
     REQUIRE( kmers3.done() );
-
-
 }
