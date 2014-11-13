@@ -26,3 +26,9 @@ TEST_CASE("Test kmers", "[kmer]")
     REQUIRE( kmers3.next() == "ACG" );
     REQUIRE( kmers3.done() );
 }
+
+TEST_CASE("Test reverse complement", "[reverse_complement]")
+{
+    std::string seq1 {"ACGGT"};
+    REQUIRE( reverse_complement(seq1) == "ACCGT" );
+}

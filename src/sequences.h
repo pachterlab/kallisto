@@ -3,6 +3,10 @@
 
 #include <string>
 
+inline char complement(const char& s);
+
+std::string reverse_complement(const std::string& seq);
+
 class KmerView {
     public:
         KmerView(std::string* seq, size_t k) : k_(k)
