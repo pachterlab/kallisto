@@ -19,7 +19,6 @@ inline char complement(const char& s)
         default:
             return 'N';
     }
-
 }
 
 std::string reverse_complement(const std::string& seq)
@@ -35,19 +34,19 @@ std::string reverse_complement(const std::string& seq)
         ++i;
     }
 
-
     return rev_seq;
 }
 
-std::string KmerView::next()
+bool KmerView::next(std::string &s)
 {
     if (done())
-        throw std::out_of_range("No more kmers left.");
+        return false;
 
-    std::string ret( seq_->substr(i_, k_) );
+    /* std::string ret( seq_->substr(i_, k_) ); */
+    s = seq_->substr(i_, k_);
     ++i_;
 
-    return ret;
+    return true;
 }
 
 bool KmerView::done()

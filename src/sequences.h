@@ -15,7 +15,7 @@ class KmerView {
             seq_ = seq;
         }
         ~KmerView() {}
-        std::string next();
+        bool next(std::string& s);
         bool done();
     private:
             std::string* seq_;

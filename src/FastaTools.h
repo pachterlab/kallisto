@@ -26,7 +26,7 @@ struct FastaRecord {
     // The sequence
     std::string seq_;
 
-    void clear() { id_.clear(); desc_.clear(); seq_.clear(); }
+    inline void clear() { id_.clear(); desc_.clear(); seq_.clear(); }
 
 };
 
