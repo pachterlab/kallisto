@@ -3,3 +3,14 @@
 build/*
 
 *.pyc
+
+CMakeCache.txt
+CMakeFiles
+Makefile
+cmake_install.cmake
+install_manifest.txt
+test/tests
+src/kallisto
+src/*.a
+CTestTestfile.cmake
+*~
