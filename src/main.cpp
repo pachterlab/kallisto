@@ -1,18 +1,23 @@
-#include <zlib.h>
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <vector>
 
 #include <getopt.h>
 
+#include <zlib.h>
 #include "kseq.h"
+KSEQ_INIT(gzFile, gzread);
+
+
 #include "common.h"
 #include "ProcessReads.h"
+#include "KmerIndex.h"
+#include "MinCollector.h"
 
-// initialize kseq
-KSEQ_INIT(gzFile, gzread)
 
 using namespace std;
+
 
 void ParseOptions(int argc, char **argv, ProgramOptions &opt) {
   int verbose_flag = 0;
@@ -119,8 +124,8 @@ int main(int argc, char *argv[])
     usage();
     exit(1);
   }
-
-	ProcessReads(opt);
+	KmerIndex index(opt);
+	ProcessReads<KmerIndex, MinCollector>(index, opt);
 	
 	return 0;
 }

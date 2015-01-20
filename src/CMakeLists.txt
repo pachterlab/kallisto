@@ -1,8 +1,6 @@
 file(GLOB sources *.cpp)
 file(GLOB headers *.h)
 
-
-
 list(REMOVE_ITEM sources main.cpp)
 
 add_library(kallisto_core ${sources} ${headers})
