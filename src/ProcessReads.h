@@ -25,6 +25,7 @@ void ProcessReads(const Index& index, const ProgramOptions& opt) {
 
 	// for each file
 	for (auto& file : opt.files) {
+		std::cerr << "Reading input file " << file << std::endl;
 		fp = gzopen(file.c_str(), "r");
 		seq = kseq_init(fp);
 		// for each read
@@ -37,6 +38,9 @@ void ProcessReads(const Index& index, const ProgramOptions& opt) {
 			
 			// collect the transcript information
 			tc.collect(v);
+			if (nreads % 100 == 0 ) {
+				std::cerr << "Processed " << nreads << std::endl;
+			}
 		}
 		gzclose(fp);
 	}

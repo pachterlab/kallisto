@@ -75,6 +75,9 @@ void ParseOptions(int argc, char **argv, ProgramOptions &opt) {
     case 't':
 			stringstream(optarg) >> opt.threads;
       break;
+		case 'f':
+			opt.transfasta = optarg;
+			break;
     default: break;
     }
   }
@@ -124,6 +127,8 @@ int main(int argc, char *argv[])
     usage();
     exit(1);
   }
+	Kmer::set_k(opt.k);
+	std::cerr << "setting k = " << opt.k << std::endl;
 	KmerIndex index(opt);
 	ProcessReads<KmerIndex, MinCollector>(index, opt);
 	

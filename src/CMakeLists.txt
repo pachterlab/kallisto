@@ -1,5 +1,5 @@
 file(GLOB sources *.cpp)
-file(GLOB headers *.h)
+file(GLOB headers *.h *.hpp)
 
 list(REMOVE_ITEM sources main.cpp)
 
