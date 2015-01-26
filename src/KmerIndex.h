@@ -12,13 +12,13 @@
 struct KmerIndex
 {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
-		LoadTranscripts(opt.transfasta);
+		//LoadTranscripts(opt.transfasta);
 	}
 	~KmerIndex() {}
 
 	void match(const char *s, int l, std::vector<int> & v) const {}
 
-	void LoadTranscripts(const std::string fasta) {
+	void BuildTranscripts(const std::string fasta) {
 		// TODO: add code to check if binary file exists and load it directly
 		int l;
 		std::cerr << "Loading fasta file " << fasta
@@ -26,6 +26,7 @@ struct KmerIndex
 		gzFile fp = gzopen(fasta.c_str(),"r");
 		kseq_t *seq = kseq_init(fp);
 		int transid = 0;
+		std::unordered_map<Kmer, int, KmerHash> kmcount; // temporary
 		// maps kmers to set of transcript ids that contain them
 		std::unordered_map<Kmer, std::vector<int>, KmerHash> all_kmap;
 		// for each transcript in fasta file
@@ -37,6 +38,7 @@ struct KmerIndex
 				// for each k-mer add to map
 				for(;kit != kit_end; ++kit) {
 					Kmer rep = kit->first.rep();
+					kmcount[rep]++;
 					all_kmap[rep].push_back(transid); // creates an entry if not found
 					added = true;
 				}
@@ -65,6 +67,7 @@ struct KmerIndex
 		
 		int eqs_id = num_trans;
 
+
 		for (auto& kv : all_kmap) {
 			auto search = ecmapinv.find(kv.second);
 			// if we have seen this equivalence class
@@ -82,22 +85,42 @@ struct KmerIndex
 
 		std::cerr << "Created " << ecmap.size() << " equivalence classes from " << num_trans << " transcripts" << std::endl;
 
-		std::cout << "EqId\tTransIdList\n";
-		for (auto &ekv : ecmap) {
-			std::cout << ekv.first;
-			for (auto el : ekv.second) {
-				std::cout << "\t" << el;
+		/* std::cout << "EqId\tTransIdList\n"; */
+		/* for (auto &ekv : ecmap) { */
+		/* 	std::cout << ekv.first; */
+		/* 	for (auto el : ekv.second) { */
+		/* 		std::cout << "\t" << el; */
+		/* 	} */
+		/* 	std::cout << "\n"; */
+		/* } */
+		/* std::cout.flush(); */
+
+
+		int uniqueKmers;
+		for (auto &kmv : kmap) {
+			if (kmv.second < num_trans) {
+				uniqueKmers++;
 			}
-			std::cout << "\n";
+		}
+		std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << uniqueKmers << " unique k-mers" << std::endl;
+		std::map<int, int> histo;
+		for (auto &kv : kmcount) {
+			histo[kv.second]++;
+		}
+		int max = histo.rend()->first;
+		for (int i = 1; i < max; i++) {
+			std::cout << i << "\t" << histo[i] << "\n";
 		}
 		std::cout.flush();
+			
+		
 	}
 	
-	int k;
-	int num_trans;
+	int k; // k-mer size used
+	int num_trans; // number of transcripts
 	std::unordered_map<Kmer, int, KmerHash> kmap;
 	std::map<int, std::vector<int>> ecmap;
-	std::map<std::vector<int>, int> ecmapinv;
+	std::map<std::vector<int>, int> ecmapinv; 
 	
 };
 
