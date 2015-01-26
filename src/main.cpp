@@ -198,7 +198,10 @@ void usage()
 {
 	cout << "Kallisto " << endl
 			 << "Does transcriptome stuff" << endl << endl
-			 << "Usage: Kallisto [options]   FASTQ-file" << endl << endl
+			 << "Usage: Kallisto [options] FASTQ-files" << endl
+			 << "         to estimate transcript abundances "<< endl << endl
+			 << "       Kallisto -f FASTA -k INT -i index " << endl
+			 << "         to build the index"<< endl << endl
 			 << "-k, --kmer-size=INT         Size of k-mers" << endl
 			 << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
 			 << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
@@ -225,9 +228,15 @@ int main(int argc, char *argv[])
     exit(1);
   }
 	Kmer::set_k(opt.k);
-	std::cerr << "setting k = " << opt.k << std::endl;
-	KmerIndex index(opt);
-	ProcessReads<KmerIndex, MinCollector>(index, opt);
+
+	if (opt.transfasta.empty()) {
+		KmerIndex index(opt);
+		//index.load();
+		ProcessReads<KmerIndex, MinCollector>(index, opt);
+	} else {
+		KmerIndex index(opt);
+		//index.build();
+	}
 	
 	return 0;
 }
