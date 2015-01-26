@@ -22,7 +22,7 @@ struct ProgramOptions {
 	size_t seed;
 	std::string transfasta;
 	std::vector<std::string> files;
-	
+
 ProgramOptions() : verbose(false), version(false), seed(0), threads(1), k(21), iterations(500)  {}
 };
 

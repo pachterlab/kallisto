@@ -7,7 +7,11 @@
 
 #include <zlib.h>
 #include "kseq.h"
-KSEQ_INIT(gzFile, gzread);
+
+// #ifndef KSEQ_INIT_DONE
+// #define KSEQ_INIT_DONE
+KSEQ_INIT(gzFile, gzread)
+/* #endif */
 
 
 #include "common.h"

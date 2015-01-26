@@ -1,9 +1,16 @@
 #ifndef KALLISTO_KMERINDEX_H
 #define KALLISTO_KMERINDEX_H
 
+#include <zlib.h>
+#include "kseq.h"
+
+
+#include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <map>
+
+
 #include "common.h"
 #include "Kmer.hpp"
 #include "KmerIterator.hpp"
@@ -18,11 +25,14 @@ struct KmerIndex
 
 	void match(const char *s, int l, std::vector<int> & v) const {}
 
-	void BuildTranscripts(const std::string fasta) {
+	void BuildTranscripts(const std::string& fasta) {
 		// TODO: add code to check if binary file exists and load it directly
+		// FIXME: check if FASTA file actually exists
+		// If it doesn't, will just hang
 		int l;
 		std::cerr << "Loading fasta file " << fasta
 							<< std::endl;
+        std::cerr << "k: " << k << std::endl;
 		gzFile fp = gzopen(fasta.c_str(),"r");
 		kseq_t *seq = kseq_init(fp);
 		int transid = 0;
@@ -31,9 +41,12 @@ struct KmerIndex
 		std::unordered_map<Kmer, std::vector<int>, KmerHash> all_kmap;
 		// for each transcript in fasta file
 		while ((l = kseq_read(seq)) > 0) {
+            std::cerr << l << std::endl;
+            std::cerr << seq->seq.s << std::endl;
 			bool added = false;
 			// if it is long enough
 			if (seq->seq.l >= k) {
+                std::cerr << "in loop" << std::endl;
 				KmerIterator kit(seq->seq.s), kit_end;
 				// for each k-mer add to map
 				for(;kit != kit_end; ++kit) {
@@ -45,7 +58,8 @@ struct KmerIndex
 			}
 			if (added) {
 				transid++;
-				if (transid % 100 == 1) {
+				//if (transid % 100 == 1) {
+				if (true) {
 					std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
 				}
 			}
