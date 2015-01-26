@@ -23,7 +23,53 @@ struct KmerIndex
 	}
 	~KmerIndex() {}
 
-	void match(const char *s, int l, std::vector<int> & v) const {}
+
+	// use:  match(s,l,v)
+	// pre:  v is initialized
+	// post: v contains all equiv classes for the k-mers in s
+	void match(const char *s, int l, std::vector<int> & v) const {
+		KmerIterator kit(s), kit_end;
+		for (;kit != kit_end; ++kit) {
+			Kmer rep = kit->first.rep();
+			auto search = kmap.find(rep);
+			if (search != kmap.end()) {
+				// if k-mer founc
+				v.push_back(search->second); // push back equivalence class
+			}
+		}
+	}
+
+	// use:  res = intersect(ec,v)
+	// pre:  ec is in ecmap, v is a vector of valid transcripts
+	//       v is sorted in increasing order
+	// post: res contains the intersection  of ecmap[ec] and v sorted increasing
+	//       res is empty if ec is not in ecmap
+	std::vector<int> intersect(int ec, const std::vector<int>& v) const {
+		std::vector<int> res;
+		auto search = ecmap.find(ec);
+		if (search != ecmap.end()) {
+			auto &u = search->second;
+			res.reserve(v.size());
+
+			auto a = u.begin();
+			auto b = v.begin();
+
+			while (a != u.end() && b != v.end()) {
+				if (*a < *b) {
+					++a;
+				} else if (*b < *a) {
+					++b;
+				} else {
+					// match
+					res.push_back(*a);
+					++a;
+					++b;
+				}
+			}
+		}
+		return res;
+	}
+
 
 	void BuildTranscripts(const std::string& fasta) {
 		// TODO: add code to check if binary file exists and load it directly
