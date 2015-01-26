@@ -27,7 +27,7 @@ struct KmerIndex
 			auto search = kmap.find(rep);
 			if (search != kmap.end()) {
 				// if k-mer founc
-				v.push_back(search->second); // push back equivalence class
+				v.push_back(search->second); // add equivalence class
 			}
 		}
 	}
