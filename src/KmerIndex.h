@@ -168,6 +168,8 @@ struct KmerIndex
 		// 	std::cout << i << "\t" << histo[i] << "\n";
 		// }
 		std::cout.flush();
+		kseq_destroy(seq);
+		gzclose(fp);
 	}
 
     void write(const std::string& index_out)
