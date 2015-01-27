@@ -20,6 +20,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "KmerIndex.h"
 #include "Kmer.hpp"
 #include "MinCollector.h"
+#include "EMAlgorithm.h"
 
 
 using namespace std;
@@ -236,7 +237,9 @@ int main(int argc, char *argv[])
 	if (opt.transfasta.empty()) {
 		KmerIndex index(opt);
 		index.load(opt.index);
-		ProcessReads<KmerIndex, MinCollector>(index, opt);
+		ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
+		EMAlgorithm em(opt);
+		em.run();
 	} else {
 		KmerIndex index(opt);
         std::cerr << "Building index from: " << opt.transfasta << std::endl;
