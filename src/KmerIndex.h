@@ -1,9 +1,16 @@
 #ifndef KALLISTO_KMERINDEX_H
 #define KALLISTO_KMERINDEX_H
 
+#include <zlib.h>
+#include "kseq.h"
+
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <unordered_map>
 #include <map>
+
+
 #include "common.h"
 #include "Kmer.hpp"
 #include "KmerIterator.hpp"
@@ -64,11 +71,14 @@ struct KmerIndex
 	}
 
 
-	void BuildTranscripts(const std::string fasta) {
+	void BuildTranscripts(const std::string& fasta) {
 		// TODO: add code to check if binary file exists and load it directly
+		// FIXME: check if FASTA file actually exists
+		// If it doesn't, will just hang
 		int l;
 		std::cerr << "Loading fasta file " << fasta
 							<< std::endl;
+        std::cerr << "k: " << k << std::endl;
 		gzFile fp = gzopen(fasta.c_str(),"r");
 		kseq_t *seq = kseq_init(fp);
 		int transid = 0;
@@ -91,7 +101,7 @@ struct KmerIndex
 			}
 			if (added) {
 				transid++;
-				if (transid % 100 == 1) {
+				if (transid % 1000 == 1) {
 					std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
 				}
 			}
@@ -101,7 +111,7 @@ struct KmerIndex
 		std::cerr << "Found " << num_trans << " transcripts"
 							<< std::endl
 							<< "Size of k-mer map " << all_kmap.size() << std::endl;
-			
+
 
 		// for each transcript
 		for (int i = 0; i < num_trans; i++ ) {
@@ -110,7 +120,7 @@ struct KmerIndex
 			ecmapinv.insert({{i},i});
 		}
 
-		
+
 		int eqs_id = num_trans;
 
 
@@ -154,20 +164,127 @@ struct KmerIndex
 			histo[kv.second]++;
 		}
 		int max = histo.rend()->first;
-		for (int i = 1; i < max; i++) {
-			std::cout << i << "\t" << histo[i] << "\n";
-		}
+		// for (int i = 1; i < max; i++) {
+		// 	std::cout << i << "\t" << histo[i] << "\n";
+		// }
 		std::cout.flush();
-			
-		
 	}
-	
+
+    void write(const std::string& index_out)
+    {
+        std::ofstream out;
+        out.open(index_out, std::ios::out | std::ios::binary);
+
+        if (!out.is_open()) {
+            // TODO: better handling
+            std::cerr << "index output file could not be open!";
+            exit(1);
+        }
+
+        out.write((char*)&k, sizeof(k));
+        out.write((char*)&num_trans, sizeof(num_trans));
+
+        // print out the size of the map
+        size_t kmap_size = kmap.size();
+        /* std::cerr << "orig kmap size " << kmap_size << '\t' << kmap.size() << std::endl; */
+        out.write((char*)&kmap_size, sizeof(kmap_size));
+
+
+        for (auto& kv : kmap) {
+            out.write((char*)&kv.first, sizeof(kv.first));
+            out.write((char*)&kv.second, sizeof(kv.second));
+        }
+
+        out.flush();
+
+        size_t tmp_size;
+        tmp_size = ecmap.size();
+        out.write((char*)&tmp_size, sizeof(tmp_size));
+
+        for (auto& kv : ecmap) {
+            out.write((char*)&kv.first, sizeof(kv.first));
+
+            tmp_size = kv.second.size();
+            out.write((char*)&tmp_size, sizeof(tmp_size));
+
+            for (auto& val: kv.second) {
+                out.write((char*)&val, sizeof(val));
+            }
+        }
+
+
+        out.flush();
+
+        out.close();
+    }
+
+	void load(const std::string& index_in)
+    {
+        std::ifstream in;
+
+        in.open(index_in, std::ios::in | std::ios::binary);
+
+        if (!in.is_open()) {
+            // TODO: better handling
+            std::cerr << "index input file could not be open!";
+            exit(1);
+        }
+
+        in.read((char*)&k, sizeof(k));
+        in.read((char*)&num_trans, sizeof(num_trans));
+
+        size_t kmap_size;
+        in.read((char*)&kmap_size, sizeof(kmap_size));
+
+        std::cerr << "[index] k: " << k << std::endl;
+        std::cerr << "[index] num_trans read: " << num_trans << std::endl;
+        std::cerr << "[index] kmap size: " << kmap_size << std::endl;
+
+        // read in the kmap
+        Kmer tmp_kmer;
+        int tmp_val;
+        for (size_t i = 0; i < kmap_size; ++i)
+        {
+            in.read((char*)&tmp_kmer, sizeof(tmp_kmer));
+            in.read((char*)&tmp_val, sizeof(tmp_val));
+
+            // if (i < 15)
+            //     std::cout << "\t\tval:\t" << tmp_kmer << "\t" << tmp_val << std::endl;
+            kmap.insert({tmp_kmer, tmp_val});
+        }
+
+        // read in the ecmap
+        size_t ecmap_size;
+        in.read((char*)&ecmap_size, sizeof(ecmap_size));
+
+        std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
+
+        int tmp_id;
+        size_t vec_size;
+
+        for (size_t i = 0; i < ecmap_size; ++i) {
+            in.read((char*)&tmp_id, sizeof(tmp_id));
+            in.read((char*)&vec_size, sizeof(vec_size));
+
+            std::vector<int> tmp_vec(vec_size);
+            for (size_t j = 0; j < vec_size; ++j )
+            {
+                in.read((char*)&tmp_val, sizeof(tmp_val));
+                tmp_vec.push_back(tmp_val);
+            }
+            ecmap.insert({tmp_id, tmp_vec});
+            ecmapinv.insert({tmp_vec, tmp_id});
+        }
+
+        in.close();
+    }
+
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
 	std::unordered_map<Kmer, int, KmerHash> kmap;
 	std::map<int, std::vector<int>> ecmap;
-	std::map<std::vector<int>, int> ecmapinv; 
-	
+	std::map<std::vector<int>, int> ecmapinv;
+
 };
 
 #endif // KALLISTO_KMERINDEX_H

@@ -8,7 +8,11 @@
 
 #include <zlib.h>
 #include "kseq.h"
-KSEQ_INIT(gzFile, gzread);
+
+// #ifndef KSEQ_INIT_DONE
+// #define KSEQ_INIT_DONE
+KSEQ_INIT(gzFile, gzread)
+/* #endif */
 
 
 #include "common.h"
@@ -42,10 +46,10 @@ void ParseOptions(int argc, char **argv, ProgramOptions &opt) {
     {0,0,0,0}
   };
 	int c;
-  int option_index = 0; 
+  int option_index = 0;
 	while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
-		
+
     if (c == -1) {
       break;
     }
@@ -106,17 +110,17 @@ bool CheckOptions(ProgramOptions& opt) {
 		cerr << "Error: invalid k-mer size " << opt.k << endl;
 		ret = false;
 	}
-	
+
 	if (!opt.transfasta.empty()) {
 		// we want to generate the index, check k, index and transfasta
-		
+
 		struct stat stFileInfo;
 		auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
 		if (intStat != 0) {
 			cerr << "Error: transcript fasta file not found " << opt.transfasta << endl;
 			ret = false;
 		}
-		
+
 		if (opt.index.empty()) {
 			cerr << "Error: need to specify index name" << endl;
 			ret = false;
@@ -185,7 +189,7 @@ bool CheckOptions(ProgramOptions& opt) {
 			}
 		}
 	}
-	
+
 	return ret;
 }
 
@@ -209,7 +213,7 @@ void usage()
 			 << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
 			 << "-f, --trans-fasta=INT       FASTA file containing reference transcriptome " << endl
 			 << "-o, --output-dir=INT        Directory to store output to" << endl
-			 << "    --verbose               Print lots of messages during run" << endl 
+			 << "    --verbose               Print lots of messages during run" << endl
 			 << "    --version               Display version info" << endl << endl;
 }
 
@@ -231,12 +235,14 @@ int main(int argc, char *argv[])
 
 	if (opt.transfasta.empty()) {
 		KmerIndex index(opt);
-		//index.load();
+		index.load(opt.index);
 		ProcessReads<KmerIndex, MinCollector>(index, opt);
 	} else {
 		KmerIndex index(opt);
-		//index.build();
+        std::cerr << "Building index from: " << opt.transfasta << std::endl;
+		index.BuildTranscripts(opt.transfasta);
+		index.write(opt.index);
 	}
-	
+
 	return 0;
 }
