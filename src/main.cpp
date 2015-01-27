@@ -221,18 +221,18 @@ void usage()
 
 int main(int argc, char *argv[])
 {
-	ProgramOptions opt;
-  ParseOptions(argc,argv,opt);
-	if (opt.version) {
-		version();
-		exit(1);
-	}
-  if (!CheckOptions(opt)) {
-		cout << endl;
-    usage();
-    exit(1);
-  }
-	Kmer::set_k(opt.k);
+    ProgramOptions opt;
+    ParseOptions(argc,argv,opt);
+    if (opt.version) {
+        version();
+        exit(1);
+    }
+    if (!CheckOptions(opt)) {
+        cout << endl;
+        usage();
+        exit(1);
+    }
+    Kmer::set_k(opt.k);
 
 	if (opt.transfasta.empty()) {
 		KmerIndex index(opt);
