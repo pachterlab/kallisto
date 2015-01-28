@@ -295,4 +295,27 @@ struct KmerIndex
 
 };
 
+struct TestStruct
+{
+    TestStruct() {}
+    ~TestStruct() {}
+
+    void read_trans(const ProgramOptions& po, const std::string& fa)
+    {
+        std::cout << "da k: " << po.k << std::endl;
+        std::cout << "Reading FASTA: " << fa << std::endl;
+        gzFile fp = gzopen(fa.c_str(),"r");
+        kseq_t *seq = kseq_init(fp);
+
+        std::cout << "hihihi!" << std::endl;
+
+        int l;
+        while ((l = kseq_read(seq)) > 0) {
+            std::cout << "\t" << l << std::endl;
+        }
+
+        kseq_destroy(seq);
+        gzclose(fp);
+    }
+};
 #endif // KALLISTO_KMERINDEX_H

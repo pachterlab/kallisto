@@ -1,7 +1,7 @@
 project(Tests)
 
-include_directories(../Catch/include)
-include_directories(../src)
+# include_directories(../Catch/include)
+# include_directories(../src)
 
 file(GLOB sources *.cpp)
 
