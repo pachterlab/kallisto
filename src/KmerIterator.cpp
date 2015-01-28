@@ -87,29 +87,29 @@ void KmerIterator::find_next(size_t i, size_t j, bool last_valid) {
   ++j;
 
   while (s_[j] != 0) {
-    char c = s_[j];
-    if (c == 'A' || c == 'C' || c == 'G' || c == 'T') {
-      if (last_valid) {
-        p_.first = p_.first.forwardBase(c);
-        break; // default case, 
+      char c = s_[j];
+      if (c == 'A' || c == 'C' || c == 'G' || c == 'T') {
+          if (last_valid) {
+              p_.first = p_.first.forwardBase(c);
+              break; // default case, 
+          } else {
+              if (i + Kmer::k - 1 == j) {
+                  p_.first = Kmer(s_+i);
+                  last_valid = true;
+                  break; // create k-mer from scratch
+              } else {
+                  ++j;
+              }
+          }
       } else {
-	if (i + Kmer::k - 1 == j) {
-	  p_.first = Kmer(s_+i);
-	  last_valid = true;
-	  break; // create k-mer from scratch
-	} else {
-	  ++j;
-        }
+          ++j;
+          i = j;
+          last_valid = false;
       }
-    } else {
-      ++j;
-      i = j;
-      last_valid = false;
-    }
   }
   if (i+Kmer::k-1 == j && s_[j] != 0) {
-    p_.second = i;
+      p_.second = i;
   } else {
-    invalid_ = true;
+      invalid_ = true;
   }
 }

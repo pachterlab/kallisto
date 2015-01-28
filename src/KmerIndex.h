@@ -4,6 +4,11 @@
 #include <zlib.h>
 #include "kseq.h"
 
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
+KSEQ_INIT(gzFile, gzread)
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -18,9 +23,10 @@
 
 struct KmerIndex
 {
-  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
+    KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
 		//LoadTranscripts(opt.transfasta);
 	}
+
 	~KmerIndex() {}
 
 
@@ -81,10 +87,13 @@ struct KmerIndex
         std::cerr << "k: " << k << std::endl;
 		gzFile fp = gzopen(fasta.c_str(),"r");
 		kseq_t *seq = kseq_init(fp);
+
 		int transid = 0;
 		std::unordered_map<Kmer, int, KmerHash> kmcount; // temporary
+
 		// maps kmers to set of transcript ids that contain them
 		std::unordered_map<Kmer, std::vector<int>, KmerHash> all_kmap;
+
 		// for each transcript in fasta file
 		while ((l = kseq_read(seq)) > 0) {
 			bool added = false;
@@ -163,7 +172,7 @@ struct KmerIndex
 		for (auto &kv : kmcount) {
 			histo[kv.second]++;
 		}
-		int max = histo.rend()->first;
+		// int max = histo.rend()->first;
 		// for (int i = 1; i < max; i++) {
 		// 	std::cout << i << "\t" << histo[i] << "\n";
 		// }
@@ -183,6 +192,7 @@ struct KmerIndex
             exit(1);
         }
 
+        // TODO: add version to index
         out.write((char*)&k, sizeof(k));
         out.write((char*)&num_trans, sizeof(num_trans));
 
