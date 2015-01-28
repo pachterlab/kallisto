@@ -4,6 +4,11 @@
 #include <zlib.h>
 #include "kseq.h"
 
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
+KSEQ_INIT(gzFile, gzread)
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -183,6 +188,7 @@ struct KmerIndex
             exit(1);
         }
 
+        // TODO: add version to index
         out.write((char*)&k, sizeof(k));
         out.write((char*)&num_trans, sizeof(num_trans));
 
