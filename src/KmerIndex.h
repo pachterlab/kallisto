@@ -25,7 +25,6 @@ struct KmerIndex
 {
     KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
 		//LoadTranscripts(opt.transfasta);
-      Kmer::set_k(k);
 	}
 
 	~KmerIndex() {}
