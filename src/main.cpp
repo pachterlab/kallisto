@@ -9,10 +9,10 @@
 #include <zlib.h>
 #include "kseq.h"
 
-// #ifndef KSEQ_INIT_DONE
-// #define KSEQ_INIT_DONE
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
 KSEQ_INIT(gzFile, gzread)
-/* #endif */
+#endif
 
 
 #include "common.h"
