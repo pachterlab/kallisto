@@ -23,9 +23,11 @@ KSEQ_INIT(gzFile, gzread)
 
 struct KmerIndex
 {
-  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
+    KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
 		//LoadTranscripts(opt.transfasta);
+      Kmer::set_k(k);
 	}
+
 	~KmerIndex() {}
 
 
@@ -95,7 +97,6 @@ struct KmerIndex
 
 		// for each transcript in fasta file
 		while ((l = kseq_read(seq)) > 0) {
-            std::cout << "\t\t" << seq->seq.s << std::endl;
 			bool added = false;
 			// if it is long enough
 			if (seq->seq.l >= k) {
@@ -109,7 +110,6 @@ struct KmerIndex
 				}
 			}
 			if (added) {
-                std::cout << "added" << std::endl;
 				transid++;
 				if (transid % 1000 == 1) {
 					std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
@@ -162,21 +162,21 @@ struct KmerIndex
 		/* std::cout.flush(); */
 
 
-		// int uniqueKmers;
-		// for (auto &kmv : kmap) {
-		// 	if (kmv.second < num_trans) {
-		// 		uniqueKmers++;
-		// 	}
-		// }
-		// std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << uniqueKmers << " unique k-mers" << std::endl;
-		// std::map<int, int> histo;
-		// for (auto &kv : kmcount) {
-		// 	histo[kv.second]++;
-		// }
+		int uniqueKmers;
+		for (auto &kmv : kmap) {
+			if (kmv.second < num_trans) {
+				uniqueKmers++;
+			}
+		}
+		std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << uniqueKmers << " unique k-mers" << std::endl;
+		std::map<int, int> histo;
+		for (auto &kv : kmcount) {
+			histo[kv.second]++;
+		}
 		// int max = histo.rend()->first;
-		// // for (int i = 1; i < max; i++) {
-		// // 	std::cout << i << "\t" << histo[i] << "\n";
-		// // }
+		// for (int i = 1; i < max; i++) {
+		// 	std::cout << i << "\t" << histo[i] << "\n";
+		// }
 		std::cout.flush();
 		kseq_destroy(seq);
 		gzclose(fp);
@@ -300,29 +300,4 @@ struct KmerIndex
 
 };
 
-struct TestStruct
-{
-    TestStruct(const ProgramOptions& po) : k_(po.k) {}
-    ~TestStruct() {}
-
-    void read_trans(const std::string& fa)
-    {
-        std::cout << "da k: " << k_ << std::endl;
-        std::cout << "Reading FASTA: " << fa << std::endl;
-        gzFile fp = gzopen(fa.c_str(),"r");
-        kseq_t *seq = kseq_init(fp);
-
-        std::cout << "hihihi!" << std::endl;
-
-        int l;
-        while ((l = kseq_read(seq)) > 0) {
-            std::cout << "\t" << seq->seq.l << std::endl;
-        }
-
-        kseq_destroy(seq);
-        gzclose(fp);
-    }
-
-    int k_;
-};
 #endif // KALLISTO_KMERINDEX_H
