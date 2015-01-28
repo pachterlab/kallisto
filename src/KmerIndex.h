@@ -311,7 +311,7 @@ struct TestStruct
 
         int l;
         while ((l = kseq_read(seq)) > 0) {
-            std::cout << "\t" << l << std::endl;
+            std::cout << "\t" << seq->seq.l << std::endl;
         }
 
         kseq_destroy(seq);
