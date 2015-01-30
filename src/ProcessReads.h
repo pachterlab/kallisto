@@ -59,7 +59,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt) {
 		
 		// collect the transcript information
 		tc.collect(v);
-		if (nreads % 100 == 0 ) {
+		if (opt.verbose && nreads % 10000 == 0 ) {
 			std::cerr << "Processed " << nreads << std::endl;
 		}
 	}
