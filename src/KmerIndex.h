@@ -256,6 +256,8 @@ struct KmerIndex
         std::cerr << "[index] kmap size: " << kmap_size << std::endl;
 
         // read in the kmap
+	kmap.clear();
+	kmap.reserve(kmap_size);
         Kmer tmp_kmer;
         int tmp_val;
         for (size_t i = 0; i < kmap_size; ++i)
