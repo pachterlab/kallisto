@@ -13,13 +13,31 @@ KSEQ_INIT(gzFile, gzread)
 #include <fstream>
 #include <vector>
 #include <unordered_map>
-#include <map>
+//#include <map>
 
 
 #include "common.h"
 #include "Kmer.hpp"
 #include "KmerIterator.hpp"
 
+
+#include "hash.hpp"
+
+
+struct SortedVectorHasher {
+        size_t operator()(const std::vector<int> &v) const {
+                uint64_t r = 0;
+                int i=0;
+                for (auto x : v) {
+                        uint64_t t;
+                        MurmurHash3_x64_64(&x,sizeof(x), 0,&t);
+                        t = (x>>i) | (x<<(64-i));
+                        r = r ^ t;
+                        i = (i+1)%64;
+                }
+                return r;
+        }
+};
 
 struct KmerIndex
 {
@@ -161,22 +179,7 @@ struct KmerIndex
 		/* std::cout.flush(); */
 
 
-		int uniqueKmers;
-		for (auto &kmv : kmap) {
-			if (kmv.second < num_trans) {
-				uniqueKmers++;
-			}
-		}
-		std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << uniqueKmers << " unique k-mers" << std::endl;
-		std::map<int, int> histo;
-		for (auto &kv : kmcount) {
-			histo[kv.second]++;
-		}
-		// int max = histo.rend()->first;
-		// for (int i = 1; i < max; i++) {
-		// 	std::cout << i << "\t" << histo[i] << "\n";
-		// }
-		std::cout.flush();
+		std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << std::endl;
 		kseq_destroy(seq);
 		gzclose(fp);
 	}
@@ -294,9 +297,8 @@ struct KmerIndex
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
 	std::unordered_map<Kmer, int, KmerHash> kmap;
-	std::map<int, std::vector<int>> ecmap;
-	std::map<std::vector<int>, int> ecmapinv;
-
+	std::unordered_map<int, std::vector<int>> ecmap;
+	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
 };
 
 #endif // KALLISTO_KMERINDEX_H
