@@ -44,7 +44,7 @@ MinCollector(Index &ind, const ProgramOptions& opt) : index(ind), counts(index.e
 	
 	void write(std::ostream& o) {
 		for (int id = 0; id < counts.size(); id++) {
-			o << id << "\t" << counts[id];
+			o << id << "\t" << counts[id] << "\n";
 		}
 	}
 
