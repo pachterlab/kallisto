@@ -297,6 +297,8 @@ struct KmerIndex
 	std::map<int, std::vector<int>> ecmap;
 	std::map<std::vector<int>, int> ecmapinv;
 
+	// TODO: include lengths of transctips
+    std::vector<unsigned int> trans_lens_;
 };
 
 #endif // KALLISTO_KMERINDEX_H

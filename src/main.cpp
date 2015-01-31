@@ -237,9 +237,9 @@ int main(int argc, char *argv[])
 	if (opt.transfasta.empty()) {
 		KmerIndex index(opt);
 		index.load(opt.index);
-		ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
-		EMAlgorithm em(opt);
-		em.run();
+		auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
+		// EMAlgorithm<KmerIndex> em(opt, index, collection.counts);
+		// em.run();
 	} else {
 		KmerIndex index(opt);
         std::cerr << "Building index from: " << opt.transfasta << std::endl;
