@@ -1,14 +1,18 @@
 #ifndef KALLISTO_PROCESSREADS_H
 #define KALLISTO_PROCESSREADS_H
 
-
+#include <zlib.h>
+#include "kseq.h"
 #include <string>
+
 #include <iostream>
 #include <fstream>
 
+#include "common.h"
+
 
 template<typename Index, typename TranscriptCollector>
-void ProcessReads(Index& index, const ProgramOptions& opt) {
+TranscriptCollector ProcessReads(Index& index, const ProgramOptions& opt) {
 	
 	// need to receive an index map
 	std::ios_base::sync_with_stdio(false);
@@ -80,7 +84,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt) {
 	tc.write(of);
 	of.close();
 	
-	return;
+	return tc;
 }
 
 
