@@ -5,6 +5,10 @@
 #include <string>
 #include <iterator>
 
+/*#include <iostream> // debug
+	using namespace std;*/
+
+
 template<typename T, typename Hash>
 struct KmerHashTable {
 	using value_type = std::pair<Kmer, T>;
@@ -108,11 +112,12 @@ struct KmerHashTable {
 	void init_table(size_t sz) {
 		clear_table();
 		size_ = rndup(sz);
+		//cerr << "init table of size " << size_ << endl;
 		table = new value_type[size_];
 		std::fill(table, table+size_, empty);
 	}
 
-	iterator find(Kmer& key) {
+	iterator find(const Kmer& key) {
 		size_t h = hasher(key) & (size_-1);
 
 		for (;; h =  (h+1!=size_ ? h+1 : 0)) {
@@ -126,7 +131,8 @@ struct KmerHashTable {
 		}
 	}
 
-	const_iterator find(Kmer& key) const {
+	const_iterator find(const Kmer& key) const {
+		
 		size_t h = hasher(key) & (size_-1);
 
 		for (;; h =  (h+1!=size_ ? h+1 : 0)) {
@@ -142,21 +148,25 @@ struct KmerHashTable {
 	
 
 	std::pair<iterator,bool> insert(const value_type &val) {
-		if (pop > (1.2*size_)) {
+		//cerr << "inserting " << val.first.toString() << " = " << val.second << endl;
+		if ((pop + (pop>>4))> size_) { // if more than 80% full
+			//cerr << "-- triggered resize--" << endl;
 			reserve(2*size_);
 		}
 
 		size_t h = hasher(val.first) & (size_-1);
-		
+		//cerr << " hash value = " << h << endl;
 		for (;; h = (h+1!=size_ ? h+1 : 0)) {
+			//cerr << "  lookup at " << h << endl;
 			if (table[h].first == empty.first) {
+				//cerr << "   found empty slot" << endl;
 				// empty slot, insert here
 				table[h] = val;
 				++pop; // new table
 				return {iterator(this, h), true};
 			} else if (table[h].first == val.first) {
 				// same key, update value
-				table[h].second = val.second;
+				//cerr << "   found key already here " << table[h].first.toString() << " = " << table[h].second <<  endl;
 				return {iterator(this, h), false};
 			}
 		}
