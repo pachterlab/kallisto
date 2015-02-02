@@ -13,6 +13,7 @@ KSEQ_INIT(gzFile, gzread)
 #include <fstream>
 #include <vector>
 #include <unordered_map>
+
 //#include <map>
 
 
@@ -20,6 +21,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "Kmer.hpp"
 #include "KmerIterator.hpp"
 
+#include "KmerHashTable.h"
 
 #include "hash.hpp"
 
@@ -256,8 +258,8 @@ struct KmerIndex
         std::cerr << "[index] kmap size: " << kmap_size << std::endl;
 
         // read in the kmap
-	kmap.clear();
-	kmap.reserve(kmap_size);
+				kmap.clear();
+				kmap.reserve(kmap_size);
         Kmer tmp_kmer;
         int tmp_val;
         for (size_t i = 0; i < kmap_size; ++i)
@@ -298,7 +300,8 @@ struct KmerIndex
 
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
-	std::unordered_map<Kmer, int, KmerHash> kmap;
+	//std::unordered_map<Kmer, int, KmerHash> kmap;
+	KmerHashTable<int, KmerHash> kmap;
 	std::unordered_map<int, std::vector<int>> ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
 };
