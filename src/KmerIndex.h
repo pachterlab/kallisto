@@ -23,6 +23,7 @@ KSEQ_INIT(gzFile, gzread)
 
 #include "hash.hpp"
 
+using EcMap = std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
         size_t operator()(const std::vector<int> &v) const {
@@ -299,7 +300,7 @@ struct KmerIndex
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
 	std::unordered_map<Kmer, int, KmerHash> kmap;
-	std::unordered_map<int, std::vector<int>> ecmap;
+	EcMap ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
 
 	// TODO: include lengths of transctipts
