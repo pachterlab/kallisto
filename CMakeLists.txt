@@ -11,7 +11,13 @@ enable_testing(true)  # Enables unit-testing.
 
 # add_compile_options(-Wall)
 add_compile_options(-std=c++11)
-add_compile_options(-O3)
+IF(CMAKE_BUILD_TYPE MATCHES Debug)
+    message("debug mode")
+		add_compile_options(-O0)
+ELSE(CMAKE_BUILD_TYPE MATCHES Debug)
+		add_compile_options(-O3)
+ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
+
 # add_compile_options(-Wdeprecated-register)
 
 add_subdirectory(src)
