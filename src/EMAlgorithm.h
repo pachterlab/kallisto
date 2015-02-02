@@ -20,6 +20,13 @@ struct EMAlgorithm {
 	{}
 
 	void run(size_t n_iter = 500) {
+        // std::vector<double> next_alpha(alpha);
+
+	    for (auto i = 0; i < n_iter; ++i) {
+
+
+	    }
+
 
 	}
 
