@@ -24,6 +24,8 @@ KSEQ_INIT(gzFile, gzread)
 #include "KmerHashTable.h"
 
 #include "hash.hpp"
+#include "SimpleKmerHash.h"
+#include "minHashIterator.hpp"
 
 
 struct SortedVectorHasher {
@@ -43,7 +45,7 @@ struct SortedVectorHasher {
 
 struct KmerIndex
 {
-    KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
+  KmerIndex(const ProgramOptions& opt) : kp(31),  k(opt.k), num_trans(0) {
 		//LoadTranscripts(opt.transfasta);
 	}
 
@@ -54,6 +56,20 @@ struct KmerIndex
 	// pre:  v is initialized
 	// post: v contains all equiv classes for the k-mers in s
 	void match(const char *s, int l, std::vector<int> & v) const {
+		SimpleKmerHash hf(k);
+		
+		minHashIterator<SimpleKmerHash> it(s, l, kp, k, hf), it_end;
+		int lastpos = -1;
+		for (; it != it_end; ++it) {
+			if (it.p != lastpos) {
+				Kmer km(s+it.p);
+				auto kmsearch = kmap.find(km.rep());
+				if (kmsearch != kmap.end()) {
+					v.push_back(kmsearch->second);
+				}
+			}
+		}
+		/*
 		KmerIterator kit(s), kit_end;
 		for (;kit != kit_end; ++kit) {
 			Kmer rep = kit->first.rep();
@@ -63,6 +79,7 @@ struct KmerIndex
 				v.push_back(search->second); // add equivalence class
 			}
 		}
+		*/
 	}
 
 	// use:  res = intersect(ec,v)
@@ -106,6 +123,8 @@ struct KmerIndex
 							<< std::endl;
         std::cerr << "k: " << k << std::endl;
 		gzFile fp = gzopen(fasta.c_str(),"r");
+		SimpleKmerHash hf(k);
+		
 		kseq_t *seq = kseq_init(fp);
 
 		int transid = 0;
@@ -116,17 +135,33 @@ struct KmerIndex
 
 		// for each transcript in fasta file
 		while ((l = kseq_read(seq)) > 0) {
+			const char *s = seq->seq.s;
 			bool added = false;
 			// if it is long enough
 			if (seq->seq.l >= k) {
-				KmerIterator kit(seq->seq.s), kit_end;
+				int lastpos = -1;
+				minHashIterator<SimpleKmerHash> it(s,seq->seq.l, kp, k, hf), it_end;
+				//KmerIterator kit(seq->seq.s), kit_end;
 				// for each k-mer add to map
-				for(;kit != kit_end; ++kit) {
+				for (; it != it_end; ++it) {
+					//minHashResultIterator<SimpleKmerHash> rit = *it,rit_end;
+					//for (;rit != rit_end; ++rit) { }
+					if (it.p != lastpos) {
+						Kmer km(s+it.p);
+						auto kmsearch = all_kmap.insert({km.rep(), vector<int>{}});
+						if (kmsearch.second) {
+							kmsearch.first->second.push_back(transid);
+							added = true;
+						}
+						lastpos = it.p;
+					}
+				}
+				/*for(;kit != kit_end; ++kit) {
 					Kmer rep = kit->first.rep();
 					kmcount[rep]++;
 					all_kmap[rep].push_back(transid); // creates an entry if not found
 					added = true;
-				}
+					}*/
 			}
 			if (added) {
 				transid++;
@@ -298,6 +333,7 @@ struct KmerIndex
         in.close();
     }
 
+	int kp;
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
 	//std::unordered_map<Kmer, int, KmerHash> kmap;
