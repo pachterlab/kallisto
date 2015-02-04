@@ -317,7 +317,7 @@ struct KmerIndex
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
 
 	// TODO: include lengths of transctipts
-    std::vector<unsigned int> trans_lens_;
+    std::vector<int> trans_lens_;
 };
 
 #endif // KALLISTO_KMERINDEX_H
