@@ -4,6 +4,7 @@
 #include "common.h"
 #include "weights.h"
 
+#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -52,7 +53,6 @@ struct EMAlgorithm {
                 // next, compute the update step
 
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    // should we exp(log(.) this?
                     next_alpha[t_it] += counts_[ec_kv.first] *
                         w_search->second[t_it] * alpha_[t_it] / denom[ec_kv.first];
                 }
@@ -62,14 +62,8 @@ struct EMAlgorithm {
             alpha_.swap(next_alpha);
 
             // clear all next_alpha values 0 for next iteration
-            for (auto& a : next_alpha) {
-                a = 0.0;
-            }
-
-            // clear all denominators
-            for (auto& d : denom) {
-                d = 0.0;
-            }
+            std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
+            std::fill(denom.begin(), denom.end(), 0.0);
 	    }
 	}
 
