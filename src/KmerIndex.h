@@ -128,6 +128,7 @@ struct KmerIndex
 				}
 			}
 			if (added) {
+				trans_lens_.push_back(seq->seq.l);
 				transid++;
 				if (transid % 1000 == 1) {
 					std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
@@ -192,129 +193,168 @@ struct KmerIndex
 
         if (!out.is_open()) {
             // TODO: better handling
-            std::cerr << "index output file could not be open!";
+            std::cerr << "Error: index output file could not be opened!";
             exit(1);
         }
 
-        // TODO: add version to index
-        out.write((char*)&k, sizeof(k));
+				// 1. write index
+				out.write((char*)&INDEX_VERSION, sizeof(INDEX_VERSION));
+
+				// 2. write k
+				out.write((char*)&k, sizeof(k));
+
+				// 3. write number of transcripts
         out.write((char*)&num_trans, sizeof(num_trans));
 
-        // print out the size of the map
+				// 4. write out transcript lengths
+				for (int tlen : trans_lens_) {
+					out.write((char*)&tlen, sizeof(tlen));
+				}
+
         size_t kmap_size = kmap.size();
-        /* std::cerr << "orig kmap size " << kmap_size << '\t' << kmap.size() << std::endl; */
+
+				// 5. write number of k-mers in map
         out.write((char*)&kmap_size, sizeof(kmap_size));
 
-
+				// 6. write kmer->ec values
         for (auto& kv : kmap) {
             out.write((char*)&kv.first, sizeof(kv.first));
             out.write((char*)&kv.second, sizeof(kv.second));
         }
 
-        out.flush();
-
+				// 7. write number of equivalence classes
         size_t tmp_size;
         tmp_size = ecmap.size();
         out.write((char*)&tmp_size, sizeof(tmp_size));
 
+				// 8. write out each equiv class
         for (auto& kv : ecmap) {
             out.write((char*)&kv.first, sizeof(kv.first));
 
+						// 8.1 write out the size of equiv class
             tmp_size = kv.second.size();
             out.write((char*)&tmp_size, sizeof(tmp_size));
-
+						// 8.2 write each member
             for (auto& val: kv.second) {
                 out.write((char*)&val, sizeof(val));
             }
         }
 
-
         out.flush();
-
         out.close();
     }
 
 	// note opt is not const
 	void load(ProgramOptions &opt) {
 
-			std::string& index_in = opt.index;
-        std::ifstream in;
+		std::string& index_in = opt.index;
+		std::ifstream in;
+		
+		in.open(index_in, std::ios::in | std::ios::binary);
 
-        in.open(index_in, std::ios::in | std::ios::binary);
+		if (!in.is_open()) {
+			// TODO: better handling
+			std::cerr << "Error: index input file could not be opened!";
+			exit(1);
+		}
 
-        if (!in.is_open()) {
-            // TODO: better handling
-            std::cerr << "index input file could not be open!";
-            exit(1);
-        }
+		// 1. read version
+		size_t header_version = 0;
+		in.read((char*)&header_version, sizeof(header_version));
 
-        in.read((char*)&k, sizeof(k));
-				if (Kmer::k == 0) {
-					std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
-					Kmer::set_k(k);
-					opt.k = k;
-				} else if (Kmer::k == k) {
-					std::cerr << "[index] Kmer::k has been set and matches" << k << std::endl;
-					opt.k = k;
-				} else {
-					std::cerr << "[index] Kmer::k was already set to = " << Kmer::k << std::endl
-										<< "        conflicts with value of k  = " << k << std::endl;
-				}
-        in.read((char*)&num_trans, sizeof(num_trans));
+		if (header_version != INDEX_VERSION) {
+			std::cerr << "Error: Incompatiple indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
+								<< "Rerun with index to regenerate!";
+			exit(1);
+		}
 
-        size_t kmap_size;
-        in.read((char*)&kmap_size, sizeof(kmap_size));
+		// 2. read k
+		in.read((char*)&k, sizeof(k));
+		if (Kmer::k == 0) {
+			//std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
+			Kmer::set_k(k);
+			opt.k = k;
+		} else if (Kmer::k == k) {
+			//std::cerr << "[index] Kmer::k has been set and matches" << k << std::endl;
+			opt.k = k;
+		} else {
+			std::cerr << "Error: Kmer::k was already set to = " << Kmer::k << std::endl
+								<< "       conflicts with value of k  = " << k << std::endl;
+			exit(1);
+		}
 
-        std::cerr << "[index] k: " << k << std::endl;
-        std::cerr << "[index] num_trans read: " << num_trans << std::endl;
-        std::cerr << "[index] kmap size: " << kmap_size << std::endl;
+		// 3. read number of transcripts
+		in.read((char*)&num_trans, sizeof(num_trans));
 
-        // read in the kmap
-	kmap.clear();
-	kmap.reserve(kmap_size);
-        Kmer tmp_kmer;
-        int tmp_val;
-        for (size_t i = 0; i < kmap_size; ++i)
-        {
-            in.read((char*)&tmp_kmer, sizeof(tmp_kmer));
-            in.read((char*)&tmp_val, sizeof(tmp_val));
+		// 4. read number of transcripts
+		trans_lens_.clear();
+		trans_lens_.reserve(num_trans);
 
-            // if (i < 15)
-            //     std::cout << "\t\tval:\t" << tmp_kmer << "\t" << tmp_val << std::endl;
-            kmap.insert({tmp_kmer, tmp_val});
-        }
+		for (int i = 0; i < num_trans; i++) {
+			int tlen;
+			in.read((char*)&tlen, sizeof(tlen));
+			trans_lens_.push_back(tlen);
+		}
 
-        // read in the ecmap
-        size_t ecmap_size;
-        in.read((char*)&ecmap_size, sizeof(ecmap_size));
+		// 5. read number of k-mers
+		size_t kmap_size;
+		in.read((char*)&kmap_size, sizeof(kmap_size));
+		
+		std::cerr << "[index] k: " << k << std::endl;
+		std::cerr << "[index] num_trans read: " << num_trans << std::endl;
+		std::cerr << "[index] kmap size: " << kmap_size << std::endl;
+		
+		kmap.clear();
+		kmap.reserve(kmap_size);
 
-        std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
+		// 6. read kmer->ec values
+		Kmer tmp_kmer;
+		int tmp_val;
+		for (size_t i = 0; i < kmap_size; ++i)
+		{
+			in.read((char*)&tmp_kmer, sizeof(tmp_kmer));
+			in.read((char*)&tmp_val, sizeof(tmp_val));
+			
+			// if (i < 15)
+			//     std::cout << "\t\tval:\t" << tmp_kmer << "\t" << tmp_val << std::endl;
+			kmap.insert({tmp_kmer, tmp_val});
+		}
 
-        int tmp_id;
-        size_t vec_size;
+		// 7. read number of equivalence classes
+		size_t ecmap_size;
+		in.read((char*)&ecmap_size, sizeof(ecmap_size));
 
-        for (size_t i = 0; i < ecmap_size; ++i) {
-            in.read((char*)&tmp_id, sizeof(tmp_id));
-            in.read((char*)&vec_size, sizeof(vec_size));
+		std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
 
-            std::vector<int> tmp_vec(vec_size);
-            for (size_t j = 0; j < vec_size; ++j )
-            {
-                in.read((char*)&tmp_val, sizeof(tmp_val));
-                tmp_vec.push_back(tmp_val);
-            }
-            ecmap.insert({tmp_id, tmp_vec});
-            ecmapinv.insert({tmp_vec, tmp_id});
-        }
+		int tmp_id;
+		size_t vec_size;
+		// 8. read each equiv class
+		for (size_t i = 0; i < ecmap_size; ++i) {
+			in.read((char*)&tmp_id, sizeof(tmp_id));
 
-        in.close();
-    }
+			// 8.1 read size of equiv class
+			in.read((char*)&vec_size, sizeof(vec_size));
+			
+			// 8.2 read each member
+			std::vector<int> tmp_vec(vec_size);
+			for (size_t j = 0; j < vec_size; ++j )
+			{
+				in.read((char*)&tmp_val, sizeof(tmp_val));
+				tmp_vec.push_back(tmp_val);
+			}
+			ecmap.insert({tmp_id, tmp_vec});
+			ecmapinv.insert({tmp_vec, tmp_id});
+		}
+		
+		in.close();
+	}
 
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
 	std::unordered_map<Kmer, int, KmerHash> kmap;
 	EcMap ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
+	const size_t INDEX_VERSION = 2; // increase this every time you change the fileformat
 
 	// TODO: include lengths of transctipts
     std::vector<int> trans_lens_;

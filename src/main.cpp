@@ -323,6 +323,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			} else {
 				// create an index
+				Kmer::set_k(opt.k);
 				KmerIndex index(opt);
 				std::cerr << "Building index from: " << opt.transfasta << std::endl;
 				index.BuildTranscripts(opt.transfasta);

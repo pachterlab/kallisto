@@ -38,7 +38,7 @@ WeightMap calc_weights(
 
     for (auto& kv : ecmap) {
 
-        std::cout << kv.first;
+			//std::cout << kv.first;
         std::vector<double> trans_weights;
         trans_weights.reserve(kv.second.size());
 
