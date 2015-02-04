@@ -21,8 +21,10 @@ struct EMAlgorithm {
 	    counts_(counts),
 	    num_trans_(idx.num_trans),
 	    eff_lens_(eff_lens),
-	    alpha_(idx.num_trans, 1/idx.num_trans) // uniform distribution over transcripts
+	    alpha_(idx.num_trans, 1.0/idx.num_trans) // uniform distribution over transcripts
 	{}
+
+	~EMAlgorithm() {}
 
 	void run(const WeightMap& weight_map, size_t n_iter = 500) {
         std::vector<double> next_alpha(alpha_.size(), 0.0);
@@ -59,7 +61,7 @@ struct EMAlgorithm {
             }
 
             // reassign alpha_ to next_alpha
-            alpha_.swap(next_alpha);
+            std::copy(next_alpha.begin(), next_alpha.end(), alpha_.begin());
 
             // clear all next_alpha values 0 for next iteration
             std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
@@ -68,7 +70,7 @@ struct EMAlgorithm {
 
 	int num_trans_;
 	const Index &idx_;
-	const std::vector<int> &counts_;
+	const std::vector<int>& counts_;
 	const std::vector<double>& eff_lens_;
     std::vector<double> alpha_;
 };
