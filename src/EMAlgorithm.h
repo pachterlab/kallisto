@@ -53,7 +53,7 @@ struct EMAlgorithm {
 
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
                     // should we exp(log(.) this?
-                    next_alpha[t_it] += counts_[ec_kv.first()] *
+                    next_alpha[t_it] += counts_[ec_kv.first] *
                         w_search->second[t_it] * alpha_[t_it] / denom[ec_kv.first];
                 }
             }
@@ -71,7 +71,6 @@ struct EMAlgorithm {
                 d = 0.0;
             }
 	    }
-
 	}
 
 	int num_trans_;
