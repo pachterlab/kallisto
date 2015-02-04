@@ -52,9 +52,9 @@ struct EMAlgorithm {
                 // next, compute the update step
 
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
+                    // should we exp(log(.) this?
                     next_alpha[t_it] += counts_[ec_kv.first()] *
-                        w_search->second[t_it] /
-                        denom[ec_kv.first];
+                        w_search->second[t_it] * alpha_[t_it] / denom[ec_kv.first];
                 }
             }
 
