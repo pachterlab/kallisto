@@ -123,7 +123,18 @@ struct KmerIndex
 				for(;kit != kit_end; ++kit) {
 					Kmer rep = kit->first.rep();
 					kmcount[rep]++;
-					all_kmap[rep].push_back(transid); // creates an entry if not found
+					auto search = all_kmap.find(rep);
+					if (search == all_kmap.end()) {
+						// new k-mer
+						all_kmap.insert({rep, {transid}});
+					} else {
+						// seen before
+						std::vector<int> &v = search->second;
+						if (*v.rbegin() < transid) {
+							// but new transcript
+							v.push_back(transid);
+						}
+					}
 					added = true;
 				}
 			}
@@ -145,8 +156,9 @@ struct KmerIndex
 		// for each transcript
 		for (int i = 0; i < num_trans; i++ ) {
 			// create its own eqs
-			ecmap.insert({i,{i}});
-			ecmapinv.insert({{i},i});
+			std::vector<int> single(1,i);
+			ecmap.insert({i,single});
+			ecmapinv.insert({single,i});
 		}
 
 
