@@ -234,8 +234,10 @@ struct KmerIndex
         out.close();
     }
 
-	void load(const std::string& index_in)
-    {
+	// note opt is not const
+	void load(ProgramOptions &opt) {
+
+			std::string& index_in = opt.index;
         std::ifstream in;
 
         in.open(index_in, std::ios::in | std::ios::binary);
@@ -247,6 +249,17 @@ struct KmerIndex
         }
 
         in.read((char*)&k, sizeof(k));
+				if (Kmer::k == 0) {
+					std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
+					Kmer::set_k(k);
+					opt.k = k;
+				} else if (Kmer::k == k) {
+					std::cerr << "[index] Kmer::k has been set and matches" << k << std::endl;
+					opt.k = k;
+				} else {
+					std::cerr << "[index] Kmer::k was already set to = " << Kmer::k << std::endl
+										<< "        conflicts with value of k  = " << k << std::endl;
+				}
         in.read((char*)&num_trans, sizeof(num_trans));
 
         size_t kmap_size;

@@ -13,7 +13,6 @@
 
 struct ProgramOptions {
 	bool verbose;
-	bool version;
 	int threads;
 	std::string index;
 	int k;
@@ -23,7 +22,7 @@ struct ProgramOptions {
 	std::string transfasta;
 	std::vector<std::string> files;
 
-ProgramOptions() : verbose(false), version(false), seed(0), threads(1), k(21), iterations(500)  {}
+ProgramOptions() : verbose(false), seed(0), threads(1), k(21), iterations(500)  {}
 };
 
 #endif // KALLISTO_COMMON_H
