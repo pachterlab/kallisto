@@ -21,6 +21,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "Kmer.hpp"
 #include "MinCollector.h"
 #include "EMAlgorithm.h"
+#include "weights.h"
 
 
 using namespace std;
@@ -341,8 +342,11 @@ int main(int argc, char *argv[])
 				KmerIndex index(opt);
 				index.load(opt);
 				auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
-				// EMAlgorithm<KmerIndex> em(opt, index, collection.counts);
-				// em.run();
+				// compute mean frag length somewhere?
+        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens);
+				em.run(weights);
 			}
 		}
 	}

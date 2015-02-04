@@ -61,7 +61,7 @@ flags = [
 '-I',
 './gff',
 '-I',
-'./Catch/include',
+'./build/ext/catch/include',
 '-I',
 './src',
 # end project specific
