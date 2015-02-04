@@ -366,7 +366,7 @@ struct KmerIndex
 	std::unordered_map<Kmer, int, KmerHash> kmap;
 	EcMap ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-	const size_t INDEX_VERSION = 2; // increase this every time you change the fileformat
+	const size_t INDEX_VERSION = 3; // increase this every time you change the fileformat
 
 	// TODO: include lengths of transctipts
     std::vector<int> trans_lens_;
