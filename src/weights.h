@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+using WeightMap = std::unordered_map<int, std::vector<double>>;
+
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
 {
     // for now do the total naive thing and subtract mean frag length
@@ -22,13 +24,17 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
 }
 
 
-std::unordered_map<int, std::vector<double>> calc_weights(
+WeightMap calc_weights(
         const std::vector<int>& counts,
         const EcMap& ecmap,
         const std::vector<double>& eff_lens)
 {
+
+    // TODO: throw some assertions in here to make sure the length of counts
+    // and ec map are correct... as well as eff_lens size is reasonable
+
     // weights are stored _exactly_ in the same orientation as the ec map
-    std::unordered_map<int, std::vector<double>> weights;
+    WeightMap weights;
 
     for (auto& kv : ecmap) {
 
