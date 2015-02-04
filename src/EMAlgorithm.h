@@ -4,7 +4,6 @@
 #include "common.h"
 #include "weights.h"
 
-#include <algorithm>
 #include <iostream>
 #include <vector>
 
@@ -21,7 +20,7 @@ struct EMAlgorithm {
 	    counts_(counts),
 	    num_trans_(idx.num_trans),
 	    eff_lens_(eff_lens),
-	    alpha_(idx.num_trans, 1/idx.num_trans) // uniform distribution over transcripts
+	    alpha_(idx.num_trans, 1.0/idx.num_trans) // uniform distribution over transcripts
 	{}
 
 	void run(const WeightMap& weight_map, size_t n_iter = 500) {
@@ -29,15 +28,14 @@ struct EMAlgorithm {
 
         assert(weight_map.size() == counts_.size());
 
-        // // there is a denominator normalizer for every single equivalence
-        // // class
-        // std::vector<double> denom(counts_.size(), 0.0);
+        // there is a denominator normalizer for every single equivalence
+        // class
+        std::vector<double> denom(counts_.size(), 0.0);
 
 	    for (auto i = 0; i < n_iter; ++i) {
 
             for (auto& ec_kv : idx_.ecmap ) {
 
-                double denom {0.0};
                 // first, compute the denominator: a normalizer
                 // iterate over transcripts in EC map
                 auto w_search = weight_map.find(ec_kv.first);
@@ -47,14 +45,16 @@ struct EMAlgorithm {
                 assert( w_search->second.size() == ec_kv.second.size() );
 
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    denom += ec_kv.second[t_it] * w_search->second[t_it];
+                    denom[ec_kv.first] += ec_kv.second[t_it] *
+                        w_search->second[t_it];
                 }
 
                 // next, compute the update step
 
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
+                    // should we exp(log(.) this?
                     next_alpha[t_it] += counts_[ec_kv.first] *
-                        w_search->second[t_it] * alpha_[t_it] / denom;
+                        w_search->second[t_it] * alpha_[t_it] / denom[ec_kv.first];
                 }
             }
 
@@ -62,7 +62,14 @@ struct EMAlgorithm {
             alpha_.swap(next_alpha);
 
             // clear all next_alpha values 0 for next iteration
-            std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
+            for (auto& a : next_alpha) {
+                a = 0.0;
+            }
+
+            // clear all denominators
+            for (auto& d : denom) {
+                d = 0.0;
+            }
 	    }
 	}
 
