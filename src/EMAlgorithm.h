@@ -29,7 +29,13 @@ struct EMAlgorithm {
 	    alpha_(idx.num_trans, 1.0/idx.num_trans), // uniform distribution over transcripts
 	    rho_(idx.num_trans, 0.0),
 	    rho_set_(false)
-	{}
+	{
+
+        for (int i = 0; i < num_trans_; ++i) {
+            auto ec = idx_.ecmap.find(i);
+	        assert(ec->second.size() == 1);
+	    }
+	}
 
 	~EMAlgorithm() {}
 
@@ -58,10 +64,17 @@ struct EMAlgorithm {
                 assert( w_search->second.size() == ec_kv.second.size() );
 
                 /* std::cout << "denom: " << denom << "\t"; */
+                std::cout << "ec id: " << ec_kv.first << ":::\t" <<
+                    ec_kv.second.size() << std::endl;
 
+                // XXX: could technically be computed once?
+                /* std::cout << "ec id: " << ec_kv.first << "\t"; */
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    denom += ec_kv.second[t_it] * w_search->second[t_it];
+                    // denom +=  * w_search->second[t_it];
+                    std::cout << ec_kv.second[t_it] << "\t";
+                    denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
                 }
+                std::cout << std::endl;
 
                 if (denom < TOLERANCE) {
                     continue;

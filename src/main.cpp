@@ -399,85 +399,85 @@ void usageEMOnly()
 int main(int argc, char *argv[])
 {
 	
-	if (argc < 2) {
-		usage();
-		exit(1);
-	} else {
-		ProgramOptions opt;
-		string cmd(argv[1]);
-		if (cmd == "version") {
-			PrintVersion();
-		} else if (cmd == "cite") {
-			PrintCite();
-		} else if (cmd == "index") {
-			if (argc==2) {
-				usageIndex();
-				return 0;
-			}
-			ParseOptionsIndex(argc-1,argv+1,opt);
-			if (!CheckOptionsIndex(opt)) {
-				usageIndex();
-				exit(1);
-			} else {
-				// create an index
-				Kmer::set_k(opt.k);
-				KmerIndex index(opt);
-				std::cerr << "Building index from: " << opt.transfasta << std::endl;
-				index.BuildTranscripts(opt.transfasta);
-				index.write(opt.index);
-			}
-		} else if (cmd == "em") {
-			if (argc==2) {
-				usageEM();
-				return 0;
-			}
-			ParseOptionsEM(argc-1,argv+1,opt);
-			if (!CheckOptionsEM(opt)) {
-				usageEM();
-				exit(1);
-			} else {
-				// run the em algorithm
-				KmerIndex index(opt);
-				index.load(opt);
-				auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
-				// save modified index for future use
-				index.write((opt.output+"/index.saved"), false);
-				// compute mean frag length somewhere?
-        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
-        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
-				em.run();
-				em.compute_rho();
-				em.write(opt.output + "/em.txt");
-			}
-		} else if (cmd == "em-only") {
-			if (argc==2) {
-				usageEMOnly();
-				return 0;
-			}
-			ParseOptionsEMOnly(argc-1,argv+1,opt);
-			if (!CheckOptionsEM(opt, true)) {
-				usageEMOnly();
-				exit(1);
-			} else {
-				// run the em algorithm
-				KmerIndex index(opt);
-				index.load(opt, false); // skip the k-mer map
-				MinCollector<KmerIndex> collection(index, opt);
-				collection.loadCounts(opt);
-				// compute mean frag length somewhere?
-        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
-        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
-				em.run();
-				em.compute_rho();
-				em.write(opt.output + "/em.txt");
-			}
-		} else {
-			cerr << "Did not understand command " << cmd << endl;
-			usage();
-			exit(1);
-		}
+    if (argc < 2) {
+        usage();
+        exit(1);
+    } else {
+        ProgramOptions opt;
+        string cmd(argv[1]);
+        if (cmd == "version") {
+            PrintVersion();
+        } else if (cmd == "cite") {
+            PrintCite();
+        } else if (cmd == "index") {
+            if (argc==2) {
+                usageIndex();
+                return 0;
+            }
+            ParseOptionsIndex(argc-1,argv+1,opt);
+            if (!CheckOptionsIndex(opt)) {
+                usageIndex();
+                exit(1);
+            } else {
+                // create an index
+                Kmer::set_k(opt.k);
+                KmerIndex index(opt);
+                std::cerr << "Building index from: " << opt.transfasta << std::endl;
+                index.BuildTranscripts(opt.transfasta);
+                index.write(opt.index);
+            }
+        } else if (cmd == "em") {
+            if (argc==2) {
+                usageEM();
+                return 0;
+            }
+            ParseOptionsEM(argc-1,argv+1,opt);
+            if (!CheckOptionsEM(opt)) {
+                usageEM();
+                exit(1);
+            } else {
+                // run the em algorithm
+                KmerIndex index(opt);
+                index.load(opt);
+                auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
+                // save modified index for future use
+                index.write((opt.output+"/index.saved"), false);
+                // compute mean frag length somewhere?
+                auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+                auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+                EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+                em.run();
+                em.compute_rho();
+                em.write(opt.output + "/em.txt");
+            }
+        } else if (cmd == "em-only") {
+            if (argc==2) {
+                usageEMOnly();
+                return 0;
+            }
+            ParseOptionsEMOnly(argc-1,argv+1,opt);
+            if (!CheckOptionsEM(opt, true)) {
+                usageEMOnly();
+                exit(1);
+            } else {
+                // run the em algorithm
+                KmerIndex index(opt);
+                index.load(opt, false); // skip the k-mer map
+                MinCollector<KmerIndex> collection(index, opt);
+                collection.loadCounts(opt);
+                // compute mean frag length somewhere?
+                auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+                auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+                EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+                em.run();
+                em.compute_rho();
+                em.write(opt.output + "/em.txt");
+            }
+        } else {
+            cerr << "Did not understand command " << cmd << endl;
+            usage();
+            exit(1);
+        }
 		
 	}
 	return 0;

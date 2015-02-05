@@ -357,7 +357,9 @@ struct KmerIndex
 			in.read((char*)&vec_size, sizeof(vec_size));
 			
 			// 8.2 read each member
-			std::vector<int> tmp_vec(vec_size);
+			// std::vector<int> tmp_vec(vec_size);
+			std::vector<int> tmp_vec;
+			tmp_vec.reserve(vec_size);
 			for (size_t j = 0; j < vec_size; ++j )
 			{
 				in.read((char*)&tmp_val, sizeof(tmp_val));
