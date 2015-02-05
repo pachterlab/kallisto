@@ -29,13 +29,7 @@ struct EMAlgorithm {
 	    alpha_(idx.num_trans, 1.0/idx.num_trans), // uniform distribution over transcripts
 	    rho_(idx.num_trans, 0.0),
 	    rho_set_(false)
-	{
-
-        for (int i = 0; i < num_trans_; ++i) {
-            auto ec = idx_.ecmap.find(i);
-	        assert(ec->second.size() == 1);
-	    }
-	}
+	{}
 
 	~EMAlgorithm() {}
 
@@ -43,10 +37,6 @@ struct EMAlgorithm {
         std::vector<double> next_alpha(alpha_.size(), 0.0);
 
         assert(weight_map_.size() == counts_.size());
-
-        // // there is a denominator normalizer for every single equivalence
-        // // class
-        // std::vector<double> denom(counts_.size(), 0.0);
 
         double denom;
 	    for (auto i = 0; i < n_iter; ++i) {
@@ -63,32 +53,23 @@ struct EMAlgorithm {
                 assert( w_search != weight_map_.end() );
                 assert( w_search->second.size() == ec_kv.second.size() );
 
-                /* std::cout << "denom: " << denom << "\t"; */
-                std::cout << "ec id: " << ec_kv.first << ":::\t" <<
-                    ec_kv.second.size() << std::endl;
-
-                // XXX: could technically be computed once?
                 /* std::cout << "ec id: " << ec_kv.first << "\t"; */
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    // denom +=  * w_search->second[t_it];
-                    std::cout << ec_kv.second[t_it] << "\t";
+                    /* std::cout << ec_kv.second[t_it] << "\t"; */
                     denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
                 }
-                std::cout << std::endl;
+                /* std::cout << std::endl; */
 
                 if (denom < TOLERANCE) {
                     continue;
                 }
 
-                std::cout << "denom: " << denom << std::endl;
+                /* std::cout << "denom: " << denom << std::endl; */
 
-                // TODO: what happens if denom == 0.0? (or close to?)
-
-                // next, compute the update step
-
+                // compute the update step
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    next_alpha[t_it] += counts_[ec_kv.first] *
-                        w_search->second[t_it] * alpha_[t_it] / denom;
+                    next_alpha[ec_kv.second[t_it]] += counts_[ec_kv.first] *
+                        (w_search->second[t_it] * alpha_[ec_kv.second[t_it]] / denom);
                 }
             }
 
@@ -119,7 +100,7 @@ struct EMAlgorithm {
             assert( w_search->second.size() == ec_kv.second.size() );
 
             for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                denom += ec_kv.second[t_it] * w_search->second[t_it];
+                denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
             }
 
             if (denom < TOLERANCE) {
@@ -128,7 +109,8 @@ struct EMAlgorithm {
             // next, compute the update step
 
             for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                rho_[t_it] += alpha_[t_it] * w_search->second[t_it] / denom;
+                rho_[ec_kv.second[t_it]] += alpha_[ec_kv.second[t_it]] *
+                    w_search->second[t_it] / denom;
             }
         }
 
