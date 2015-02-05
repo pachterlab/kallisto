@@ -448,7 +448,7 @@ int main(int argc, char *argv[])
 				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
 				em.run();
 				em.compute_rho();
-				em.write("em.txt");
+				em.write(opt.output + "/em.txt");
 			}
 		} else if (cmd == "em-only") {
 			if (argc==2) {
@@ -468,8 +468,10 @@ int main(int argc, char *argv[])
 				// compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens);
-				em.run(weights);
+				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+				em.run();
+				em.compute_rho();
+				em.write(opt.output + "/em.txt");
 			}
 		} else {
 			cerr << "Did not understand command " << cmd << endl;
