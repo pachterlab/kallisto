@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <unordered_map>
 
 template <typename Index>
 struct MinCollector {
@@ -14,17 +15,23 @@ MinCollector(Index &ind, const ProgramOptions& opt) : index(ind), counts(index.e
 
 
 	
-	void collect(const std::vector<int>& v) {
+	void collect(std::vector<int>& v) {
 		if (v.empty()) {
 			return;
 		}
+		sort(v.begin(), v.end()); // sort by increasing order
 
+		int count = 1; // how many k-mer support the ec
 		std::vector<int> u = index.ecmap[v[0]];
-		for (int i = 0; i < v.size(); i++) {
-			u = index.intersect(v[i],u);
-			if (u.empty()) {
-				break;
+		
+		for (int i = 1; i < v.size(); i++) {
+			if (v[i] != v[i-1]) {
+				u = index.intersect(v[i],u);
+				if (u.empty()) {
+					break;
+				}
 			}
+			count++; // increase the count
 		}
 		// if u is empty do nothing
 		if (u.empty()) {
