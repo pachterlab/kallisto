@@ -53,11 +53,10 @@ struct EMAlgorithm {
                 assert( w_search != weight_map_.end() );
                 assert( w_search->second.size() == ec_kv.second.size() );
 
-                /* std::cout << "ec id: " << ec_kv.first << "\t"; */
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                    /* std::cout << ec_kv.second[t_it] << "\t"; */
                     denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
                 }
+
                 /* std::cout << std::endl; */
 
                 if (denom < TOLERANCE) {
@@ -73,6 +72,8 @@ struct EMAlgorithm {
                 }
             }
 
+            // TODO: check for relative difference for convergence in EM
+
             // reassign alpha_ to next_alpha
             std::copy(next_alpha.begin(), next_alpha.end(), alpha_.begin());
 
@@ -84,13 +85,13 @@ struct EMAlgorithm {
     void compute_rho() {
 
         if (rho_set_) {
-            // rho has already been set, let's update it
+            // rho has already been set, let's clear it
             std::fill(rho_.begin(), rho_.end(), 0.0);
         }
 
         for (auto& ec_kv : idx_.ecmap ) {
-
             double denom {0.0};
+
             // first, compute the denominator: a normalizer
             // iterate over transcripts in EC map
             auto w_search = weight_map_.find(ec_kv.first);
@@ -106,7 +107,6 @@ struct EMAlgorithm {
             if (denom < TOLERANCE) {
                 continue;
             }
-            // next, compute the update step
 
             for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
                 rho_[ec_kv.second[t_it]] += alpha_[ec_kv.second[t_it]] *
@@ -121,9 +121,13 @@ struct EMAlgorithm {
         std::ofstream out;
         out.open(rho_out, std::ios::out);
 
+        out.precision(15);
+        std::cout.precision(15);
+
+        std::cout << "alphas" << std::endl;
         for (auto i = 0; i < rho_.size(); ++i) {
-            out << i << "\t" << rho_[i] << std::endl;
-            std::cout << alpha_[i] << std::endl;
+            out << i << "\t" << std::fixed << rho_[i] << std::endl;
+            std::cout << std::fixed << alpha_[i] << std::endl;
         }
 
         out.close();
