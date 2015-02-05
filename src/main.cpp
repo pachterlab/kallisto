@@ -287,7 +287,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 			if (!S_ISDIR(stFileInfo.st_mode)) {
 				cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
 				ret = false;
-			} else {
+			} else if (emonly) {
 				// check for directory/counts.txt
 				struct stat stCountInfo;
 				auto intcountstat = stat((opt.output + "/counts.txt" ).c_str(), &stCountInfo);
@@ -296,6 +296,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 					ret = false;
 				}
 
+				// check for directory/index.saved
 				struct stat stIndexInfo;
 				auto intindexstat = stat((opt.output + "/index.saved").c_str(), &stIndexInfo);
 				if (intindexstat != 0) {
