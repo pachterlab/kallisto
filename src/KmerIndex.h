@@ -198,7 +198,7 @@ struct KmerIndex
 		gzclose(fp);
 	}
 
-    void write(const std::string& index_out)
+	void write(const std::string& index_out, bool writeKmerTable = true)
     {
         std::ofstream out;
         out.open(index_out, std::ios::out | std::ios::binary);
@@ -225,15 +225,22 @@ struct KmerIndex
 
         size_t kmap_size = kmap.size();
 
-				// 5. write number of k-mers in map
-        out.write((char*)&kmap_size, sizeof(kmap_size));
+				if (writeKmerTable) {
+					// 5. write number of k-mers in map
+					out.write((char*)&kmap_size, sizeof(kmap_size));
 
-				// 6. write kmer->ec values
-        for (auto& kv : kmap) {
+					// 6. write kmer->ec values
+					for (auto& kv : kmap) {
             out.write((char*)&kv.first, sizeof(kv.first));
             out.write((char*)&kv.second, sizeof(kv.second));
-        }
+					}
+				} else {
+					// 5. write fake k-mer size
+					kmap_size = 0;
+					out.write((char*)&kmap_size, sizeof(kmap_size));
 
+					// 6. write none of the kmer->ec values
+				}
 				// 7. write number of equivalence classes
         size_t tmp_size;
         tmp_size = ecmap.size();
@@ -257,7 +264,7 @@ struct KmerIndex
     }
 
 	// note opt is not const
-	void load(ProgramOptions &opt) {
+	void load(ProgramOptions &opt, bool loadKmerTable = true) {
 
 		std::string& index_in = opt.index;
 		std::ifstream in;
@@ -317,7 +324,9 @@ struct KmerIndex
 		std::cerr << "[index] kmap size: " << kmap_size << std::endl;
 		
 		kmap.clear();
-		kmap.reserve(kmap_size);
+		if (loadKmerTable) {
+			kmap.reserve(kmap_size);
+		}
 
 		// 6. read kmer->ec values
 		Kmer tmp_kmer;
@@ -327,9 +336,9 @@ struct KmerIndex
 			in.read((char*)&tmp_kmer, sizeof(tmp_kmer));
 			in.read((char*)&tmp_val, sizeof(tmp_val));
 			
-			// if (i < 15)
-			//     std::cout << "\t\tval:\t" << tmp_kmer << "\t" << tmp_val << std::endl;
-			kmap.insert({tmp_kmer, tmp_val});
+			if (loadKmerTable) {
+				kmap.insert({tmp_kmer, tmp_val});
+			}
 		}
 
 		// 7. read number of equivalence classes
@@ -369,7 +378,7 @@ struct KmerIndex
 	const size_t INDEX_VERSION = 3; // increase this every time you change the fileformat
 
 	// TODO: include lengths of transctipts
-    std::vector<int> trans_lens_;
+	std::vector<int> trans_lens_;
 };
 
 #endif // KALLISTO_KMERINDEX_H

@@ -3,6 +3,8 @@
 
 #include "common.h"
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
 
 template <typename Index>
@@ -45,6 +47,39 @@ MinCollector(Index &ind, const ProgramOptions& opt) : index(ind), counts(index.e
 	void write(std::ostream& o) {
 		for (int id = 0; id < counts.size(); id++) {
 			o << id << "\t" << counts[id] << "\n";
+		}
+	}
+
+	void loadCounts(ProgramOptions& opt) {
+		int num_ecs = counts.size();
+		counts.clear();
+		std::ifstream in((opt.output + "/counts.txt"));
+		int i = 0;
+		if (in.is_open()) {
+			std::string line;
+			while (getline(in, line)) {
+				std::stringstream ss(line);
+				int j,c;
+				ss >> j;
+				ss >> c;
+				if (j != i) {
+					std::cerr << "Error: equivalence class does not match index. Found "
+										<< j << ", expected " << i << std::endl;
+					exit(1);
+				}
+				counts.push_back(c);
+				i++;
+			}
+			
+			if (i != num_ecs) {
+				std::cerr << "Error: number of equivalence classes does not match index. Found "
+									<< i << ", expected " << num_ecs << std::endl;
+				exit(1);
+			}
+		} else {
+			std::cerr << "Error: Could not open file " << opt.output << "/counts.txt" << std::endl;
+			exit(1);
+			
 		}
 	}
 
