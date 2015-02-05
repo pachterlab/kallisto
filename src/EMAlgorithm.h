@@ -9,7 +9,7 @@
 #include <vector>
 
 
-const double TOLERANCE = 1e-5;;
+const double TOLERANCE = 1e-5;
 
 template <typename Index>
 struct EMAlgorithm {
@@ -83,35 +83,23 @@ struct EMAlgorithm {
 	}
 
     void compute_rho() {
-
         if (rho_set_) {
             // rho has already been set, let's clear it
             std::fill(rho_.begin(), rho_.end(), 0.0);
         }
 
-        for (auto& ec_kv : idx_.ecmap ) {
-            double denom {0.0};
-
-            // first, compute the denominator: a normalizer
-            // iterate over transcripts in EC map
-            auto w_search = weight_map_.find(ec_kv.first);
-
-            // everything in ecmap should be in weight_map
-            assert( w_search != weight_map_.end() );
-            assert( w_search->second.size() == ec_kv.second.size() );
-
-            for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
-            }
-
-            if (denom < TOLERANCE) {
+        double total {0.0};
+        for (auto i = 0; i < alpha_.size(); ++i) {
+            // TODO: consider what the right tolerance is
+            if (eff_lens_[i] < TOLERANCE) {
                 continue;
             }
+            rho_[i] = alpha_[i] / eff_lens_[i];
+            total += rho_[i];
+        }
 
-            for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-                rho_[ec_kv.second[t_it]] += alpha_[ec_kv.second[t_it]] *
-                    w_search->second[t_it] / denom;
-            }
+        for (auto& r : rho_) {
+            r /= total;
         }
 
         rho_set_ = true;
