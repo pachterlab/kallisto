@@ -44,7 +44,7 @@ struct SortedVectorHasher {
 
 struct KmerIndex
 {
-    KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0) {
+	KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip) {
 		//LoadTranscripts(opt.transfasta);
 	}
 
@@ -56,12 +56,17 @@ struct KmerIndex
 	// post: v contains all equiv classes for the k-mers in s
 	void match(const char *s, int l, std::vector<int> & v) const {
 		KmerIterator kit(s), kit_end;
-		for (;kit != kit_end; ++kit) {
-			Kmer rep = kit->first.rep();
-			auto search = kmap.find(rep);
-			if (search != kmap.end()) {
-				// if k-mer founc
-				v.push_back(search->second); // add equivalence class
+		for (int i = 0;kit != kit_end; ++kit,++i) {
+			if (i==skip) {
+				i=0;
+			}
+			if (i==0) {
+				Kmer rep = kit->first.rep();
+				auto search = kmap.find(rep);
+				if (search != kmap.end()) {
+					// if k-mer found
+					v.push_back(search->second); // add equivalence class
+				}
 			}
 		}
 	}
@@ -376,8 +381,10 @@ struct KmerIndex
 
 	int k; // k-mer size used
 	int num_trans; // number of transcripts
+	int skip;
 	//std::unordered_map<Kmer, int, KmerHash> kmap;
 	KmerHashTable<int, KmerHash> kmap;
+	
 	EcMap ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
 	const size_t INDEX_VERSION = 3; // increase this every time you change the fileformat
