@@ -89,7 +89,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions &opt) {
 		// short args
     {"threads", required_argument, 0, 't'},
 		{"index", required_argument, 0, 'i'},
-    {"seed", required_argument, 0, 's'},
+    {"skip", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
 		{"iterations", required_argument, 0, 'n'},
     {0,0,0,0}
@@ -118,7 +118,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions &opt) {
 		}
 		case 's':
 		{
-			stringstream(optarg) >> opt.seed;
+			stringstream(optarg) >> opt.skip;
       break;
 		}
 		case 'o':
@@ -268,6 +268,10 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 			ret = false;
 		}
 
+		if (opt.skip <= 0) {
+			cerr << "Error: skip has to be a positive integer" << endl;
+			ret = false;
+		}
 	}
 
 
