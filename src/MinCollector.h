@@ -7,6 +7,8 @@
 #include <sstream>
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
+
 
 template <typename Index>
 struct MinCollector {
