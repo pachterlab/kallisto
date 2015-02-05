@@ -346,8 +346,10 @@ int main(int argc, char *argv[])
 				// compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens);
-				em.run(weights);
+				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+				em.run();
+				em.compute_rho();
+				em.write("em.txt");
 			}
 		}
 	}
