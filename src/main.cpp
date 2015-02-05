@@ -145,6 +145,62 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions &opt) {
   }
 }
 
+void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions &opt) {
+  int verbose_flag = 0;
+
+  const char* opt_string = "t:s:o:n:";
+  static struct option long_options[] =
+  {
+		// long args
+    {"verbose", no_argument, &verbose_flag, 1},
+		// short args
+    {"threads", required_argument, 0, 't'},
+    {"seed", required_argument, 0, 's'},
+    {"output-dir", required_argument, 0, 'o'},
+		{"iterations", required_argument, 0, 'n'},
+    {0,0,0,0}
+  };
+	int c;
+  int option_index = 0;
+	while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+		case 't':
+		{
+			stringstream(optarg) >> opt.threads;
+      break;
+		}
+		case 's':
+		{
+			stringstream(optarg) >> opt.seed;
+      break;
+		}
+		case 'o':
+		{
+      opt.output = optarg;
+      break;
+		}
+		case 'n':
+		{
+			stringstream(optarg) >> opt.iterations;
+			break;
+		}
+    default: break;
+    }
+  }
+
+  if (verbose_flag) {
+    opt.verbose = true;
+  }
+}
+
 
 bool CheckOptionsIndex(ProgramOptions& opt) {
 
@@ -171,43 +227,49 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 	return ret;
 }
 
-bool CheckOptionsEM(ProgramOptions& opt) {
+bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
 	bool ret = true;
 
  
 	// check for index
-	if (opt.index.empty()) {
-		cerr << "Error: index file missing" << endl;
-		ret = false;
-	} else {
-		struct stat stFileInfo;
-		auto intStat = stat(opt.index.c_str(), &stFileInfo);
-		if (intStat != 0) {
-			cerr << "Error: index file not found " << opt.index << endl;
+	if (!emonly) {
+		if (opt.index.empty()) {
+			cerr << "Error: index file missing" << endl;
 			ret = false;
-		}
-	}
-
-	// check for read files
-	if (opt.files.size() == 0) {
-		cerr << "Error: Missing read files" << endl;
-		ret = false;
-	} else {
-		struct stat stFileInfo;
-		for (auto &fn : opt.files) {
-			auto intStat = stat(fn.c_str(), &stFileInfo);
+		} else {
+			struct stat stFileInfo;
+			auto intStat = stat(opt.index.c_str(), &stFileInfo);
 			if (intStat != 0) {
-				cerr << "Error: file not found " << fn << endl;
+				cerr << "Error: index file not found " << opt.index << endl;
 				ret = false;
 			}
 		}
 	}
 
-	if (!(opt.files.size() == 1 || opt.files.size() == 2)) {
-		cerr << "Error: Input files should be 1 or 2 files only" << endl;
-		ret = false;
+	// check for read files
+	if (!emonly) {
+		if (opt.files.size() == 0) {
+			cerr << "Error: Missing read files" << endl;
+			ret = false;
+		} else {
+			struct stat stFileInfo;
+			for (auto &fn : opt.files) {
+				auto intStat = stat(fn.c_str(), &stFileInfo);
+				if (intStat != 0) {
+					cerr << "Error: file not found " << fn << endl;
+					ret = false;
+				}
+			}
+		}
+
+		if (!(opt.files.size() == 1 || opt.files.size() == 2)) {
+			cerr << "Error: Input files should be 1 or 2 files only" << endl;
+			ret = false;
+		}
+
 	}
+
 
 	if (opt.iterations <= 0) {
 		cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
@@ -225,12 +287,34 @@ bool CheckOptionsEM(ProgramOptions& opt) {
 			if (!S_ISDIR(stFileInfo.st_mode)) {
 				cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
 				ret = false;
+			} else if (emonly) {
+				// check for directory/counts.txt
+				struct stat stCountInfo;
+				auto intcountstat = stat((opt.output + "/counts.txt" ).c_str(), &stCountInfo);
+				if (intcountstat != 0) {
+					cerr << "Error: could not find file " << opt.output << "/counts.txt" << endl;
+					ret = false;
+				}
+
+				// check for directory/index.saved
+				struct stat stIndexInfo;
+				auto intindexstat = stat((opt.output + "/index.saved").c_str(), &stIndexInfo);
+				if (intindexstat != 0) {
+					cerr << "Error: could not find index " << opt.output << "/index.saved" << endl;
+					ret = false;
+				}
+				opt.index = (opt.output + "/index.saved");
 			}
 		} else {
-			// create directory
-			if (mkdir(opt.output.c_str(), 0777) == -1) {
-				cerr << "Error: could not create directory " << opt.output << endl;
+			if (emonly) {
+				cerr << "Error: output directory needs to exist, run em first" << endl;
 				ret = false;
+			} else {
+				// create directory
+				if (mkdir(opt.output.c_str(), 0777) == -1) {
+					cerr << "Error: could not create directory " << opt.output << endl;
+					ret = false;
+				}
 			}
 		}
 	}
@@ -269,6 +353,7 @@ void usage()
 			 << "Where <CMD> can be one of:" << endl << endl
 			 << "    index         Builds the index "<< endl 
 			 << "    em            Runs the EM algorithm " << endl
+			 << "    em-only       Runs the EM algorithm without mapping" << endl
 			 << "    cite          Prints citation information " << endl
 			 << "    version       Prints version information"<< endl << endl;
 }
@@ -292,6 +377,18 @@ void usageEM()
 			 << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
 			 << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
 			 << "-i, --index=INT             Filename for index " << endl
+			 << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
+			 << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
+			 << "-o, --output-dir=INT        Directory to store output to" << endl
+			 << "    --verbose               Print lots of messages during run" << endl;
+}
+
+void usageEMOnly()
+{
+	cout << "Kallisto " << endl
+			 << "Does transcriptome stuff" << endl << endl
+			 << "Usage: Kallisto em-only [options]" << endl << endl
+			 << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
 			 << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
 			 << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
 			 << "-o, --output-dir=INT        Directory to store output to" << endl
@@ -343,6 +440,8 @@ int main(int argc, char *argv[])
 				KmerIndex index(opt);
 				index.load(opt);
 				auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
+				// save modified index for future use
+				index.write((opt.output+"/index.saved"), false);
 				// compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
@@ -351,7 +450,33 @@ int main(int argc, char *argv[])
 				em.compute_rho();
 				em.write("em.txt");
 			}
+		} else if (cmd == "em-only") {
+			if (argc==2) {
+				usageEMOnly();
+				return 0;
+			}
+			ParseOptionsEMOnly(argc-1,argv+1,opt);
+			if (!CheckOptionsEM(opt, true)) {
+				usageEMOnly();
+				exit(1);
+			} else {
+				// run the em algorithm
+				KmerIndex index(opt);
+				index.load(opt, false); // skip the k-mer map
+				MinCollector<KmerIndex> collection(index, opt);
+				collection.loadCounts(opt);
+				// compute mean frag length somewhere?
+        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+				EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens);
+				em.run(weights);
+			}
+		} else {
+			cerr << "Did not understand command " << cmd << endl;
+			usage();
+			exit(1);
 		}
+		
 	}
 	return 0;
 }
