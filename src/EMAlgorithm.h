@@ -40,7 +40,7 @@ struct EMAlgorithm {
 
         double denom;
 
-        std::cout << "Fishing for the right mixture... [. = 100 iterations]" <<
+        std::cout << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
             std::endl;
 
 	    for (auto i = 0; i < n_iter; ++i) {
@@ -131,6 +131,7 @@ struct EMAlgorithm {
 
         out <<
             "target_id" << "\t" <<
+            "kallisto_id" << "\t" <<
             "rho" << "\t" <<
             "tpm" << "\t" <<
             "expected_counts" <<
@@ -140,6 +141,7 @@ struct EMAlgorithm {
 
         for (auto i = 0; i < rho_.size(); ++i) {
             out <<
+                idx_.target_names_[i] << "\t" <<
                 i << "\t" <<
                 rho_[i] << "\t" <<
                 rho_[i] * MILLION << "\t" <<
