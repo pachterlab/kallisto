@@ -123,6 +123,9 @@ struct KmerIndex
 		// for each transcript in fasta file
 		while ((l = kseq_read(seq)) > 0) {
 			bool added = false;
+
+			target_names_.push_back(seq->name.s);
+
 			// if it is long enough
 			if (seq->seq.l >= k) {
 				KmerIterator kit(seq->seq.s), kit_end;
@@ -266,6 +269,19 @@ struct KmerIndex
             }
         }
 
+        // 9. Write out target ids
+        // XXX: num_trans should equal to target_names_.size(), so don't need
+        // to write out again.
+        assert(num_trans == target_names_.size());
+        for (auto& tid : target_names_) {
+            // 9.1 write out how many bytes
+            tmp_size = tid.size();
+            out.write((char*)&tmp_size, sizeof(tmp_size));
+
+            // 9.2 write out the actual string
+            out.write(tid.c_str(), tid.size());
+        }
+
         out.flush();
         out.close();
     }
@@ -364,7 +380,6 @@ struct KmerIndex
 			in.read((char*)&vec_size, sizeof(vec_size));
 			
 			// 8.2 read each member
-			// std::vector<int> tmp_vec(vec_size);
 			std::vector<int> tmp_vec;
 			tmp_vec.reserve(vec_size);
 			for (size_t j = 0; j < vec_size; ++j )
@@ -375,7 +390,27 @@ struct KmerIndex
 			ecmap.insert({tmp_id, tmp_vec});
 			ecmapinv.insert({tmp_vec, tmp_id});
 		}
-		
+
+        // 9. read in target ids
+		target_names_.clear();
+		target_names_.reserve(num_trans);
+
+        size_t tmp_size;
+        char buffer[1024];
+        for (auto i = 0; i < num_trans; ++i) {
+            // 9.1 read in the size
+            in.read((char*)&tmp_size, sizeof(tmp_size));
+
+            // 9.2 read in the character string
+            in.read(buffer, tmp_size);
+
+            std::string tmp_targ_id( buffer );
+            target_names_.push_back(std::string( buffer ));
+
+            // clear the buffer for next string
+            memset(buffer,0,strlen(buffer));
+        }
+
 		in.close();
 	}
 
@@ -387,10 +422,11 @@ struct KmerIndex
 	
 	EcMap ecmap;
 	std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-	const size_t INDEX_VERSION = 3; // increase this every time you change the fileformat
+	const size_t INDEX_VERSION = 4; // increase this every time you change the fileformat
 
-	// TODO: include lengths of transctipts
 	std::vector<int> trans_lens_;
+
+    std::vector<std::string> target_names_;
 };
 
 #endif // KALLISTO_KMERINDEX_H
