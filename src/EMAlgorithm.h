@@ -134,7 +134,7 @@ struct EMAlgorithm {
             "kallisto_id" << "\t" <<
             "rho" << "\t" <<
             "tpm" << "\t" <<
-            "expected_counts" <<
+            "est_counts" <<
             std::endl;
 
         const double MILLION = 1e6;
