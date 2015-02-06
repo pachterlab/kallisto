@@ -452,7 +452,7 @@ int main(int argc, char *argv[])
                 EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
                 em.run();
                 em.compute_rho();
-                em.write(opt.output + "/em.txt");
+                em.write(opt.output);
             }
         } else if (cmd == "em-only") {
             if (argc==2) {
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
                 EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
                 em.run();
                 em.compute_rho();
-                em.write(opt.output + "/em.txt");
+                em.write(opt.output);
             }
         } else {
             cerr << "Did not understand command " << cmd << endl;
