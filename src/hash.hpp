@@ -13,9 +13,9 @@
                        +(uint32_t)(((const uint8_t *)(d))[0]) )
 #endif
 
-uint32_t SuperFastHash (const char * data, int len);
+uint32_t SuperFastHash (const char *data, int len);
 
 //void MurmurHash3_x64_32 ( const void * key, int len, uint32_t seed, void * out );
-void MurmurHash3_x64_64 ( const void * key, int len, uint32_t seed, void * out );
+void MurmurHash3_x64_64 ( const void *key, int len, uint32_t seed, void *out );
 
 #endif
