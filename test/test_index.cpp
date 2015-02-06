@@ -12,7 +12,7 @@
 TEST_CASE("Build index", "[build_index]")
 {
 
-    ProgramOptions global_opts;
+	ProgramOptions global_opts, local_opts;
     std::string short_trans {"../test/input/10_trans_gt_500_bp.fasta"};
 
     global_opts.k = 21;
@@ -24,11 +24,17 @@ TEST_CASE("Build index", "[build_index]")
     kidx.BuildTranscripts(short_trans);
     kidx.write("tmp.idx");
 
-    KmerIndex jidx(global_opts);
-    jidx.load("tmp.idx");
+		
+		
+		local_opts.index = "tmp.idx";
+		local_opts.k = 0;
+    KmerIndex jidx(local_opts);
+    jidx.load(local_opts);
 
+		
     remove("tmp.idx");
 
+		REQUIRE( kidx.k == local_opts.k );
     REQUIRE( kidx.k == jidx.k );
     REQUIRE( kidx.num_trans == jidx.num_trans );
     REQUIRE( kidx.kmap.size() == jidx.kmap.size() );
