@@ -2,7 +2,7 @@
 #define BFG_KMER_HPP
 
 #ifndef MAX_KMER_SIZE
- #define MAX_KMER_SIZE 32
+#define MAX_KMER_SIZE 32
 #endif
 
 #include <stdio.h>
@@ -16,8 +16,8 @@
 
 
 
-/* Short description: 
- *  - Store kmer strings by using 2 bits per base instead of 8 
+/* Short description:
+ *  - Store kmer strings by using 2 bits per base instead of 8
  *  - Easily return reverse complements of kmers, e.g. TTGG -> CCAA
  *  - Easily compare kmers
  *  - Provide hash of kmers
@@ -30,10 +30,10 @@ class Kmer {
   Kmer(const Kmer& o);
   explicit Kmer(const char *s);
 
-  
+
 
   Kmer& operator=(const Kmer& o);
-  
+
   void set_deleted();
 
   bool operator<(const Kmer& o) const;
@@ -48,7 +48,7 @@ class Kmer {
 
   uint64_t hash() const;
 
-  
+
 
   Kmer twin() const;
   Kmer rep() const;
@@ -58,10 +58,10 @@ class Kmer {
   Kmer forwardBase(const char b) const;
 
   Kmer backwardBase(const char b) const;
-  
+
   std::string getBinary() const;
-  
-  void toString(char * s) const;
+
+  void toString(char *s) const;
   std::string toString() const;
 
   // static functions
@@ -87,14 +87,14 @@ class Kmer {
 
   // private functions
 //void shiftForward(int shift);
-  
+
 //void shiftBackward(int shift);
 
 };
 
 
 struct KmerHash {
-  size_t operator()(const Kmer &km) const {
+  size_t operator()(const Kmer& km) const {
     return km.hash();
   }
 };
