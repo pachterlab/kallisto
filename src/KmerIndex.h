@@ -275,6 +275,8 @@ struct KmerIndex
         assert(num_trans == target_names_.size());
         for (auto& tid : target_names_) {
             // 9.1 write out how many bytes
+            // XXX: Note: this doesn't actually encore the max targ id size.
+            // might cause problems in the future
             tmp_size = tid.size();
             out.write((char*)&tmp_size, sizeof(tmp_size));
 
@@ -396,7 +398,7 @@ struct KmerIndex
 		target_names_.reserve(num_trans);
 
         size_t tmp_size;
-        char buffer[1024];
+        char buffer[1024]; // if your target_name is longer than this, screw you.
         for (auto i = 0; i < num_trans; ++i) {
             // 9.1 read in the size
             in.read((char*)&tmp_size, sizeof(tmp_size));
