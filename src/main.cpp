@@ -369,8 +369,8 @@ void usageIndex()
 			 << "Does transcriptome stuff" << endl << endl
 			 << "Usage: Kallisto index [options]" << endl << endl
 			 << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
-			 << "-i, --index=INT             Filename for index to be constructed " << endl
-			 << "-f, --trans-fasta=INT       FASTA file containing reference transcriptome " << endl
+			 << "-i, --index=STRING             Filename for index to be constructed " << endl
+			 << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
 			 << "    --verbose               Print lots of messages during run" << endl;
 }
 
@@ -383,7 +383,7 @@ void usageEM()
 			 << "-i, --index=INT             Filename for index " << endl
 			 << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
 			 << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
-			 << "-o, --output-dir=INT        Directory to store output to" << endl
+			 << "-o, --output-dir=STRING        Directory to store output to" << endl
 			 << "    --verbose               Print lots of messages during run" << endl;
 }
 
@@ -395,7 +395,7 @@ void usageEMOnly()
 			 << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
 			 << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
 			 << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
-			 << "-o, --output-dir=INT        Directory to store output to" << endl
+			 << "-o, --output-dir=STRING        Directory to store output to" << endl
 			 << "    --verbose               Print lots of messages during run" << endl;
 }
 
