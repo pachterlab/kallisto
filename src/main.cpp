@@ -22,6 +22,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "MinCollector.h"
 #include "EMAlgorithm.h"
 #include "weights.h"
+#include "Inspect.h"
 
 
 using namespace std;
@@ -72,6 +73,43 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     opt.verbose = true;
   }
 }
+
+void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
+
+  const char *opt_string = "i:";
+  static struct option long_options[] = {
+    // long args
+    {"verbose", no_argument, &verbose_flag, 1},
+    // short args
+    {"index", required_argument, 0, 'i'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+
+  if (verbose_flag) {
+    opt.verbose = true;
+  }
+}
+
 
 
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
@@ -324,6 +362,27 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 
+bool CheckOptionsInspect(ProgramOptions& opt) {
+
+  bool ret = true;
+  // check for index
+  if (opt.index.empty()) {
+    cerr << "Error: index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << "Error: index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  return ret;
+}
+
+
+
 void PrintCite() {
   cout << "The paper describing this software has not been published." << endl;
   //  cerr << "When using this program in your research, please cite" << endl << endl;
@@ -339,6 +398,7 @@ void usage() {
        << "Usage: Kallisto CMD [options] .." << endl << endl
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
+       << "    inspect       Inspects a built index "<< endl
        << "    em            Runs the EM algorithm " << endl
        << "    em-only       Runs the EM algorithm without mapping" << endl
        << "    cite          Prints citation information " << endl
@@ -353,6 +413,14 @@ void usageIndex() {
        << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
        << "-i, --index=STRING             Filename for index to be constructed " << endl
        << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
+       << "    --verbose               Print lots of messages during run" << endl;
+}
+
+void usageInspect() {
+  cout << "Kallisto " << endl
+       << "Does transcriptome stuff" << endl << endl
+       << "Usage: Kallisto inspect [options]" << endl << endl
+       << "-i, --index=STRING             Filename for index to inspect " << endl
        << "    --verbose               Print lots of messages during run" << endl;
 }
 
@@ -409,6 +477,21 @@ int main(int argc, char *argv[]) {
         index.BuildTranscripts(opt.transfasta);
         index.write(opt.index);
       }
+    } else if (cmd == "inspect") {
+      if (argc==2) {
+        usageInspect();
+        return 0;
+      }
+      ParseOptionsInspect(argc-1, argv+1, opt);
+      if (!CheckOptionsInspect(opt)) {
+        usageInspect();
+        exit(1);
+      } else {
+        KmerIndex index(opt);
+        index.load(opt);
+        InspectIndex(index);
+      }
+
     } else if (cmd == "em") {
       if (argc==2) {
         usageEM();
