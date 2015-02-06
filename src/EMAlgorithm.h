@@ -22,8 +22,8 @@ struct EMAlgorithm {
 	        const std::vector<double>& eff_lens,
 	        const WeightMap& wm) :
 	    idx_(idx),
-	    counts_(counts),
 	    num_trans_(idx.num_trans),
+	    counts_(counts),
 	    eff_lens_(eff_lens),
 	    weight_map_(wm),
 	    alpha_(idx.num_trans, 1.0/idx.num_trans), // uniform distribution over transcripts
@@ -39,12 +39,21 @@ struct EMAlgorithm {
         assert(weight_map_.size() == counts_.size());
 
         double denom;
+
+        std::cout << "Fishing for the right mixture... [. = 100 iterations]" <<
+            std::endl;
+
 	    for (auto i = 0; i < n_iter; ++i) {
+            if (i % 50 == 0) {
+                std::cout << ".";
+                if (i % 500 == 0 && i > 0) {
+                    std::cout << std::endl;
+                }
+            }
 
-            std::cout << "it: " << i << std::endl;
             for (auto& ec_kv : idx_.ecmap ) {
-
                 denom = 0.0;
+
                 // first, compute the denominator: a normalizer
                 // iterate over transcripts in EC map
                 auto w_search = weight_map_.find(ec_kv.first);
@@ -56,8 +65,6 @@ struct EMAlgorithm {
                 for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
                     denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
                 }
-
-                /* std::cout << std::endl; */
 
                 if (denom < TOLERANCE) {
                     continue;
@@ -80,6 +87,9 @@ struct EMAlgorithm {
             // clear all next_alpha values 0 for next iteration
             std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
 	    }
+
+        std::cout << std::endl;
+        std::cout.flush();
 	}
 
     void compute_rho() {
@@ -105,19 +115,39 @@ struct EMAlgorithm {
         rho_set_ = true;
     }
 
-    void write(const std::string& rho_out) const {
+    void write(const std::string& dir_out) const {
+        const std::string out_fname = "/expression.txt";
+
         std::ofstream out;
-        out.open(rho_out, std::ios::out);
+        out.open(dir_out + out_fname, std::ios::out);
 
-        out.precision(15);
-        std::cout.precision(15);
-
-        std::cout << "alphas" << std::endl;
-        for (auto i = 0; i < rho_.size(); ++i) {
-            out << i << "\t" << std::fixed << rho_[i] << std::endl;
-            std::cout << std::fixed << alpha_[i] << std::endl;
+        if (!out.is_open()) {
+            std::cerr << "Error opening '" << dir_out + out_fname << "'" <<
+                std::endl;
+            exit(1);
         }
 
+        out.precision(15);
+
+        out <<
+            "target_id" << "\t" <<
+            "rho" << "\t" <<
+            "tpm" << "\t" <<
+            "expected_counts" <<
+            std::endl;
+
+        const double MILLION = 1e6;
+
+        for (auto i = 0; i < rho_.size(); ++i) {
+            out <<
+                i << "\t" <<
+                rho_[i] << "\t" <<
+                rho_[i] * MILLION << "\t" <<
+                alpha_[i] <<
+                std::endl;
+        }
+
+        out.flush();
         out.close();
     }
 
