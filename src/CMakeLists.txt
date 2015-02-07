@@ -16,3 +16,5 @@ if ( ZLIB_FOUND )
 endif( ZLIB_FOUND )
 
 target_link_libraries(kallisto kallisto_core)
+
+install(TARGETS kallisto DESTINATION bin)
