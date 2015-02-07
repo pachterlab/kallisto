@@ -27,12 +27,23 @@ jsd <- function(p, q, thresh=10^-16) {
     return((kld(p,m) + kld(q,m))/2)
 }
 
+# TODO: fix sailfish TPM
 read_sailfish <- function(fname) {
     sf <- fread(fname, header = FALSE, skip = 5, stringsAsFactors = FALSE,
         data.table = FALSE)
     colnames(sf) <- c("target_id", "length", "tpm", "rpkm", "kpkm", "est_counts")
     sf %>%
         rename(tpm_sailfish = tpm) %>%
+        arrange(target_id)
+}
+
+# TODO: fix salmon TPM
+read_salmon <- function(fname) {
+    salmon <- fread(fname, header = FALSE, skip = 13, stringsAsFactors = FALSE,
+        data.table = FALSE)
+    colnames(salmon) <- c("target_id", "length", "tpm", "fpkm", "est_counts")
+    salmon %>%
+        rename(tpm_salmon = tpm) %>%
         arrange(target_id)
 }
 
@@ -52,14 +63,6 @@ read_kallisto_py <- function(fname) {
         arrange(target_id)
 }
 
-read_salmon <- function(fname) {
-    salmon <- fread(fname, header = FALSE, skip = 13, stringsAsFactors = FALSE,
-        data.table = FALSE)
-    colnames(salmon) <- c("target_id", "length", "tpm", "fpkm", "est_counts")
-    salmon %>%
-        rename(tpm_salmon = tpm) %>%
-        arrange(target_id)
-}
 
 read_xprs <- function(fname) {
     xprs <- fread(fname, header = TRUE, stringsAsFactors = FALSE,
@@ -117,13 +120,12 @@ m_all_ests <- melt(all_ests, id.vars = "target_id", variable.name = "method",
 m_all_ests <- m_all_ests %>%
     inner_join(select(oracle, target_id, tpm_oracle), by = "target_id")
 
-trans <- function(x) { x ^ (1/10) }
-
-ggplot(m_all_ests, aes(tpm_oracle ^ 1/10, est_tpm ^ 1/10)) +
-    geom_point(alpha = 0.2) +
-    coord_trans(x = "sqrt", y = "sqrt") +
-    facet_wrap(~ method)
-ggsave("img/scatter.pdf")
+ggplot(m_all_ests, aes(tpm_oracle ^ (1/10), est_tpm ^ (1/10))) +
+    geom_point(alpha = 0.07) +
+    facet_wrap(~ method) +
+    xlim(0, 10) +
+    ylim(0, 10)
+ggsave("img/scatter_zoom.png")
 
 summaries <- m_all_ests %>%
     group_by(method) %>%
@@ -132,6 +134,4 @@ summaries <- m_all_ests %>%
         jsd = jsd(est_tpm / 1e6, tpm_oracle / 1e6)) %>%
     arrange(desc(spearman))
 
-print(xtable(as.data.frame(summaries)), type = "html")
-
-
+print(xtable(as.data.frame(summaries), digits = 10), type = "html")
