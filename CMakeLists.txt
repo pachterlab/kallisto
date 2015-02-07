@@ -4,11 +4,6 @@ project(kallisto)
 
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 
-# Includes Catch in the project:
-add_subdirectory(${EXT_PROJECTS_DIR}/catch)
-include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})
-enable_testing(true)  # Enables unit-testing.
-
 # add_compile_options(-Wall)
 add_compile_options(-std=c++11)
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -22,6 +17,15 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
 add_subdirectory(src)
 
-add_subdirectory(test)
+if (BUILD_TESTING)
+    add_subdirectory(${EXT_PROJECTS_DIR}/catch)
+
+    # Includes Catch in the project:
+    include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})
+    enable_testing(true)  # Enables unit-testing.
+
+    add_subdirectory(test)
+endif(BUILD_TESTING)
+
 # enable_testing()
 # add_test(MainTest test/tests)
