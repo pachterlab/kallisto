@@ -28,7 +28,10 @@ Installation
     cd build
     ```
 
-1. Execute cmake
+1. Execute cmake. There are a few options:
+    - `-DBUILD_TESTING=ON` builds tests (off by default)
+    - `-DCMAKE_INSTALL_PREFIX:PATH=$HOME` which will put kallisto in
+       `$HOME/bin` as opposed to the default (`/usr/local/bin`)
 
     ```
     cmake ..
@@ -40,6 +43,12 @@ Installation
 
     ```
     make
+    ```
+
+    Optionally install into the cmake install prefix path:
+
+    ```
+    make install
     ```
 1. Run the code. The source tree hierarchy is copied, so you can find kallisto
    at `src/kallisto` and tests at `test/tests`.
