@@ -123,8 +123,8 @@ m_all_ests <- m_all_ests %>%
 ggplot(m_all_ests, aes(tpm_oracle ^ (1/10), est_tpm ^ (1/10))) +
     geom_point(alpha = 0.07) +
     facet_wrap(~ method) +
-    xlim(0, 10) +
-    ylim(0, 10)
+    xlim(0, 3) +
+    ylim(0, 3)
 ggsave("img/scatter_zoom.png")
 
 summaries <- m_all_ests %>%

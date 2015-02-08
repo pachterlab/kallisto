@@ -11,6 +11,7 @@ KSEQ_INIT(gzFile, gzread)
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <unordered_map>
 
@@ -45,6 +46,10 @@ struct SortedVectorHasher {
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip) {
     //LoadTranscripts(opt.transfasta);
+  }
+
+  KmerIndex() : num_trans(0) {
+      // minimal constructor for loading python
   }
 
   ~KmerIndex() {}
@@ -426,5 +431,89 @@ struct KmerIndex {
 
   std::vector<std::string> target_names_;
 };
+
+
+// counts gets overwritten with the counts per ecid
+KmerIndex read_kal_py_index(const std::string& fname,
+        const std::string& fasta, std::vector<int>& counts) {
+
+    KmerIndex kidx;
+
+    // first read all the transcript names and lengths
+    std::cout << "reading fasta" << std::endl;
+    gzFile fp = gzopen(fasta.c_str(),"r");
+    kseq_t *seq = kseq_init(fp);
+    int l;
+    while ((l = kseq_read(seq)) > 0) {
+        if (kidx.num_trans % 5000 == 0) {
+            std::cout << "trans num:\t" << kidx.num_trans << std::endl;
+        }
+      kidx.target_names_.push_back(seq->name.s);
+      ++kidx.num_trans;
+      kidx.trans_lens_.push_back(seq->seq.l);
+    }
+    kseq_destroy(seq);
+    gzclose(fp);
+
+    // next, read the python index
+
+    std::cout << "reading python index" << std::endl;
+    std::ifstream in;
+    in.open(fname, std::ios::in);
+    int max_ecid = -1;
+
+    std::unordered_map<int, int> counts_map;
+
+    std::string line;
+    while (std::getline(in, line)) {
+        int ecid;
+        std::istringstream iss(line);
+
+        iss >> ecid;
+
+        std::vector<int> ids;
+        bool first = true;
+        int min_count = 2147483648;
+
+        int tid;
+        int cur_count;
+
+        while (iss >> tid) {
+            ids.push_back(tid);
+
+            iss >> cur_count;
+            if (cur_count < min_count) {
+                min_count = cur_count;
+            }
+            first = false;
+        }
+
+        if (ids.size() == 0) {
+            // empty equivalence class
+            continue;
+        }
+
+        if (ecid > max_ecid) {
+            max_ecid = ecid;
+        }
+
+        kidx.ecmap.insert({ecid, ids});
+
+        // don't actually use inverse in py-em run
+        // kidx.ecmapinv.insert({ids, ecid});
+        counts_map.insert({ecid, min_count});
+    }
+
+    counts.clear();
+    for (auto i = 0; i < max_ecid + 1; ++i) {
+        counts.push_back(0);
+    }
+
+    for (auto c : counts_map) {
+        counts[c.first] = c.second;
+    }
+
+    return kidx;
+}
 
 #endif // KALLISTO_KMERINDEX_H
