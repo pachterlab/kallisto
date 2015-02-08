@@ -67,7 +67,7 @@ struct EMAlgorithm {
           denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
         }
 
-        if (denom < TOLERANCE) {
+        if (denom <= TOLERANCE) {
           continue;
         }
 
@@ -102,7 +102,7 @@ struct EMAlgorithm {
     double total {0.0};
     for (auto i = 0; i < alpha_.size(); ++i) {
       // TODO: consider what the right tolerance is
-      if (eff_lens_[i] < TOLERANCE) {
+      if (eff_lens_[i] <= TOLERANCE) {
         continue;
       }
       rho_[i] = alpha_[i] / eff_lens_[i];
