@@ -40,7 +40,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"kmer-size", required_argument, 0, 'k'},
     {"trans-fasta", required_argument, 0, 'f'},
     {0,0,0,0}
-  };
+ };
   int c;
   int option_index = 0;
   while (true) {
@@ -227,7 +227,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsPyEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:s:o:p:f:n:";
+  const char *opt_string = "t:s:o:c:p:f:n:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -236,6 +236,7 @@ void ParseOptionsPyEM(int argc, char **argv, ProgramOptions& opt) {
     {"seed", required_argument, 0, 's'},
     {"trans-fasta", required_argument, 0, 'f'},
     {"py-index", required_argument, 0, 'p'},
+    {"py-counts", required_argument, 0, 'c'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {0,0,0,0}
@@ -270,6 +271,10 @@ void ParseOptionsPyEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       stringstream(optarg) >> opt.iterations;
+      break;
+    }
+    case 'c': {
+      opt.counts = optarg;
       break;
     }
     case 'f': {
@@ -445,6 +450,12 @@ bool CheckOptionsPyEM(ProgramOptions& opt) {
 
   bool ret = true;
 
+  struct stat stFileInfo;
+  auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
+  if (intStat != 0) {
+    cerr << "Error: transcript fasta file not found " << opt.transfasta << endl;
+    ret = false;
+  }
 
   // check for index
   if (opt.index.empty()) {
@@ -455,6 +466,18 @@ bool CheckOptionsPyEM(ProgramOptions& opt) {
       auto intStat = stat(opt.index.c_str(), &stFileInfo);
       if (intStat != 0) {
           cerr << "Error: index file not found " << opt.index << endl;
+          ret = false;
+      }
+  }
+
+  if (opt.counts.empty()) {
+      cerr << "Error: counts file missing" << endl;
+      ret = false;
+  } else {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.counts.c_str(), &stFileInfo);
+      if (intStat != 0) {
+          cerr << "Error: counts file not found " << opt.counts << endl;
           ret = false;
       }
   }
@@ -483,6 +506,11 @@ bool CheckOptionsPyEM(ProgramOptions& opt) {
           ret = false;
         }
       }
+    } else {
+        if (mkdir(opt.output.c_str(), 0777) == -1) {
+          cerr << "Error: could not create directory " << opt.output << endl;
+          ret = false;
+        }
     }
   }
 
@@ -573,8 +601,9 @@ void usagePyEm() {
        << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
        << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
        << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
-       << "-p, --py-index=STRING        Directory to store output to" << endl
+       << "-p, --py-index=STRING        sed processed ec_vec.kal file from kallisto.py" << endl
        << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
+       << "-c, --py-counts=STRING       counts.kal file from kallisto.py" << endl
        << "-o, --output-dir=STRING        Directory to store output to" << endl
        << "    --verbose               Print lots of messages during run" << endl;
 }
@@ -663,7 +692,7 @@ int main(int argc, char *argv[]) {
         MinCollector<KmerIndex> collection(index, opt);
         collection.loadCounts(opt);
         // compute mean frag length somewhere?
-        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+        auto eff_lens = calc_eff_lens(index.trans_lens_, 180.0);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
         em.run();
@@ -687,8 +716,20 @@ int main(int argc, char *argv[]) {
         std::cout << "[py-em]\tfasta: " << opt.transfasta << std::endl;
 
         std::vector<int> counts;
-        auto index = read_kal_py_index(opt.index, opt.transfasta, counts);
+        auto index = read_kal_py_index(opt.index, opt.transfasta, opt.counts, counts);
         std::cout << "counts size: " << counts.size() << std::endl;
+        std::cout << "trans_lens size: " << index.trans_lens_.size() << std::endl;
+        auto eff_lens = calc_eff_lens(index.trans_lens_, 180.07);
+        auto weights = calc_weights (counts, index.ecmap, eff_lens);
+
+        std::cout << "ecmap size: " << index.ecmap.size() << std::endl;
+        std::cout << "eff_lens size: " << eff_lens.size() << std::endl;
+        std::cout << "weights size: " << weights.size() << std::endl;
+
+        EMAlgorithm<KmerIndex> em(opt, index, counts, eff_lens, weights);
+        em.run();
+        em.compute_rho();
+        em.write(opt.output);
 
     } else {
       cerr << "Did not understand command " << cmd << endl;

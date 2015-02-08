@@ -9,7 +9,7 @@
 #include <vector>
 
 
-const double TOLERANCE = 1e-5;
+const double TOLERANCE = 0.0;
 
 template <typename Index>
 struct EMAlgorithm {
@@ -36,7 +36,7 @@ struct EMAlgorithm {
   void run(size_t n_iter = 500) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 
-    assert(weight_map_.size() == counts_.size());
+    assert(weight_map_.size() <= counts_.size());
 
     double denom;
 
@@ -46,6 +46,7 @@ struct EMAlgorithm {
     for (auto i = 0; i < n_iter; ++i) {
       if (i % 50 == 0) {
         std::cout << ".";
+        std::cout.flush();
         if (i % 500 == 0 && i > 0) {
           std::cout << std::endl;
         }
