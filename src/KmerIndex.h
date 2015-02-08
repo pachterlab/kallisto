@@ -121,10 +121,9 @@ struct KmerIndex {
 
     // for each transcript in fasta file
     while ((l = kseq_read(seq)) > 0) {
-      bool added = false;
-
       target_names_.push_back(seq->name.s);
-
+      trans_lens_.push_back(seq->seq.l);
+      
       // if it is long enough
       if (seq->seq.l >= k) {
         KmerIterator kit(seq->seq.s), kit_end;
@@ -144,16 +143,14 @@ struct KmerIndex {
               v.push_back(transid);
             }
           }
-          added = true;
         }
       }
-      if (added) {
-        trans_lens_.push_back(seq->seq.l);
-        transid++;
-        if (transid % 1000 == 1) {
-          std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
-        }
+
+      transid++;
+      if (transid % 1000 == 0) {
+        std::cerr << " " << transid << " size of k-mer map " << all_kmap.size() << std::endl;
       }
+
     }
 
     num_trans = transid;
@@ -420,7 +417,7 @@ struct KmerIndex {
 
   EcMap ecmap;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-  const size_t INDEX_VERSION = 4; // increase this every time you change the fileformat
+  const size_t INDEX_VERSION = 5; // increase this every time you change the fileformat
 
   std::vector<int> trans_lens_;
 
