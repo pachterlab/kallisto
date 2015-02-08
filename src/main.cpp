@@ -224,6 +224,66 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
+void ParseOptionsPyEM(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
+
+  const char *opt_string = "t:s:o:p:f:n:";
+  static struct option long_options[] = {
+    // long args
+    {"verbose", no_argument, &verbose_flag, 1},
+    // short args
+    {"threads", required_argument, 0, 't'},
+    {"seed", required_argument, 0, 's'},
+    {"trans-fasta", required_argument, 0, 'f'},
+    {"py-index", required_argument, 0, 'p'},
+    {"output-dir", required_argument, 0, 'o'},
+    {"iterations", required_argument, 0, 'n'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.seed;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    case 'p': {
+      opt.index = optarg;
+      break;
+    }
+    case 'n': {
+      stringstream(optarg) >> opt.iterations;
+      break;
+    }
+    case 'f': {
+      opt.transfasta = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+
+  if (verbose_flag) {
+    opt.verbose = true;
+  }
+}
 
 bool CheckOptionsIndex(ProgramOptions& opt) {
 
@@ -381,6 +441,65 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
   return ret;
 }
 
+bool CheckOptionsPyEM(ProgramOptions& opt) {
+
+  bool ret = true;
+
+
+  // check for index
+  if (opt.index.empty()) {
+      cerr << "Error: index file missing" << endl;
+      ret = false;
+  } else {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.index.c_str(), &stFileInfo);
+      if (intStat != 0) {
+          cerr << "Error: index file not found " << opt.index << endl;
+          ret = false;
+      }
+  }
+
+  if (opt.iterations <= 0) {
+    cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
+    ret = false;
+  }
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      } else {
+        // create directory
+          std::cout << "making dir!" << std::endl;
+        if (mkdir(opt.output.c_str(), 0777) == -1) {
+          cerr << "Error: could not create directory " << opt.output << endl;
+          ret = false;
+        }
+      }
+    }
+  }
+
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }
+  }
+
+
+  return ret;
+}
 
 
 void PrintCite() {
@@ -447,6 +566,18 @@ void usageEMOnly() {
        << "    --verbose               Print lots of messages during run" << endl;
 }
 
+void usagePyEm() {
+  cout << "Kallisto " << endl
+       << "Does transcriptome stuff" << endl << endl
+       << "Usage: kallisto py-em [options]" << endl << endl
+       << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
+       << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
+       << "-p, --py-index=STRING        Directory to store output to" << endl
+       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
+       << "-o, --output-dir=STRING        Directory to store output to" << endl
+       << "    --verbose               Print lots of messages during run" << endl;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -539,6 +670,26 @@ int main(int argc, char *argv[]) {
         em.compute_rho();
         em.write(opt.output);
       }
+    } else if (cmd == "py-em") {
+        if (argc == 2) {
+            usagePyEm();
+            return 0;
+        }
+
+        ParseOptionsPyEM(argc-1,argv+1,opt);
+        if (!CheckOptionsPyEM(opt)) {
+            usagePyEm();
+            exit(1);
+        }
+
+        std::cout << "[py-em]\tindex: " << opt.index << std::endl;
+        std::cout << "[py-em]\toutput: " << opt.output << std::endl;
+        std::cout << "[py-em]\tfasta: " << opt.transfasta << std::endl;
+
+        std::vector<int> counts;
+        auto index = read_kal_py_index(opt.index, opt.transfasta, counts);
+        std::cout << "counts size: " << counts.size() << std::endl;
+
     } else {
       cerr << "Did not understand command " << cmd << endl;
       usage();
