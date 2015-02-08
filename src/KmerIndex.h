@@ -13,6 +13,7 @@ KSEQ_INIT(gzFile, gzread)
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <unordered_map>
 
 //#include <map>
@@ -435,7 +436,8 @@ struct KmerIndex {
 
 // counts gets overwritten with the counts per ecid
 KmerIndex read_kal_py_index(const std::string& fname,
-        const std::string& fasta, std::vector<int>& counts) {
+        const std::string& fasta, std::string& py_counts,
+        std::vector<int>& counts) {
 
     KmerIndex kidx;
 
@@ -462,7 +464,7 @@ KmerIndex read_kal_py_index(const std::string& fname,
     in.open(fname, std::ios::in);
     int max_ecid = -1;
 
-    std::unordered_map<int, int> counts_map;
+    /* std::unordered_map<int, int> counts_map; */
 
     std::string line;
     while (std::getline(in, line)) {
@@ -472,20 +474,43 @@ KmerIndex read_kal_py_index(const std::string& fname,
         iss >> ecid;
 
         std::vector<int> ids;
-        bool first = true;
-        int min_count = 2147483648;
+        int min_count = 147483626;
+        int max_count = -1;
 
         int tid;
         int cur_count;
 
-        while (iss >> tid) {
-            ids.push_back(tid);
+        std::map<int, int> id_map;
 
+        while (iss >> tid) {
             iss >> cur_count;
-            if (cur_count < min_count) {
-                min_count = cur_count;
+            // if (cur_count < min_count) {
+            //     min_count = cur_count;
+            // }
+
+            if (tid % 2 == 0) {
+                tid = tid >> 1;
+            } else {
+                tid = (tid - 1) >> 1;
             }
-            first = false;
+
+            auto search = id_map.find(tid);
+            if (search != id_map.end()) {
+                id_map[tid] += cur_count;
+                std::cout << "in here" << std::endl;
+            } else {
+                id_map.insert({tid, cur_count});
+            }
+        }
+
+        for (auto kv : id_map) {
+            ids.push_back(kv.first);
+            if (kv.second < min_count) {
+                min_count = kv.second;
+            }
+            if (kv.second > max_count) {
+                max_count = kv.second;
+            }
         }
 
         if (ids.size() == 0) {
@@ -501,18 +526,37 @@ KmerIndex read_kal_py_index(const std::string& fname,
 
         // don't actually use inverse in py-em run
         // kidx.ecmapinv.insert({ids, ecid});
-        counts_map.insert({ecid, min_count});
+
+        // counts_map.insert({ecid, min_count});
+        /* counts_map.insert({ecid, max_count}); */
     }
+    in.close();
 
     counts.clear();
     for (auto i = 0; i < max_ecid + 1; ++i) {
         counts.push_back(0);
     }
 
-    for (auto c : counts_map) {
-        counts[c.first] = c.second;
+    // for (auto c : counts_map) {
+    //     counts[c.first] = c.second;
+    // }
+
+    std::ifstream py_counts_in;
+    py_counts_in.open(py_counts, std::ios::in);
+
+    // ignore first line
+    std::getline(py_counts_in, line);
+
+    while( std::getline(py_counts_in, line )) {
+        int ecid;
+        int cur_count;
+        std::istringstream iss(line);
+
+        iss >> ecid >> cur_count;
+        counts[ecid] = cur_count;
     }
 
+    py_counts_in.close();
     return kidx;
 }
 

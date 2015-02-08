@@ -108,12 +108,18 @@ fld <- fread(paste0(base_dir, "/input.fld"), header = FALSE, data.table = FALSE)
 fld <- rename(fld, len = V1, prob = V2)
 mean_fld <- sum(with(fld, len * prob))
 
-all_ests <- join_all(sf, kal_py, salmon, xprs, kal)
+kal_py_idx <- read_kallisto("./kal_py/output/expression.txt")
+kal_py_idx <- kal_py_idx %>%
+    rename(tpm_kal_py_idx = tpm_kal)
+
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx)
+
 save.image("session.RData")
 
 load("session.RData", verbose = TRUE)
 
 # plotting stuff
+
 
 m_all_ests <- melt(all_ests, id.vars = "target_id", variable.name = "method",
     value.name = "est_tpm")
@@ -125,6 +131,7 @@ ggplot(m_all_ests, aes(tpm_oracle ^ (1/10), est_tpm ^ (1/10))) +
     facet_wrap(~ method) +
     xlim(0, 3) +
     ylim(0, 3)
+
 ggsave("img/scatter_zoom.png")
 
 summaries <- m_all_ests %>%
@@ -133,5 +140,6 @@ summaries <- m_all_ests %>%
         pearson = cor(est_tpm, tpm_oracle, method = "pearson"),
         jsd = jsd(est_tpm / 1e6, tpm_oracle / 1e6)) %>%
     arrange(desc(spearman))
+summaries
 
 print(xtable(as.data.frame(summaries), digits = 10), type = "html")
