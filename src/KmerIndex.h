@@ -11,7 +11,9 @@ KSEQ_INIT(gzFile, gzread)
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
+#include <map>
 #include <unordered_map>
 
 //#include <map>
@@ -45,6 +47,10 @@ struct SortedVectorHasher {
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip) {
     //LoadTranscripts(opt.transfasta);
+  }
+
+  KmerIndex() : num_trans(0) {
+      // minimal constructor for loading python
   }
 
   ~KmerIndex() {}
@@ -423,5 +429,7 @@ struct KmerIndex {
 
   std::vector<std::string> target_names_;
 };
+
+
 
 #endif // KALLISTO_KMERINDEX_H
