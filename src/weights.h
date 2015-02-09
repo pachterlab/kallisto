@@ -14,8 +14,21 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean) 
   std::vector<double> eff_lens;
   eff_lens.reserve(lengths.size());
 
+  auto n_too_short = 0;
+
   for (auto& cur_len: lengths) {
-    eff_lens.push_back( static_cast<double>(cur_len) - mean + 1.0 );
+      double cur_len_dbl = static_cast<double>(cur_len);
+      double cur_eff_len = cur_len_dbl - mean + 1.0;
+      if (cur_eff_len < 1.0) {
+          cur_eff_len = 1;
+          ++n_too_short;
+      }
+      eff_lens.push_back( cur_eff_len );
+  }
+
+  if (n_too_short > 0) {
+      std::cerr << "Total transcripts with effective length less than " << mean <<
+          ":\t" << n_too_short  << std::endl;
   }
 
   return eff_lens;
