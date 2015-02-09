@@ -23,6 +23,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "EMAlgorithm.h"
 #include "weights.h"
 #include "Inspect.h"
+#include "PyKallisto.h"
 
 
 using namespace std;
@@ -488,30 +489,23 @@ bool CheckOptionsPyEM(ProgramOptions& opt) {
   }
 
   if (opt.output.empty()) {
-    cerr << "Error: need to specify output directory " << opt.output << endl;
-    ret = false;
+      cerr << "Error: need to specify output directory " << opt.output << endl;
+      ret = false;
   } else {
-    struct stat stFileInfo;
-    auto intStat = stat(opt.output.c_str(), &stFileInfo);
-    if (intStat == 0) {
-      // file/dir exits
-      if (!S_ISDIR(stFileInfo.st_mode)) {
-        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
-        ret = false;
+      struct stat stFileInfo;
+      auto intStat = stat(opt.output.c_str(), &stFileInfo);
+      if (intStat == 0) {
+          // file/dir exits
+          if (!S_ISDIR(stFileInfo.st_mode)) {
+              cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+              ret = false;
+          }
       } else {
-        // create directory
-          std::cout << "making dir!" << std::endl;
-        if (mkdir(opt.output.c_str(), 0777) == -1) {
-          cerr << "Error: could not create directory " << opt.output << endl;
-          ret = false;
-        }
+          if (mkdir(opt.output.c_str(), 0777) == -1) {
+              cerr << "Error: could not create directory " << opt.output << endl;
+              ret = false;
+          }
       }
-    } else {
-        if (mkdir(opt.output.c_str(), 0777) == -1) {
-          cerr << "Error: could not create directory " << opt.output << endl;
-          ret = false;
-        }
-    }
   }
 
   if (opt.threads <= 0) {
@@ -577,7 +571,7 @@ void usageEM() {
        << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
        << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
        << "-i, --index=INT             Filename for index " << endl
-       << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-s, --skip=INT              Number of kmers to skip when mapping reads" << endl
        << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
        << "-o, --output-dir=STRING        Directory to store output to" << endl
        << "    --verbose               Print lots of messages during run" << endl;
