@@ -115,7 +115,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:i:s:o:n:";
+  const char *opt_string = "t:i:s:l:o:n:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -123,6 +123,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"skip", required_argument, 0, 's'},
+    {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {0,0,0,0}
@@ -151,6 +152,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.skip;
       break;
     }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
+      break;
+    }
     case 'o': {
       opt.output = optarg;
       break;
@@ -176,13 +181,14 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:s:o:n:";
+  const char *opt_string = "t:s:l:o:n:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     // short args
     {"threads", required_argument, 0, 't'},
     {"seed", required_argument, 0, 's'},
+    {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {0,0,0,0}
@@ -205,6 +211,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 's': {
       stringstream(optarg) >> opt.seed;
+      break;
+    }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
       break;
     }
     case 'o': {
@@ -296,7 +306,18 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       ret = false;
     }
   }
+  
+  if (opt.fld == 0.0) {
+    // in future, just estimate this from data
+    cerr << "Error: missing effective distribution length" << endl;
+    ret = false;
+  }
 
+  if (opt.fld < 0.0) {
+    cerr << "Error: invalid value for fragment-length " << opt.fld << endl;
+    ret = false;
+  }
+  
 
   if (opt.iterations <= 0) {
     cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
@@ -428,23 +449,25 @@ void usageEM() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
-       << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
-       << "-i, --index=INT             Filename for index " << endl
-       << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
-       << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
-       << "-o, --output-dir=STRING        Directory to store output to" << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
+       << "-i, --index=INT               Filename for index " << endl
+       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-o, --output-dir=STRING       Directory to store output to" << endl
+       << "    --verbose                 Print lots of messages during run" << endl;
 }
 
 void usageEMOnly() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto em-only [options]" << endl << endl
-       << "-t, --threads=INT           Number of threads to use (default value 1)" << endl
-       << "-s, --seed=INT              Seed value for randomness (default value 0, use time based randomness)" << endl
-       << "-n, --iterations=INT        Number of iterations of EM algorithm (default value 500)" << endl
-       << "-o, --output-dir=STRING        Directory to store output to" << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
+       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-o, --output-dir=STRING       Directory to store output to" << endl
+       << "    --verbose                 Print lots of messages during run" << endl;
 }
 
 
@@ -509,7 +532,7 @@ int main(int argc, char *argv[]) {
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
         // compute mean frag length somewhere?
-        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+        auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
         em.run();
@@ -532,7 +555,7 @@ int main(int argc, char *argv[]) {
         MinCollector<KmerIndex> collection(index, opt);
         collection.loadCounts(opt);
         // compute mean frag length somewhere?
-        auto eff_lens = calc_eff_lens(index.trans_lens_, 30.0);
+        auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
         em.run();
