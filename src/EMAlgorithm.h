@@ -10,8 +10,9 @@
 #include <vector>
 
 
-// const double TOLERANCE = 0.0;
-const double TOLERANCE = std::numeric_limits<double>::min();
+// smallest weight we expect is ~10^-4
+// on most machines, this should be 2.22045e-15
+const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
 
 template <typename Index>
 struct EMAlgorithm {
@@ -73,12 +74,10 @@ struct EMAlgorithm {
           continue;
         }
 
-        /* std::cout << "denom: " << denom << std::endl; */
-
         // compute the update step
         for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
           next_alpha[ec_kv.second[t_it]] += counts_[ec_kv.first] *
-                                            (w_search->second[t_it] * alpha_[ec_kv.second[t_it]] / denom);
+                                            ((w_search->second[t_it] * alpha_[ec_kv.second[t_it]]) / denom);
         }
       }
 
@@ -103,8 +102,9 @@ struct EMAlgorithm {
 
     double total {0.0};
     for (auto i = 0; i < alpha_.size(); ++i) {
-      // TODO: consider what the right tolerance is
       if (eff_lens_[i] < TOLERANCE) {
+        std::cerr << "Should actually never really get here... tid: "  << i <<
+            std::endl;
         continue;
       }
       rho_[i] = alpha_[i] / eff_lens_[i];
