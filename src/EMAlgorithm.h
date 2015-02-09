@@ -11,7 +11,7 @@
 
 
 // smallest weight we expect is ~10^-4
-// on most machines, this should be 2.22045e-15
+// on most machines, TOLERANCE should be 2.22045e-15
 const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
 
 template <typename Index>
