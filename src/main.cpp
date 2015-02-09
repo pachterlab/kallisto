@@ -115,7 +115,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:i:s:l:o:n:";
+  const char *opt_string = "t:i:s:l:o:n:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -126,6 +126,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
+    {"bootstrap-samples", required_argument, 0, 'b'},
     {0,0,0,0}
   };
   int c;
@@ -164,6 +165,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.iterations;
       break;
     }
+    case 'b': {
+      stringstream(optarg) >> opt.bootstrap;
+      break;
+    }
     default: break;
     }
   }
@@ -191,6 +196,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
+    {"bootstrap-samples", required_argument, 0, 'b'},
     {0,0,0,0}
   };
   int c;
@@ -223,6 +229,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       stringstream(optarg) >> opt.iterations;
+      break;
+    }
+    case 'b': {
+      stringstream(optarg) >> opt.bootstrap;
       break;
     }
     default: break;
@@ -306,7 +316,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       ret = false;
     }
   }
-  
+
   if (opt.fld == 0.0) {
     // in future, just estimate this from data
     cerr << "Error: missing effective distribution length" << endl;
@@ -317,7 +327,6 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     cerr << "Error: invalid value for fragment-length " << opt.fld << endl;
     ret = false;
   }
-  
 
   if (opt.iterations <= 0) {
     cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
@@ -378,6 +387,10 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
   }
 
+  if (opt.bootstrap < 0) {
+      cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
+      ret = false;
+  }
 
   return ret;
 }
@@ -451,9 +464,10 @@ void usageEM() {
        << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-i, --index=INT               Filename for index " << endl
-       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
@@ -463,9 +477,10 @@ void usageEMOnly() {
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto em-only [options]" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
-       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
@@ -531,13 +546,13 @@ int main(int argc, char *argv[]) {
         auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
-        // compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output);
+        em.write(opt.output + "/expression.txt");
       }
     } else if (cmd == "em-only") {
       if (argc==2) {
@@ -554,13 +569,13 @@ int main(int argc, char *argv[]) {
         index.load(opt, false); // skip the k-mer map
         MinCollector<KmerIndex> collection(index, opt);
         collection.loadCounts(opt);
-        // compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output);
+        em.write(opt.output + "/expression.txt");
       }
     } else {
       cerr << "Did not understand command " << cmd << endl;
