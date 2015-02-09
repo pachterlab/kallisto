@@ -33,7 +33,7 @@ read_sailfish <- function(fname) {
         data.table = FALSE)
     colnames(sf) <- c("target_id", "length", "tpm", "rpkm", "kpkm", "est_counts")
     sf %>%
-        rename(tpm_sailfish = tpm) %>%
+        rename(tpm_sailfish = tpm, counts_sf = est_counts) %>%
         arrange(target_id)
 }
 
@@ -43,7 +43,7 @@ read_salmon <- function(fname) {
         data.table = FALSE)
     colnames(salmon) <- c("target_id", "length", "tpm", "fpkm", "est_counts")
     salmon %>%
-        rename(tpm_salmon = tpm) %>%
+        rename(tpm_salmon = tpm, counts_salmon = est_counts) %>%
         arrange(target_id)
 }
 
@@ -51,7 +51,7 @@ read_kallisto <- function(fname) {
     kal <- fread(fname, header = TRUE, stringsAsFactors = FALSE,
         data.table = FALSE)
     kal %>%
-        rename(tpm_kal = tpm) %>%
+        rename(tpm_kal = tpm, counts_kal = est_counts) %>%
         arrange(target_id)
 }
 
@@ -59,7 +59,7 @@ read_kallisto_py <- function(fname) {
     kal <- fread(fname, header = TRUE, stringsAsFactors = FALSE,
         data.table = FALSE)
     kal %>%
-        rename(target_id = name, tpm_kal_py = tpm) %>%
+        rename(target_id = name, tpm_kal_py = tpm, counts_kal_py = est_counts) %>%
         arrange(target_id)
 }
 
@@ -68,7 +68,7 @@ read_xprs <- function(fname) {
     xprs <- fread(fname, header = TRUE, stringsAsFactors = FALSE,
         data.table = FALSE)
     xprs %>%
-        rename(tpm_xprs = tpm) %>%
+        rename(tpm_xprs = tpm, counts_xprs = est_counts) %>%
         arrange(target_id)
 }
 
@@ -89,9 +89,9 @@ read_oracle <- function(fname, targ_to_eff_len) {
         arrange(target_id)
 }
 
-join_all <- function(...) {
+join_all <- function(..., start_string = "tpm_") {
     all_ests <- list(...)
-    all_ests <- lapply(all_ests, select, target_id, starts_with("tpm_"))
+    all_ests <- lapply(all_ests, select, target_id, starts_with(start_string))
 
     Reduce(function(x,y) inner_join(x,y, by = c("target_id")),
         all_ests)
@@ -108,7 +108,20 @@ fld <- fread(paste0(base_dir, "/input.fld"), header = FALSE, data.table = FALSE)
 fld <- rename(fld, len = V1, prob = V2)
 mean_fld <- sum(with(fld, len * prob))
 
-all_ests <- join_all(sf, kal_py, salmon, xprs, kal)
+kal_py_idx <- read_kallisto("./kal_py/output/expression.txt")
+kal_py_idx <- kal_py_idx %>%
+    rename(tpm_kal_py_idx = tpm_kal, counts_kal_py_idx = counts_kal)
+
+kal2 <- read_kallisto("./kallisto_upd/expression.txt")
+kal2 <- kal2 %>%
+    rename(tpm_kal2 = tpm_kal, counts_kal2 = counts_kal)
+
+kal3 <- read_kallisto("./kallisto_upd_min/expression.txt")
+kal3 <- kal3 %>%
+    rename(tpm_kal3 = tpm_kal, counts_kal3 = counts_kal)
+
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3)
+
 save.image("session.RData")
 
 load("session.RData", verbose = TRUE)
@@ -123,8 +136,9 @@ m_all_ests <- m_all_ests %>%
 ggplot(m_all_ests, aes(tpm_oracle ^ (1/10), est_tpm ^ (1/10))) +
     geom_point(alpha = 0.07) +
     facet_wrap(~ method) +
-    xlim(0, 10) +
-    ylim(0, 10)
+    xlim(0, 3) +
+    ylim(0, 3)
+
 ggsave("img/scatter_zoom.png")
 
 summaries <- m_all_ests %>%
@@ -133,5 +147,55 @@ summaries <- m_all_ests %>%
         pearson = cor(est_tpm, tpm_oracle, method = "pearson"),
         jsd = jsd(est_tpm / 1e6, tpm_oracle / 1e6)) %>%
     arrange(desc(spearman))
+summaries
 
 print(xtable(as.data.frame(summaries), digits = 10), type = "html")
+
+
+################################################################################
+# look at counts
+################################################################################
+
+kal3 <- kal3 %>%
+    mutate(counts_kal3 = replace(counts_kal3, is.na(counts_kal3), 0.0))
+
+kal_skip8 <- read_kallisto("./kal_skip_8/expression.txt")
+kal_skip8 <- kal_skip8 %>%
+    rename(tpm_skip8 = tpm_kal, counts_skip8 = counts_kal)
+
+kal_skip4 <- read_kallisto("./kal_skip_8/expression.txt")
+kal_skip4 <- kal_skip4 %>%
+    rename(tpm_skip4 = tpm_kal, counts_skip4 = counts_kal)
+
+
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3, kal_skip8, kal_skip4,
+    start_string = "counts_")
+
+
+m_all_ests <- melt(all_ests, id.vars = "target_id", variable.name = "method",
+    value.name = "est_counts")
+m_all_ests <- m_all_ests %>%
+    inner_join(select(oracle, target_id, counts), by = "target_id")
+
+m_all_ests <- m_all_ests %>%
+    mutate(percent_err = ifelse(counts > 0,
+            100 * abs((est_counts - counts) / counts),
+            NA))
+
+summaries <- m_all_ests %>%
+    filter(round(counts, 4) > 0.00) %>%
+    group_by(method) %>%
+    summarise(spearman = cor(est_counts, counts, method = "spearman"),
+        pearson = cor(est_counts, counts, method = "pearson"),
+        mean_pe = mean(percent_err, na.rm = TRUE),
+        med_pe = median(percent_err, na.rm = TRUE)) %>%
+    arrange(desc(spearman))
+summaries
+
+
+print(xtable(as.data.frame(summaries), digits = 10), type = "html")
+
+ggplot(m_all_ests, aes(method, percent_err)) +
+    geom_boxplot() + ylim(0, 100)
+
+ggsave("./img/percent_err.png")
