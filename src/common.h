@@ -21,10 +21,20 @@ struct ProgramOptions {
   int skip;
   size_t seed;
   double fld;
+  int bootstrap;
   std::string transfasta;
   std::vector<std::string> files;
 
-ProgramOptions() : verbose(false), seed(0), threads(1), k(21), iterations(500), skip(1), fld(0.0) {}
+ProgramOptions() :
+    verbose(false),
+    seed(0),
+    threads(1),
+    k(21),
+    iterations(500),
+    skip(1),
+    fld(0.0),
+    bootstrap(0)
+    {}
 };
 
 #endif // KALLISTO_COMMON_H
