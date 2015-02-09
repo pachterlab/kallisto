@@ -6,6 +6,7 @@ set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 
 # add_compile_options(-Wall)
 add_compile_options(-std=c++11)
+
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("debug mode")
 		add_compile_options(-O0)
@@ -13,15 +14,14 @@ ELSE(CMAKE_BUILD_TYPE MATCHES Debug)
 		add_compile_options(-O3)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-# add_compile_options(-Wdeprecated-register)
-
 add_subdirectory(src)
 
 if (BUILD_TESTING)
     add_subdirectory(${EXT_PROJECTS_DIR}/catch)
 
     # Includes Catch in the project:
-    include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})
+    include_directories(${COMMON_INCLUDES} ${CATCH_INCLUDE_DIR})
+    # include_directories(${CATCH_INCLUDE_DIR})
     enable_testing(true)  # Enables unit-testing.
 
     add_subdirectory(test)
