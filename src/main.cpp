@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <vector>
 #include <sys/stat.h>
@@ -23,6 +24,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "EMAlgorithm.h"
 #include "weights.h"
 #include "Inspect.h"
+#include "Bootstrap.h"
 
 
 using namespace std;
@@ -120,6 +122,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     // short args
+    {"seed", required_argument, 0, 'd'},
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"skip", required_argument, 0, 's'},
@@ -169,6 +172,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.bootstrap;
       break;
     }
+    case 'd': {
+      stringstream(optarg) >> opt.seed;
+      break;
+    }
     default: break;
     }
   }
@@ -186,13 +193,13 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:s:l:o:n:";
+  const char *opt_string = "t:s:l:o:n:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
-    {"seed", required_argument, 0, 's'},
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
@@ -215,10 +222,6 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.threads;
       break;
     }
-    case 's': {
-      stringstream(optarg) >> opt.seed;
-      break;
-    }
     case 'l': {
       stringstream(optarg) >> opt.fld;
       break;
@@ -235,6 +238,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.bootstrap;
       break;
     }
+    case 'd': {
+      stringstream(optarg) >> opt.seed;
+      break;
+    }
     default: break;
     }
   }
@@ -242,6 +249,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+
 }
 
 
@@ -576,6 +584,28 @@ int main(int argc, char *argv[]) {
         em.run();
         em.compute_rho();
         em.write(opt.output + "/expression.txt");
+
+        if (opt.bootstrap > 0) {
+            std::cout << "Bootstrapping!" << std::endl;
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
+
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+                seeds.push_back( rand() );
+            }
+
+            for (auto b = 0; b < B; ++b) {
+                Bootstrap bs(collection.counts, index.ecmap,
+                        index.target_names_, eff_lens, seeds[b]);
+                std::cout << "Running EM bootstrap: " << b << std::endl;
+                auto res = bs.run_em();
+                res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+                        ".txt");
+            }
+
+        }
       }
     } else {
       cerr << "Did not understand command " << cmd << endl;
