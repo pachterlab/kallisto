@@ -25,7 +25,8 @@ class Multinomial {
             return samp;
         }
 
-        int n() { return n_; }
+        int n() const { return n_; }
+        std::vector<int> const counts() { return counts_; }
 
     private:
         const std::vector<int>& counts_;

@@ -27,7 +27,7 @@ struct ProgramOptions {
 
 ProgramOptions() :
     verbose(false),
-    seed(0),
+    seed(42),
     threads(1),
     k(21),
     iterations(500),
