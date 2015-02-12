@@ -53,7 +53,7 @@ struct KmerIndex {
   // use:  match(s,l,v)
   // pre:  v is initialized
   // post: v contains all equiv classes for the k-mers in s
-  void match(const char *s, int l, std::vector<int>& v) const {
+  void match(const char *s, int l, std::vector<std::pair<int, int>>& v) const {
     KmerIterator kit(s), kit_end;
     for (int i = 0; kit != kit_end; ++kit,++i) {
       if (i==skip) {
@@ -64,7 +64,7 @@ struct KmerIndex {
         auto search = kmap.find(rep);
         if (search != kmap.end()) {
           // if k-mer found
-          v.push_back(search->second); // add equivalence class
+          v.push_back({search->second, kit->second}); // add equivalence class, and position
         }
       }
     }
