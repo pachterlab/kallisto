@@ -13,22 +13,22 @@
 template <typename Index>
 struct MinCollector {
 
-  MinCollector(Index& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0) {}
+  MinCollector(Index& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0), min_range(opt.min_range), k(opt.k) {}
 
 
 
-  void collect(std::vector<int>& v) {
+  void collect(std::vector<std::pair<int,int>>& v) {
     if (v.empty()) {
       return;
     }
     sort(v.begin(), v.end()); // sort by increasing order
 
     int count = 1; // how many k-mer support the ec
-    std::vector<int> u = index.ecmap[v[0]];
+    std::vector<int> u = index.ecmap[v[0].first];
 
     for (int i = 1; i < v.size(); i++) {
-      if (v[i] != v[i-1]) {
-        u = index.intersect(v[i],u);
+      if (v[i].first != v[i-1].first) {
+        u = index.intersect(v[i].first,u);
         if (u.empty()) {
           break;
         }
@@ -40,6 +40,19 @@ struct MinCollector {
       return;
     }
 
+    // find the range of support
+    int minpos = std::numeric_limits<int>::max();
+    int maxpos = 0;
+
+    for (auto &x : v) {
+      minpos = std::min(minpos, x.second);
+      maxpos = std::max(maxpos, x.second);
+    }
+
+    if ((maxpos-minpos + k) < min_range) {
+      return;
+    }
+    
     auto search = index.ecmapinv.find(u);
     if (search != index.ecmapinv.end()) {
       // ec class already exists, update count
@@ -94,6 +107,8 @@ struct MinCollector {
 
   Index& index;
   std::vector<int> counts;
+  int min_range;
+  int k;
 
 };
 

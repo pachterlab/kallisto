@@ -4,9 +4,12 @@
 #include <zlib.h>
 #include "kseq.h"
 #include <string>
+#include <vector>
+
 
 #include <iostream>
 #include <fstream>
+
 
 #include "common.h"
 
@@ -22,7 +25,7 @@ TranscriptCollector ProcessReads(Index& index, const ProgramOptions& opt) {
 
   gzFile fp1 = 0, fp2 = 0;
   kseq_t *seq1 = 0, *seq2;
-  std::vector<int> v;
+  std::vector<std::pair<int,int>> v;
   v.reserve(1000);
 
   int l1,l2; // length of read
