@@ -5,7 +5,7 @@
 #include "kseq.h"
 #include <string>
 #include <vector>
-
+#include <algorithm>
 
 #include <iostream>
 #include <fstream>
@@ -61,7 +61,14 @@ TranscriptCollector ProcessReads(Index& index, const ProgramOptions& opt) {
     // process read
     index.match(seq1->seq.s, seq1->seq.l, v);
     if (paired) {
+      int vl = v.size();
       index.match(seq2->seq.s, seq2->seq.l, v);
+      // fix k-mer positions, assuming an average
+      // fragment length distribution of fld.
+      int leftpos = ((int) opt.fld)-opt.k;
+      for (int i = vl; i < v.size(); i++) {
+        v[i].second = std::max(leftpos-v[i].second, 0);
+      }
     }
 
     // collect the transcript information
