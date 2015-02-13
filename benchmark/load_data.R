@@ -182,7 +182,10 @@ all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = c(ks_t_combs, 
 save.image("session.RData")
 save.image("session_t.RData")
 
+save.image("session_len.RData")
+
 load("session.RData", verbose = TRUE)
+load("session_len.RData", verbose = TRUE)
 
 # plotting stuff
 
