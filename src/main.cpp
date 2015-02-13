@@ -115,7 +115,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:i:s:l:o:n:";
+  const char *opt_string = "t:i:s:l:o:n:m:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -126,6 +126,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
+    {"min-range", required_argument, 0, 'm'},
     {0,0,0,0}
   };
   int c;
@@ -164,6 +165,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.iterations;
       break;
     }
+    case 'm': {
+      stringstream(optarg) >> opt.min_range;
+      break;
+    }
     default: break;
     }
   }
@@ -181,7 +186,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:s:l:o:n:";
+  const char *opt_string = "t:s:l:o:n:m:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -191,6 +196,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
+    {"min-range", required_argument, 0, 'm'},
     {0,0,0,0}
   };
   int c;
@@ -223,6 +229,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       stringstream(optarg) >> opt.iterations;
+      break;
+    }
+    case 'm': {
+      stringstream(optarg) >> opt.min_range;
       break;
     }
     default: break;
@@ -321,6 +331,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   if (opt.iterations <= 0) {
     cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
+    ret = false;
+  }
+
+  if (opt.min_range <= 0) {
+    cerr << "Error: Invalid value for minimum range " << opt.min_range << endl;
     ret = false;
   }
 
@@ -453,6 +468,7 @@ void usageEM() {
        << "-i, --index=INT               Filename for index " << endl
        << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
@@ -465,6 +481,7 @@ void usageEMOnly() {
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
