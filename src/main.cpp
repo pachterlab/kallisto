@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <vector>
 #include <sys/stat.h>
@@ -23,6 +24,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "EMAlgorithm.h"
 #include "weights.h"
 #include "Inspect.h"
+#include "Bootstrap.h"
 
 
 using namespace std;
@@ -115,11 +117,12 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:i:s:l:o:n:m:";
+  const char *opt_string = "t:i:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     // short args
+    {"seed", required_argument, 0, 'd'},
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"skip", required_argument, 0, 's'},
@@ -127,6 +130,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
+    {"bootstrap-samples", required_argument, 0, 'b'},
     {0,0,0,0}
   };
   int c;
@@ -167,6 +171,13 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'm': {
       stringstream(optarg) >> opt.min_range;
+    }
+    case 'b': {
+      stringstream(optarg) >> opt.bootstrap;
+      break;
+    }
+    case 'd': {
+      stringstream(optarg) >> opt.seed;
       break;
     }
     default: break;
@@ -186,17 +197,18 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "t:s:l:o:n:m:";
+  const char *opt_string = "t:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
-    {"seed", required_argument, 0, 's'},
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
+    {"bootstrap-samples", required_argument, 0, 'b'},
     {0,0,0,0}
   };
   int c;
@@ -215,10 +227,6 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.threads;
       break;
     }
-    case 's': {
-      stringstream(optarg) >> opt.seed;
-      break;
-    }
     case 'l': {
       stringstream(optarg) >> opt.fld;
       break;
@@ -233,6 +241,13 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'm': {
       stringstream(optarg) >> opt.min_range;
+    }
+    case 'b': {
+      stringstream(optarg) >> opt.bootstrap;
+      break;
+    }
+    case 'd': {
+      stringstream(optarg) >> opt.seed;
       break;
     }
     default: break;
@@ -242,6 +257,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+
 }
 
 
@@ -316,7 +332,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       ret = false;
     }
   }
-  
+
   if (opt.fld == 0.0) {
     // in future, just estimate this from data
     cerr << "Error: missing effective distribution length" << endl;
@@ -327,7 +343,6 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     cerr << "Error: invalid value for fragment-length " << opt.fld << endl;
     ret = false;
   }
-  
 
   if (opt.iterations <= 0) {
     cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
@@ -393,6 +408,10 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
   }
 
+  if (opt.bootstrap < 0) {
+      cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
+      ret = false;
+  }
 
   return ret;
 }
@@ -466,10 +485,12 @@ void usageEM() {
        << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-i, --index=INT               Filename for index " << endl
-       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
+       << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
@@ -479,10 +500,12 @@ void usageEMOnly() {
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto em-only [options]" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
-       << "-s, --seed=INT                Seed value for randomness (default value 0, use time based randomness)" << endl
+       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
+       << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
@@ -548,13 +571,35 @@ int main(int argc, char *argv[]) {
         auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
-        // compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output);
+        em.write(opt.output + "/expression.txt");
+
+        if (opt.bootstrap > 0) {
+            std::cout << "Bootstrapping!" << std::endl;
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
+
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+                seeds.push_back( rand() );
+            }
+
+            for (auto b = 0; b < B; ++b) {
+                Bootstrap bs(collection.counts, index.ecmap,
+                        index.target_names_, eff_lens, seeds[b]);
+                std::cout << "Running EM bootstrap: " << b << std::endl;
+                auto res = bs.run_em();
+                res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+                        ".txt");
+            }
+
+        }
       }
     } else if (cmd == "em-only") {
       if (argc==2) {
@@ -571,13 +616,35 @@ int main(int argc, char *argv[]) {
         index.load(opt, false); // skip the k-mer map
         MinCollector<KmerIndex> collection(index, opt);
         collection.loadCounts(opt);
-        // compute mean frag length somewhere?
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm<KmerIndex> em(opt, index, collection.counts, eff_lens, weights);
+        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output);
+        em.write(opt.output + "/expression.txt");
+
+        if (opt.bootstrap > 0) {
+            std::cout << "Bootstrapping!" << std::endl;
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
+
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+                seeds.push_back( rand() );
+            }
+
+            for (auto b = 0; b < B; ++b) {
+                Bootstrap bs(collection.counts, index.ecmap,
+                        index.target_names_, eff_lens, seeds[b]);
+                std::cout << "Running EM bootstrap: " << b << std::endl;
+                auto res = bs.run_em();
+                res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+                        ".txt");
+            }
+
+        }
       }
     } else {
       cerr << "Did not understand command " << cmd << endl;
