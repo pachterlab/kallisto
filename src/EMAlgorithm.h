@@ -13,7 +13,9 @@
 
 // smallest weight we expect is ~10^-4
 // on most machines, TOLERANCE should be 2.22045e-15
-const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
+//const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
+//const double TOLERANCE = 1e-100;
+const double TOLERANCE = std::numeric_limits<double>::denorm_min();
 
 struct EMAlgorithm {
   // ecmap is the ecmap from KmerIndex
