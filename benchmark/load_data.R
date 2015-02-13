@@ -89,8 +89,9 @@ read_oracle <- function(fname, targ_to_eff_len) {
         arrange(target_id)
 }
 
-join_all <- function(..., start_string = "tpm_") {
-    all_ests <- list(...)
+join_all <- function(..., dots, start_string = "tpm_") {
+    stopifnot(is(dots, "list"))
+    all_ests <- c(list(...), dots)
     all_ests <- lapply(all_ests, select, target_id, starts_with(start_string))
 
     Reduce(function(x,y) inner_join(x,y, by = c("target_id")),
@@ -102,15 +103,15 @@ kal_py <- read_kallisto_py(paste0(base_dir, "/kal_py/results.kal"))
 salmon <- read_salmon(paste0(base_dir, "/salmon/quant.sf"))
 xprs <- read_xprs(paste0(base_dir, "/express/results.xprs"))
 oracle <- read_oracle(paste0(base_dir, "/oracle.counts"), xprs)
-kal <- read_kallisto(paste0(base_dir, "/kallisto/expression.txt"))
+# kal <- read_kallisto(paste0(base_dir, "/kallisto/expression.txt"))
 
 fld <- fread(paste0(base_dir, "/input.fld"), header = FALSE, data.table = FALSE)
 fld <- rename(fld, len = V1, prob = V2)
 mean_fld <- sum(with(fld, len * prob))
 
-kal_py_idx <- read_kallisto("./kal_py/output/expression.txt")
-kal_py_idx <- kal_py_idx %>%
-    rename(tpm_kal_py_idx = tpm_kal, counts_kal_py_idx = counts_kal)
+# kal_py_idx <- read_kallisto("./kal_py/output/expression.txt")
+# kal_py_idx <- kal_py_idx %>%
+#     rename(tpm_kal_py_idx = tpm_kal, counts_kal_py_idx = counts_kal)
 
 kal2 <- read_kallisto("./kallisto_upd/expression.txt")
 kal2 <- kal2 %>%
@@ -120,11 +121,71 @@ kal3 <- read_kallisto("./kallisto_upd_min/expression.txt")
 kal3 <- kal3 %>%
     rename(tpm_kal3 = tpm_kal, counts_kal3 = counts_kal)
 
-all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3)
+# read in the kallisto combinations
+all_ks <- c(21, 25, 31)
+all_skip <- c(0, 2, 4, 8)
+combinations <- expand.grid(k = all_ks, skip = all_skip)
+
+ks_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+ks_t_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_t_1e-100_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+ks_dm_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_dm_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+ks_dm_len_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_dm_len_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+# all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3)
+# all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_combs)
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_t_combs)
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = c(ks_t_combs, ks_dm_len_combs))
 
 save.image("session.RData")
+save.image("session_t.RData")
+
+save.image("session_len.RData")
 
 load("session.RData", verbose = TRUE)
+load("session_len.RData", verbose = TRUE)
 
 # plotting stuff
 
@@ -149,8 +210,18 @@ summaries <- m_all_ests %>%
     arrange(desc(spearman))
 summaries
 
+m_all_ests <- m_all_ests %>%
+    mutate(percent_err = ifelse(tpm_oracle > 0,
+            100 * abs((est_tpm - tpm_oracle) / tpm_oracle),
+            NA))
+
 print(xtable(as.data.frame(summaries), digits = 10), type = "html")
 
+
+ggplot(m_all_ests, aes(method, percent_err)) +
+    geom_boxplot() + ylim(0, 100)
+
+ggsave("./img/tpm_percent_err_ks_skips.png")
 
 ################################################################################
 # look at counts
@@ -168,9 +239,10 @@ kal_skip4 <- kal_skip4 %>%
     rename(tpm_skip4 = tpm_kal, counts_skip4 = counts_kal)
 
 
-all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3, kal_skip8, kal_skip4,
-    start_string = "counts_")
+# all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3, kal_skip8, kal_skip4,
+#     start_string = "counts_")
 
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_combs, start_string = "counts_")
 
 m_all_ests <- melt(all_ests, id.vars = "target_id", variable.name = "method",
     value.name = "est_counts")
@@ -198,4 +270,6 @@ print(xtable(as.data.frame(summaries), digits = 10), type = "html")
 ggplot(m_all_ests, aes(method, percent_err)) +
     geom_boxplot() + ylim(0, 100)
 
-ggsave("./img/percent_err.png")
+ggsave("./img/percent_err_ks_skips.png")
+
+save.image("eps_res.RData")

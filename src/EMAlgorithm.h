@@ -2,6 +2,7 @@
 #define KALLISTO_EMALGORITHM_H
 
 #include "common.h"
+#include "KmerIndex.h"
 #include "weights.h"
 
 #include <algorithm>
@@ -12,27 +13,33 @@
 
 // smallest weight we expect is ~10^-4
 // on most machines, TOLERANCE should be 2.22045e-15
-const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
+//const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
+//const double TOLERANCE = 1e-100;
+const double TOLERANCE = std::numeric_limits<double>::denorm_min();
 
-template <typename Index>
 struct EMAlgorithm {
-
+  // ecmap is the ecmap from KmerIndex
   // counts is vector from collector, with indices corresponding to ec ids
+  // target_names is the target_names_ from collector
   // TODO: initialize alpha a bit more intelligently
-  // TODO: refactor to remove dependence on Index
-  EMAlgorithm(const ProgramOptions& opt, const Index& idx,
+  EMAlgorithm(const EcMap& ecmap,
               const std::vector<int>& counts,
+              const std::vector<std::string>& target_names,
               const std::vector<double>& eff_lens,
               const WeightMap& wm) :
-    idx_(idx),
-    num_trans_(idx.num_trans),
+    //idx_(idx),
+    num_trans_(target_names.size()),
+    ecmap_(ecmap),
     counts_(counts),
+    target_names_(target_names),
     eff_lens_(eff_lens),
     weight_map_(wm),
-    alpha_(idx.num_trans, 1.0/idx.num_trans), // uniform distribution over transcripts
-    rho_(idx.num_trans, 0.0),
+    alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over transcripts
+    rho_(num_trans_, 0.0),
     rho_set_(false)
-  {}
+  {
+      assert(target_names_.size() == eff_lens.size());
+  }
 
   ~EMAlgorithm() {}
 
@@ -55,7 +62,7 @@ struct EMAlgorithm {
         }
       }
 
-      for (auto& ec_kv : idx_.ecmap ) {
+      for (auto& ec_kv : ecmap_ ) {
         denom = 0.0;
 
         // first, compute the denominator: a normalizer
@@ -118,15 +125,13 @@ struct EMAlgorithm {
     rho_set_ = true;
   }
 
-  void write(const std::string& dir_out) const {
-    const std::string out_fname = "/expression.txt";
-
+  void write(const std::string& out_fname) const {
     std::ofstream out;
-    out.open(dir_out + out_fname, std::ios::out);
+    out.open(out_fname, std::ios::out);
 
     if (!out.is_open()) {
-      std::cerr << "Error opening '" << dir_out + out_fname << "'" <<
-                std::endl;
+      std::cerr << "Error opening '" << out_fname << "'" <<
+          std::endl;
       exit(1);
     }
 
@@ -144,7 +149,7 @@ struct EMAlgorithm {
 
     for (auto i = 0; i < rho_.size(); ++i) {
       out <<
-          idx_.target_names_[i] << "\t" <<
+          target_names_[i] << "\t" <<
           i << "\t" <<
           rho_[i] << "\t" <<
           rho_[i] * MILLION << "\t" <<
@@ -157,8 +162,9 @@ struct EMAlgorithm {
   }
 
   int num_trans_;
-  const Index& idx_;
+  const EcMap& ecmap_;
   const std::vector<int>& counts_;
+  const std::vector<std::string>& target_names_;
   const std::vector<double>& eff_lens_;
   const WeightMap& weight_map_;
   std::vector<double> alpha_;
