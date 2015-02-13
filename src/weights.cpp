@@ -12,7 +12,8 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
       double cur_len_dbl = static_cast<double>(cur_len);
       double cur_eff_len = cur_len_dbl - mean + 1.0;
       if (cur_eff_len < 1.0) {
-          cur_eff_len = 1.0;
+          // cur_eff_len = 1.0;
+          cur_eff_len = cur_len_dbl;
           ++n_too_short;
       }
       eff_lens.push_back( cur_eff_len );

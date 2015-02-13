@@ -138,11 +138,49 @@ ks_combs <- lapply(1:nrow(combinations), function(it)
                     c(paste0("tpm_", suffix), paste0("counts_", suffix))))
     })
 
+ks_t_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_t_1e-100_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+ks_dm_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_dm_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
+
+ks_dm_len_combs <- lapply(1:nrow(combinations), function(it)
+    {
+        k <- combinations[it,]$k
+        skip <- combinations[it,]$skip
+        suffix <- paste0("kal_dm_len_k_", k, "_s_", skip)
+        fname <- paste0(base_dir, "/", suffix, "/expression.txt")
+        cat("reading fname: ", fname, "\n")
+        read_kallisto(fname) %>%
+            rename_(.dots = setNames(list(~tpm_kal, ~counts_kal),
+                    c(paste0("tpm_", suffix), paste0("counts_", suffix))))
+    })
 
 # all_ests <- join_all(sf, kal_py, salmon, xprs, kal, kal_py_idx, kal2, kal3)
-all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_combs)
+# all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_combs)
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = ks_t_combs)
+all_ests <- join_all(sf, kal_py, salmon, xprs, kal2, kal3, dots = c(ks_t_combs, ks_dm_len_combs))
 
 save.image("session.RData")
+save.image("session_t.RData")
 
 load("session.RData", verbose = TRUE)
 
