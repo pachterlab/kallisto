@@ -3,6 +3,8 @@ file(GLOB headers *.h *.hpp)
 
 list(REMOVE_ITEM sources main.cpp)
 
+include_directories(../ext/)
+add_compile_options(-DSEQAN_HAS_ZLIB)
 add_library(kallisto_core ${sources} ${headers})
 target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

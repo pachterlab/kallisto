@@ -568,7 +568,13 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
-        auto collection = ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt);
+        auto firstFile = opt.files[0];
+        MinCollector<KmerIndex> collection(index, opt);
+        if (firstFile.size() >= 4 && firstFile.compare(firstFile.size()-4,4,".bam") == 0) {
+          ProcessBams<KmerIndex, MinCollector<KmerIndex>>(index, opt, collection);
+        } else {
+          ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt, collection);
+        }
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
