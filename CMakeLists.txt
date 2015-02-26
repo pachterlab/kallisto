@@ -16,6 +16,7 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 # add_compile_options(-Wdeprecated-register)
 
 add_subdirectory(src)
+include_directories(${EXT_PROJECTS_DIR})
 
 if (BUILD_TESTING)
     add_subdirectory(${EXT_PROJECTS_DIR}/catch)

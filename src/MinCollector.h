@@ -17,9 +17,9 @@ struct MinCollector {
 
 
 
-  void collect(std::vector<std::pair<int,int>>& v) {
+  int collect(std::vector<std::pair<int,int>>& v) {
     if (v.empty()) {
-      return;
+      return -1;
     }
     sort(v.begin(), v.end()); // sort by increasing order
 
@@ -37,7 +37,7 @@ struct MinCollector {
     }
     // if u is empty do nothing
     if (u.empty()) {
-      return;
+      return -1;
     }
 
     // find the range of support
@@ -50,20 +50,23 @@ struct MinCollector {
     }
 
     if ((maxpos-minpos + k) < min_range) {
-      return;
+      return -1;
     }
     
     auto search = index.ecmapinv.find(u);
     if (search != index.ecmapinv.end()) {
       // ec class already exists, update count
       ++counts[search->second];
+      return search->second;
     } else {
       // new ec class, update the index and count
       auto necs = counts.size();
       index.ecmap.insert({necs,u});
       index.ecmapinv.insert({u,necs});
       counts.push_back(1);
+      return necs;
     }
+
   }
 
   void write(std::ostream& o) {
