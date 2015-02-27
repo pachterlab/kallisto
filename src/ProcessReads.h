@@ -133,16 +133,19 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
       inv.insert({index.target_names_[i], i});
     }
     auto cnames = contigNames(bamContext);
-    for (int i = 0; i < length(cnames[i]); i++) {
+    for (int i = 0; i < length(cnames); i++) {
       std::string cname(toCString(cnames[i]));
       auto search = inv.find(cname);
       if (search == inv.end()) {
         std::cerr << "Error: could not find transcript name " << cname << " from bam file " << opt.files[0] << std::endl;
+        rIdToTrans.push_back(-1);
       } else {
         rIdToTrans.push_back(search->second);
       }
     }
   }
+
+  
 
   
   
