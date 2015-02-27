@@ -12,11 +12,28 @@
 #include <fstream>
 
 #include <seqan/bam_io.h>
-
+// for debuggig
+#include "Inspect.h"
 
 #include "common.h"
 
 using namespace seqan;
+
+bool isSubset(const vector<int> &x, const vector<int> &y) {
+  auto a = x.begin();
+  auto b = y.begin();
+  while (a != x.end() && b != y.end()) {
+    if (*a < *b) {
+      return false;
+    } else if (*b < *a) {
+      ++b;
+    } else {
+      ++a;
+      ++b;
+    }
+  }
+  return true;
+}
 
 template<typename Index, typename TranscriptCollector>
 void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &tc) {
@@ -163,6 +180,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   bool done = false;
 
   int mismatches = 0;
+  int mismBamMoreSpecific = 0;
+  int mismKalMoreSpecific = 0;
+  int mismNonAgreement = 0;
   int alignKnotB = 0;
   int alignBnotK = 0;
   int exactMatches = 0;
@@ -259,8 +279,22 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
           // mismatch
           if (ec == -1) {
             alignBnotK++;
+            std::cout << s1 << "\t" << s2 << "\t";
+            printVector(lp);
+            std::cout << "\t[]" << std::endl;
           } else {
             mismatches++;
+            std::cout << s1 << "\t" << s2 << "\t";
+            printVector(lp);
+            std::cout << "\t";
+            printVector(index.ecmap[ec]);
+            if (isSubset(lp, index.ecmap[ec])) {
+              mismBamMoreSpecific++;
+            } else if (isSubset(index.ecmap[ec], lp)) {
+              mismKalMoreSpecific++;
+            } else {
+              mismNonAgreement++;
+            }
           }
         } else {
           exactMatches++;
@@ -269,6 +303,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     } else {
       if (ec >= 0) {
         alignKnotB++;
+        std::cout << s1 << "\t" << s2 << "\t[]\t";
+        printVector(index.ecmap[ec]);
+        std::cout << std::endl;
       } else {
         alignNone++;
       }
@@ -280,6 +317,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
             << "Kallisto mapped, not BAM = " << alignKnotB << std::endl
             << "Bam mapped, not Kallisto = " << alignBnotK << std::endl
             << "Both mapped, mismatches = " << mismatches << std::endl
+            << "  Bam More specific = " << mismBamMoreSpecific << std::endl
+            << "  Kal More specific = " << mismKalMoreSpecific << std::endl
+            << "  Disjoint = " << mismNonAgreement << std::endl
             << "Neither mapped = " << alignNone << std::endl;
   
   // writeoutput to outdir
