@@ -13,13 +13,25 @@
 
 #include <seqan/bam_io.h>
 // for debuggig
-#include "Inspect.h"
 
 #include "common.h"
 
 using namespace seqan;
 
-bool isSubset(const vector<int> &x, const vector<int> &y) {
+void printVector(const std::vector<int> &v, std::ostream& o) {
+  o << "[";
+  int i = 0;
+  for (auto x : v) {
+    if (i>0) {
+      o << ", ";
+    }
+    o << x;
+    i++;
+  }
+  o << "]";
+}
+
+bool isSubset(const std::vector<int> &x, const std::vector<int> &y) {
   auto a = x.begin();
   auto b = y.begin();
   while (a != x.end() && b != y.end()) {
@@ -120,8 +132,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
-  std::vector<std::pair<int,int>> v;
-  v.reserve(1000);
+  std::vector<std::pair<int,int>> v1, v2;
+  v1.reserve(1000);
+  v2.reserve(1000);
 
 
   std::vector<int> rIdToTrans;
@@ -187,6 +200,10 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   int alignBnotK = 0;
   int exactMatches = 0;
   int alignNone = 0;
+
+  std::ofstream baminfo;
+  baminfo.open(opt.output+"/baminfo.txt", std::ios::out);
+  baminfo << "read1\tread2\tBamEC\tKalEC\n";
   
   while (!done) {
     bool paired = hasFlagMultiple(record);
@@ -240,22 +257,27 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     
 
     
-    v.clear();
+    v1.clear();
+    v2.clear();
     // process read
-    index.match(toCString(s1), length(s1), v);
+    index.match(toCString(s1), length(s1), v1);
     if (paired) {
-      int vl = v.size();
-      index.match(toCString(s2), length(s2), v);
+      index.match(toCString(s2), length(s2), v2);
       // fix k-mer positions, assuming an average
       // fragment length distribution of fld.
       int leftpos = ((int) opt.fld)-opt.k;
-      for (int i = vl; i < v.size(); i++) {
-        v[i].second = std::max(leftpos-v[i].second, 0);
+      for(auto &x : v2) {
+        x.second = std::max(leftpos-x.second, 0);
       }
     }
 
     // collect the transcript information
-    int ec = tc.collect(v);
+    int ec = -1;
+    if (!paired){
+      ec = tc.collect(v1);
+    } else {
+      ec = tc.collect(v1,v2);
+    }
 
     if (opt.verbose && nreads % 10000 == 0 ) {
       std::cerr << "Processed " << nreads << std::endl;
@@ -279,15 +301,16 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
           // mismatch
           if (ec == -1) {
             alignBnotK++;
-            std::cout << s1 << "\t" << s2 << "\t";
-            printVector(lp);
-            std::cout << "\t[]" << std::endl;
+            baminfo << s1 << "\t" << s2 << "\t";
+            printVector(lp, baminfo);
+            baminfo << "\t[]\n";
           } else {
             mismatches++;
-            std::cout << s1 << "\t" << s2 << "\t";
-            printVector(lp);
-            std::cout << "\t";
-            printVector(index.ecmap[ec]);
+            baminfo << s1 << "\t" << s2 << "\t";
+            printVector(lp, baminfo);
+            baminfo << "\t";
+            printVector(index.ecmap[ec], baminfo);
+            baminfo << "\n";
             if (isSubset(lp, index.ecmap[ec])) {
               mismBamMoreSpecific++;
             } else if (isSubset(index.ecmap[ec], lp)) {
@@ -303,9 +326,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     } else {
       if (ec >= 0) {
         alignKnotB++;
-        std::cout << s1 << "\t" << s2 << "\t[]\t";
-        printVector(index.ecmap[ec]);
-        std::cout << std::endl;
+        baminfo << s1 << "\t" << s2 << "\t[]\t";
+        printVector(index.ecmap[ec], baminfo);
+        baminfo << "\n";
       } else {
         alignNone++;
       }
@@ -321,6 +344,8 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
             << "  Kal More specific = " << mismKalMoreSpecific << std::endl
             << "  Disjoint = " << mismNonAgreement << std::endl
             << "Neither mapped = " << alignNone << std::endl;
+
+  baminfo.close();
   
   // writeoutput to outdir
   std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
