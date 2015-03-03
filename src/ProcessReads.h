@@ -201,9 +201,18 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   int exactMatches = 0;
   int alignNone = 0;
 
-  std::ofstream baminfo;
-  baminfo.open(opt.output+"/baminfo.txt", std::ios::out);
-  baminfo << "read1\tread2\tBamEC\tKalEC\n";
+  std::ofstream bamKnotB, bamBnotK, bamNotProper, bamBamSpec, bamKalSpec;;
+  bamKnotB.open(opt.output+"/bamKnotB.txt", std::ios::out);
+  bamBnotK.open(opt.output+"/bamBnotK.txt", std::ios::out);
+  bamNotProper.open(opt.output+"/bamNotProper.txt", std::ios::out);
+  bamBamSpec.open(opt.output+"/bamBamSpec.txt", std::ios::out);
+  bamKalSpec.open(opt.output+"/bamKalSpec.txt", std::ios::out);
+
+  bamKnotB << "read1\tread2\tBamEC\tKalEC\n";
+  bamBnotK << "read1\tread2\tBamEC\tKalEC\n";
+  bamBamSpec << "read1\tread2\tBamEC\tKalEC\n";
+  bamKalSpec << "read1\tread2\tBamEC\tKalEC\n";
+  bamNotProper << "read1\tread2\tBamEC\tKalEC\n";
   
   while (!done) {
     bool paired = hasFlagMultiple(record);
@@ -263,12 +272,6 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     index.match(toCString(s1), length(s1), v1);
     if (paired) {
       index.match(toCString(s2), length(s2), v2);
-      // fix k-mer positions, assuming an average
-      // fragment length distribution of fld.
-      int leftpos = ((int) opt.fld)-opt.k;
-      for(auto &x : v2) {
-        x.second = std::max(leftpos-x.second, 0);
-      }
     }
 
     // collect the transcript information
@@ -301,21 +304,31 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
           // mismatch
           if (ec == -1) {
             alignBnotK++;
-            baminfo << s1 << "\t" << s2 << "\t";
-            printVector(lp, baminfo);
-            baminfo << "\t[]\n";
+            bamBnotK << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamBnotK);
+            bamBnotK << "\t[]\n";
           } else {
             mismatches++;
-            baminfo << s1 << "\t" << s2 << "\t";
-            printVector(lp, baminfo);
-            baminfo << "\t";
-            printVector(index.ecmap[ec], baminfo);
-            baminfo << "\n";
             if (isSubset(lp, index.ecmap[ec])) {
+              bamBamSpec << s1 << "\t" << s2 << "\t";
+              printVector(lp, bamBamSpec);
+              bamBamSpec << "\t";
+              printVector(index.ecmap[ec], bamBamSpec);
+              bamBamSpec << "\n";
               mismBamMoreSpecific++;
             } else if (isSubset(index.ecmap[ec], lp)) {
+              bamKalSpec << s1 << "\t" << s2 << "\t";
+              printVector(lp, bamKalSpec);
+              bamKalSpec << "\t";
+              printVector(index.ecmap[ec], bamKalSpec);
+              bamKalSpec << "\n";
               mismKalMoreSpecific++;
             } else {
+              bamNotProper << s1 << "\t" << s2 << "\t";
+              printVector(lp, bamNotProper);
+              bamNotProper << "\t";
+              printVector(index.ecmap[ec], bamNotProper);
+              bamNotProper << "\n";
               mismNonAgreement++;
             }
           }
@@ -326,9 +339,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     } else {
       if (ec >= 0) {
         alignKnotB++;
-        baminfo << s1 << "\t" << s2 << "\t[]\t";
-        printVector(index.ecmap[ec], baminfo);
-        baminfo << "\n";
+        bamKnotB << s1 << "\t" << s2 << "\t[]\t";
+        printVector(index.ecmap[ec], bamKnotB);
+        bamKnotB << "\n";
       } else {
         alignNone++;
       }
@@ -345,7 +358,12 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
             << "  Disjoint = " << mismNonAgreement << std::endl
             << "Neither mapped = " << alignNone << std::endl;
 
-  baminfo.close();
+  bamKnotB.close();
+  bamBnotK.close();
+  bamBamSpec.close();
+  bamKalSpec.close();
+  bamNotProper.close();
+                     
   
   // writeoutput to outdir
   std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
