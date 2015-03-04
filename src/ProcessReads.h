@@ -13,7 +13,7 @@
 #include "MinCollector.h"
 
 #include <seqan/bam_io.h>
-// for debuggig
+// for debugging
 
 #include "common.h"
 

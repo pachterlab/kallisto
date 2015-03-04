@@ -9,7 +9,7 @@
 	using namespace std;*/
 
 
-template<typename T, typename Hash>
+template<typename T, typename Hash = KmerHash>
 struct KmerHashTable {
   using value_type = std::pair<Kmer, T>;
   using key_type = Kmer;
@@ -19,12 +19,13 @@ struct KmerHashTable {
   value_type *table;
   size_t size_, pop;
   value_type empty;
+  value_type deleted;
 
 
 // ---- iterator ----
 
   template<bool is_const_iterator = true>
-  class iterator_ : public std::iterator<std::bidirectional_iterator_tag, value_type> {
+  class iterator_ : public std::iterator<std::forward_iterator_tag, value_type> {
    public:
 
     typedef typename std::conditional<is_const_iterator, const KmerHashTable *, KmerHashTable *>::type DataStructurePointerType;
@@ -35,11 +36,11 @@ struct KmerHashTable {
     DataStructurePointerType ht;
     size_t h;
 
+    iterator_() : ht(nullptr), h(0) {}
     iterator_(DataStructurePointerType ht_) : ht(ht_), h(ht_->size_) {}
     iterator_(DataStructurePointerType ht_, size_t h_) :  ht(ht_), h(h_) {}
-
     iterator_(const iterator_<false>& o) : ht(o.ht), h(o.h) {}
-    iterator_& operator=(const iterator_& o) {ht=o.ht; h=o.h;}
+    iterator_& operator=(const iterator_& o) {ht=o.ht; h=o.h; return *this;}
 
     ValueReferenceType operator*() const {return ht->table[h];}
     ValuePointerType operator->() const {return &(ht->table[h]);}
@@ -47,10 +48,17 @@ struct KmerHashTable {
     void find_first() {
       h = 0;
       if (ht->table != nullptr && ht->size_>0) {
-        if (ht->table[h].first == ht->empty.first) {
+        Kmer& km = ht->table[h].first;
+        if (km == ht->empty.first || km == ht->deleted.first) {
           operator++();
         }
       }
+    }
+
+    iterator_ operator++(int) {
+      const iterator_ old(*this);
+      ++(*this);
+      return old;
     }
 
     iterator_& operator++() {
@@ -59,7 +67,8 @@ struct KmerHashTable {
       }
       ++h;
       for (; h < ht->size_; ++h) {
-        if (ht->table[h].first != ht->empty.first) {
+        Kmer& km = ht->table[h].first;
+        if (km != ht->empty.first && km != ht->deleted.first) {
           break;
         }
       }
@@ -78,12 +87,14 @@ struct KmerHashTable {
 
 
   KmerHashTable(const Hash& h = Hash() ) : hasher(h), table(nullptr), size_(0), pop(0) {
-    empty.first.set_deleted();
+    empty.first.set_empty();
+    deleted.first.set_deleted();
     init_table(1024);
   }
 
   KmerHashTable(size_t sz, const Hash& h = Hash() ) : hasher(h), table(nullptr), size_(0), pop(0) {
-    empty.first.set_deleted();
+    empty.first.set_empty();
+    deleted.first.set_deleted();
     init_table((size_t) (1.2*sz));
   }
 
@@ -122,12 +133,12 @@ struct KmerHashTable {
 
     for (;; h =  (h+1!=size_ ? h+1 : 0)) {
       if (table[h].first == empty.first) {
-        // empty slot, insert here
+        // empty slot, not in table
         return iterator(this);
       } else if (table[h].first == key) {
         // same key, found
         return iterator(this, h);
-      }
+      } // if it is deleted, we still have to continue
     }
   }
 
@@ -137,7 +148,7 @@ struct KmerHashTable {
 
     for (;; h =  (h+1!=size_ ? h+1 : 0)) {
       if (table[h].first == empty.first) {
-        // empty slot, insert here
+        // empty slot, not in table
         return const_iterator(this);
       } else if (table[h].first == key) {
         // same key, found
@@ -146,6 +157,25 @@ struct KmerHashTable {
     }
   }
 
+
+  iterator erase(const_iterator pos) {
+    if (pos == this->end()) {
+      return this->end();
+    }
+    size_t h = pos.h;
+    table[h] = deleted;
+    --pop;
+    return ++iterator(this, h); // return pointer to next element
+  }
+
+  size_t erase(const Kmer& km) {
+    const_iterator pos = find(km);
+    size_t oldpop = pop;
+    if (pos != this->end()) {
+      erase(pos);
+    }
+    return oldpop-pop;
+  }
 
   std::pair<iterator,bool> insert(const value_type& val) {
     //cerr << "inserting " << val.first.toString() << " = " << val.second << endl;
@@ -158,7 +188,7 @@ struct KmerHashTable {
     //cerr << " hash value = " << h << endl;
     for (;; h = (h+1!=size_ ? h+1 : 0)) {
       //cerr << "  lookup at " << h << endl;
-      if (table[h].first == empty.first) {
+      if (table[h].first == empty.first || table[h].first == deleted.first) {
         //cerr << "   found empty slot" << endl;
         // empty slot, insert here
         table[h] = val;
@@ -189,7 +219,7 @@ struct KmerHashTable {
     table = new value_type[size_];
     std::fill(table, table+size_, empty);
     for (size_t i = 0; i < old_size_; i++) {
-      if (old_table[i].first != empty.first) {
+      if (old_table[i].first != empty.first && old_table[i].first != deleted.first) {
         insert(old_table[i]);
       }
     }

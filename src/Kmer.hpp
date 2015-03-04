@@ -34,6 +34,7 @@ class Kmer {
 
   Kmer& operator=(const Kmer& o);
 
+  void set_empty();
   void set_deleted();
 
   bool operator<(const Kmer& o) const;

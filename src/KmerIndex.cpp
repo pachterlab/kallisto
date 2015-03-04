@@ -6,16 +6,29 @@
 using namespace seqan;
 
 
+void _printVector(const std::vector<int> &v, std::ostream& o) {
+  o << "[";
+  int i = 0;
+  for (auto x : v) {
+    if (i>0) {
+      o << ", ";
+    }
+    o << x;
+    i++;
+  }
+  o << "]";
+}
+
 void KmerIndex::BuildTranscripts(const std::string& fasta) {
   std::cerr << "Loading fasta file " << fasta
             << std::endl;
   std::cerr << "k: " << k << std::endl;
 
-  typedef Index<StringSet<seqan::Dna5String>, FMIndex<>> TIndex;
+  typedef Index<StringSet<Dna5String>, FMIndex<>> TIndex;
   typedef Finder<TIndex> TFinder;
   
-  seqan::StringSet<seqan::CharString> ids;
-  StringSet<seqan::Dna5String> seqs;
+  StringSet<CharString> ids;
+  StringSet<Dna5String> seqs;
   SeqFileIn seqFileIn(fasta.c_str());
 
   // read fasta file
@@ -49,9 +62,14 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
       // for each k-mer add to map
       for(; kit != kit_end; ++kit) {
         Kmer km = kit->first;
-
-        Dna5String kms(km.toString().c_str()); // hacky, but works
         Kmer rep = km.rep();
+        if (kmap.find(km) != kmap.end()) {
+          // we've seen this k-mer before
+          continue;
+        }
+        
+        Dna5String kms(km.toString().c_str()); // hacky, but works
+
         std::vector<int> ecv;
         
         // find all instances of the k-mer
@@ -93,6 +111,53 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
     }
   }
 
+  // remove polyA close k-mers
+  CharString polyA;
+  resize(polyA, k, 'A');
+  std::cerr << "searching for neighbors of " << polyA << std::endl;
+
+  {
+    auto search = kmap.find(Kmer(toCString(polyA)).rep());
+    if (search != kmap.end()){
+      std::cerr << "removing " << polyA;
+      _printVector(ecmap.find(search->second)->second, std::cerr);
+      std::cerr << std::endl;
+      kmap.erase(search);
+    }
+  }
+  
+  for (int i = 0; i < k; i++) {
+    for (int a = 1; a < 4; a++) {
+      CharString x(polyA);
+      assignValue(x, i, Dna(a));
+      {
+        auto search = kmap.find(Kmer(toCString(x)).rep());
+        if (search != kmap.end()){
+          std::cerr << "removing " << x;
+          _printVector(ecmap.find(search->second)->second, std::cerr);
+          std::cerr << std::endl;
+          kmap.erase(search);
+        }
+      }
+
+      for (int j = i+1; j < k; j++) {
+        CharString y(x);
+        for (int b = 1; b < 4; b++) {
+          assignValue(y, j, Dna(b));
+          {
+            auto search = kmap.find(Kmer(toCString(y)).rep());
+            if (search != kmap.end()){
+              std::cerr << "removing " << y;
+              _printVector(ecmap.find(search->second)->second, std::cerr);
+              std::cerr << std::endl;
+              kmap.erase(search);
+            }
+          }
+        }
+      }
+      
+    }
+  }
 
   std::cerr << "Found " << num_trans << " transcripts"
             << std::endl
