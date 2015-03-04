@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <fstream>
+#include "MinCollector.h"
 
 #include <seqan/bam_io.h>
 // for debuggig
@@ -44,7 +45,7 @@ bool isSubset(const std::vector<int> &x, const std::vector<int> &y) {
       ++b;
     }
   }
-  return true;
+  return (a==x.end());
 }
 
 template<typename Index, typename TranscriptCollector>
@@ -275,11 +276,18 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     }
 
     // collect the transcript information
-    int ec = -1;
+    std::vector<int> u;
     if (!paired){
-      ec = tc.collect(v1);
+      if (!v1.empty()) {
+        u = tc.intersectECs(v1);
+      }
     } else {
-      ec = tc.collect(v1,v2);
+      if (!v1.empty() && !v2.empty()) {
+        std::vector<int> u1 = tc.intersectECs(v1);
+        std::vector<int> u2 = tc.intersectECs(v2);
+      
+        u = intersect(u1,u2);
+      }
     }
 
     if (opt.verbose && nreads % 10000 == 0 ) {
@@ -289,58 +297,65 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     sort(p.begin(), p.end());
     std::vector<int> lp;
     if (!p.empty()) {
-      lp.push_back(p[0]);
+      if (p[0] != -1) {
+        lp.push_back(p[0]);
+      }
       for (int i = 1; i < p.size(); i++) {
-        if (p[i-1] != p[i]) {
+        if (p[i-1] != p[i] && p[i] != -1) {
           lp.push_back(p[i]);
         }
       }
     }
 
     if (!lp.empty()) {
-      auto find = index.ecmapinv.find(lp);
-      if (find != index.ecmapinv.end()) {
-        if (find->second != ec) {
+      int ec_lp = tc.increaseCount(lp);
+
+      if (u.empty()) {
+        // BAM mapped not kallisto
+        alignBnotK++;
+        bamBnotK << s1 << "\t" << s2 << "\t";
+        printVector(lp, bamBnotK);
+        bamBnotK << "\t[]\n";
+      } else {
+        // search for u
+        auto find = index.ecmapinv.find(u); 
+        // both mapped, check mapping
+        if (find == index.ecmapinv.end() || find->second != ec_lp) {
           // mismatch
-          if (ec == -1) {
-            alignBnotK++;
-            bamBnotK << s1 << "\t" << s2 << "\t";
-            printVector(lp, bamBnotK);
-            bamBnotK << "\t[]\n";
+          mismatches++;
+          // classify the mismatch
+          if (isSubset(lp, u)) {
+            bamBamSpec << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamBamSpec);
+            bamBamSpec << "\t";
+            printVector(u, bamBamSpec);
+            bamBamSpec << "\n";
+            mismBamMoreSpecific++;
+          } else if (isSubset(u, lp)) {
+            bamKalSpec << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamKalSpec);
+            bamKalSpec << "\t";
+            printVector(u, bamKalSpec);
+            bamKalSpec << "\n";
+            mismKalMoreSpecific++;
           } else {
-            mismatches++;
-            if (isSubset(lp, index.ecmap[ec])) {
-              bamBamSpec << s1 << "\t" << s2 << "\t";
-              printVector(lp, bamBamSpec);
-              bamBamSpec << "\t";
-              printVector(index.ecmap[ec], bamBamSpec);
-              bamBamSpec << "\n";
-              mismBamMoreSpecific++;
-            } else if (isSubset(index.ecmap[ec], lp)) {
-              bamKalSpec << s1 << "\t" << s2 << "\t";
-              printVector(lp, bamKalSpec);
-              bamKalSpec << "\t";
-              printVector(index.ecmap[ec], bamKalSpec);
-              bamKalSpec << "\n";
-              mismKalMoreSpecific++;
-            } else {
-              bamNotProper << s1 << "\t" << s2 << "\t";
-              printVector(lp, bamNotProper);
-              bamNotProper << "\t";
-              printVector(index.ecmap[ec], bamNotProper);
-              bamNotProper << "\n";
-              mismNonAgreement++;
-            }
+            bamNotProper << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamNotProper);
+            bamNotProper << "\t";
+            printVector(u, bamNotProper);
+            bamNotProper << "\n";
+            mismNonAgreement++;
           }
         } else {
+          // both agree
           exactMatches++;
         }
       }
     } else {
-      if (ec >= 0) {
+      if (!u.empty()) {
         alignKnotB++;
         bamKnotB << s1 << "\t" << s2 << "\t[]\t";
-        printVector(index.ecmap[ec], bamKnotB);
+        printVector(u, bamKnotB);
         bamKnotB << "\n";
       } else {
         alignNone++;

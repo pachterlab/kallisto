@@ -39,7 +39,10 @@ int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
   if (u.empty()) {
     return -1;
   }
-  
+  return increaseCount(u);
+}
+
+int MinCollector::increaseCount(const std::vector<int>& u) {  
   auto search = index.ecmapinv.find(u);
   if (search != index.ecmapinv.end()) {
     // ec class already exists, update count
