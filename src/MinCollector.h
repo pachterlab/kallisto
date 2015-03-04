@@ -24,6 +24,7 @@ struct MinCollector {
     return collect(v1,dummy,true);
     
   }
+  int increaseCount(const std::vector<int>& u); 
   
   std::vector<int> intersectECs(std::vector<std::pair<int,int>>& v) const;
 
@@ -41,5 +42,7 @@ struct MinCollector {
   int k;
 
 };
+
+std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y);
 
 #endif // KALLISTO_MINCOLLECTOR_H
