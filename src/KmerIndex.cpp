@@ -172,17 +172,6 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
 
   std::cerr << "Created " << ecmap.size() << " equivalence classes from " << num_trans << " transcripts" << std::endl;
 
-  /* std::cout << "EqId\tTransIdList\n"; */
-  /* for (auto &ekv : ecmap) { */
-  /* 	std::cout << ekv.first; */
-  /* 	for (auto el : ekv.second) { */
-  /* 		std::cout << "\t" << el; */
-  /* 	} */
-  /* 	std::cout << "\n"; */
-  /* } */
-  /* std::cout.flush(); */
-
-
   std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << std::endl;
 }
 
