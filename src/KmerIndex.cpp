@@ -6,25 +6,20 @@
 using namespace seqan;
 
 
-void _printVector(const std::vector<int> &v, std::ostream& o) {
-  o << "[";
-  int i = 0;
-  for (auto x : v) {
-    if (i>0) {
-      o << ", ";
-    }
-    o << x;
-    i++;
-  }
-  o << "]";
-}
+template<>
+struct SAValue<StringSet<Dna5String>>
+{
+    typedef Pair<unsigned, unsigned> Type;
+};
+
 
 void KmerIndex::BuildTranscripts(const std::string& fasta) {
   std::cerr << "Loading fasta file " << fasta
             << std::endl;
   std::cerr << "k: " << k << std::endl;
 
-  typedef Index<StringSet<Dna5String>, FMIndex<>> TIndex;
+  
+  typedef Index<StringSet<Dna5String>, IndexSa<>> TIndex;
   typedef Finder<TIndex> TFinder;
   
   StringSet<CharString> ids;
@@ -35,9 +30,12 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
   readRecords(ids, seqs, seqFileIn);
 
   int transid = 0;
-
+  std::cerr << "Constructing index"; std::cerr.flush();
   TIndex index(seqs);
   TFinder finder(index);
+  find(finder, "A");
+  clear(finder);
+  std::cerr << "done " << std::endl;
 
   assert(length(seqs) == length(ids));
   num_trans = length(seqs);
@@ -119,9 +117,6 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
   {
     auto search = kmap.find(Kmer(toCString(polyA)).rep());
     if (search != kmap.end()){
-      std::cerr << "removing " << polyA;
-      _printVector(ecmap.find(search->second)->second, std::cerr);
-      std::cerr << std::endl;
       kmap.erase(search);
     }
   }
@@ -133,9 +128,6 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
       {
         auto search = kmap.find(Kmer(toCString(x)).rep());
         if (search != kmap.end()){
-          std::cerr << "removing " << x;
-          _printVector(ecmap.find(search->second)->second, std::cerr);
-          std::cerr << std::endl;
           kmap.erase(search);
         }
       }
@@ -147,9 +139,6 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
           {
             auto search = kmap.find(Kmer(toCString(y)).rep());
             if (search != kmap.end()){
-              std::cerr << "removing " << y;
-              _printVector(ecmap.find(search->second)->second, std::cerr);
-              std::cerr << std::endl;
               kmap.erase(search);
             }
           }
