@@ -17,6 +17,6 @@ if ( ZLIB_FOUND )
     target_link_libraries( kallisto ${ZLIB_LIBRARIES} )
 endif( ZLIB_FOUND )
 
-target_link_libraries(kallisto kallisto_core)
+target_link_libraries(kallisto kallisto_core pthread rt)
 
 install(TARGETS kallisto DESTINATION bin)
