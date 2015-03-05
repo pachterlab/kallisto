@@ -17,6 +17,10 @@ if ( ZLIB_FOUND )
     target_link_libraries( kallisto ${ZLIB_LIBRARIES} )
 endif( ZLIB_FOUND )
 
-target_link_libraries(kallisto kallisto_core pthread rt)
+target_link_libraries(kallisto kallisto_core pthread)
+
+if (UNIX AND NOT APPLE)
+    target_link_libraries(kallisto rt)
+endif()
 
 install(TARGETS kallisto DESTINATION bin)
