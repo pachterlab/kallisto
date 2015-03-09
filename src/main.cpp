@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
         std::cerr << "Building index from: " << opt.transfasta << std::endl;
-        index.BuildTranscripts(opt.transfasta);
+        index.BuildTranscripts(opt);
         index.write(opt.index);
       }
     } else if (cmd == "inspect") {

@@ -6,54 +6,125 @@
 using namespace seqan;
 
 
-template<>
-struct SAValue<StringSet<Dna5String>>
-{
-    typedef Pair<unsigned, unsigned> Type;
-};
 
 
-void KmerIndex::BuildTranscripts(const std::string& fasta) {
+void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
+  const std::string& fasta = opt.transfasta;
   std::cerr << "Loading fasta file " << fasta
             << std::endl;
   std::cerr << "k: " << k << std::endl;
-
-  
-  typedef Index<StringSet<Dna5String>, IndexSa<>> TIndex;
-  typedef Finder<TIndex> TFinder;
   
   StringSet<CharString> ids;
-  StringSet<Dna5String> seqs;
+  StringSet<CharString> seqs;
   SeqFileIn seqFileIn(fasta.c_str());
 
   // read fasta file
   readRecords(ids, seqs, seqFileIn);
 
   int transid = 0;
-  std::cerr << "Constructing index"; std::cerr.flush();
+  std::cerr << "Constructing index ... "; std::cerr.flush();
   TIndex index(seqs);
   TFinder finder(index);
   find(finder, "A");
   clear(finder);
-  std::cerr << "done " << std::endl;
+  std::cerr << " done " << std::endl;
 
+  // write fasta to disk
+  SeqFileOut fastaIndex((opt.index+".fa").c_str());
+  writeRecords(fastaIndex, ids, seqs);
+  close(fastaIndex);
+  
+
+  
+  // write index to disk
+  save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
+  
   assert(length(seqs) == length(ids));
   num_trans = length(seqs);
 
+  
+  
   // for each transcript, create it's own equivalence class
   for (int i = 0; i < length(seqs); i++ ) {
+    target_names_.push_back(toCString(ids[i]));
+    CharString seq = value(seqs,i);
+    trans_lens_.push_back(length(seq));
+
     std::vector<int> single(1,i);
     ecmap.insert({i,single});
     ecmapinv.insert({single,i});
   }
 
+  // traverse the suffix tree
+  Iterator<TIndex, TopDown<ParentLinks<>>>::Type it(index);
+  do {
+    
+    if (repLength(it) >= k) {
+      //std::cout << representative(it) << std::endl;
+      // process the k-mers
+      CharString seq = representative(it);
+      Kmer km(toCString(seq));
+      Kmer rep = km.rep();
+      if (kmap.find(rep) == kmap.end()) {
+        // if we have never seen this k-mer before
+        
+        std::vector<int> ecv;
+
+        for (auto x : getOccurrences(it)) {
+          ecv.push_back(x.i1); // record transcript
+        }
+
+        // search for second part
+        Kmer twin = km.twin(); // other k-mer
+        clear(finder);
+        while (find(finder, twin.toString().c_str())) {
+          ecv.push_back(getSeqNo(position(finder)));
+        }
+        
+        // common case
+        if (ecv.size() == 1) {
+          int ec = ecv[0];
+          kmap.insert({rep, ec});
+        } else {
+          sort(ecv.begin(), ecv.end());
+          std::vector<int> u;
+          u.push_back(ecv[0]);
+          for (int i = 1; i < ecv.size(); i++) {
+            if (ecv[i-1] != ecv[i]) {
+              u.push_back(ecv[i]);
+            }
+          }
+          
+          auto search = ecmapinv.find(u);
+          if (search != ecmapinv.end()) {
+            kmap.insert({rep, search->second});
+          } else {
+            int eqs_id = ecmapinv.size();
+            ecmapinv.insert({u, eqs_id });
+            ecmap.insert({eqs_id, u});
+            kmap.insert({rep, eqs_id});
+          }
+        }
+      }
+    }
+    // next step
+    if (!goDown(it) || repLength(it) > k) {
+      // if we can't go down or the sequence is too long
+      do {
+        if (!goRight(it)) {
+          while (goUp(it) && !goRight(it)) {
+            // go up the tree until you can go to the right
+          }
+        }
+      } while (repLength(it) > k);
+    }
+  } while (!isRoot(it));
+  
+  /*
   // for each transcript
   for (int i = 0; i < length(seqs); i++) {
-    target_names_.push_back(toCString(ids[i]));
-    CharString seq = value(seqs,i);
-    trans_lens_.push_back(length(seq));
-
     // if it it long enough
+    CharString seq = value(seqs,i);
     if (length(seq) >= k) {
       KmerIterator kit(toCString(seq)), kit_end;
 
@@ -66,7 +137,7 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
           continue;
         }
         
-        Dna5String kms(km.toString().c_str()); // hacky, but works
+        CharString kms(km.toString().c_str()); // hacky, but works
 
         std::vector<int> ecv;
         
@@ -108,6 +179,7 @@ void KmerIndex::BuildTranscripts(const std::string& fasta) {
       }
     }
   }
+    */
 
   // remove polyA close k-mers
   CharString polyA;
