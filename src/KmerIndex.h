@@ -22,6 +22,18 @@
 
 #include "hash.hpp"
 
+typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
+namespace SEQAN_NAMESPACE_MAIN
+{
+  
+template<>
+struct SAValue<TIndex>
+{
+  typedef Pair<unsigned, unsigned, Pack> Type;
+};
+
+}
+
 using EcMap = std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
@@ -102,6 +114,8 @@ struct KmerIndex {
 
   void write(const std::string& index_out, bool writeKmerTable = true);
   void load(ProgramOptions& opt, bool loadKmerTable = true);
+  bool loadSuffixArray(const ProgramOptions& opt);
+  void clearSuffixArray();
   // note opt is not const
 
   int k; // k-mer size used
@@ -118,23 +132,17 @@ struct KmerIndex {
 
   std::vector<std::string> target_names_;
 
-  // typedefs
-  typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
+  // Suffix array indices
+
   typedef seqan::Finder<TIndex> TFinder;
+
+  TIndex index;
+  seqan::StringSet<seqan::CharString> seqs;
   
 };
 
 
-namespace SEQAN_NAMESPACE_MAIN
-{
-  
-template<>
-struct SAValue<KmerIndex::TIndex>
-{
-  typedef Pair<unsigned, unsigned, Pack> Type;
-};
 
-}
 
 
 #endif // KALLISTO_KMERINDEX_H
