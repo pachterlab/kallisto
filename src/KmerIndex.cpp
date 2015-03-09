@@ -5,8 +5,21 @@
 
 using namespace seqan;
 
+bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
+  // open the fasta sequences
+  
+  index = TIndex(seqs);
+  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), DefaultOpenMode<TIndex>::VALUE)) {
+    return false;
+  }
+  
+  return true;
+}
 
-
+void KmerIndex::clearSuffixArray() {
+  clear(index);
+  
+}
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   const std::string& fasta = opt.transfasta;
@@ -14,30 +27,38 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
             << std::endl;
   std::cerr << "k: " << k << std::endl;
   
-  StringSet<CharString> ids;
-  StringSet<CharString> seqs;
+
   SeqFileIn seqFileIn(fasta.c_str());
 
   // read fasta file
+  seqan::StringSet<seqan::CharString> ids;
   readRecords(ids, seqs, seqFileIn);
 
   int transid = 0;
-  std::cerr << "Constructing index ... "; std::cerr.flush();
-  TIndex index(seqs);
+  
+
+  if (!loadSuffixArray(opt)) {
+    std::cerr << "Constructing index ... "; std::cerr.flush();  
+
+    index = TIndex(seqs);
+    indexRequire(index, EsaSA());
+    // write fasta to disk
+    SeqFileOut fastaIndex((opt.index+".fa").c_str());
+    writeRecords(fastaIndex, ids, seqs);
+    close(fastaIndex);
+    
+    // write index to disk
+    save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
+
+    std::cerr << " done " << std::endl;
+  } else {
+    std::cerr << "Found index" << std::endl;
+  }
+
   TFinder finder(index);
   find(finder, "A");
   clear(finder);
-  std::cerr << " done " << std::endl;
 
-  // write fasta to disk
-  SeqFileOut fastaIndex((opt.index+".fa").c_str());
-  writeRecords(fastaIndex, ids, seqs);
-  close(fastaIndex);
-  
-
-  
-  // write index to disk
-  save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
   
   assert(length(seqs) == length(ids));
   num_trans = length(seqs);
@@ -46,7 +67,13 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   
   // for each transcript, create it's own equivalence class
   for (int i = 0; i < length(seqs); i++ ) {
-    target_names_.push_back(toCString(ids[i]));
+    std::string name(toCString(ids[i]));
+    size_t p = name.find(' ');
+    if (p != std::string::npos) {
+      name = name.substr(0,p);
+    }
+    target_names_.push_back(name);
+
     CharString seq = value(seqs,i);
     trans_lens_.push_back(length(seq));
 
@@ -319,9 +346,22 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
+
+  
   std::string& index_in = opt.index;
   std::ifstream in;
 
+  // load sequences
+  SeqFileIn seqFileIn;
+
+  if (!open(seqFileIn, (index_in + ".fa").c_str())){
+    std::cerr << "Error: index fasta could not be opened " << std::endl;
+    exit(1);
+  }
+  seqan::StringSet<seqan::CharString> ids; // not used
+  readRecords(ids, seqs, seqFileIn);
+  
+  
   in.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in.is_open()) {
