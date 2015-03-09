@@ -7,6 +7,9 @@
 #include <vector>
 #include <unordered_map>
 
+#include <seqan/sequence.h>
+#include <seqan/index.h>
+
 
 //#include <map>
 
@@ -95,7 +98,7 @@ struct KmerIndex {
     return res;
   }
 
-  void BuildTranscripts(const std::string& fasta); 
+  void BuildTranscripts(const ProgramOptions& opt);
 
   void write(const std::string& index_out, bool writeKmerTable = true);
   void load(ProgramOptions& opt, bool loadKmerTable = true);
@@ -114,6 +117,24 @@ struct KmerIndex {
   std::vector<int> trans_lens_;
 
   std::vector<std::string> target_names_;
+
+  // typedefs
+  typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
+  typedef seqan::Finder<TIndex> TFinder;
+  
 };
+
+
+namespace SEQAN_NAMESPACE_MAIN
+{
+  
+template<>
+struct SAValue<KmerIndex::TIndex>
+{
+  typedef Pair<unsigned, unsigned, Pack> Type;
+};
+
+}
+
 
 #endif // KALLISTO_KMERINDEX_H
