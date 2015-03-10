@@ -481,3 +481,104 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   in.close();
 }
+
+int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec) const {
+  bool d1 = true;
+  bool d2 = true;
+  int p1 = -1;
+  int p2 = -1;
+
+  TFinder finder(index);
+  
+  KmerIterator kit1(s1), kit_end;
+
+  bool found1 = false;
+  while (kit1 != kit_end) {
+    if (kmap.find(kit1->first.rep()) != kmap.end()) {
+      found1 = true;
+      break;
+    }
+  }
+
+  if (!found1) {
+    return -1;
+  }
+  
+  CharString c1(s1+kit1->second);
+  // try to locate it in the suffix array
+  Prefix<CharString>::Type pre = prefix(c1,k);
+  while(find(finder, pre)) {
+    if (getSeqNo(position(finder)) == ec) {
+      p1 = getSeqOffset(position(finder)) - kit1->second;
+      break;
+    }
+  }
+  if (p1 < 0) {
+    reverseComplement(pre);
+    clear(finder);
+    while(find(finder, pre)) {
+      if (getSeqNo(position(finder)) == ec) {
+        p1 = getSeqOffset(position(finder)) + k + kit1->second;
+        d1 = false;
+        break;
+      }
+    }
+  }
+
+  if (p1 == -1) {
+    return -1;
+  }
+
+
+  KmerIterator kit2(s2);
+  bool found2 = false;
+  while (kit2 != kit_end) {
+    if (kmap.find(kit2->first.rep()) != kmap.end()) {
+      found2 = true;
+      break;
+    }
+  }
+
+  if (!found2) {
+    return -1;
+  }
+
+
+  CharString c2(s2+kit2->second);
+  // try to locate it in the suffix array
+  pre = prefix(c2,k);
+  clear(finder);
+  while(find(finder, pre)) {
+    if (getSeqNo(position(finder)) == ec) {
+      p2 = getSeqOffset(position(finder)) - kit2->second;
+      break;
+    }
+  }
+  if (p2 < 0) {
+    reverseComplement(pre);
+    clear(finder);
+    while(find(finder, pre)) {
+      if (getSeqNo(position(finder)) == ec) {
+        p2 = getSeqOffset(position(finder)) + k + kit2->second;
+        d2 = false;
+        break;
+      }
+    }
+  }
+
+  if (p2 == -1) {
+    return -1;
+  }
+
+  if ((d1 && d2) || (!d1 && !d2)) {
+    //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
+    return -1;
+  }
+
+  if (p1>p2) {
+    return p1-p2;
+  } else {
+    return p2-p1;
+  }
+  
+}
