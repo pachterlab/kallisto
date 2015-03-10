@@ -12,13 +12,14 @@ bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
   if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), DefaultOpenMode<TIndex>::VALUE)) {
     return false;
   }
+  //setHaystack(finder, index); // finder searches index
   
   return true;
 }
 
 void KmerIndex::clearSuffixArray() {
   clear(index);
-  
+  //clear(finder);
 }
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
@@ -482,13 +483,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.close();
 }
 
-int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec) const {
+int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec, TFinder& finder) const {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
   int p2 = -1;
 
-  TFinder finder(index);
   
   KmerIterator kit1(s1), kit_end;
 
@@ -503,20 +503,23 @@ int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec) c
   if (!found1) {
     return -1;
   }
-  
-  CharString c1(s1+kit1->second);
+
+  clear(finder);
+  //CharString c1(s1+kit1->second);
   // try to locate it in the suffix array
-  Prefix<CharString>::Type pre = prefix(c1,k);
-  while(find(finder, pre)) {
+  //Prefix<CharString>::Type
+  //CharString pre = prefix(c1,k);
+  //setNeedle(finder, kit1->first.toString().c_str());
+  while(find(finder, kit1->first.toString().c_str())) {
     if (getSeqNo(position(finder)) == ec) {
       p1 = getSeqOffset(position(finder)) - kit1->second;
       break;
     }
   }
   if (p1 < 0) {
-    reverseComplement(pre);
+    //reverseComplement(pre);
     clear(finder);
-    while(find(finder, pre)) {
+    while(find(finder, kit1->first.twin().toString().c_str())) {
       if (getSeqNo(position(finder)) == ec) {
         p1 = getSeqOffset(position(finder)) + k + kit1->second;
         d1 = false;
@@ -544,20 +547,20 @@ int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec) c
   }
 
 
-  CharString c2(s2+kit2->second);
+  //CharString c2(s2+kit2->second);
   // try to locate it in the suffix array
-  pre = prefix(c2,k);
+  //Prefix<CharString>::Type pre = prefix(c2,k);
   clear(finder);
-  while(find(finder, pre)) {
+  while(find(finder, kit2->first.toString().c_str())) {
     if (getSeqNo(position(finder)) == ec) {
       p2 = getSeqOffset(position(finder)) - kit2->second;
       break;
     }
   }
   if (p2 < 0) {
-    reverseComplement(pre);
+    //reverseComplement(pre);
     clear(finder);
-    while(find(finder, pre)) {
+    while(find(finder, kit2->first.twin().toString().c_str())) {
       if (getSeqNo(position(finder)) == ec) {
         p2 = getSeqOffset(position(finder)) + k + kit2->second;
         d2 = false;
