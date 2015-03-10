@@ -13,6 +13,11 @@ ELSE(CMAKE_BUILD_TYPE MATCHES Debug)
 		add_compile_options(-O3)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
+if(CMAKE_BUILD_TYPE MATCHES Profile) 
+	add_compile_options(-g)
+endif(CMAKE_BUILD_TYPE MATCHES Profile)
+
+
 # add_compile_options(-Wdeprecated-register)
 
 add_subdirectory(src)

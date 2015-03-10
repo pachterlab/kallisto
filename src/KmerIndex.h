@@ -23,6 +23,8 @@
 #include "hash.hpp"
 
 typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
+typedef seqan::Finder<TIndex> TFinder;
+
 namespace SEQAN_NAMESPACE_MAIN
 {
   
@@ -79,7 +81,7 @@ struct KmerIndex {
     }
   }
 
-  int mapPair(const char* s1, int l1, const char* s2, int l2, int ec) const;
+  int mapPair(const char* s1, int l1, const char* s2, int l2, int ec, TFinder& finder) const;
 
   // use:  res = intersect(ec,v)
   // pre:  ec is in ecmap, v is a vector of valid transcripts
@@ -115,10 +117,12 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt);
 
   void write(const std::string& index_out, bool writeKmerTable = true);
+  // note opt is not const
   void load(ProgramOptions& opt, bool loadKmerTable = true);
+
   bool loadSuffixArray(const ProgramOptions& opt);
   void clearSuffixArray();
-  // note opt is not const
+
 
   int k; // k-mer size used
   int num_trans; // number of transcripts
@@ -135,10 +139,9 @@ struct KmerIndex {
   std::vector<std::string> target_names_;
 
   // Suffix array indices
-
-  typedef seqan::Finder<TIndex> TFinder;
-
   TIndex index;
+  //TFinder finder;
+
   seqan::StringSet<seqan::CharString> seqs;
   
 };

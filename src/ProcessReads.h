@@ -54,11 +54,10 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
-  int tlenmax = 1000;
-  std::vector<int> tlen(tlenmax);
-  int tlencount = 1000;
+  int tlencount = 10000;
   
   index.loadSuffixArray(opt);
+  TFinder finder(index.index);
   
 
   bool paired = (opt.files.size() == 2);
@@ -108,6 +107,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
     // collect the transcript information
     int ec = tc.collect(v1, v2, !paired);
     if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
+      //bool allSame = true;
       bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
       /*
       for (auto x : v1) {
@@ -125,19 +125,20 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
       */
       if (allSame) {
         // try to map the reads
-        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
-        if (0 < tl && tl < tlenmax) {
-          tlen[tl]++;
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec, finder);
+        if (0 < tl && tl < tc.flens.size()) {
+          flens[tl]++;
           tlencount--;
         }
         
         if (tlencount == 0) {
           index.clearSuffixArray();
-          std::cout << "Fragment length" << std::endl;
+          /*std::cout << "Fragment length" << std::endl;
           for (int i = 0; i < tlen.size(); i++) {
             std::cout << i << "\t" << tlen[i] << "\n";
           }
           std::cout << "---------------" << std::endl;
+          */
         }
       }
     }

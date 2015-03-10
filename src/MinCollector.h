@@ -13,9 +13,9 @@
 
 struct MinCollector {
 
-  MinCollector(KmerIndex& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0), min_range(opt.min_range), k(opt.k) {}
+  MinCollector(KmerIndex& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0), flens(1000), min_range(opt.min_range), k(opt.k) {}
 
-  int collect(std::vector<std::pair<int,int>>& v1,
+  Int collect(std::vector<std::pair<int,int>>& v1,
               std::vector<std::pair<int,int>>& v2,
               bool nonpaired=false);
 
@@ -38,6 +38,7 @@ struct MinCollector {
 
   KmerIndex& index;
   std::vector<int> counts;
+  std::vector<int> flens;
   int min_range;
   int k;
 
