@@ -79,6 +79,8 @@ struct KmerIndex {
     }
   }
 
+  int mapPair(const char* s1, int l1, const char* s2, int l2, int ec) const;
+
   // use:  res = intersect(ec,v)
   // pre:  ec is in ecmap, v is a vector of valid transcripts
   //       v is sorted in increasing order

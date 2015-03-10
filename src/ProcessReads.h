@@ -54,13 +54,20 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
+  int tlenmax = 1000;
+  std::vector<int> tlen(tlenmax);
+  int tlencount = 1000;
+  
+  index.loadSuffixArray(opt);
+  
 
   bool paired = (opt.files.size() == 2);
 
   gzFile fp1 = 0, fp2 = 0;
   kseq_t *seq1 = 0, *seq2;
-  std::vector<std::pair<int,int>> v;
-  v.reserve(1000);
+  std::vector<std::pair<int,int>> v1, v2;
+  v1.reserve(1000);
+  v2.reserve(1000);
 
   int l1,l2; // length of read
   size_t nreads = 0;
@@ -90,22 +97,52 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
     }
 
     nreads++;
-    v.clear();
+    v1.clear();
+    v2.clear();
     // process read
-    index.match(seq1->seq.s, seq1->seq.l, v);
+    index.match(seq1->seq.s, seq1->seq.l, v1);
     if (paired) {
-      int vl = v.size();
-      index.match(seq2->seq.s, seq2->seq.l, v);
-      // fix k-mer positions, assuming an average
-      // fragment length distribution of fld.
-      int leftpos = ((int) opt.fld)-opt.k;
-      for (int i = vl; i < v.size(); i++) {
-        v[i].second = std::max(leftpos-v[i].second, 0);
-      }
+      index.match(seq2->seq.s, seq2->seq.l, v2);
     }
 
     // collect the transcript information
-    int ec = tc.collect(v);
+    int ec = tc.collect(v1, v2, !paired);
+    if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
+      bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
+      /*
+      for (auto x : v1) {
+        if (x.first != ec) {
+          allSame = false;
+          break;
+        }
+      }
+      for (auto x : v2) {
+        if (x.first != ec) {
+          allSame = false;
+          break;
+        }
+      }
+      */
+      if (allSame) {
+        // try to map the reads
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
+        if (0 < tl && tl < tlenmax) {
+          tlen[tl]++;
+          tlencount--;
+        }
+        
+        if (tlencount == 0) {
+          index.clearSuffixArray();
+          std::cout << "Fragment length" << std::endl;
+          for (int i = 0; i < tlen.size(); i++) {
+            std::cout << i << "\t" << tlen[i] << "\n";
+          }
+          std::cout << "---------------" << std::endl;
+        }
+      }
+    }
+    
+    
     if (opt.verbose && nreads % 10000 == 0 ) {
       std::cerr << "Processed " << nreads << std::endl;
     }
