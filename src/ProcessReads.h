@@ -127,7 +127,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
         // try to map the reads
         int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec, finder);
         if (0 < tl && tl < tc.flens.size()) {
-          flens[tl]++;
+          tc.flens[tl]++;
           tlencount--;
         }
         
