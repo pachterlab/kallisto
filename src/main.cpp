@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
         std::cerr << "Building index from: " << opt.transfasta << std::endl;
-        index.BuildTranscripts(opt.transfasta);
+        index.BuildTranscripts(opt);
         index.write(opt.index);
       }
     } else if (cmd == "inspect") {
@@ -569,11 +569,11 @@ int main(int argc, char *argv[]) {
         KmerIndex index(opt);
         index.load(opt);
         auto firstFile = opt.files[0];
-        MinCollector<KmerIndex> collection(index, opt);
+        MinCollector collection(index, opt);
         if (firstFile.size() >= 4 && firstFile.compare(firstFile.size()-4,4,".bam") == 0) {
-          ProcessBams<KmerIndex, MinCollector<KmerIndex>>(index, opt, collection);
+          ProcessBams<KmerIndex, MinCollector>(index, opt, collection);
         } else {
-          ProcessReads<KmerIndex, MinCollector<KmerIndex>>(index, opt, collection);
+          ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
         }
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
@@ -620,7 +620,7 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
-        MinCollector<KmerIndex> collection(index, opt);
+        MinCollector collection(index, opt);
         collection.loadCounts(opt);
         auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
