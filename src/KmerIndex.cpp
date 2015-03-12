@@ -9,7 +9,7 @@ bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
   // open the fasta sequences
   
   index = TIndex(seqs);
-  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), DefaultOpenMode<TIndex>::VALUE)) {
+  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), OPEN_RDONLY)) {
     return false;
   }
   //setHaystack(finder, index); // finder searches index
