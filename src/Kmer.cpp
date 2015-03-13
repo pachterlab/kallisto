@@ -136,10 +136,19 @@ Kmer& Kmer::operator=(const Kmer& o) {
 
 // use:  km = Kmer();
 // pre:
-// post: The last bit in the bit array which stores the DNA string has been set to 1
-//       which indicates that the km is invalid
+// post: The last 2 bits in the bit array which stores the DNA string have been set to 11
+//       which indicates that the km is deleted
 void Kmer::set_deleted() {
   memset(bytes,0xff,MAX_K/4);
+}
+
+// use:  km = Kmer();
+// pre:
+// post: The last 2 bits in the bit array which stores the DNA string hav been set to 01
+//       which indicates that the km is invalid
+void Kmer::set_empty() {
+  memset(bytes,0xff,MAX_K/4);
+  longs[0] ^= (1ULL<<63); //
 }
 
 
@@ -148,8 +157,6 @@ void Kmer::set_deleted() {
 // post: b is true <==> the DNA strings in km1 is alphabetically smaller than
 //                      the DNA string in km2
 bool Kmer::operator<(const Kmer& o) const {
-
-  bool r = false;
   for (size_t i = 0; i < MAX_K/32; ++i) {
     if (longs[i] < o.longs[i]) {
       return true;

@@ -10,13 +10,43 @@
 
 #include <iostream>
 #include <fstream>
+#include "MinCollector.h"
 
 #include <seqan/bam_io.h>
-
+// for debugging
 
 #include "common.h"
 
 using namespace seqan;
+
+void printVector(const std::vector<int> &v, std::ostream& o) {
+  o << "[";
+  int i = 0;
+  for (auto x : v) {
+    if (i>0) {
+      o << ", ";
+    }
+    o << x;
+    i++;
+  }
+  o << "]";
+}
+
+bool isSubset(const std::vector<int> &x, const std::vector<int> &y) {
+  auto a = x.begin();
+  auto b = y.begin();
+  while (a != x.end() && b != y.end()) {
+    if (*a < *b) {
+      return false;
+    } else if (*b < *a) {
+      ++b;
+    } else {
+      ++a;
+      ++b;
+    }
+  }
+  return (a==x.end());
+}
 
 template<typename Index, typename TranscriptCollector>
 void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &tc) {
@@ -24,13 +54,19 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
+  int tlencount = 10000;
+  
+  index.loadSuffixArray(opt);
+  TFinder finder(index.index);
+  
 
   bool paired = (opt.files.size() == 2);
 
   gzFile fp1 = 0, fp2 = 0;
   kseq_t *seq1 = 0, *seq2;
-  std::vector<std::pair<int,int>> v;
-  v.reserve(1000);
+  std::vector<std::pair<int,int>> v1, v2;
+  v1.reserve(1000);
+  v2.reserve(1000);
 
   int l1,l2; // length of read
   size_t nreads = 0;
@@ -60,22 +96,54 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
     }
 
     nreads++;
-    v.clear();
+    v1.clear();
+    v2.clear();
     // process read
-    index.match(seq1->seq.s, seq1->seq.l, v);
+    index.match(seq1->seq.s, seq1->seq.l, v1);
     if (paired) {
-      int vl = v.size();
-      index.match(seq2->seq.s, seq2->seq.l, v);
-      // fix k-mer positions, assuming an average
-      // fragment length distribution of fld.
-      int leftpos = ((int) opt.fld)-opt.k;
-      for (int i = vl; i < v.size(); i++) {
-        v[i].second = std::max(leftpos-v[i].second, 0);
-      }
+      index.match(seq2->seq.s, seq2->seq.l, v2);
     }
 
     // collect the transcript information
-    int ec = tc.collect(v);
+    int ec = tc.collect(v1, v2, !paired);
+    if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
+      //bool allSame = true;
+      bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
+      /*
+      for (auto x : v1) {
+        if (x.first != ec) {
+          allSame = false;
+          break;
+        }
+      }
+      for (auto x : v2) {
+        if (x.first != ec) {
+          allSame = false;
+          break;
+        }
+      }
+      */
+      if (allSame) {
+        // try to map the reads
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec, finder);
+        if (0 < tl && tl < tc.flens.size()) {
+          tc.flens[tl]++;
+          tlencount--;
+        }
+        
+        if (tlencount == 0) {
+          index.clearSuffixArray();
+          /*std::cout << "Fragment length" << std::endl;
+          for (int i = 0; i < tlen.size(); i++) {
+            std::cout << i << "\t" << tlen[i] << "\n";
+          }
+          std::cout << "---------------" << std::endl;
+          */
+        }
+      }
+    }
+    
+    
     if (opt.verbose && nreads % 10000 == 0 ) {
       std::cerr << "Processed " << nreads << std::endl;
     }
@@ -103,8 +171,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
-  std::vector<std::pair<int,int>> v;
-  v.reserve(1000);
+  std::vector<std::pair<int,int>> v1, v2;
+  v1.reserve(1000);
+  v2.reserve(1000);
 
 
   std::vector<int> rIdToTrans;
@@ -133,16 +202,19 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
       inv.insert({index.target_names_[i], i});
     }
     auto cnames = contigNames(bamContext);
-    for (int i = 0; i < length(cnames[i]); i++) {
+    for (int i = 0; i < length(cnames); i++) {
       std::string cname(toCString(cnames[i]));
       auto search = inv.find(cname);
       if (search == inv.end()) {
         std::cerr << "Error: could not find transcript name " << cname << " from bam file " << opt.files[0] << std::endl;
+        rIdToTrans.push_back(-1);
       } else {
         rIdToTrans.push_back(search->second);
       }
     }
   }
+
+  
 
   
   
@@ -160,10 +232,26 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   bool done = false;
 
   int mismatches = 0;
+  int mismBamMoreSpecific = 0;
+  int mismKalMoreSpecific = 0;
+  int mismNonAgreement = 0;
   int alignKnotB = 0;
   int alignBnotK = 0;
   int exactMatches = 0;
   int alignNone = 0;
+
+  std::ofstream bamKnotB, bamBnotK, bamNotProper, bamBamSpec, bamKalSpec;;
+  bamKnotB.open(opt.output+"/bamKnotB.txt", std::ios::out);
+  bamBnotK.open(opt.output+"/bamBnotK.txt", std::ios::out);
+  bamNotProper.open(opt.output+"/bamNotProper.txt", std::ios::out);
+  bamBamSpec.open(opt.output+"/bamBamSpec.txt", std::ios::out);
+  bamKalSpec.open(opt.output+"/bamKalSpec.txt", std::ios::out);
+
+  bamKnotB << "read1\tread2\tBamEC\tKalEC\n";
+  bamBnotK << "read1\tread2\tBamEC\tKalEC\n";
+  bamBamSpec << "read1\tread2\tBamEC\tKalEC\n";
+  bamKalSpec << "read1\tread2\tBamEC\tKalEC\n";
+  bamNotProper << "read1\tread2\tBamEC\tKalEC\n";
   
   while (!done) {
     bool paired = hasFlagMultiple(record);
@@ -217,22 +305,28 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     
 
     
-    v.clear();
+    v1.clear();
+    v2.clear();
     // process read
-    index.match(toCString(s1), length(s1), v);
+    index.match(toCString(s1), length(s1), v1);
     if (paired) {
-      int vl = v.size();
-      index.match(toCString(s2), length(s2), v);
-      // fix k-mer positions, assuming an average
-      // fragment length distribution of fld.
-      int leftpos = ((int) opt.fld)-opt.k;
-      for (int i = vl; i < v.size(); i++) {
-        v[i].second = std::max(leftpos-v[i].second, 0);
-      }
+      index.match(toCString(s2), length(s2), v2);
     }
 
     // collect the transcript information
-    int ec = tc.collect(v);
+    std::vector<int> u;
+    if (!paired){
+      if (!v1.empty()) {
+        u = tc.intersectECs(v1);
+      }
+    } else {
+      if (!v1.empty() && !v2.empty()) {
+        std::vector<int> u1 = tc.intersectECs(v1);
+        std::vector<int> u2 = tc.intersectECs(v2);
+      
+        u = intersect(u1,u2);
+      }
+    }
 
     if (opt.verbose && nreads % 10000 == 0 ) {
       std::cerr << "Processed " << nreads << std::endl;
@@ -241,31 +335,66 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     sort(p.begin(), p.end());
     std::vector<int> lp;
     if (!p.empty()) {
-      lp.push_back(p[0]);
+      if (p[0] != -1) {
+        lp.push_back(p[0]);
+      }
       for (int i = 1; i < p.size(); i++) {
-        if (p[i-1] != p[i]) {
+        if (p[i-1] != p[i] && p[i] != -1) {
           lp.push_back(p[i]);
         }
       }
     }
 
     if (!lp.empty()) {
-      auto find = index.ecmapinv.find(lp);
-      if (find != index.ecmapinv.end()) {
-        if (find->second != ec) {
+      int ec_lp = tc.increaseCount(lp);
+
+      if (u.empty()) {
+        // BAM mapped not kallisto
+        alignBnotK++;
+        bamBnotK << s1 << "\t" << s2 << "\t";
+        printVector(lp, bamBnotK);
+        bamBnotK << "\t[]\n";
+      } else {
+        // search for u
+        auto find = index.ecmapinv.find(u); 
+        // both mapped, check mapping
+        if (find == index.ecmapinv.end() || find->second != ec_lp) {
           // mismatch
-          if (ec == -1) {
-            alignBnotK++;
+          mismatches++;
+          // classify the mismatch
+          if (isSubset(lp, u)) {
+            bamBamSpec << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamBamSpec);
+            bamBamSpec << "\t";
+            printVector(u, bamBamSpec);
+            bamBamSpec << "\n";
+            mismBamMoreSpecific++;
+          } else if (isSubset(u, lp)) {
+            bamKalSpec << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamKalSpec);
+            bamKalSpec << "\t";
+            printVector(u, bamKalSpec);
+            bamKalSpec << "\n";
+            mismKalMoreSpecific++;
           } else {
-            mismatches++;
+            bamNotProper << s1 << "\t" << s2 << "\t";
+            printVector(lp, bamNotProper);
+            bamNotProper << "\t";
+            printVector(u, bamNotProper);
+            bamNotProper << "\n";
+            mismNonAgreement++;
           }
         } else {
+          // both agree
           exactMatches++;
         }
       }
     } else {
-      if (ec >= 0) {
+      if (!u.empty()) {
         alignKnotB++;
+        bamKnotB << s1 << "\t" << s2 << "\t[]\t";
+        printVector(u, bamKnotB);
+        bamKnotB << "\n";
       } else {
         alignNone++;
       }
@@ -277,7 +406,17 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
             << "Kallisto mapped, not BAM = " << alignKnotB << std::endl
             << "Bam mapped, not Kallisto = " << alignBnotK << std::endl
             << "Both mapped, mismatches = " << mismatches << std::endl
+            << "  Bam More specific = " << mismBamMoreSpecific << std::endl
+            << "  Kal More specific = " << mismKalMoreSpecific << std::endl
+            << "  Disjoint = " << mismNonAgreement << std::endl
             << "Neither mapped = " << alignNone << std::endl;
+
+  bamKnotB.close();
+  bamBnotK.close();
+  bamBamSpec.close();
+  bamKalSpec.close();
+  bamNotProper.close();
+                     
   
   // writeoutput to outdir
   std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
