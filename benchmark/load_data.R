@@ -89,9 +89,15 @@ read_oracle <- function(fname, targ_to_eff_len) {
         arrange(target_id)
 }
 
-join_all <- function(..., dots, start_string = "tpm_") {
-    stopifnot(is(dots, "list"))
-    all_ests <- c(list(...), dots)
+join_all <- function(..., dots = NULL, start_string = "tpm_") {
+    all_ests <- NULL
+    if (!is.null(dots)) {
+        stopifnot(is(dots, "list"))
+        all_ests <- c(list(...), dots)
+    } else {
+        all_ests <- list(...)
+    }
+
     all_ests <- lapply(all_ests, select, target_id, starts_with(start_string))
 
     Reduce(function(x,y) inner_join(x,y, by = c("target_id")),
