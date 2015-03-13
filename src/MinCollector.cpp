@@ -159,4 +159,3 @@ double get_mean_frag_len(const MinCollector& mc) {
 
   return total_mass / static_cast<double>(total_counts);
 }
-
