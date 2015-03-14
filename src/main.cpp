@@ -334,13 +334,13 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   }
 
   if (opt.fld == 0.0) {
-    // in future, just estimate this from data
-    cerr << "Error: missing effective distribution length" << endl;
-    ret = false;
+    // In the future, if we have single-end data we should require this
+    // argument
+    cerr << "Mean fragment length not provided. Will estimate from data" << endl;
   }
 
   if (opt.fld < 0.0) {
-    cerr << "Error: invalid value for fragment-length " << opt.fld << endl;
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
     ret = false;
   }
 
@@ -591,7 +591,10 @@ int main(int argc, char *argv[]) {
         }
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
-        auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
+        // if mean FL not provided, estimate
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        std::cout << "Estimated mean fragment length: " << mean_fl << std::endl;
+        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                 eff_lens, weights);
@@ -637,7 +640,10 @@ int main(int argc, char *argv[]) {
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
-        auto eff_lens = calc_eff_lens(index.trans_lens_, opt.fld);
+        // if mean FL not provided, estimate
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        std::cout << "Estimated mean fragment length: " << mean_fl << std::endl;
+        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                 eff_lens, weights);
