@@ -510,6 +510,19 @@ void usageEMOnly() {
        << "    --verbose                 Print lots of messages during run" << endl;
 }
 
+void write_version(const std::string& fname) {
+  std::ofstream out;
+  out.open(fname, std::ios::out);
+
+  if (!out.is_open()) {
+    cerr << "Error opening '" << fname << "'" << endl;
+    exit(1);
+  }
+
+  out << KALLISTO_VERSION;
+
+  out.close();
+}
 
 int main(int argc, char *argv[]) {
 
@@ -565,6 +578,7 @@ int main(int argc, char *argv[]) {
         usageEM();
         exit(1);
       } else {
+        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
@@ -617,6 +631,7 @@ int main(int argc, char *argv[]) {
         usageEMOnly();
         exit(1);
       } else {
+        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
