@@ -47,7 +47,7 @@ read_salmon <- function(fname) {
         arrange(target_id)
 }
 
-read_kallisto <- function(fname) {
+read_kallisto_rename <- function(fname) {
     kal <- fread(fname, header = TRUE, stringsAsFactors = FALSE,
         data.table = FALSE)
     kal %>%
