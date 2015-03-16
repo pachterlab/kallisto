@@ -33,8 +33,21 @@ int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
   
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
-  
-  std::vector<int> u = intersect(u1,u2);
+
+  std::vector<int> u;
+
+  if (u1.empty() && u2.empty()) {
+    return -1;
+  }
+
+  // non-strict intersection.
+  if (u1.empty()) {
+    u = u2;
+  } else if (u2.empty()) {
+    u = u1;
+  } else {
+    u = intersect(u1,u2);
+  }
 
   if (u.empty()) {
     return -1;
