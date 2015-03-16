@@ -25,13 +25,14 @@
 typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
 typedef seqan::Finder<TIndex> TFinder;
 
-namespace SEQAN_NAMESPACE_MAIN
+namespace seqan
 {
   
 template<>
-struct SAValue<TIndex>
+//struct SAValue<TIndex>
+struct SAValue<seqan::StringSet<seqan::CharString>>
 {
-  typedef Pair<unsigned, unsigned, Pack> Type;
+  typedef Pair<uint32_t, uint32_t> Type;
 };
 
 }
