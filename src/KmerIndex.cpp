@@ -3,13 +3,16 @@
 #include <seqan/index.h>
 #include <seqan/seq_io.h>
 
+
 using namespace seqan;
 
 bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
   // open the fasta sequences
   
   index = TIndex(seqs);
-  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), OPEN_RDONLY)) {
+  // try to open the file
+
+  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), OPEN_RDONLY | OPEN_QUIET)) {
     return false;
   }
   //setHaystack(finder, index); // finder searches index
@@ -44,8 +47,16 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     index = TIndex(seqs);
     indexRequire(index, EsaSA());
     // write fasta to disk
-    SeqFileOut fastaIndex((opt.index+".fa").c_str());
-    writeRecords(fastaIndex, ids, seqs);
+    SeqFileOut fastaIndex;
+    if (!open(fastaIndex, (opt.index+".fa").c_str())) {
+      std::cerr << "Error: could not open file " << opt.index << ".fa for writing" << std::endl;
+      exit(1);
+    }
+    try {
+      writeRecords(fastaIndex, ids, seqs);
+    } catch (IOError const & e) {
+      std::cerr << "Error: writing to file " << opt.index << ". " << e.what() << std::endl; 
+    }
     close(fastaIndex);
     
     // write index to disk
