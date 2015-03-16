@@ -98,11 +98,12 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) 
   std::vector<int> tmp;
   
   for (auto &x : vp) {
-    tmp = index.intersect(x.first,u);
-    if (!tmp.empty()) {
+    //tmp = index.intersect(x.first,u);
+    u = index.intersect(x.first,u);
+    /*if (!tmp.empty()) {
       u = tmp;
       count++; // increase the count
-    }
+      }*/
   }
 
   // if u is empty do nothing
