@@ -87,7 +87,7 @@ void KmerIterator::find_next(size_t i, size_t j, bool last_valid) {
   ++j;
 
   while (s_[j] != 0) {
-    char c = s_[j];
+    char c = s_[j] & 0xDF; // mask lowercase bit
     if (c == 'A' || c == 'C' || c == 'G' || c == 'T') {
       if (last_valid) {
         p_.first = p_.first.forwardBase(c);
