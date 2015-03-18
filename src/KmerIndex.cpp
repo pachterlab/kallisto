@@ -242,7 +242,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
           kmap.erase(search);
         }
       }
-
+      /*
       for (int j = i+1; j < k; j++) {
         CharString y(x);
         for (int b = 1; b < 4; b++) {
@@ -255,6 +255,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
           }
         }
       }
+      */
       
     }
   }
