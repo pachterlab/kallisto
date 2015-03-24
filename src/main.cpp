@@ -336,7 +336,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   if (opt.fld == 0.0) {
     // In the future, if we have single-end data we should require this
     // argument
-    cerr << "Mean fragment length not provided. Will estimate from data" << endl;
+    cerr << "[quant] Mean fragment length not provided. Will estimate from data" << endl;
   }
 
   if (opt.fld < 0.0) {
@@ -385,7 +385,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       }
     } else {
       if (emonly) {
-        cerr << "Error: output directory needs to exist, run em first" << endl;
+        cerr << "Error: output directory needs to exist, run quant first" << endl;
         ret = false;
       } else {
         // create directory
@@ -454,8 +454,8 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
        << "    inspect       Inspects a built index "<< endl
-       << "    em            Runs the EM algorithm " << endl
-       << "    em-only       Runs the EM algorithm without mapping" << endl
+       << "    quant         Runs the quantification algorithm " << endl
+       << "    quant-only    Runs the quantification algorithm without mapping" << endl
        << "    cite          Prints citation information " << endl
        << "    version       Prints version information"<< endl << endl;
 }
@@ -482,11 +482,11 @@ void usageInspect() {
 void usageEM() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto em [options] FASTQ-files" << endl << endl
+       << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-i, --index=INT               Filename for index " << endl
        << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
-       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
@@ -498,10 +498,10 @@ void usageEM() {
 void usageEMOnly() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto em-only [options]" << endl << endl
+       << "Usage: Kallisto quant-only [options]" << endl << endl
        << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
-       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
@@ -568,7 +568,7 @@ int main(int argc, char *argv[]) {
         InspectIndex(index);
       }
 
-    } else if (cmd == "em") {
+    } else if (cmd == "quant") {
       if (argc==2) {
         usageEM();
         return 0;
@@ -593,7 +593,7 @@ int main(int argc, char *argv[]) {
         index.write((opt.output+"/index.saved"), false);
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cout << "Estimated mean fragment length: " << mean_fl << std::endl;
+        std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
@@ -603,7 +603,7 @@ int main(int argc, char *argv[]) {
         em.write(opt.output + "/expression.txt");
 
         if (opt.bootstrap > 0) {
-            std::cout << "Bootstrapping!" << std::endl;
+            std::cerr << "Bootstrapping!" << std::endl;
             auto B = opt.bootstrap;
             std::mt19937_64 rand;
             rand.seed( opt.seed );
@@ -616,7 +616,7 @@ int main(int argc, char *argv[]) {
             for (auto b = 0; b < B; ++b) {
                 Bootstrap bs(collection.counts, index.ecmap,
                         index.target_names_, eff_lens, seeds[b]);
-                std::cout << "Running EM bootstrap: " << b << std::endl;
+                std::cerr << "Running EM bootstrap: " << b << std::endl;
                 auto res = bs.run_em();
                 res.write( opt.output + "/bs_expression_" + std::to_string(b) +
                         ".txt");
@@ -624,7 +624,7 @@ int main(int argc, char *argv[]) {
 
         }
       }
-    } else if (cmd == "em-only") {
+    } else if (cmd == "quant-only") {
       if (argc==2) {
         usageEMOnly();
         return 0;
@@ -642,7 +642,7 @@ int main(int argc, char *argv[]) {
         collection.loadCounts(opt);
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cout << "Estimated mean fragment length: " << mean_fl << std::endl;
+        std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
@@ -652,7 +652,7 @@ int main(int argc, char *argv[]) {
         em.write(opt.output + "/expression.txt");
 
         if (opt.bootstrap > 0) {
-            std::cout << "Bootstrapping!" << std::endl;
+            std::cerr << "Bootstrapping!" << std::endl;
             auto B = opt.bootstrap;
             std::mt19937_64 rand;
             rand.seed( opt.seed );
@@ -665,7 +665,7 @@ int main(int argc, char *argv[]) {
             for (auto b = 0; b < B; ++b) {
                 Bootstrap bs(collection.counts, index.ecmap,
                         index.target_names_, eff_lens, seeds[b]);
-                std::cout << "Running EM bootstrap: " << b << std::endl;
+                std::cerr << "Running EM bootstrap: " << b << std::endl;
                 auto res = bs.run_em();
                 res.write( opt.output + "/bs_expression_" + std::to_string(b) +
                         ".txt");

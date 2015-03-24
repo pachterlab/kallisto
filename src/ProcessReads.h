@@ -145,7 +145,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
     
     
     if (opt.verbose && nreads % 10000 == 0 ) {
-      std::cerr << "Processed " << nreads << std::endl;
+      std::cerr << "[quant] Processed " << nreads << std::endl;
     }
   }
   gzclose(fp1);
@@ -401,7 +401,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     }
   }
 
-  std::cout << "Aligned " <<  nreads << std::endl
+  std::cerr << "Aligned " <<  nreads << std::endl
             << "exact matches = " << exactMatches << std::endl
             << "Kallisto mapped, not BAM = " << alignKnotB << std::endl
             << "Bam mapped, not Kallisto = " << alignBnotK << std::endl

@@ -27,9 +27,9 @@ void KmerIndex::clearSuffixArray() {
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   const std::string& fasta = opt.transfasta;
-  std::cerr << "Loading fasta file " << fasta
+  std::cerr << "[build] Loading fasta file " << fasta
             << std::endl;
-  std::cerr << "k: " << k << std::endl;
+  std::cerr << "[build] k: " << k << std::endl;
   
 
   SeqFileIn seqFileIn(fasta.c_str());
@@ -42,7 +42,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   
 
   if (!loadSuffixArray(opt)) {
-    std::cerr << "Constructing index ... "; std::cerr.flush();  
+    std::cerr << "[build] Constructing suffix array ... "; std::cerr.flush();  
 
     index = TIndex(seqs);
     indexRequire(index, EsaSA());
@@ -62,9 +62,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     // write index to disk
     save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
 
-    std::cerr << " done " << std::endl;
+    std::cerr << " finished " << std::endl;
   } else {
-    std::cerr << "Found index" << std::endl;
+    std::cerr << "[build] Found suffix array" << std::endl;
   }
 
   TFinder finder(index);
@@ -76,6 +76,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   num_trans = length(seqs);
 
   
+  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
   
   // for each transcript, create it's own equivalence class
   for (int i = 0; i < length(seqs); i++ ) {
@@ -158,6 +159,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       } while (repLength(it) > k);
     }
   } while (!isRoot(it));
+
+  std::cerr << " ... finished creating equivalence classes" << std::endl;
   
   /*
   // for each transcript
@@ -223,7 +226,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // remove polyA close k-mers
   CharString polyA;
   resize(polyA, k, 'A');
-  std::cerr << "searching for neighbors of " << polyA << std::endl;
+  std::cerr << "[build] Removing all k-mers within hamming distance 1 of " << polyA << std::endl;
 
   {
     auto search = kmap.find(Kmer(toCString(polyA)).rep());
@@ -260,20 +263,14 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     }
   }
 
-  std::cerr << "Found " << num_trans << " transcripts"
+  std::cerr << "[build] Found " << num_trans << " transcripts"
             << std::endl
-            << "Size of k-mer map " << kmap.size()<< std::endl;
-
-
- 
-  
 
   int eqs_id = num_trans;
 
+  std::cerr << "[build] Created " << ecmap.size() << " equivalence classes from " << num_trans << " transcripts" << std::endl;
 
-  std::cerr << "Created " << ecmap.size() << " equivalence classes from " << num_trans << " transcripts" << std::endl;
-
-  std::cerr << "K-mer map has " << kmap.size() << " k-mers and " << std::endl;
+  std::cerr << "[build] K-mer map has " << kmap.size() << " k-mers" << std::endl;
 }
 
 

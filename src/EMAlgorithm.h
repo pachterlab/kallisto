@@ -50,15 +50,15 @@ struct EMAlgorithm {
 
     double denom;
 
-    std::cout << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
+    std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
               std::endl;
 
     for (auto i = 0; i < n_iter; ++i) {
       if (i % 50 == 0) {
-        std::cout << ".";
-        std::cout.flush();
+        std::cerr << ".";
+        std::cerr.flush();
         if (i % 500 == 0 && i > 0) {
-          std::cout << std::endl;
+          std::cerr << std::endl;
         }
       }
 
@@ -97,8 +97,8 @@ struct EMAlgorithm {
       std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
     }
 
-    std::cout << std::endl;
-    std::cout.flush();
+    std::cerr << std::endl;
+    std::cerr.flush();
   }
 
   void compute_rho() {
