@@ -264,7 +264,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
 
   std::cerr << "[build] Found " << num_trans << " transcripts"
-            << std::endl
+            << std::endl;
 
   int eqs_id = num_trans;
 
