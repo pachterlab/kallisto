@@ -766,7 +766,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         if (jump) {
           if (lastEc != val.id && lastEc != -1 && val.id != -1) {
             backOff = true;
-            std::cerr << "jump failed" << std::endl;
+            //std::cerr << "jump failed" << std::endl;
             break;
           } else {
             jump = false;
@@ -778,13 +778,13 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         // see if we can skip ahead
         bool forward = (kit->first == rep);
         if (forward) {
-          if (val.fdist > 1) {
+          if (val.fdist > 0) {
             nextPos = kit->second + val.fdist;
             jump = true;
             lastEc = val.id;
           }
         } else {
-          if (val.bdist > 1) {
+          if (val.bdist > 0) {
             nextPos = kit->second + val.bdist;
             jump = true;
             lastEc = val.id;
