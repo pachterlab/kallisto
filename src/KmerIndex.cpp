@@ -8,7 +8,7 @@ using namespace seqan;
 
 bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
   // open the fasta sequences
-  
+
   index = TIndex(seqs);
   // try to open the file
 
@@ -16,7 +16,7 @@ bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
     return false;
   }
   //setHaystack(finder, index); // finder searches index
-  
+
   return true;
 }
 
@@ -30,7 +30,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   std::cerr << "[build] Loading fasta file " << fasta
             << std::endl;
   std::cerr << "[build] k: " << k << std::endl;
-  
+
 
   SeqFileIn seqFileIn(fasta.c_str());
 
@@ -39,10 +39,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   readRecords(ids, seqs, seqFileIn);
 
   int transid = 0;
-  
+
 
   if (!loadSuffixArray(opt)) {
-    std::cerr << "[build] Constructing suffix array ... "; std::cerr.flush();  
+    std::cerr << "[build] Constructing suffix array ... "; std::cerr.flush();
 
     index = TIndex(seqs);
     indexRequire(index, EsaSA());
@@ -54,11 +54,11 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     }
     try {
       writeRecords(fastaIndex, ids, seqs);
-    } catch (IOError const & e) {
-      std::cerr << "Error: writing to file " << opt.index << ". " << e.what() << std::endl; 
+    } catch (IOError const& e) {
+      std::cerr << "Error: writing to file " << opt.index << ". " << e.what() << std::endl;
     }
     close(fastaIndex);
-    
+
     // write index to disk
     save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
 
@@ -71,13 +71,13 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   find(finder, "A");
   clear(finder);
 
-  
+
   assert(length(seqs) == length(ids));
   num_trans = length(seqs);
 
-  
+
   std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
-  
+
   // for each transcript, create it's own equivalence class
   for (int i = 0; i < length(seqs); i++ ) {
     std::string name(toCString(ids[i]));
@@ -96,10 +96,86 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
 
   // traverse the suffix tree
+  int nk = 0;
+
+  /*
+  // for each transcript
+  for (int i = 0; i < length(seqs); i++) {
+    // if it it long enough
+    CharString seq = value(seqs,i);
+    if (length(seq) >= k) {
+      KmerIterator kit(toCString(seq)), kit_end;
+
+      // for each k-mer add to map
+      for(; kit != kit_end; ++kit) {
+        Kmer km = kit->first;
+        Kmer rep = km.rep();
+        if (kmap.find(km) != kmap.end()) {
+          // we've seen this k-mer before
+          continue;
+        }
+
+        nk++;
+        // if (nk % 1000 == 0) {
+        //   std::cerr << "."; std::cerr.flush();
+        // }
+
+        CharString kms(km.toString().c_str()); // hacky, but works
+
+        std::vector<int> ecv;
+
+        // find all instances of the k-mer
+        clear(finder);
+        while (find(finder, kms)) {
+          ecv.push_back(getSeqNo(position(finder)));
+        }
+        // find all instances of twin
+        reverseComplement(kms);
+        clear(finder);
+        while (find(finder,kms)) {
+          ecv.push_back(getSeqNo(position(finder)));
+        }
+
+        // most common case
+        if (ecv.size() == 1) {
+          int ec = ecv[0];
+          kmap.insert({rep, KmerEntry(ec)});
+        } else {
+          sort(ecv.begin(), ecv.end());
+          std::vector<int> u;
+          u.push_back(ecv[0]);
+          for (int i = 1; i < ecv.size(); i++) {
+            if (ecv[i-1] != ecv[i]) {
+              u.push_back(ecv[i]);
+            }
+          }
+          auto search = ecmapinv.find(u);
+          if (search != ecmapinv.end()) {
+            kmap.insert({rep, KmerEntry(search->second)});
+          } else {
+            int eqs_id = ecmapinv.size();
+            ecmapinv.insert({u, eqs_id });
+            ecmap.insert({eqs_id, u});
+            kmap.insert({rep, KmerEntry(eqs_id)});
+          }
+        }
+      }
+    }
+  }
+  */
+
+
+
   Iterator<TIndex, TopDown<ParentLinks<>>>::Type it(index);
   do {
-    
+
     if (repLength(it) >= k) {
+      nk++;
+
+      // if (nk % 1000 == 0) {
+      //   std::cerr << "."; std::cerr.flush();
+      // }
+
       //std::cout << representative(it) << std::endl;
       // process the k-mers
       CharString seq = representative(it);
@@ -107,7 +183,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       Kmer rep = km.rep();
       if (kmap.find(rep) == kmap.end()) {
         // if we have never seen this k-mer before
-        
+
         std::vector<int> ecv;
 
         for (auto x : getOccurrences(it)) {
@@ -120,11 +196,11 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
         while (find(finder, twin.toString().c_str())) {
           ecv.push_back(getSeqNo(position(finder)));
         }
-        
+
         // common case
         if (ecv.size() == 1) {
           int ec = ecv[0];
-          kmap.insert({rep, ec});
+          kmap.insert({rep, KmerEntry(ec)});
         } else {
           sort(ecv.begin(), ecv.end());
           std::vector<int> u;
@@ -134,15 +210,15 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
               u.push_back(ecv[i]);
             }
           }
-          
+
           auto search = ecmapinv.find(u);
           if (search != ecmapinv.end()) {
-            kmap.insert({rep, search->second});
+            kmap.insert({rep, KmerEntry(search->second)});
           } else {
             int eqs_id = ecmapinv.size();
             ecmapinv.insert({u, eqs_id });
             ecmap.insert({eqs_id, u});
-            kmap.insert({rep, eqs_id});
+            kmap.insert({rep, KmerEntry(eqs_id)});
           }
         }
       }
@@ -160,68 +236,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     }
   } while (!isRoot(it));
 
+
   std::cerr << " ... finished creating equivalence classes" << std::endl;
-  
-  /*
-  // for each transcript
-  for (int i = 0; i < length(seqs); i++) {
-    // if it it long enough
-    CharString seq = value(seqs,i);
-    if (length(seq) >= k) {
-      KmerIterator kit(toCString(seq)), kit_end;
 
-      // for each k-mer add to map
-      for(; kit != kit_end; ++kit) {
-        Kmer km = kit->first;
-        Kmer rep = km.rep();
-        if (kmap.find(km) != kmap.end()) {
-          // we've seen this k-mer before
-          continue;
-        }
-        
-        CharString kms(km.toString().c_str()); // hacky, but works
-
-        std::vector<int> ecv;
-        
-        // find all instances of the k-mer
-        clear(finder);
-        while (find(finder, kms)) {
-          ecv.push_back(getSeqNo(position(finder)));
-        }
-        // find all instances of twin
-        reverseComplement(kms);
-        clear(finder);
-        while (find(finder,kms)) {
-          ecv.push_back(getSeqNo(position(finder)));
-        }
-
-        // most common case
-        if (ecv.size() == 1) {
-          int ec = ecv[0];
-          kmap.insert({rep, ec});
-        } else {
-          sort(ecv.begin(), ecv.end());
-          std::vector<int> u;
-          u.push_back(ecv[0]);
-          for (int i = 1; i < ecv.size(); i++) {
-            if (ecv[i-1] != ecv[i]) {
-              u.push_back(ecv[i]);
-            }
-          }
-          auto search = ecmapinv.find(u);
-          if (search != ecmapinv.end()) {
-            kmap.insert({rep, search->second});
-          } else {
-            int eqs_id = ecmapinv.size();
-            ecmapinv.insert({u, eqs_id });
-            ecmap.insert({eqs_id, u});
-            kmap.insert({rep, eqs_id});
-          }
-        }
-      }
-    }
-  }
-    */
 
   // remove polyA close k-mers
   CharString polyA;
@@ -230,18 +247,18 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   {
     auto search = kmap.find(Kmer(toCString(polyA)).rep());
-    if (search != kmap.end()){
+    if (search != kmap.end()) {
       kmap.erase(search);
     }
   }
-  
+
   for (int i = 0; i < k; i++) {
     for (int a = 1; a < 4; a++) {
       CharString x(polyA);
       assignValue(x, i, Dna(a));
       {
         auto search = kmap.find(Kmer(toCString(x)).rep());
-        if (search != kmap.end()){
+        if (search != kmap.end()) {
           kmap.erase(search);
         }
       }
@@ -259,9 +276,94 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
         }
       }
       */
-      
     }
   }
+
+  int kset = 0;
+  std::cerr << "[build] Computing skip-ahead ... "; std::cerr.flush();
+  // find out how much we can skip ahead for each k-mer.
+  for (auto& kv : kmap) {
+    if (kv.second.fdist == -1 && kv.second.bdist == -1) {
+      // ok we haven't processed the k-mer yet
+      std::vector<Kmer> flist, blist;
+      int ec = kv.second.id;
+
+      // iterate in forward direction
+      Kmer km = kv.first;
+      Kmer end = km;
+      Kmer last = end;
+      Kmer twin = km.twin();
+      bool selfLoop = false;
+      flist.push_back(km);
+
+      while (fwStep(end,end,ec)) {
+        if (end == km) {
+          // selfloop
+          selfLoop = true;
+          break;
+        } else if (end == twin) {
+          selfLoop = true;
+          // mobius loop
+          break;
+        } else if (end == last.twin()) {
+          // hairpin
+          break;
+        }
+        flist.push_back(end);
+        last = end;
+      }
+
+      Kmer front = twin;
+      Kmer first = front;
+
+      if (!selfLoop) {
+        while (fwStep(front,front,ec)) {
+          if (front == twin) {
+            // selfloop
+            selfLoop = true;
+            break;
+          } else if (front == km) {
+            // mobius loop
+            selfLoop = true;
+            break;
+          } else if (front == first.twin()) {
+            // hairpin
+            break;
+          }
+          blist.push_back(front);
+          first = front;
+        }
+      }
+
+      std::vector<Kmer> klist;
+      for (auto it = blist.rbegin(); it != blist.rend(); ++it) {
+        klist.push_back(it->twin());
+      }
+      for (auto x : flist) {
+        klist.push_back(x);
+      }
+
+      int contigLength = klist.size();
+
+
+      for (int i = 0; i < klist.size(); i++) {
+        Kmer x = klist[i];
+        Kmer xr = x.rep();
+        bool forward = (x==xr);
+        auto search = kmap.find(xr);
+
+        if (forward) {
+          search->second.fdist = contigLength-1-i;
+          search->second.bdist = i;
+        } else {
+          search->second.fdist = i;
+          search->second.bdist = contigLength-1-i;
+        }
+        kset++;
+      }
+    }
+  }
+  std::cerr << " finished computing skip-ahead, found for " << kset << " kmers"<< std::endl;
 
   std::cerr << "[build] Found " << num_trans << " transcripts"
             << std::endl;
@@ -284,7 +386,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
     exit(1);
   }
 
-  // 1. write index
+  // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
 
   // 2. write k
@@ -353,25 +455,72 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   out.close();
 }
 
+bool KmerIndex::fwStep(Kmer km, Kmer& end, int ec) const {
+  int j = -1;
+  int fw_count = 0;
+  for (int i = 0; i < 4; i++) {
+    Kmer fw_rep = end.forwardBase(Dna(i)).rep();
+    auto search = kmap.find(fw_rep);
+    if (search != kmap.end()) {
+      if (search->second.id != ec) {
+        return false;
+      }
+      j = i;
+      ++fw_count;
+      if (fw_count > 1) {
+        return false;
+      }
+    }
+  }
+
+  if (fw_count != 1) {
+    return false;
+  }
+
+  Kmer fw = end.forwardBase(Dna(j));
+
+  int bw_count = 0;
+  for (int i = 0; i < 4; i++) {
+    Kmer bw_rep = fw.backwardBase(Dna(i)).rep();
+    if (kmap.find(bw_rep) != kmap.end()) {
+      ++bw_count;
+      if (bw_count > 1) {
+        return false;
+      }
+    }
+  }
+
+  if (bw_count != 1) {
+    return false;
+  } else {
+    if (fw != km) {
+      end = fw;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+}
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
 
-  
+
   std::string& index_in = opt.index;
   std::ifstream in;
 
   // load sequences
   SeqFileIn seqFileIn;
 
-  if (!open(seqFileIn, (index_in + ".fa").c_str())){
+  if (!open(seqFileIn, (index_in + ".fa").c_str())) {
     std::cerr << "Error: index fasta could not be opened " << std::endl;
     exit(1);
   }
   seqan::StringSet<seqan::CharString> ids; // not used
   readRecords(ids, seqs, seqFileIn);
-  
-  
+
+
   in.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in.is_open()) {
@@ -408,7 +557,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 3. read number of transcripts
   in.read((char *)&num_trans, sizeof(num_trans));
 
-  // 4. read number of transcripts
+  // 4. read length of transcripts
   trans_lens_.clear();
   trans_lens_.reserve(num_trans);
 
@@ -433,7 +582,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 6. read kmer->ec values
   Kmer tmp_kmer;
-  int tmp_val;
+  KmerEntry tmp_val;
   for (size_t i = 0; i < kmap_size; ++i) {
     in.read((char *)&tmp_kmer, sizeof(tmp_kmer));
     in.read((char *)&tmp_val, sizeof(tmp_val));
@@ -450,6 +599,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
 
   int tmp_id;
+  int tmp_ecval;
   size_t vec_size;
   // 8. read each equiv class
   for (size_t i = 0; i < ecmap_size; ++i) {
@@ -462,8 +612,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     std::vector<int> tmp_vec;
     tmp_vec.reserve(vec_size);
     for (size_t j = 0; j < vec_size; ++j ) {
-      in.read((char *)&tmp_val, sizeof(tmp_val));
-      tmp_vec.push_back(tmp_val);
+      in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
+      tmp_vec.push_back(tmp_ecval);
     }
     ecmap.insert({tmp_id, tmp_vec});
     ecmapinv.insert({tmp_vec, tmp_id});
@@ -492,13 +642,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.close();
 }
 
-int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec, TFinder& finder) const {
+int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec, TFinder& finder) const {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
   int p2 = -1;
 
-  
+
   KmerIterator kit1(s1), kit_end;
 
   bool found1 = false;
@@ -592,5 +742,120 @@ int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2, int ec, T
   } else {
     return p2-p1;
   }
-  
+
+}
+
+// use:  match(s,l,v)
+// pre:  v is initialized
+// post: v contains all equiv classes for the k-mers in s
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v) const {
+  KmerIterator kit(s), kit_end;
+  bool backOff = false;
+  int nextPos = 0; // nextPosition to check
+  bool jump = false;
+  int lastEc = -1;
+  for (int i = 0;  kit != kit_end; ++kit,++i) {
+    if (kit->second >= nextPos) {
+      // need to check it
+      Kmer rep = kit->first.rep();
+      auto search = kmap.find(rep);
+      nextPos = kit->second+1; // need to look at the next position
+      if (search != kmap.end()) {
+        KmerEntry val = search->second;
+        // is it inconsistent with the ec from the jump
+        if (jump) {
+          if (lastEc != val.id && lastEc != -1 && val.id != -1) {
+            backOff = true;
+            std::cerr << "jump failed" << std::endl;
+            break;
+          } else {
+            jump = false;
+            lastEc = -1;
+          }
+        }
+
+        v.push_back({val.id, kit->second});
+        // see if we can skip ahead
+        bool forward = (kit->first == rep);
+        if (forward) {
+          if (val.fdist > 1) {
+            nextPos = kit->second + val.fdist;
+            jump = true;
+            lastEc = val.id;
+          }
+        } else {
+          if (val.bdist > 1) {
+            nextPos = kit->second + val.bdist;
+            jump = true;
+            lastEc = val.id;
+          }
+        }
+      }
+    }
+    /*
+    if (i==skip) {
+      i=0;
+    }
+    if (i==0) {
+      Kmer rep = kit->first.rep();
+      auto search = kmap.find(rep);
+      if (search != kmap.end()) {
+        // if k-mer found
+        v.push_back({search->second.id, kit->second}); // add equivalence class, and position
+      }
+    }
+    */
+  }
+
+
+  if (backOff) {
+    // backup plan, let's play it safe and search everythi
+    v.clear();
+    kit = KmerIterator(s);
+    for (int i = 0; kit != kit_end; ++kit,++i) {
+      if (i==skip) {
+        i=0;
+      }
+      if (i==0) {
+        // need to check it
+        Kmer rep = kit->first.rep();
+        auto search = kmap.find(rep);
+        if (search != kmap.end()) {
+          // if k-mer found
+          v.push_back({search->second.id, kit->second}); // add equivalence class, and position
+        }
+      }
+    }
+  }
+}
+
+// use:  res = intersect(ec,v)
+// pre:  ec is in ecmap, v is a vector of valid transcripts
+//       v is sorted in increasing order
+// post: res contains the intersection  of ecmap[ec] and v sorted increasing
+//       res is empty if ec is not in ecma
+std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
+  std::vector<int> res;
+  auto search = ecmap.find(ec);
+  if (search != ecmap.end()) {
+    auto& u = search->second;
+    res.reserve(v.size());
+
+    auto a = u.begin();
+    auto b = v.begin();
+
+    while (a != u.end() && b != v.end()) {
+      if (*a < *b) {
+        ++a;
+      } else if (*b < *a) {
+        ++b;
+      } else {
+        // match
+        res.push_back(*a);
+        ++a;
+        ++b;
+      }
+    }
+  }
+  return res;
 }
