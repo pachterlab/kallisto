@@ -115,8 +115,12 @@ void InspectIndex(const KmerIndex& index) {
 
   cout << "#[inspect] Number of k-mers in index = " << index.kmap.size() << endl;
   unordered_map<int,int> kmhisto;
+  unordered_map<int,int> fjumphisto;
+  unordered_map<int,int> bjumphisto;
 
   for (auto& kv : index.kmap) {
+    ++fjumphisto[kv.second.fdist];
+    ++bjumphisto[kv.second.bdist];
     auto search = index.ecmap.find(kv.second.id);
     if (search == index.ecmap.end()) {
       cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second.id << ", which is not in the index" << endl;
@@ -131,6 +135,12 @@ void InspectIndex(const KmerIndex& index) {
   cout << endl << endl;
 
   printHisto(kmhisto, "#EC.size\tNum.kmers");
+
+  cout << endl << endl;
+  printHisto (fjumphisto, "#Jump.fw\tNum.kmers");
+
+  cout << endl << endl;
+  printHisto (bjumphisto, "#Jump.bw\tNum.kmers");
 
 }
 
