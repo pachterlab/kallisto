@@ -775,19 +775,31 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         }
 
         v.push_back({val.id, kit->second});
+        
         // see if we can skip ahead
+        int dist = 0;
         bool forward = (kit->first == rep);
-        if (forward) {
-          if (val.fdist > 0) {
-            nextPos = kit->second + val.fdist;
-            jump = true;
-            lastEc = val.id;
-          }
-        } else {
-          if (val.bdist > 0) {
-            nextPos = kit->second + val.bdist;
-            jump = true;
-            lastEc = val.id;
+        if (forward && val.fdist > 0) {
+          dist = val.fdist;
+
+        } else if (!forward && val.bdist > 0) {
+          dist = val.fdist;
+        }
+
+        //const int lastbp = 10;
+        if (dist > 2) {
+          jump = true;
+          lastEc = val.id;
+          // jump logic goes here
+
+          int pos = kit->second;
+
+          // if we are in the first half of the read
+          // and can jump beyond the read, check the middle
+          if (pos < (l-k)/2 && pos+dist > l) {
+            nextPos = (l-k)/2+1;
+          } else {
+            nextPos = pos + dist -1;
           }
         }
       }
@@ -809,7 +821,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
 
   if (backOff) {
-    // backup plan, let's play it safe and search everythi
+    // backup plan, let's play it safe and search everything
     v.clear();
     kit = KmerIterator(s);
     for (int i = 0; kit != kit_end; ++kit,++i) {
