@@ -752,28 +752,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
-  bool jump = false;
-  int lastEc = -1;
-  for (int i = 0;  kit != kit_end; ++kit,++i) {
+  for (int i = 0;  kit != kit_end; ++i,++kit) {
     if (kit->second >= nextPos) {
       // need to check it
       Kmer rep = kit->first.rep();
       auto search = kmap.find(rep);
-      nextPos = kit->second+1; // need to look at the next position
+      int pos = kit->second;
+      
       if (search != kmap.end()) {
-        KmerEntry val = search->second;
-        // is it inconsistent with the ec from the jump
-        if (jump) {
-          if (lastEc != val.id && lastEc != -1 && val.id != -1) {
-            backOff = true;
-            //std::cerr << "jump failed" << std::endl;
-            break;
-          } else {
-            jump = false;
-            lastEc = -1;
-          }
-        }
 
+        KmerEntry val = search->second;
         v.push_back({val.id, kit->second});
         
         // see if we can skip ahead
@@ -781,32 +769,52 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         bool forward = (kit->first == rep);
         if (forward && val.fdist > 0) {
           dist = val.fdist;
-
         } else if (!forward && val.bdist > 0) {
           dist = val.fdist;
         }
 
         //const int lastbp = 10;
         if (dist > 2) {
-          jump = true;
-          lastEc = val.id;
-          // jump logic goes here
+          // where should we jump to?
+          int nextPos = pos+dist; // default jump
 
-          int pos = kit->second;
+          if (pos + dist >= l-k) {
+            // if we can jump beyond the read, check the middle
+            if (pos < (l-k)/2) {
+              // if we are in the first half of the read
+              nextPos = (l-k)/2 + 1;
+            } else {
+              nextPos = l-k;
+            }
+          }
 
-          // if we are in the first half of the read
-          // and can jump beyond the read, check the middle
-          if (pos < (l-k)/2 && pos+dist > l-k) {
-            nextPos = (l-k)/2+1;
+          // check next position
+          KmerIterator kit2(kit);
+          kit2.jumpTo(nextPos);
+          if (kit2 != kit_end) {
+            Kmer rep2 = kit2->first.rep();
+            auto search2 = kmap.find(rep2);
+            if (search2 == kmap.end() || (val.id == search2->second.id)) {
+              // great, a match (or nothing) see if we can move the k-mer forward
+              if (pos + dist >= l-k) {
+                v.push_back({val.id, l-k}); // push back a fake position
+                break;
+              } else {
+                kit = kit2; // move iterator to this new position
+              }
+            } else {
+              // this is weird, advance iterator and quit jumping
+              ++kit;
+              backOff = true;
+              break;
+            }
           } else {
-            nextPos = pos + dist -1;
+            // the sequence is messed up at this point, let's just take the match
+            v.push_back({val.id, l-k});
+            break;
           }
         }
       }
-    }
-    // ok, we can skip the rest of the read
-    if (nextPos > l-k) {
-      break;
     }
     /*
     if (i==skip) {
@@ -825,9 +833,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
 
   if (backOff) {
-    // backup plan, let's play it safe and search everything
-    v.clear();
-    kit = KmerIterator(s);
+    // backup plan, let's play it safe and search incrementally for the rest
     for (int i = 0; kit != kit_end; ++kit,++i) {
       if (i==skip) {
         i=0;
