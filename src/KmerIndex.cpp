@@ -796,13 +796,17 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
           // if we are in the first half of the read
           // and can jump beyond the read, check the middle
-          if (pos < (l-k)/2 && pos+dist > l) {
+          if (pos < (l-k)/2 && pos+dist > l-k) {
             nextPos = (l-k)/2+1;
           } else {
             nextPos = pos + dist -1;
           }
         }
       }
+    }
+    // ok, we can skip the rest of the read
+    if (nextPos > l-k) {
+      break;
     }
     /*
     if (i==skip) {
