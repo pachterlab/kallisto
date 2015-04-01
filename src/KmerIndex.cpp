@@ -779,6 +779,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
           int nextPos = pos+dist; // default jump
 
           if (pos + dist >= l-k) {
+            v.push_back({val.id, l-k});
+            break;
+          } else {
+            v.push_back({val.id, pos+dist});
+          }
+
+          /*
+
+          if (pos + dist >= l-k) {
+
             // if we can jump beyond the read, check the middle
             if (pos < (l-k)/2) {
               // if we are in the first half of the read
@@ -786,8 +796,9 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             } else {
               nextPos = l-k;
             }
-          }
+          } 
 
+            
           // check next position
           KmerIterator kit2(kit);
           kit2.jumpTo(nextPos);
@@ -813,10 +824,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             v.push_back({val.id, l-k});
             break;
           }
+          */
         }
       }
     }
 
+    /*
     if (backOff) {
       // backup plan, let's play it safe and search incrementally for the rest, until nextStop
       for (int j = 0; kit != kit_end; ++kit,++j) {
@@ -840,7 +853,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
       }
       
     }
-
+    */
 
     
     /*
