@@ -816,6 +816,33 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         }
       }
     }
+
+    if (backOff) {
+      // backup plan, let's play it safe and search incrementally for the rest, until nextStop
+      for (int j = 0; kit != kit_end; ++kit,++j) {
+        if (j==skip) {
+          j=0;
+        }
+        if (j==0) {
+          // need to check it
+          Kmer rep = kit->first.rep();
+          auto search = kmap.find(rep);
+          if (search != kmap.end()) {
+            // if k-mer found
+            v.push_back({search->second.id, kit->second}); // add equivalence class, and position
+          }
+        }
+        
+        if (kit->second >= nextPos) {
+          backOff = false;
+          break; // stop the backoff
+        }
+      }
+      
+    }
+
+
+    
     /*
     if (i==skip) {
       i=0;
@@ -832,23 +859,6 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
   }
 
 
-  if (backOff) {
-    // backup plan, let's play it safe and search incrementally for the rest
-    for (int i = 0; kit != kit_end; ++kit,++i) {
-      if (i==skip) {
-        i=0;
-      }
-      if (i==0) {
-        // need to check it
-        Kmer rep = kit->first.rep();
-        auto search = kmap.find(rep);
-        if (search != kmap.end()) {
-          // if k-mer found
-          v.push_back({search->second.id, kit->second}); // add equivalence class, and position
-        }
-      }
-    }
-  }
 }
 
 // use:  res = intersect(ec,v)
