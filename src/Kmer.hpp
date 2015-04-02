@@ -37,7 +37,7 @@ class Kmer {
   void set_empty();
   void set_deleted();
 
-  
+
   bool operator<(const Kmer& o) const;
 
   // use:  b = (km1 == km2);
