@@ -409,8 +409,8 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   }
 
   if (opt.bootstrap < 0) {
-      cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
-      ret = false;
+    cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
+    ret = false;
   }
 
   return ret;
@@ -597,30 +597,30 @@ int main(int argc, char *argv[]) {
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
-                eff_lens, weights);
+                       eff_lens, weights);
         em.run();
         em.compute_rho();
         em.write(opt.output + "/expression.txt");
 
         if (opt.bootstrap > 0) {
-            std::cerr << "Bootstrapping!" << std::endl;
-            auto B = opt.bootstrap;
-            std::mt19937_64 rand;
-            rand.seed( opt.seed );
+          std::cerr << "Bootstrapping!" << std::endl;
+          auto B = opt.bootstrap;
+          std::mt19937_64 rand;
+          rand.seed( opt.seed );
 
-            std::vector<size_t> seeds;
-            for (auto s = 0; s < B; ++s) {
-                seeds.push_back( rand() );
-            }
+          std::vector<size_t> seeds;
+          for (auto s = 0; s < B; ++s) {
+            seeds.push_back( rand() );
+          }
 
-            for (auto b = 0; b < B; ++b) {
-                Bootstrap bs(collection.counts, index.ecmap,
-                        index.target_names_, eff_lens, seeds[b]);
-                std::cerr << "Running EM bootstrap: " << b << std::endl;
-                auto res = bs.run_em();
-                res.write( opt.output + "/bs_expression_" + std::to_string(b) +
-                        ".txt");
-            }
+          for (auto b = 0; b < B; ++b) {
+            Bootstrap bs(collection.counts, index.ecmap,
+                         index.target_names_, eff_lens, seeds[b]);
+            std::cerr << "Running EM bootstrap: " << b << std::endl;
+            auto res = bs.run_em();
+            res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+                       ".txt");
+          }
 
         }
       }
@@ -646,30 +646,30 @@ int main(int argc, char *argv[]) {
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
-                eff_lens, weights);
+                       eff_lens, weights);
         em.run();
         em.compute_rho();
         em.write(opt.output + "/expression.txt");
 
         if (opt.bootstrap > 0) {
-            std::cerr << "Bootstrapping!" << std::endl;
-            auto B = opt.bootstrap;
-            std::mt19937_64 rand;
-            rand.seed( opt.seed );
+          std::cerr << "Bootstrapping!" << std::endl;
+          auto B = opt.bootstrap;
+          std::mt19937_64 rand;
+          rand.seed( opt.seed );
 
-            std::vector<size_t> seeds;
-            for (auto s = 0; s < B; ++s) {
-                seeds.push_back( rand() );
-            }
+          std::vector<size_t> seeds;
+          for (auto s = 0; s < B; ++s) {
+            seeds.push_back( rand() );
+          }
 
-            for (auto b = 0; b < B; ++b) {
-                Bootstrap bs(collection.counts, index.ecmap,
-                        index.target_names_, eff_lens, seeds[b]);
-                std::cerr << "Running EM bootstrap: " << b << std::endl;
-                auto res = bs.run_em();
-                res.write( opt.output + "/bs_expression_" + std::to_string(b) +
-                        ".txt");
-            }
+          for (auto b = 0; b < B; ++b) {
+            Bootstrap bs(collection.counts, index.ecmap,
+                         index.target_names_, eff_lens, seeds[b]);
+            std::cerr << "Running EM bootstrap: " << b << std::endl;
+            auto res = bs.run_em();
+            res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+                       ".txt");
+          }
 
         }
       }
