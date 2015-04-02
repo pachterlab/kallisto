@@ -779,6 +779,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
         if (pos + dist >= l-k) {
           // if we can jump beyond the read, check the middle
+          nextPos = l-k;
           if (pos < (l-k)/2) {
             // if we are in the first half of the read
             nextPos = (l-k)/2 + 1;
@@ -803,10 +804,42 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
               kit = kit2; // move iterator to this new position
             }
           } else {
-            // this is weird, advance iterator and quit jumping
-            ++kit;
-            backOff = true;
-            goto donejumping; // sue me Dijkstra!
+            // this is weird, let's try the middle k-mer
+            bool foundMiddle = false;
+            if (dist > 4) {
+              int middlePos = pos + dist/2;
+              int middleId = -1;
+              KmerIterator kit3(kit);
+              kit3.jumpTo(middlePos);
+              if (kit3 != kit_end) {
+                Kmer rep3 = kit3->first.rep();
+                auto search3 = kmap.find(rep3);
+                if (search3 != kmap.end()) {
+                  middleId = search3->second.id;
+                  if (middleId == val.id) {
+                    foundMiddle = true;
+                  } else if (middleId == search2->second.id) {
+                    foundMiddle = true;
+                  }
+                }
+              }
+
+              if (foundMiddle) {
+                v.push_back({middleId, nextPos});
+                if (nextPos >= l-k) {
+                  break;
+                } else {
+                  kit = kit2; 
+                }
+              }
+            }
+
+
+            if (!foundMiddle) {
+              ++kit;
+              backOff = true;
+              goto donejumping; // sue me Dijkstra!
+            }
           }
         } else {
           // the sequence is messed up at this point, let's just take the match
