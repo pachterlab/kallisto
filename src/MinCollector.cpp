@@ -23,14 +23,14 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 
 
 int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
-            std::vector<std::pair<int,int>>& v2, bool nonpaired) {
-  
+                          std::vector<std::pair<int,int>>& v2, bool nonpaired) {
+
   if (v1.empty()) {
     return -1;
-  } else if (!nonpaired && v2.empty()){
+  } else if (!nonpaired && v2.empty()) {
     return -1;
   }
-  
+
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
 
@@ -55,7 +55,7 @@ int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
   return increaseCount(u);
 }
 
-int MinCollector::increaseCount(const std::vector<int>& u) {  
+int MinCollector::increaseCount(const std::vector<int>& u) {
   auto search = index.ecmapinv.find(u);
   if (search != index.ecmapinv.end()) {
     // ec class already exists, update count
@@ -106,7 +106,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) 
       }
     }
   }
-  
+
   /*for (auto &x : vp) {
     //tmp = index.intersect(x.first,u);
     u = index.intersect(x.first,u);
@@ -125,7 +125,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) 
   int minpos = std::numeric_limits<int>::max();
   int maxpos = 0;
 
-  for (auto &x : v) {
+  for (auto& x : v) {
     minpos = std::min(minpos, x.second);
     maxpos = std::max(maxpos, x.second);
   }
