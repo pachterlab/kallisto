@@ -64,7 +64,8 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
   } else {
     // new ec class, update the index and count
     auto necs = counts.size();
-    index.ecmap.insert({necs,u});
+    //index.ecmap.insert({necs,u});
+    index.ecmap.push_back(u);
     index.ecmapinv.insert({u,necs});
     counts.push_back(1);
     return necs;
