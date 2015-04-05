@@ -91,7 +91,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     trans_lens_.push_back(length(seq));
 
     std::vector<int> single(1,i);
-    ecmap.insert({i,single});
+    //ecmap.insert({i,single});
+    ecmap.push_back(single);
     ecmapinv.insert({single,i});
   }
 
@@ -217,7 +218,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
           } else {
             int eqs_id = ecmapinv.size();
             ecmapinv.insert({u, eqs_id });
-            ecmap.insert({eqs_id, u});
+            ecmap.push_back(u);
+            //ecmap.insert({eqs_id, u});
             kmap.insert({rep, KmerEntry(eqs_id)});
           }
         }
@@ -424,14 +426,15 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   out.write((char *)&tmp_size, sizeof(tmp_size));
 
   // 8. write out each equiv class
-  for (auto& kv : ecmap) {
-    out.write((char *)&kv.first, sizeof(kv.first));
-
+  //  for (auto& kv : ecmap) {
+  for (int ec = 0; ec < ecmap.size(); ec++) {
+    out.write((char *)&ec, sizeof(ec));
+    auto& v = ecmap[ec];
     // 8.1 write out the size of equiv class
-    tmp_size = kv.second.size();
+    tmp_size = v.size();
     out.write((char *)&tmp_size, sizeof(tmp_size));
     // 8.2 write each member
-    for (auto& val: kv.second) {
+    for (auto& val: v) {
       out.write((char *)&val, sizeof(val));
     }
   }
@@ -597,12 +600,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
 
   std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
-
+  ecmap.resize(ecmap_size);
   int tmp_id;
   int tmp_ecval;
   size_t vec_size;
   // 8. read each equiv class
-  for (size_t i = 0; i < ecmap_size; ++i) {
+  for (size_t ec = 0; ec < ecmap_size; ++ec) {
     in.read((char *)&tmp_id, sizeof(tmp_id));
 
     // 8.1 read size of equiv class
@@ -615,7 +618,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
       tmp_vec.push_back(tmp_ecval);
     }
-    ecmap.insert({tmp_id, tmp_vec});
+    //ecmap.insert({tmp_id, tmp_vec});
+    ecmap[tmp_id] = tmp_vec;
     ecmapinv.insert({tmp_vec, tmp_id});
   }
 
@@ -807,7 +811,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             // this is weird, let's try the middle k-mer
             bool foundMiddle = false;
             if (dist > 4) {
-              int middlePos = pos + dist/2;
+              int middlePos = (pos + nexPos)/2;
               int middleId = -1;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);
@@ -883,9 +887,11 @@ donejumping:
 //       res is empty if ec is not in ecma
 std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
   std::vector<int> res;
-  auto search = ecmap.find(ec);
-  if (search != ecmap.end()) {
-    auto& u = search->second;
+  //auto search = ecmap.find(ec);
+  if (ec < ecmap.size()) {
+    //if (search != ecmap.end()) {
+    //auto& u = search->second;
+    auto& u = ecmap[ec];
     res.reserve(v.size());
 
     auto a = u.begin();
