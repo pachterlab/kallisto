@@ -57,56 +57,60 @@ void InspectIndex(const KmerIndex& index) {
 
   unordered_map<int,int> echisto;
 
-  for (auto& ecv : index.ecmap) {
-    ++echisto[ecv.second.size()];
-    const vector<int>& v = ecv.second;
+  //for (auto& ecv : index.ecmap) {
+  for (int ec = 0; ec < index.ecmap.size(); ec++) {
+    const vector<int>& v = index.ecmap[ec];
+    ++echisto[v.size()];
+
     if (v.empty()) {
-      cout << "Error: ec = " << ecv.first  << " is empty!" << endl;
+      cout << "Error: ec = " << ec  << " is empty!" << endl;
       exit(1);
     }
     for (int i = 0; i < v.size(); i++) {
       if (v[i] < 0 || v[i] >= index.num_trans) {
-        cout << "Error: ec = " << ecv.first  << " has invalid transcript id " << v[i] << endl;
+        cout << "Error: ec = " << ec  << " has invalid transcript id " << v[i] << endl;
         exit(1);
       }
 
       if (i > 0 && v[i] == v[i-1]) {
-        cout << "Error: ec = " << ecv.first  << " has repeated transcript id " << v[i] << endl;
+        cout << "Error: ec = " << ec  << " has repeated transcript id " << v[i] << endl;
         exit(1);
       }
 
       if (i > 0 && v[i] < v[i-1]) {
-        cout << "Error: ec = " << ecv.first  << " is not sorted!" << endl;
+        cout << "Error: ec = " << ec  << " is not sorted!" << endl;
         exit(1);
       }
     }
 
-    auto search = index.ecmapinv.find(ecv.second);
+    auto search = index.ecmapinv.find(v);
     if (search == index.ecmapinv.end()) {
-      cout << "Error: could not find inverse for " << ecv.first << endl;
+      cout << "Error: could not find inverse for " << ec << endl;
       exit(1);
     } else {
-      if (search->second != ecv.first) {
+      if (search->second != ec) {
         cout << "Error: inverse incorrect for ecmap -> ecmapinv,  ecv.first = "
-             << ecv.first <<  ", ecmapinv[ecv.second] = " << search->second << endl;
+             << ec <<  ", ecmapinv[ecv.second] = " << search->second << endl;
         exit(1);
       }
     }
   }
 
   for (auto& eiv : index.ecmapinv) {
-    auto search = index.ecmap.find(eiv.second);
-    if (search == index.ecmap.end()) {
+    //auto search = index.ecmap.find(eiv.second);
+    //if (search == index.ecmap.end()) {
+    if (eiv.second < 0 || eiv.second >= index.ecmap.size()) {
       cout << "Error: could not find inverse for ";
       printVector(eiv.first);
       cout << ", ecid = " << eiv.second << endl;
       exit(1);
     } else {
-      if (search->second != eiv.first) {
+      auto &v = index.ecmap[eiv.second];
+      if (v != eiv.first) {
         cout << "Error: inverse incorrect for ecmapinv -> ecmap,  eiv.first = ";
         printVector(eiv.first);
-        cout <<  ", ecmap[eivv.second] = ";
-        printVector(search->second);
+        cout <<  ", ecmap[eiv.second] = ";
+        printVector(v);
         cout << endl;
         exit(1);
       }
@@ -121,12 +125,13 @@ void InspectIndex(const KmerIndex& index) {
   for (auto& kv : index.kmap) {
     ++fjumphisto[kv.second.fdist];
     ++bjumphisto[kv.second.bdist];
-    auto search = index.ecmap.find(kv.second.id);
-    if (search == index.ecmap.end()) {
+    //auto search = index.ecmap.find(kv.second.id);
+//    if (search == index.ecmap.end()) {
+    if (kv.second.id < 0 || kv.second.id >= index.ecmap.size()) {
       cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second.id << ", which is not in the index" << endl;
       exit(1);
     } else {
-      ++kmhisto[search->second.size()];
+      ++kmhisto[index.ecmap[kv.second.id].size()];
     }
   }
 

@@ -37,20 +37,21 @@ WeightMap calc_weights(
   // and ec map are correct... as well as eff_lens size is reasonable
 
   // weights are stored _exactly_ in the same orientation as the ec map
-  WeightMap weights;
+  WeightMap weights(ecmap.size());
 
-  for (auto& kv : ecmap) {
-
-    //std::cout << kv.first;
+//  for (auto& kv : ecmap) {
+  for (int ec = 0; ec < ecmap.size(); ec++) {
+    auto& v = ecmap[ec];
+    //std::cout << ec;
     std::vector<double> trans_weights;
-    trans_weights.reserve(kv.second.size());
+    trans_weights.reserve(v.size());
 
-    for (auto& trans_id : kv.second) {
-      trans_weights.push_back( static_cast<double>(counts[kv.first]) /
+    for (auto& trans_id : v) {
+      trans_weights.push_back( static_cast<double>(counts[ec]) /
                                eff_lens[trans_id] );
     }
 
-    weights.insert( {kv.first, trans_weights} );
+    weights[ec] = trans_weights;
   }
 
 
