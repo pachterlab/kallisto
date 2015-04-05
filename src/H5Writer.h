@@ -10,7 +10,9 @@ class H5Writer {
     H5Writer(const std::string& fname, int num_bootstrap, uint compression);
     ~H5Writer();
 
-    void write_main(const EMAlgorithm& em, std::vector<int>& lengths);
+    void write_main(const EMAlgorithm& em,
+        const std::vector<std::string>& targ_ids,
+        const std::vector<int>& lengths);
 
     void write_bootstrap(const EMAlgorithm& em, int bs_id);
 
