@@ -25,6 +25,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "weights.h"
 #include "Inspect.h"
 #include "Bootstrap.h"
+#include "H5Writer.h"
 
 
 using namespace std;
@@ -600,7 +601,12 @@ int main(int argc, char *argv[]) {
                        eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output + "/expression.txt");
+
+        H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 6);
+        writer.write_main(em, index.trans_lens_);
+
+
+        /* em.write(opt.output + "/expression.txt"); */
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -618,8 +624,9 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em();
-            res.write( opt.output + "/bs_expression_" + std::to_string(b) +
-                       ".txt");
+            writer.write_bootstrap(res, b);
+            // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+            //            ".txt");
           }
 
         }

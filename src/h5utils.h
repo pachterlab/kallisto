@@ -1,5 +1,5 @@
-#ifndef KAL_H5_UTILS
-#define KAL_H5_UTILS
+#ifndef KALLISTO_H5_UTILS
+#define KALLISTO_H5_UTILS
 
 #include <cstring>
 #include <memory>
@@ -8,38 +8,17 @@
 
 #include "hdf5.h"
 
-const char** vec_to_ptr(const std::vector<std::string>& v) {
-  std::shared_ptr<const char*> ret( new const char*[v.size()] );
-  for (size_t i = 0; i < v.size(); ++i) {
-    ret.get()[i] = v[i].c_str();
-  }
-  return ret.get();
-}
+const char** vec_to_ptr(const std::vector<std::string>& v);
 
-const double* vec_to_ptr(const std::vector<double>& v) {
-  return v.data();
-}
+const double* vec_to_ptr(const std::vector<double>& v);
 
-const int* vec_to_ptr(const std::vector<int>& v) {
-  return v.data();
-}
+const int* vec_to_ptr(const std::vector<int>& v);
 
-hid_t get_datatype_id(const std::vector<std::string>& v) {
-  hid_t datatype_id = H5Tcopy (H5T_C_S1);
-  H5Tset_size (datatype_id, H5T_VARIABLE);
-  v.size(); // shutup, compiler
-  return datatype_id;
-}
+hid_t get_datatype_id(const std::vector<std::string>& v);
 
-hid_t get_datatype_id(const std::vector<double>& v) {
-  v.size(); // shutup, compiler
-  return H5T_NATIVE_DOUBLE;
-}
+hid_t get_datatype_id(const std::vector<double>& v);
 
-hid_t get_datatype_id(const std::vector<int>& v) {
-  v.size(); // shutup, compiler
-  return H5T_NATIVE_INT;
-}
+hid_t get_datatype_id(const std::vector<int>& v);
 
 // str_vec: a vector of string to be written out
 // group_id: a group_id which has already been opened
@@ -49,7 +28,7 @@ hid_t get_datatype_id(const std::vector<int>& v) {
 //
 // return: the status of H5Dwrite (last H5 operation)
 template <typename T>
-herr_t data_to_h5(
+herr_t vector_to_h5(
     const std::vector<T>& str_vec,
     hid_t group_id,
     const std::string& dataset_name,
@@ -91,4 +70,4 @@ herr_t data_to_h5(
   return status;
 }
 
-#endif // KAL_H5_UTILS
+#endif // KALLISTO_H5_UTILS
