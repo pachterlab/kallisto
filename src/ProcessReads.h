@@ -19,7 +19,7 @@
 
 using namespace seqan;
 
-void printVector(const std::vector<int> &v, std::ostream& o) {
+void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
   int i = 0;
   for (auto x : v) {
@@ -32,7 +32,7 @@ void printVector(const std::vector<int> &v, std::ostream& o) {
   o << "]";
 }
 
-bool isSubset(const std::vector<int> &x, const std::vector<int> &y) {
+bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
   auto a = x.begin();
   auto b = y.begin();
   while (a != x.end() && b != y.end()) {
@@ -49,16 +49,16 @@ bool isSubset(const std::vector<int> &x, const std::vector<int> &y) {
 }
 
 template<typename Index, typename TranscriptCollector>
-void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &tc) {
+void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& tc) {
 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
   int tlencount = 10000;
-  
+
   index.loadSuffixArray(opt);
   TFinder finder(index.index);
-  
+
 
   bool paired = (opt.files.size() == 2);
 
@@ -130,7 +130,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
           tc.flens[tl]++;
           tlencount--;
         }
-        
+
         if (tlencount == 0) {
           index.clearSuffixArray();
           /*std::cout << "Fragment length" << std::endl;
@@ -142,8 +142,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector &
         }
       }
     }
-    
-    
+
+
     if (opt.verbose && nreads % 10000 == 0 ) {
       std::cerr << "[quant] Processed " << nreads << std::endl;
     }
@@ -175,6 +175,9 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   v1.reserve(1000);
   v2.reserve(1000);
 
+  int tlencount = 10000;
+  index.loadSuffixArray(opt);
+  TFinder finder(index.index);
 
   std::vector<int> rIdToTrans;
 
@@ -194,8 +197,8 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   //typedef FormattedFileContext<BamFileIn, void>::Type TBamContext;
 
   ///BamIOContext<StringSet<CharString>>
-  auto const & bamContext = context(bamFileIn);
-  
+  auto const& bamContext = context(bamFileIn);
+
   {
     std::unordered_map<std::string, int> inv;
     for (int i = 0; i < index.target_names_.size(); i++) {
@@ -214,12 +217,12 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     }
   }
 
-  
 
-  
-  
 
-  // for each read
+
+
+
+
   BamAlignmentRecord record;
   if (atEnd(bamFileIn)) {
     std::cerr << "Warning: Empty bam file " << opt.files[0] << std::endl;
@@ -252,13 +255,15 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   bamBamSpec << "read1\tread2\tBamEC\tKalEC\n";
   bamKalSpec << "read1\tread2\tBamEC\tKalEC\n";
   bamNotProper << "read1\tread2\tBamEC\tKalEC\n";
+
   
+  // for each read
   while (!done) {
     bool paired = hasFlagMultiple(record);
     p.clear();
     clear(s1);
     clear(s2);
-    
+
     // we haven't processed record yet
     while (true) {
       // collect sequence
@@ -289,7 +294,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
         done = true;
         break;
       }
-      
+
       // look at next read
       lastName = record.qName;
       readRecord(record, bamFileIn);
@@ -297,14 +302,14 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
         break; // process the record next time
       }
     }
-    
+
     if (empty(s1) || empty(s2)) {
       std::cerr << "Warning: only one read is present " << std::endl << s1 << std::endl << s2 << std::endl;
     }
     nreads++;
-    
 
-    
+
+
     v1.clear();
     v2.clear();
     // process read
@@ -315,7 +320,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
 
     // collect the transcript information
     std::vector<int> u;
-    if (!paired){
+    if (!paired) {
       if (!v1.empty()) {
         u = tc.intersectECs(v1);
       }
@@ -323,7 +328,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
       if (!v1.empty() && !v2.empty()) {
         std::vector<int> u1 = tc.intersectECs(v1);
         std::vector<int> u2 = tc.intersectECs(v2);
-      
+
         u = intersect(u1,u2);
       }
     }
@@ -348,6 +353,23 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
     if (!lp.empty()) {
       int ec_lp = tc.increaseCount(lp);
 
+      // collect length distribution
+      if (paired && 0 <= ec_lp && ec_lp < index.num_trans && tlencount > 0) {
+        bool allSame = (v1[0].first == ec_lp && v2[0].first == ec_lp) && (v1[0].second == 0 && v2[0].second == 0);
+        if (allSame) {
+          int tl = index.mapPair(toCString(s1),length(s1),toCString(s2),length(s2), ec_lp, finder);
+          if (0 < tl && tl < tc.flens.size()) {
+            tc.flens[tl]++;
+            tlencount--;
+          }
+        }
+
+        if (tlencount == 0) {
+          index.clearSuffixArray();
+        }
+      }
+      
+
       if (u.empty()) {
         // BAM mapped not kallisto
         alignBnotK++;
@@ -356,7 +378,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
         bamBnotK << "\t[]\n";
       } else {
         // search for u
-        auto find = index.ecmapinv.find(u); 
+        auto find = index.ecmapinv.find(u);
         // both mapped, check mapping
         if (find == index.ecmapinv.end() || find->second != ec_lp) {
           // mismatch
@@ -416,8 +438,8 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   bamBamSpec.close();
   bamKalSpec.close();
   bamNotProper.close();
-                     
-  
+
+
   // writeoutput to outdir
   std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
   std::ofstream of;

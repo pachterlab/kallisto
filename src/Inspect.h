@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void printVector(const vector<int> &v) {
+void printVector(const vector<int>& v) {
   cout << "[";
   int i = 0;
   for (auto x : v) {
@@ -20,7 +20,7 @@ void printVector(const vector<int> &v) {
   cout << "]";
 }
 
-void printHisto(const unordered_map<int,int> &m, const string &header) {
+void printHisto(const unordered_map<int,int>& m, const string& header) {
   cout << header << "\n";
   int mn = std::numeric_limits<int>::max();
   int mx = 0;
@@ -56,8 +56,8 @@ void InspectIndex(const KmerIndex& index) {
   }
 
   unordered_map<int,int> echisto;
-  
-  for (auto &ecv : index.ecmap) {
+
+  for (auto& ecv : index.ecmap) {
     ++echisto[ecv.second.size()];
     const vector<int>& v = ecv.second;
     if (v.empty()) {
@@ -69,7 +69,7 @@ void InspectIndex(const KmerIndex& index) {
         cout << "Error: ec = " << ecv.first  << " has invalid transcript id " << v[i] << endl;
         exit(1);
       }
-  
+
       if (i > 0 && v[i] == v[i-1]) {
         cout << "Error: ec = " << ecv.first  << " has repeated transcript id " << v[i] << endl;
         exit(1);
@@ -77,10 +77,10 @@ void InspectIndex(const KmerIndex& index) {
 
       if (i > 0 && v[i] < v[i-1]) {
         cout << "Error: ec = " << ecv.first  << " is not sorted!" << endl;
-        exit(1); 
+        exit(1);
       }
-  	}
-    
+    }
+
     auto search = index.ecmapinv.find(ecv.second);
     if (search == index.ecmapinv.end()) {
       cout << "Error: could not find inverse for " << ecv.first << endl;
@@ -94,7 +94,7 @@ void InspectIndex(const KmerIndex& index) {
     }
   }
 
-  for (auto &eiv : index.ecmapinv) {
+  for (auto& eiv : index.ecmapinv) {
     auto search = index.ecmap.find(eiv.second);
     if (search == index.ecmap.end()) {
       cout << "Error: could not find inverse for ";
@@ -115,11 +115,15 @@ void InspectIndex(const KmerIndex& index) {
 
   cout << "#[inspect] Number of k-mers in index = " << index.kmap.size() << endl;
   unordered_map<int,int> kmhisto;
+  unordered_map<int,int> fjumphisto;
+  unordered_map<int,int> bjumphisto;
 
   for (auto& kv : index.kmap) {
-    auto search = index.ecmap.find(kv.second);
+    ++fjumphisto[kv.second.fdist];
+    ++bjumphisto[kv.second.bdist];
+    auto search = index.ecmap.find(kv.second.id);
     if (search == index.ecmap.end()) {
-      cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second << ", which is not in the index" << endl;
+      cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second.id << ", which is not in the index" << endl;
       exit(1);
     } else {
       ++kmhisto[search->second.size()];
@@ -129,9 +133,15 @@ void InspectIndex(const KmerIndex& index) {
 
   printHisto(echisto, "#EC.size\tNum.transcripts");
   cout << endl << endl;
-    
+
   printHisto(kmhisto, "#EC.size\tNum.kmers");
-  
+
+  cout << endl << endl;
+  printHisto (fjumphisto, "#Jump.fw\tNum.kmers");
+
+  cout << endl << endl;
+  printHisto (bjumphisto, "#Jump.bw\tNum.kmers");
+
 }
 
 #endif // KALLISTO_INSPECTINDEX_H
