@@ -13,10 +13,11 @@ ELSE(CMAKE_BUILD_TYPE MATCHES Debug)
 		add_compile_options(-O3)
 ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
 
-if(CMAKE_BUILD_TYPE MATCHES Profile) 
+if(CMAKE_BUILD_TYPE MATCHES Profile)
 	add_compile_options(-g)
 endif(CMAKE_BUILD_TYPE MATCHES Profile)
 
+find_package(HDF5)
 
 # add_compile_options(-Wdeprecated-register)
 
