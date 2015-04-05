@@ -600,7 +600,7 @@ int main(int argc, char *argv[]) {
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
         em.run();
-        em.compute_rho();
+        /* em.compute_rho(); */
 
         H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 6);
         writer.write_main(em, index.trans_lens_);
