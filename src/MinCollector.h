@@ -22,10 +22,10 @@ struct MinCollector {
   int collect(std::vector<std::pair<int,int>>& v1) {
     std::vector<std::pair<int,int>> dummy;
     return collect(v1,dummy,true);
-    
+
   }
-  int increaseCount(const std::vector<int>& u); 
-  
+  int increaseCount(const std::vector<int>& u);
+
   std::vector<int> intersectECs(std::vector<std::pair<int,int>>& v) const;
 
 

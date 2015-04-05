@@ -37,9 +37,21 @@ class Kmer {
   void set_empty();
   void set_deleted();
 
+
   bool operator<(const Kmer& o) const;
 
-  bool operator==(const Kmer& o) const;
+  // use:  b = (km1 == km2);
+  // pre:
+  // post: b is true <==> the DNA strings in km1 and km2 are equal
+  inline bool operator==(const Kmer& o) const {
+    for (size_t i = 0; i < MAX_K/32; i++) {
+      if (longs[i] != o.longs[i]) {
+        return false;
+      }
+    }
+    return true;
+    //  return memcmp(bytes,o.bytes,MAX_K/4)==0;
+  }
 
   bool operator!=(const Kmer& o) const {
     return !(*this == o);
