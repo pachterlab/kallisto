@@ -811,7 +811,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             // this is weird, let's try the middle k-mer
             bool foundMiddle = false;
             if (dist > 4) {
-              int middlePos = (pos + nexPos)/2;
+              int middlePos = (pos + nextPos)/2;
               int middleId = -1;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);
