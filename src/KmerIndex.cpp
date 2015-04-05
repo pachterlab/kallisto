@@ -447,11 +447,12 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
     // 9.1 write out how many bytes
     // XXX: Note: this doesn't actually encore the max targ id size.
     // might cause problems in the future
-    tmp_size = tid.size();
+    // tmp_size = tid.size();
+    tmp_size = strlen(tid.c_str());
     out.write((char *)&tmp_size, sizeof(tmp_size));
 
     // 9.2 write out the actual string
-    out.write(tid.c_str(), tid.size());
+    out.write(tid.c_str(), tmp_size);
   }
 
   out.flush();
@@ -636,7 +637,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
 
-    std::string tmp_targ_id( buffer );
+    /* std::string tmp_targ_id( buffer ); */
     target_names_.push_back(std::string( buffer ));
 
     // clear the buffer for next string
@@ -811,7 +812,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             // this is weird, let's try the middle k-mer
             bool foundMiddle = false;
             if (dist > 4) {
-              int middlePos = (pos + nexPos)/2;
+              int middlePos = (pos + nextPos)/2;
               int middleId = -1;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);

@@ -8,6 +8,7 @@
 
 #include "hdf5.h"
 
+// XXX: remember to cleanup result!
 const char** vec_to_ptr(const std::vector<std::string>& v);
 
 const double* vec_to_ptr(const std::vector<double>& v);
@@ -23,7 +24,7 @@ hid_t get_datatype_id(const std::vector<int>& v);
 // str_vec: a vector of string to be written out
 // group_id: a group_id which has already been opened
 // dataset_name: the to write out to
-// release_type: if 'true', release the datatype
+// release_type: if 'true', release the datatype and ptr
 // compression_level: the level of compression (6 seems reasonable)
 //
 // return: the status of H5Dwrite (last H5 operation)
@@ -65,6 +66,7 @@ herr_t vector_to_h5(
   status = H5Sclose(dataspace_id);
   if (release_type) {
     status = H5Tclose(datatype_id);
+    delete [] ptr;
   }
 
   return status;

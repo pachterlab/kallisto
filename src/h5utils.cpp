@@ -1,11 +1,12 @@
 #include "h5utils.h"
 
 const char** vec_to_ptr(const std::vector<std::string>& v) {
-  std::shared_ptr<const char*> ret( new const char*[v.size()] );
+  const char** ret;
+  ret = new const char*[v.size()];
   for (size_t i = 0; i < v.size(); ++i) {
-    ret.get()[i] = v[i].c_str();
+    ret[i] = v[i].c_str();
   }
-  return ret.get();
+  return ret;
 }
 
 const double* vec_to_ptr(const std::vector<double>& v) {
