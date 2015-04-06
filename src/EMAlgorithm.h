@@ -10,7 +10,6 @@
 #include <limits>
 #include <vector>
 
-
 // smallest weight we expect is ~10^-4
 // on most machines, TOLERANCE should be 2.22045e-15
 //const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
@@ -219,5 +218,6 @@ struct EMAlgorithm {
   std::vector<double> rho_;
   bool rho_set_;
 };
+
 
 #endif // KALLISTO_EMALGORITHM_H
