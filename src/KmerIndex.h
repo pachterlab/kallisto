@@ -36,7 +36,7 @@ struct SAValue<seqan::StringSet<seqan::CharString>> {
 
 }
 
-using EcMap = std::unordered_map<int, std::vector<int>>;
+using EcMap = std::vector<std::vector<int>>; //std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
   size_t operator()(const std::vector<int>& v) const {

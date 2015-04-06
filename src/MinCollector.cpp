@@ -56,6 +56,14 @@ int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
 }
 
 int MinCollector::increaseCount(const std::vector<int>& u) {
+  if (u.empty()) {
+    return -1;
+  }
+  if (u.size() == 1) {
+    int ec = u[0];
+    ++counts[ec];
+    return ec;
+  }
   auto search = index.ecmapinv.find(u);
   if (search != index.ecmapinv.end()) {
     // ec class already exists, update count
@@ -64,7 +72,8 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
   } else {
     // new ec class, update the index and count
     auto necs = counts.size();
-    index.ecmap.insert({necs,u});
+    //index.ecmap.insert({necs,u});
+    index.ecmap.push_back(u);
     index.ecmapinv.insert({u,necs});
     counts.push_back(1);
     return necs;
