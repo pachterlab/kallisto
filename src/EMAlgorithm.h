@@ -50,6 +50,7 @@ struct EMAlgorithm {
     double denom;
     const double alpha_limit = 1e-7;
     const double alpha_change = 1e-3;
+    bool finalRound = false;
     
     std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
               std::endl;
@@ -104,7 +105,7 @@ struct EMAlgorithm {
 
       // TODO: check for relative difference for convergence in EM
 
-      bool stopEM = (i >= min_rounds); // false initially
+      bool stopEM = !finalRound && (i >= min_rounds); // false initially
       //double maxChange = 0.0;
 
       for (int ec = 0; ec < num_trans_; ec++) {
@@ -124,21 +125,24 @@ struct EMAlgorithm {
         alpha_[ec] = next_alpha[ec];
         
         // clear all next_alpha values 0 for next iteration
-        next_alpha[ec] = 0;
+        next_alpha[ec] = 0.0;
         
+      }
+
+      if (finalRound) {
+        break;
       }
       
       // std::cout << maxChange << std::endl;
       if (stopEM) {
-        break;
+        finalRound = true;
+        for (int ec = 0; ec < num_trans_; ec++) {
+          if (alpha_[ec] < alpha_limit/10.0) {
+            alpha_[ec] = 0.0;
+          }
+        }
       }
-      
 
-
-      //std::copy(next_alpha.begin(), next_alpha.end(), alpha_.begin());
-
-
-      //std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
     }
 
 
