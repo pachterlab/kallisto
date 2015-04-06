@@ -43,17 +43,19 @@ struct EMAlgorithm {
 
   ~EMAlgorithm() {}
 
-  void run(size_t n_iter = 500) {
+  void run(size_t n_iter = 1000, size_t min_rounds=50) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 
     assert(weight_map_.size() <= counts_.size());
 
     double denom;
+    const double alpha_limit = 1e-7;
+    const double alpha_change = 1e-3;
     
     std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
               std::endl;
-
-    for (auto i = 0; i < n_iter; ++i) {
+    int i;
+    for (i = 0; i < n_iter; ++i) {
       if (i % 50 == 0) {
         std::cerr << ".";
         std::cerr.flush();
@@ -61,7 +63,6 @@ struct EMAlgorithm {
           std::cerr << std::endl;
         }
       }
-
       
       //for (auto& ec_kv : ecmap_ ) {
       for (int ec = 0; ec < num_trans_; ec++) {
@@ -99,17 +100,51 @@ struct EMAlgorithm {
         for (auto t_it = 0; t_it < numEC; ++t_it) {
           next_alpha[v[t_it]] +=  (wv[t_it] * alpha_[v[t_it]]) * countNorm;
         }
+
       }
 
       // TODO: check for relative difference for convergence in EM
 
-      // reassign alpha_ to next_alpha
-      std::copy(next_alpha.begin(), next_alpha.end(), alpha_.begin());
+      bool stopEM = (i >= min_rounds); // false initially
+      //double maxChange = 0.0;
 
-      // clear all next_alpha values 0 for next iteration
-      std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
+      for (int ec = 0; ec < num_trans_; ec++) {
+          
+        if (stopEM && next_alpha[ec] >= alpha_limit && abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec] >= alpha_change) {
+          stopEM = false;
+        }
+
+        /*
+        if (next_alpha[ec] > alpha_limit) {
+          maxChange = std::max(maxChange,abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec]);
+        }
+        */
+
+        
+        // reassign alpha_ to next_alpha
+        alpha_[ec] = next_alpha[ec];
+        
+        // clear all next_alpha values 0 for next iteration
+        next_alpha[ec] = 0;
+        
+      }
+      
+      // std::cout << maxChange << std::endl;
+      if (stopEM) {
+        break;
+      }
+      
+
+
+      //std::copy(next_alpha.begin(), next_alpha.end(), alpha_.begin());
+
+
+      //std::fill(next_alpha.begin(), next_alpha.end(), 0.0);
     }
 
+
+    std::cerr << std::endl << "Ran for " << i << " rounds of EM";
+    
     std::cerr << std::endl;
     std::cerr.flush();
   }
