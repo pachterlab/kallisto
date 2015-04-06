@@ -28,7 +28,7 @@ class Bootstrap {
         // EM Algorithm generates a sample from the Multinomial, then returns
         // an "EMAlgorithm" that has already run the EM as well as compute the
         // rho values
-        EMAlgorithm run_em();
+        EMAlgorithm run_em(const EMAlgorithm& em_start);
 
     private:
         const EcMap& ecmap_;
