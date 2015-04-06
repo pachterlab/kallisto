@@ -25,6 +25,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "weights.h"
 #include "Inspect.h"
 #include "Bootstrap.h"
+#include "H5Writer.h"
 
 
 using namespace std;
@@ -582,6 +583,12 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
+
+        // temporarily build index
+        /* opt.transfasta = "../test/input/10_trans_gt_500_bp.fasta"; */
+        // std::cerr << "Building index from: " << opt.transfasta << std::endl;
+        // index.BuildTranscripts(opt);
+
         auto firstFile = opt.files[0];
         MinCollector collection(index, opt);
         if (firstFile.size() >= 4 && firstFile.compare(firstFile.size()-4,4,".bam") == 0) {
@@ -602,6 +609,9 @@ int main(int argc, char *argv[]) {
         em.compute_rho();
         em.write(opt.output + "/expression.txt");
 
+        H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 6);
+        writer.write_main(em, index.target_names_, index.trans_lens_);
+
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
           auto B = opt.bootstrap;
@@ -618,8 +628,9 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em();
-            res.write( opt.output + "/bs_expression_" + std::to_string(b) +
-                       ".txt");
+            writer.write_bootstrap(res, b);
+            // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+            //            ".txt");
           }
 
         }
@@ -636,6 +647,7 @@ int main(int argc, char *argv[]) {
       } else {
         write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
+        std::cout << "sup B" << std::endl;
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
@@ -645,11 +657,15 @@ int main(int argc, char *argv[]) {
         std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+
+
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
+
         em.run();
-        em.compute_rho();
-        em.write(opt.output + "/expression.txt");
+
+        H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 7);
+        writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -667,8 +683,9 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em();
-            res.write( opt.output + "/bs_expression_" + std::to_string(b) +
-                       ".txt");
+            writer.write_bootstrap(res, b);
+            // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+            //            ".txt");
           }
 
         }
