@@ -208,6 +208,11 @@ struct EMAlgorithm {
     out.close();
   }
 
+  void set_start(const EMAlgorithm& em_start) {
+    assert(em_start.alpha_.size() == alpha_.size());
+    std::copy(em_start.alpha_.begin(), em_start.alpha_.end(), alpha_.begin());
+  }
+  
   int num_trans_;
   const EcMap& ecmap_;
   const std::vector<int>& counts_;
