@@ -18,8 +18,16 @@ const int* vec_to_ptr(const std::vector<int>& v) {
 }
 
 hid_t get_datatype_id(const std::vector<std::string>& v) {
+  int maxlength = 0;
+  for (auto x : v) {
+    if (x.size() > maxlength) {
+      maxlength = x.size();
+    }
+  }
+  
   hid_t datatype_id = H5Tcopy (H5T_C_S1);
-  H5Tset_size (datatype_id, H5T_VARIABLE);
+  //H5Tset_size (datatype_id, H5T_VARIABLE);
+  H5Tset_size (datatype_id, maxlength);
   v.size(); // shutup, compiler
   return datatype_id;
 }
