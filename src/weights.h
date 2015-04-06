@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-using WeightMap = std::unordered_map<int, std::vector<double>>;
+using WeightMap = std::vector<std::vector<double>>;
 
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean);
 

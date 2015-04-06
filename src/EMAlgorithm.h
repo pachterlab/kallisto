@@ -10,7 +10,6 @@
 #include <limits>
 #include <vector>
 
-
 // smallest weight we expect is ~10^-4
 // on most machines, TOLERANCE should be 2.22045e-15
 //const double TOLERANCE = std::numeric_limits<double>::epsilon() * 10;
@@ -49,7 +48,7 @@ struct EMAlgorithm {
     assert(weight_map_.size() <= counts_.size());
 
     double denom;
-
+    
     std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
               std::endl;
 
@@ -62,19 +61,32 @@ struct EMAlgorithm {
         }
       }
 
-      for (auto& ec_kv : ecmap_ ) {
+      
+      //for (auto& ec_kv : ecmap_ ) {
+      for (int ec = 0; ec < num_trans_; ec++) {
+        next_alpha[ec] = counts_[ec];
+      }
+      
+      for (int ec = num_trans_; ec < ecmap_.size();  ec++) {
         denom = 0.0;
 
         // first, compute the denominator: a normalizer
         // iterate over transcripts in EC map
-        auto w_search = weight_map_.find(ec_kv.first);
+        auto& wv = weight_map_[ec];
 
         // everything in ecmap should be in weight_map
-        assert( w_search != weight_map_.end() );
-        assert( w_search->second.size() == ec_kv.second.size() );
+        //assert( w_search != weight_map_.end() );
+        //assert( w_search->second.size() == ec_kv.second.size() );
 
-        for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-          denom += alpha_[ec_kv.second[t_it]] * w_search->second[t_it];
+        // wv is weights vector
+        // v is ec vector
+
+
+        auto& v = ecmap_[ec]; //ecmap_.find(ec)->second;
+        auto numEC = v.size();
+          
+        for (auto t_it = 0; t_it < numEC; ++t_it) {
+          denom += alpha_[v[t_it]] * wv[t_it];
         }
 
         if (denom < TOLERANCE) {
@@ -82,9 +94,9 @@ struct EMAlgorithm {
         }
 
         // compute the update step
-        for (auto t_it = 0; t_it < ec_kv.second.size(); ++t_it) {
-          next_alpha[ec_kv.second[t_it]] += counts_[ec_kv.first] *
-                                            ((w_search->second[t_it] * alpha_[ec_kv.second[t_it]]) / denom);
+        auto countNorm = counts_[ec] / denom;
+        for (auto t_it = 0; t_it < numEC; ++t_it) {
+          next_alpha[v[t_it]] +=  (wv[t_it] * alpha_[v[t_it]]) * countNorm;
         }
       }
 
@@ -171,5 +183,6 @@ struct EMAlgorithm {
   std::vector<double> rho_;
   bool rho_set_;
 };
+
 
 #endif // KALLISTO_EMALGORITHM_H
