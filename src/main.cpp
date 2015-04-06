@@ -627,7 +627,7 @@ int main(int argc, char *argv[]) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
-            auto res = bs.run_em();
+            auto res = bs.run_em(em);
             writer.write_bootstrap(res, b);
             // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
             //            ".txt");
@@ -647,7 +647,6 @@ int main(int argc, char *argv[]) {
       } else {
         write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
-        std::cout << "sup B" << std::endl;
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
@@ -682,7 +681,7 @@ int main(int argc, char *argv[]) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
-            auto res = bs.run_em();
+            auto res = bs.run_em(em);
             writer.write_bootstrap(res, b);
             // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
             //            ".txt");
