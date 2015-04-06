@@ -634,14 +634,15 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 9.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
+    // clear the buffer 
+    memset(buffer,0,1024);
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
 
     /* std::string tmp_targ_id( buffer ); */
     target_names_.push_back(std::string( buffer ));
 
-    // clear the buffer for next string
-    memset(buffer,0,strlen(buffer));
+
   }
 
   in.close();

@@ -647,7 +647,6 @@ int main(int argc, char *argv[]) {
       } else {
         write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
-        std::cout << "sup B" << std::endl;
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
