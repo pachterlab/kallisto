@@ -1,10 +1,14 @@
 #ifndef KALLISTO_H5_UTILS
 #define KALLISTO_H5_UTILS
 
+#include <assert.h>
+
 #include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <iostream>
 
 #include "hdf5.h"
 
@@ -44,7 +48,10 @@ herr_t vector_to_h5(
   hid_t prop_id = H5Pcreate(H5P_DATASET_CREATE);
   // chunk size is same size as vector
   status = H5Pset_chunk(prop_id, 1, dims);
+  assert( status >= 0 );
+
   status = H5Pset_deflate(prop_id, compression_level);
+  assert( status >= 0 );
 
   // create the data type
   hid_t datatype_id = get_datatype_id(str_vec);
@@ -60,12 +67,17 @@ herr_t vector_to_h5(
   auto ptr = vec_to_ptr(str_vec);
   status = H5Dwrite(dataset_id, datatype_id, H5S_ALL, H5S_ALL, H5P_DEFAULT,
       ptr);
+  assert( status >= 0 );
 
   status = H5Pclose(prop_id);
+  assert( status >= 0 );
   status = H5Dclose(dataset_id);
+  assert( status >= 0 );
   status = H5Sclose(dataspace_id);
+  assert( status >= 0 );
   if (release_type) {
     status = H5Tclose(datatype_id);
+    assert( status >= 0 );
     delete [] ptr;
   }
 
