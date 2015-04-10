@@ -13,7 +13,7 @@
 #include "hdf5.h"
 
 // XXX: remember to cleanup result!
-const char** vec_to_ptr(const std::vector<std::string>& v);
+char* vec_to_ptr(const std::vector<std::string>& v);
 
 const double* vec_to_ptr(const std::vector<double>& v);
 
