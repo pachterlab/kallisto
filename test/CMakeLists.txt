@@ -14,3 +14,10 @@ if ( ZLIB_FOUND )
 endif( ZLIB_FOUND )
 
 target_link_libraries(tests kallisto_core)
+
+if(HDF5_FOUND)
+    include_directories( ${HDF5_INCLUDE_DIR} )
+    target_link_libraries( tests ${HDF5_LIBRARIES} )
+else()
+    message(FATAL_ERROR "HDF5 not found. Required to output files")
+endif()

@@ -51,7 +51,7 @@ struct EMAlgorithm {
     const double alpha_limit = 1e-7;
     const double alpha_change = 1e-3;
     bool finalRound = false;
-    
+
     std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
               std::endl;
     int i;
@@ -63,12 +63,12 @@ struct EMAlgorithm {
           std::cerr << std::endl;
         }
       }
-      
+
       //for (auto& ec_kv : ecmap_ ) {
       for (int ec = 0; ec < num_trans_; ec++) {
         next_alpha[ec] = counts_[ec];
       }
-      
+
       for (int ec = num_trans_; ec < ecmap_.size();  ec++) {
         denom = 0.0;
 
@@ -86,7 +86,7 @@ struct EMAlgorithm {
 
         auto& v = ecmap_[ec]; //ecmap_.find(ec)->second;
         auto numEC = v.size();
-          
+
         for (auto t_it = 0; t_it < numEC; ++t_it) {
           denom += alpha_[v[t_it]] * wv[t_it];
         }
@@ -109,7 +109,7 @@ struct EMAlgorithm {
       //double maxChange = 0.0;
 
       for (int ec = 0; ec < num_trans_; ec++) {
-          
+
         if (stopEM && next_alpha[ec] >= alpha_limit && abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec] >= alpha_change) {
           stopEM = false;
         }
@@ -120,24 +120,26 @@ struct EMAlgorithm {
         }
         */
 
-        
+
         // reassign alpha_ to next_alpha
         alpha_[ec] = next_alpha[ec];
-        
+
         // clear all next_alpha values 0 for next iteration
         next_alpha[ec] = 0.0;
-        
+
       }
 
       if (finalRound) {
         break;
       }
-      
+
       // std::cout << maxChange << std::endl;
       if (stopEM) {
         finalRound = true;
+        alpha_before_zeroes_.reserve( alpha_.size() );
         for (int ec = 0; ec < num_trans_; ec++) {
           if (alpha_[ec] < alpha_limit/10.0) {
+            alpha_before_zeroes_[ec] = alpha_[ec];
             alpha_[ec] = 0.0;
           }
         }
@@ -147,7 +149,7 @@ struct EMAlgorithm {
 
 
     std::cerr << std::endl << "Ran for " << i << " rounds of EM";
-    
+
     std::cerr << std::endl;
     std::cerr.flush();
   }
@@ -213,10 +215,12 @@ struct EMAlgorithm {
   }
 
   void set_start(const EMAlgorithm& em_start) {
-    assert(em_start.alpha_.size() == alpha_.size());
-    std::copy(em_start.alpha_.begin(), em_start.alpha_.end(), alpha_.begin());
+    assert(em_start.alpha_before_zeroes_.size() == alpha_.size());
+    std::copy(em_start.alpha_before_zeroes_.begin(), em_start.alpha_before_zeroes_.end(),
+        alpha_.begin());
   }
-  
+
+
   int num_trans_;
   const EcMap& ecmap_;
   const std::vector<int>& counts_;
@@ -224,6 +228,7 @@ struct EMAlgorithm {
   const std::vector<double>& eff_lens_;
   const WeightMap& weight_map_;
   std::vector<double> alpha_;
+  std::vector<double> alpha_before_zeroes_;
   std::vector<double> rho_;
   bool rho_set_;
 };
