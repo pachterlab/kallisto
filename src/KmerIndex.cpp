@@ -25,7 +25,202 @@ void KmerIndex::clearSuffixArray() {
   //clear(finder);
 }
 
+void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
+  // read input
+  int k = opt.k;
+  const std::string& fasta = opt.transfasta;
+  std::cerr << "[build] Loading fasta file " << fasta
+            << std::endl;
+  std::cerr << "[build] k: " << k << std::endl;
+
+
+  SeqFileIn seqFileIn(fasta.c_str());
+
+  // read fasta file
+  seqan::StringSet<seqan::CharString> ids;
+  readRecords(ids, seqs, seqFileIn);
+
+  // gather all k-mers
+  for (int i = 0; i < length(seqs); i++) {
+    CharString seq = value(seqs,i);
+    const char *s = toCString(seq);
+    KmerIterator kit(s),kit_end;
+    for (; kit != kit_end; ++kit) {
+      kmap.insert({kit->first.rep(), KmerEntry()}); // don't care about repeats
+    }
+  }
+  
+  std::cerr << "[build] Building de Bruijn Graph ... "; std::cerr.flush();
+  // find out how much we can skip ahead for each k-mer.
+  for (auto& kv : kmap) {
+    if (kv.second.contig == -1) {
+      // ok we haven't processed the k-mer yet
+      std::vector<Kmer> flist, blist;
+
+      // iterate in forward direction
+      Kmer km = kv.first;
+      Kmer end = km;
+      Kmer last = end;
+      Kmer twin = km.twin();
+      bool selfLoop = false;
+      flist.push_back(km);
+
+      while (fwStep(end,end)) {
+        if (end == km) {
+          // selfloop
+          selfLoop = true;
+          break;
+        } else if (end == twin) {
+          selfLoop = true;
+          // mobius loop
+          break;
+        } else if (end == last.twin()) {
+          // hairpin
+          break;
+        }
+        flist.push_back(end);
+        last = end;
+      }
+
+      Kmer front = twin;
+      Kmer first = front;
+
+      if (!selfLoop) {
+        while (fwStep(front,front)) {
+          if (front == twin) {
+            // selfloop
+            selfLoop = true;
+            break;
+          } else if (front == km) {
+            // mobius loop
+            selfLoop = true;
+            break;
+          } else if (front == first.twin()) {
+            // hairpin
+            break;
+          }
+          blist.push_back(front);
+          first = front;
+        }
+      }
+
+      std::vector<Kmer> klist;
+      for (auto it = blist.rbegin(); it != blist.rend(); ++it) {
+        klist.push_back(it->twin());
+      }
+      for (auto x : flist) {
+        klist.push_back(x);
+      }
+
+
+      Contig contig;
+      contig.id = dbGraph.contigs.size();
+      contig.length = klist.size();
+      contig.seq = klist[0].toString();
+      contig.seq.reserve(contig.length + k-1);
+
+
+      for (int i = 0; i < klist.size(); i++) {
+        Kmer x = klist[i];
+        Kmer xr = x.rep();
+        bool forward = (x==xr);
+        auto it = kmap.find(xr);
+        it->second = KmerEntry(contig.id, i, forward);
+        if (i > 0) {
+          contig.seq.push_back(x.toString()[k-1]);
+        }
+      }
+      
+      dbGraph.contigs.push_back(contig);
+    }
+  }
+  std::cerr << " finished building de Bruijn Graph found for " << kmap.size() << " kmers and with " << dbGraph.contigs.size() << " contigs" << std::endl;
+  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
+}
+
+void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
+
+  struct TRInfo {
+    int trid;
+    int start;
+    int stop; //exclusive [start,stop)
+  };
+  
+  std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
+
+  for (int i = 0; i < length(seqs); i++) {
+    CharString seq = value(seqs,i);
+    int seqlen = length(seq) - k + 1;
+    const char *s = toCString(seq);
+    KmerIterator kit(s), kit_end;
+    for (; kit != kit_end; ++kit) {
+      Kmer x = kit->first;
+      Kmer xr = x.rep();
+      auto search = kmap.find(xr);
+      bool forward = (x==xr);
+      KmerEntry val = search->second;
+      std::vector<TRInfo>& trinfo = trinfos[val.contig];
+      Contig& contig = dbGraph.contigs[val.contig];
+
+      TRInfo tr;
+      tr.trid = i;
+      int jump = kit->second;
+      if (forward == val.isFw()) {
+        tr.start = val.getPos();
+        if (contig.length > seqlen-kit->second) {
+          // transcript stops
+          tr.stop = seqlen - kit->second;
+          jump = seqlen;
+        } else {
+          tr.stop = contig.length;
+          jump = kit->second + (tr.stop - tr.start)-1;
+        }
+      } else {
+        tr.stop = val.getPos()+1;
+        int stpos = val.getPos() - (seqlen - kit->second) + 1;
+        if (stpos > 0) {
+          tr.start = stpos;
+          jump = seqlen;
+        } else {
+          tr.start = 0;
+          jump = kit->second + (tr.stop - tr.start) - 1;
+        }
+      }
+
+      trinfo.push_back(tr);
+      kit.jumpTo(jump);
+    }
+  }
+
+  int perftr = 0;
+  for (int i = 0; i < trinfos.size(); i++) {
+    bool all = true;
+    int contigLen = dbGraph.contigs[i].length;
+    for (auto x : trinfos[i]) {
+      if (x.start!=0 || x.stop !=contigLen) {
+        all = false;
+        break;
+      }
+    }
+    if (all) {
+      perftr++;
+    }
+  }
+
+
+  std::cout << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
+  
+}
+
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
+  BuildDeBruijnGraph(opt);
+  BuildEquivalenceClasses(opt);
+  
+
+}
+
+/*
+void dummy_funk() {
   const std::string& fasta = opt.transfasta;
   std::cerr << "[build] Loading fasta file " << fasta
             << std::endl;
@@ -40,7 +235,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   int transid = 0;
 
-
+  // probably remove this -->
+  
   if (!loadSuffixArray(opt)) {
     std::cerr << "[build] Constructing suffix array ... "; std::cerr.flush();
 
@@ -70,14 +266,15 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   TFinder finder(index);
   find(finder, "A");
   clear(finder);
-
+  * /
+  // <-- 
+  
 
   assert(length(seqs) == length(ids));
   num_trans = length(seqs);
 
 
-  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
-
+  
   // for each transcript, create it's own equivalence class
   for (int i = 0; i < length(seqs); i++ ) {
     std::string name(toCString(ids[i]));
@@ -96,77 +293,11 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     ecmapinv.insert({single,i});
   }
 
+
+  // remove this <-- 
   // traverse the suffix tree
+  / *
   int nk = 0;
-
-  /*
-  // for each transcript
-  for (int i = 0; i < length(seqs); i++) {
-    // if it it long enough
-    CharString seq = value(seqs,i);
-    if (length(seq) >= k) {
-      KmerIterator kit(toCString(seq)), kit_end;
-
-      // for each k-mer add to map
-      for(; kit != kit_end; ++kit) {
-        Kmer km = kit->first;
-        Kmer rep = km.rep();
-        if (kmap.find(km) != kmap.end()) {
-          // we've seen this k-mer before
-          continue;
-        }
-
-        nk++;
-        // if (nk % 1000 == 0) {
-        //   std::cerr << "."; std::cerr.flush();
-        // }
-
-        CharString kms(km.toString().c_str()); // hacky, but works
-
-        std::vector<int> ecv;
-
-        // find all instances of the k-mer
-        clear(finder);
-        while (find(finder, kms)) {
-          ecv.push_back(getSeqNo(position(finder)));
-        }
-        // find all instances of twin
-        reverseComplement(kms);
-        clear(finder);
-        while (find(finder,kms)) {
-          ecv.push_back(getSeqNo(position(finder)));
-        }
-
-        // most common case
-        if (ecv.size() == 1) {
-          int ec = ecv[0];
-          kmap.insert({rep, KmerEntry(ec)});
-        } else {
-          sort(ecv.begin(), ecv.end());
-          std::vector<int> u;
-          u.push_back(ecv[0]);
-          for (int i = 1; i < ecv.size(); i++) {
-            if (ecv[i-1] != ecv[i]) {
-              u.push_back(ecv[i]);
-            }
-          }
-          auto search = ecmapinv.find(u);
-          if (search != ecmapinv.end()) {
-            kmap.insert({rep, KmerEntry(search->second)});
-          } else {
-            int eqs_id = ecmapinv.size();
-            ecmapinv.insert({u, eqs_id });
-            ecmap.insert({eqs_id, u});
-            kmap.insert({rep, KmerEntry(eqs_id)});
-          }
-        }
-      }
-    }
-  }
-  */
-
-
-
   Iterator<TIndex, TopDown<ParentLinks<>>>::Type it(index);
   do {
 
@@ -237,11 +368,13 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       } while (repLength(it) > k);
     }
   } while (!isRoot(it));
-
+  * /
+  // <-- 
 
   std::cerr << " ... finished creating equivalence classes" << std::endl;
 
 
+  / *
   // remove polyA close k-mers
   CharString polyA;
   resize(polyA, k, 'A');
@@ -264,7 +397,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
           kmap.erase(search);
         }
       }
-      /*
+      
       for (int j = i+1; j < k; j++) {
         CharString y(x);
         for (int b = 1; b < 4; b++) {
@@ -277,95 +410,12 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
           }
         }
       }
-      */
+      //
     }
   }
+  * /
 
-  int kset = 0;
-  std::cerr << "[build] Computing skip-ahead ... "; std::cerr.flush();
-  // find out how much we can skip ahead for each k-mer.
-  for (auto& kv : kmap) {
-    if (kv.second.fdist == -1 && kv.second.bdist == -1) {
-      // ok we haven't processed the k-mer yet
-      std::vector<Kmer> flist, blist;
-      int ec = kv.second.id;
-
-      // iterate in forward direction
-      Kmer km = kv.first;
-      Kmer end = km;
-      Kmer last = end;
-      Kmer twin = km.twin();
-      bool selfLoop = false;
-      flist.push_back(km);
-
-      while (fwStep(end,end,ec)) {
-        if (end == km) {
-          // selfloop
-          selfLoop = true;
-          break;
-        } else if (end == twin) {
-          selfLoop = true;
-          // mobius loop
-          break;
-        } else if (end == last.twin()) {
-          // hairpin
-          break;
-        }
-        flist.push_back(end);
-        last = end;
-      }
-
-      Kmer front = twin;
-      Kmer first = front;
-
-      if (!selfLoop) {
-        while (fwStep(front,front,ec)) {
-          if (front == twin) {
-            // selfloop
-            selfLoop = true;
-            break;
-          } else if (front == km) {
-            // mobius loop
-            selfLoop = true;
-            break;
-          } else if (front == first.twin()) {
-            // hairpin
-            break;
-          }
-          blist.push_back(front);
-          first = front;
-        }
-      }
-
-      std::vector<Kmer> klist;
-      for (auto it = blist.rbegin(); it != blist.rend(); ++it) {
-        klist.push_back(it->twin());
-      }
-      for (auto x : flist) {
-        klist.push_back(x);
-      }
-
-      int contigLength = klist.size();
-
-
-      for (int i = 0; i < klist.size(); i++) {
-        Kmer x = klist[i];
-        Kmer xr = x.rep();
-        bool forward = (x==xr);
-        auto search = kmap.find(xr);
-
-        if (forward) {
-          search->second.fdist = contigLength-1-i;
-          search->second.bdist = i;
-        } else {
-          search->second.fdist = i;
-          search->second.bdist = contigLength-1-i;
-        }
-        kset++;
-      }
-    }
-  }
-  std::cerr << " finished computing skip-ahead, found for " << kset << " kmers"<< std::endl;
+  
 
   std::cerr << "[build] Found " << num_trans << " transcripts"
             << std::endl;
@@ -377,6 +427,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   std::cerr << "[build] K-mer map has " << kmap.size() << " k-mers" << std::endl;
 }
 
+*/
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   std::ofstream out;
@@ -459,16 +510,13 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   out.close();
 }
 
-bool KmerIndex::fwStep(Kmer km, Kmer& end, int ec) const {
+bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
   int j = -1;
   int fw_count = 0;
   for (int i = 0; i < 4; i++) {
     Kmer fw_rep = end.forwardBase(Dna(i)).rep();
     auto search = kmap.find(fw_rep);
     if (search != kmap.end()) {
-      if (search->second.id != ec) {
-        return false;
-      }
       j = i;
       ++fw_count;
       if (fw_count > 1) {
@@ -767,16 +815,14 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
     if (search != kmap.end()) {
 
       KmerEntry val = search->second;
-      v.push_back({val.id, kit->second});
+      
+      v.push_back({dbGraph.ecs[val.contig], kit->second});
 
       // see if we can skip ahead
-      int dist = 0;
+      // bring thisback later
       bool forward = (kit->first == rep);
-      if (forward && val.fdist > 0) {
-        dist = val.fdist;
-      } else if (!forward && val.bdist > 0) {
-        dist = val.fdist;
-      }
+      int dist = dbGraph.contigs[val.contig].getDist(val, forward);
+
 
       //const int lastbp = 10;
       if (dist >= 2) {
@@ -800,13 +846,13 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         if (kit2 != kit_end) {
           Kmer rep2 = kit2->first.rep();
           auto search2 = kmap.find(rep2);
-          if (search2 == kmap.end() || (val.id == search2->second.id)) {
+          if (search2 == kmap.end() || (val.contig == search2->second.contig)) {
             // great, a match (or nothing) see if we can move the k-mer forward
             if (pos + dist >= l-k) {
-              v.push_back({val.id, l-k}); // push back a fake position
+              v.push_back({dbGraph.ecs[val.contig], l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({val.id, pos+dist});
+              v.push_back({dbGraph.ecs[val.contig], pos+dist});
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -814,24 +860,24 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             bool foundMiddle = false;
             if (dist > 4) {
               int middlePos = (pos + nextPos)/2;
-              int middleId = -1;
+              int middleContig = -1;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);
               if (kit3 != kit_end) {
                 Kmer rep3 = kit3->first.rep();
                 auto search3 = kmap.find(rep3);
                 if (search3 != kmap.end()) {
-                  middleId = search3->second.id;
-                  if (middleId == val.id) {
+                  middleContig = search3->second.contig;
+                  if (middleContig == val.contig) {
                     foundMiddle = true;
-                  } else if (middleId == search2->second.id) {
+                  } else if (middleContig == search2->second.contig) {
                     foundMiddle = true;
                   }
                 }
               }
 
               if (foundMiddle) {
-                v.push_back({middleId, nextPos});
+                v.push_back({dbGraph.ecs[middleContig], nextPos});
                 if (nextPos >= l-k) {
                   break;
                 } else {
@@ -849,7 +895,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
           }
         } else {
           // the sequence is messed up at this point, let's just take the match
-          v.push_back({val.id, l-k});
+          v.push_back({dbGraph.ecs[val.contig], l-k});
           break;
         }
       }
@@ -869,7 +915,7 @@ donejumping:
           auto search = kmap.find(rep);
           if (search != kmap.end()) {
             // if k-mer found
-            v.push_back({search->second.id, kit->second}); // add equivalence class, and position
+            v.push_back({dbGraph.ecs[search->second.contig], kit->second}); // add equivalence class, and position
           }
         }
 

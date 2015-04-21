@@ -54,13 +54,40 @@ struct SortedVectorHasher {
 };
 
 struct KmerEntry {
-  int32_t id;    // id of equivalence class
-  int16_t fdist; // 0-based forward distance to EC-junction
-  int16_t bdist; // 0-based backward distance to EC-junction
+  int32_t contig; // id of contig
+  uint32_t _pos; // 0-based forward distance to EC-junction
 
-  KmerEntry() : id(-1), fdist(-1), bdist(-1) {}
-  KmerEntry(int _id) : id(_id), fdist(-1), bdist(-1) {}
-  KmerEntry(int _id, int _fdist, int _bdist) : id(_id), fdist(_fdist), bdist(_bdist) {}
+  KmerEntry() : contig(-1), _pos(0xFFFFFFF) {}
+  KmerEntry(int id, int pos, bool isFw) : contig(id) {
+    setPos(pos);
+    setDir(isFw);
+  }
+
+  inline int getPos() {return (_pos & 0x0FFFFFFF);}
+  inline int isFw()   {return (_pos & 0xF0000000) == 0; }
+  inline void setPos(int p) {_pos = (_pos & 0xF0000000) | (p & 0xF0000000); }
+  inline void setDir(bool _isFw) {_pos = (_pos & 0x0FFFFFFF) | ((_isFw) ? 0 : 0xF0000000);}
+};
+
+struct Contig {
+  int id; // internal id
+  int length; // number of k-mers
+  std::string seq; // sequence
+
+  
+  int getDist(KmerEntry x, bool fw) const {
+    if (x.isFw() == fw ) {
+      return (length -1 - x.getPos());
+    } else {
+      return x.getPos();
+    }
+  }
+};
+
+struct DBGraph {
+  std::vector<int> ecs; // contig id -> ec-id
+  std::vector<Contig> contigs; // contig id -> contig
+//  std::vector<pair<int, bool>> edges; // contig id -> edges
 };
 
 
@@ -80,7 +107,9 @@ struct KmerIndex {
 
 
   void BuildTranscripts(const ProgramOptions& opt);
-  bool fwStep(Kmer km, Kmer& end, int ec) const;
+  void BuildDeBruijnGraph(const ProgramOptions& opt);
+  void BuildEquivalenceClasses(const ProgramOptions& opt);
+  bool fwStep(Kmer km, Kmer& end) const;
   void write(const std::string& index_out, bool writeKmerTable = true);
   // note opt is not const
   void load(ProgramOptions& opt, bool loadKmerTable = true);
@@ -99,8 +128,9 @@ struct KmerIndex {
   KmerHashTable<KmerEntry, KmerHash> kmap;
 
   EcMap ecmap;
+  DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-  const size_t INDEX_VERSION = 6; // increase this every time you change the fileformat
+  const size_t INDEX_VERSION = 7; // increase this every time you change the fileformat
 
   std::vector<int> trans_lens_;
 
@@ -113,6 +143,9 @@ struct KmerIndex {
   seqan::StringSet<seqan::CharString> seqs;
 
 };
+
+
+
 
 
 

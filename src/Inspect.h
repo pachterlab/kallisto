@@ -55,6 +55,13 @@ void InspectIndex(const KmerIndex& index) {
     exit(1);
   }
 
+  if (index.dbGraph.ecs.size() != index.dbGraph.contigs.size()) {
+    cout << "Error: sizes do not match. ecs.size = " << index.dbGraph.ecs.size()
+         << ", contigs.size = " << index.dbGraph.contigs.size() << endl;
+    exit(1);
+  }
+  
+
   unordered_map<int,int> echisto;
 
   //for (auto& ecv : index.ecmap) {
@@ -119,19 +126,15 @@ void InspectIndex(const KmerIndex& index) {
 
   cout << "#[inspect] Number of k-mers in index = " << index.kmap.size() << endl;
   unordered_map<int,int> kmhisto;
-  unordered_map<int,int> fjumphisto;
-  unordered_map<int,int> bjumphisto;
 
   for (auto& kv : index.kmap) {
-    ++fjumphisto[kv.second.fdist];
-    ++bjumphisto[kv.second.bdist];
     //auto search = index.ecmap.find(kv.second.id);
 //    if (search == index.ecmap.end()) {
-    if (kv.second.id < 0 || kv.second.id >= index.ecmap.size()) {
-      cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second.id << ", which is not in the index" << endl;
+    if (kv.second.contig < 0 || kv.second.contig >= index.dbGraph.ecs.size()) {
+      cerr << "Kmer " << kv.first.toString() << " mapped to contig " << kv.second.contig << ", which is not in the de Bruijn Graph" << endl;
       exit(1);
     } else {
-      ++kmhisto[index.ecmap[kv.second.id].size()];
+      ++kmhisto[index.ecmap[index.dbGraph.ecs[kv.second.contig]].size()];
     }
   }
 
@@ -141,11 +144,7 @@ void InspectIndex(const KmerIndex& index) {
 
   printHisto(kmhisto, "#EC.size\tNum.kmers");
 
-  cout << endl << endl;
-  printHisto (fjumphisto, "#Jump.fw\tNum.kmers");
 
-  cout << endl << endl;
-  printHisto (bjumphisto, "#Jump.bw\tNum.kmers");
 
 }
 
