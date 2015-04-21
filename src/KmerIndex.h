@@ -36,6 +36,12 @@ struct SAValue<seqan::StringSet<seqan::CharString>> {
 
 }
 
+struct TRInfo {
+  int trid;
+  int start;
+  int stop; //exclusive [start,stop)
+};
+
 using EcMap = std::vector<std::vector<int>>; //std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
@@ -65,7 +71,7 @@ struct KmerEntry {
 
   inline int getPos() {return (_pos & 0x0FFFFFFF);}
   inline int isFw()   {return (_pos & 0xF0000000) == 0; }
-  inline void setPos(int p) {_pos = (_pos & 0xF0000000) | (p & 0xF0000000); }
+  inline void setPos(int p) {_pos = (_pos & 0xF0000000) | (p & 0x0FFFFFFF);}
   inline void setDir(bool _isFw) {_pos = (_pos & 0x0FFFFFFF) | ((_isFw) ? 0 : 0xF0000000);}
 };
 
@@ -109,6 +115,7 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt);
   void BuildDeBruijnGraph(const ProgramOptions& opt);
   void BuildEquivalenceClasses(const ProgramOptions& opt);
+  void FixSplitContigs(const ProgramOptions& opt, const std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
   void write(const std::string& index_out, bool writeKmerTable = true);
   // note opt is not const
