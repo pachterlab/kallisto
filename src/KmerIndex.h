@@ -115,7 +115,7 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt);
   void BuildDeBruijnGraph(const ProgramOptions& opt);
   void BuildEquivalenceClasses(const ProgramOptions& opt);
-  void FixSplitContigs(const ProgramOptions& opt, const std::vector<std::vector<TRInfo>>& trinfos);
+  void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
   void write(const std::string& index_out, bool writeKmerTable = true);
   // note opt is not const

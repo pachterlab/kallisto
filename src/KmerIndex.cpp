@@ -188,15 +188,33 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
 
   
   FixSplitContigs(opt, trinfos);
+  int perftr = 0;
+  for (int i = 0; i < trinfos.size(); i++) {
+    bool all = true;
 
+    int contigLen = dbGraph.contigs[i].length;
+    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
+    for (auto x : trinfos[i]) {
+      if (x.start!=0 || x.stop !=contigLen) {
+        all = false;
+      }
+      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+    }
+    //std::cout << std::endl;
+    if (all) {
+      perftr++;
+    } 
+  }
+  std::cout << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
   // need to create the equivalence classes
 }
 
-void KmerIndex::FixSplitContigs(const ProgramOptions& opt, const std::vector<std::vector<TRInfo>>& trinfos) {
+void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos) {
 
   int perftr = 0;
-  
-  for (int i = 0; i < trinfos.size(); i++) {
+  int orig_size = trinfos.size();
+
+  for (int i = 0; i < orig_size; i++) {
     bool all = true;
 
     int contigLen = dbGraph.contigs[i].length;
@@ -213,13 +231,75 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, const std::vector<std
     } else {
       // break up equivalence classes
       // sort by start/stop
-/*      std::sort(trinfos[i].begin(), trinfos[i].end(), [](TRInfo x, TRInfo y) {
-          if (x.start==y.start) {
-            return x.stop < y.stop;
-          } else {
-            return x.start < y.start;
+      std::vector<int> brpoints;
+      for (auto& x : trinfos[i]) {
+        brpoints.push_back(x.start);
+        brpoints.push_back(x.stop);
+      }
+      sort(brpoints.begin(), brpoints.end());
+      assert(brpoints[0] == 0);
+      assert(brpoints[brpoints.size()-1]==contigLen);
+
+      // find unique points
+      {
+        std::vector<int> u;
+        u.push_back(brpoints[0]);
+        for (int j = 1; j < brpoints.size(); j++) {
+          if (brpoints[j-1] != brpoints[j]) {
+            u.push_back(brpoints[j]);
           }
-          });*/
+        }
+        swap(u,brpoints);
+      }
+      
+      // copy sequence
+      std::string seq = dbGraph.contigs[i].seq;
+      // copy old trinfo
+      std::vector<TRInfo> oldtrinfo = trinfos[i];
+      
+      for (int j = 1; j < brpoints.size(); j++) {
+        assert(brpoints[j-1] < brpoints[j]);
+        Contig newc;
+        newc.seq = seq.substr(brpoints[j-1], brpoints[j]-brpoints[j-1]+k-1);
+        newc.length = brpoints[j]-brpoints[j-1];
+
+        if (j>1) {
+          newc.id = dbGraph.contigs.size();
+          dbGraph.contigs.push_back(newc);
+          dbGraph.ecs.push_back(-1);
+        } else {
+          newc.id = i;
+          dbGraph.contigs[i] = newc;
+        }
+
+        // repair k-mer mapping
+        KmerIterator kit(newc.seq.c_str()), kit_end;
+        for (; kit != kit_end; ++kit) {
+          Kmer x = kit->first;
+          Kmer xr = x.rep();
+          auto search = kmap.find(xr);
+          assert(search != kmap.end());
+          bool forward = (x==xr);
+          search->second = KmerEntry(newc.id, kit->second, forward);
+        }
+
+        // repair tr-info
+        std::vector<TRInfo> newtrinfo;
+        for (auto x : oldtrinfo) {
+          if (!(x.stop <= brpoints[j-1] || x.start >= brpoints[j])) {
+            TRInfo trinfo;
+            trinfo.trid = x.trid;
+            trinfo.start = 0;
+            trinfo.stop = newc.length;
+            newtrinfo.push_back(trinfo);
+          }
+        }
+        if (j>1) {
+          trinfos.push_back(newtrinfo);
+        } else {
+          trinfos[i] = newtrinfo;
+        }
+      }
     }
   }
 
