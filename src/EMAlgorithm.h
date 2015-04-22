@@ -136,10 +136,10 @@ struct EMAlgorithm {
       // std::cout << maxChange << std::endl;
       if (stopEM) {
         finalRound = true;
-        alpha_before_zeroes_.reserve( alpha_.size() );
+        alpha_before_zeroes_.resize( alpha_.size() );
         for (int ec = 0; ec < num_trans_; ec++) {
+          alpha_before_zeroes_[ec] = alpha_[ec];
           if (alpha_[ec] < alpha_limit/10.0) {
-            alpha_before_zeroes_[ec] = alpha_[ec];
             alpha_[ec] = 0.0;
           }
         }
@@ -147,6 +147,13 @@ struct EMAlgorithm {
 
     }
 
+    // ran for the maximum number of iterations
+    if (n_iter == i) {
+      alpha_before_zeroes_.resize( alpha_.size() );
+      for (int ec = 0; ec < num_trans_; ec++) {
+        alpha_before_zeroes_[ec] = alpha_[ec];
+      }
+    }
 
     std::cerr << std::endl << "Ran for " << i << " rounds of EM";
 
