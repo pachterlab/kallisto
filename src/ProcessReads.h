@@ -56,10 +56,6 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   int tlencount = 10000;
 
-  index.loadSuffixArray(opt);
-  TFinder finder(index.index);
-
-
   bool paired = (opt.files.size() == 2);
 
   gzFile fp1 = 0, fp2 = 0;
@@ -125,7 +121,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       */
       if (allSame) {
         // try to map the reads
-        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec, finder);
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
         if (0 < tl && tl < tc.flens.size()) {
           tc.flens[tl]++;
           tlencount--;
@@ -176,8 +172,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
   v2.reserve(1000);
 
   int tlencount = 10000;
-  index.loadSuffixArray(opt);
-  TFinder finder(index.index);
+
 
   std::vector<int> rIdToTrans;
 
@@ -357,7 +352,7 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
       if (paired && 0 <= ec_lp && ec_lp < index.num_trans && tlencount > 0) {
         bool allSame = (v1[0].first == ec_lp && v2[0].first == ec_lp) && (v1[0].second == 0 && v2[0].second == 0);
         if (allSame) {
-          int tl = index.mapPair(toCString(s1),length(s1),toCString(s2),length(s2), ec_lp, finder);
+          int tl = index.mapPair(toCString(s1),length(s1),toCString(s2),length(s2), ec_lp);
           if (0 < tl && tl < tc.flens.size()) {
             tc.flens[tl]++;
             tlencount--;

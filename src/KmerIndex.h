@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include <seqan/sequence.h>
-#include <seqan/index.h>
 
 
 //#include <map>
@@ -23,9 +22,8 @@
 
 #include "hash.hpp"
 
-typedef seqan::Index<seqan::StringSet<seqan::CharString>, seqan::IndexSa<>> TIndex;
-typedef seqan::Finder<TIndex> TFinder;
 
+/*
 namespace seqan {
 
 template<>
@@ -35,6 +33,7 @@ struct SAValue<seqan::StringSet<seqan::CharString>> {
 };
 
 }
+*/
 
 struct TRInfo {
   int trid;
@@ -106,7 +105,7 @@ struct KmerIndex {
   ~KmerIndex() {}
 
   void match(const char *s, int l, std::vector<std::pair<int, int>>& v) const;
-  int mapPair(const char *s1, int l1, const char *s2, int l2, int ec, TFinder& finder) const;
+  int mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const;
   std::vector<int> intersect(int ec, const std::vector<int>& v) const;
 
 
@@ -142,10 +141,6 @@ struct KmerIndex {
   std::vector<int> trans_lens_;
 
   std::vector<std::string> target_names_;
-
-  // Suffix array indices
-  TIndex index;
-  //TFinder finder;
 
   seqan::StringSet<seqan::CharString> seqs;
 

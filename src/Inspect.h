@@ -130,9 +130,9 @@ void InspectIndex(const KmerIndex& index) {
   for (auto& kv : index.kmap) {
     //auto search = index.ecmap.find(kv.second.id);
 //    if (search == index.ecmap.end()) {
-    if (kv.second.contig < 0 || kv.second.contig >= index.dbGraph.ecs.size()) {
-      cerr << "Kmer " << kv.first.toString() << " mapped to contig " << kv.second.contig << ", which is not in the de Bruijn Graph" << endl;
-      exit(1);
+    if (kv.second.contig < 0 || kv.second.contig >= index.dbGraph.contigs.size()) {
+      //cerr << "Kmer " << kv.first.toString() << " mapped to contig " << kv.second.contig << ", which is not in the de Bruijn Graph" << endl;
+      //exit(1);
     } else {
       ++kmhisto[index.ecmap[index.dbGraph.ecs[kv.second.contig]].size()];
     }
