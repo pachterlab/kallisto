@@ -1,27 +1,50 @@
 #include "KmerIndex.h"
 #include <seqan/sequence.h>
-#include <seqan/index.h>
 #include <seqan/seq_io.h>
 
 
 using namespace seqan;
 
+// helper functions
+// pre: u is sorted
+bool isUnique(const std::vector<int>& u) {
+  for (int j = 1; j < u.size(); j++) {
+    if (u[j-1] == u[j]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<int> unique(const std::vector<int>& u) {
+  std::vector<int> v;
+  v.reserve(u.size());
+  v.push_back(u[0]);
+  for (int j = 1; j < u.size(); j++) {
+    if (u[j-1] != u[j]) {
+      v.push_back(u[j]);
+    }
+  }
+  return v;
+}
+
+
 bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
   // open the fasta sequences
 
-  index = TIndex(seqs);
+  /*index = TIndex(seqs);
   // try to open the file
 
   if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), OPEN_RDONLY | OPEN_QUIET)) {
     return false;
   }
   //setHaystack(finder, index); // finder searches index
-
+  */
   return true;
 }
 
 void KmerIndex::clearSuffixArray() {
-  clear(index);
+  //clear(index);
   //clear(finder);
 }
 
@@ -40,6 +63,26 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
   seqan::StringSet<seqan::CharString> ids;
   readRecords(ids, seqs, seqFileIn);
 
+  num_trans = length(seqs);
+  // for each transcript, create it's own equivalence class
+  for (int i = 0; i < length(seqs); i++ ) {
+    std::string name(toCString(ids[i]));
+    size_t p = name.find(' ');
+    if (p != std::string::npos) {
+      name = name.substr(0,p);
+    }
+    target_names_.push_back(name);
+
+    CharString seq = value(seqs,i);
+    trans_lens_.push_back(length(seq));
+
+    std::vector<int> single(1,i);
+    //ecmap.insert({i,single});
+    ecmap.push_back(single);
+    ecmapinv.insert({single,i});
+  }
+
+  std::cerr << "[build] Counting k-mers ... "; std::cerr.flush();
   // gather all k-mers
   for (int i = 0; i < length(seqs); i++) {
     CharString seq = value(seqs,i);
@@ -49,6 +92,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
       kmap.insert({kit->first.rep(), KmerEntry()}); // don't care about repeats
     }
   }
+  std::cerr << "done." << std::endl;
   
   std::cerr << "[build] Building de Bruijn Graph ... "; std::cerr.flush();
   // find out how much we can skip ahead for each k-mer.
@@ -132,6 +176,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
       }
       
       dbGraph.contigs.push_back(contig);
+      dbGraph.ecs.push_back(-1);
     }
   }
   std::cerr << " finished building de Bruijn Graph found for " << kmap.size() << " kmers and with " << dbGraph.contigs.size() << " contigs" << std::endl;
@@ -144,7 +189,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
 
   for (int i = 0; i < length(seqs); i++) {
     CharString seq = value(seqs,i);
-    int seqlen = length(seq) - k + 1;
+    int seqlen = length(seq) - k + 1; // number of k-mers
     const char *s = toCString(seq);
     KmerIterator kit(s), kit_end;
     for (; kit != kit_end; ++kit) {
@@ -161,9 +206,9 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
       int jump = kit->second;
       if (forward == val.isFw()) {
         tr.start = val.getPos();
-        if (contig.length > seqlen-kit->second) {
+        if (contig.length - tr.start > seqlen - kit->second) {
           // transcript stops
-          tr.stop = seqlen - kit->second;
+          tr.stop = tr.start + seqlen - kit->second;
           jump = seqlen;
         } else {
           tr.stop = contig.length;
@@ -171,7 +216,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
         }
       } else {
         tr.stop = val.getPos()+1;
-        int stpos = val.getPos() - (seqlen - kit->second) + 1;
+        int stpos = tr.stop - (seqlen - kit->second);
         if (stpos > 0) {
           tr.start = stpos;
           jump = seqlen;
@@ -205,8 +250,33 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
       perftr++;
     } 
   }
-  std::cout << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
+  std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
   // need to create the equivalence classes
+
+  assert(dbGraph.contigs.size() == trinfos.size());
+  // for each contig
+  for (int i = 0; i < trinfos.size(); i++) {
+    std::vector<int> u;
+    for (auto x : trinfos[i]) {
+      u.push_back(x.trid);
+    }
+    sort(u.begin(), u.end());
+    if (!isUnique(u)){
+      std::vector<int> v = unique(u);
+      swap(u,v);
+    }
+
+    auto search = ecmapinv.find(u);
+    if (search != ecmapinv.end()) {
+      // insert contig -> ec info
+      dbGraph.ecs[i] = search->second;
+    } else {
+      int eqs_id = ecmapinv.size();
+      ecmapinv.insert({u,eqs_id});
+      ecmap.push_back(u);
+      dbGraph.ecs[i] = eqs_id;
+    }
+  }
 }
 
 void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos) {
@@ -224,8 +294,10 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
         all = false;
       }
       //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+      assert(x.start < x.stop);
     }
     //std::cout << std::endl;
+
     if (all) {
       perftr++;
     } else {
@@ -242,13 +314,7 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
 
       // find unique points
       {
-        std::vector<int> u;
-        u.push_back(brpoints[0]);
-        for (int j = 1; j < brpoints.size(); j++) {
-          if (brpoints[j-1] != brpoints[j]) {
-            u.push_back(brpoints[j]);
-          }
-        }
+        std::vector<int> u = unique(brpoints);
         swap(u,brpoints);
       }
       
@@ -304,7 +370,7 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
   }
 
 
-  std::cout << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
+  std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
 
   
 }
@@ -793,19 +859,35 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.close();
 }
 
-int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec, TFinder& finder) const {
+int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
   int p2 = -1;
+  int c1 = -1;
+  int c2 = -1;
 
 
   KmerIterator kit1(s1), kit_end;
 
   bool found1 = false;
-  while (kit1 != kit_end) {
-    if (kmap.find(kit1->first.rep()) != kmap.end()) {
+  for (; kit1 != kit_end; ++kit1) {
+    Kmer x = kit1->first;
+    Kmer xr = x.rep();
+    auto search = kmap.find(xr);
+    bool forward = (x==xr);
+
+    if (search != kmap.end()) {
       found1 = true;
+      KmerEntry val = search->second;
+      c1 = val.contig;
+      if (forward == val.isFw()) {
+        p1 = val.getPos() - kit1->second;
+        d1 = true;
+      } else {
+        p1 = val.getPos() + k + kit1->second;
+        d1 = false;
+      }
       break;
     }
   }
@@ -814,40 +896,28 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec, T
     return -1;
   }
 
-  clear(finder);
-  //CharString c1(s1+kit1->second);
-  // try to locate it in the suffix array
-  //Prefix<CharString>::Type
-  //CharString pre = prefix(c1,k);
-  //setNeedle(finder, kit1->first.toString().c_str());
-  while(find(finder, kit1->first.toString().c_str())) {
-    if (getSeqNo(position(finder)) == ec) {
-      p1 = getSeqOffset(position(finder)) - kit1->second;
-      break;
-    }
-  }
-  if (p1 < 0) {
-    //reverseComplement(pre);
-    clear(finder);
-    while(find(finder, kit1->first.twin().toString().c_str())) {
-      if (getSeqNo(position(finder)) == ec) {
-        p1 = getSeqOffset(position(finder)) + k + kit1->second;
-        d1 = false;
-        break;
-      }
-    }
-  }
-
-  if (p1 == -1) {
-    return -1;
-  }
-
+  
 
   KmerIterator kit2(s2);
   bool found2 = false;
-  while (kit2 != kit_end) {
-    if (kmap.find(kit2->first.rep()) != kmap.end()) {
+
+  for (; kit2 != kit_end; ++kit2) {
+    Kmer x = kit2->first;
+    Kmer xr = x.rep();
+    auto search = kmap.find(xr);
+    bool forward = (x==xr);
+
+    if (search != kmap.end()) {
       found2 = true;
+      KmerEntry val = search->second;
+      c2 = val.contig;
+      if (forward== val.isFw()) {
+        p2 = val.getPos() - kit2->second;
+        d2 = true;
+      } else {
+        p2 = val.getPos() + k + kit2->second;
+        d2 = false;
+      }
       break;
     }
   }
@@ -856,30 +926,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec, T
     return -1;
   }
 
-
-  //CharString c2(s2+kit2->second);
-  // try to locate it in the suffix array
-  //Prefix<CharString>::Type pre = prefix(c2,k);
-  clear(finder);
-  while(find(finder, kit2->first.toString().c_str())) {
-    if (getSeqNo(position(finder)) == ec) {
-      p2 = getSeqOffset(position(finder)) - kit2->second;
-      break;
-    }
-  }
-  if (p2 < 0) {
-    //reverseComplement(pre);
-    clear(finder);
-    while(find(finder, kit2->first.twin().toString().c_str())) {
-      if (getSeqNo(position(finder)) == ec) {
-        p2 = getSeqOffset(position(finder)) + k + kit2->second;
-        d2 = false;
-        break;
-      }
-    }
-  }
-
-  if (p2 == -1) {
+  if (c1 != c2) {
     return -1;
   }
 
