@@ -126,16 +126,6 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
           tc.flens[tl]++;
           tlencount--;
         }
-
-        if (tlencount == 0) {
-          index.clearSuffixArray();
-          /*std::cout << "Fragment length" << std::endl;
-          for (int i = 0; i < tlen.size(); i++) {
-            std::cout << i << "\t" << tlen[i] << "\n";
-          }
-          std::cout << "---------------" << std::endl;
-          */
-        }
       }
     }
 
@@ -357,10 +347,6 @@ void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& t
             tc.flens[tl]++;
             tlencount--;
           }
-        }
-
-        if (tlencount == 0) {
-          index.clearSuffixArray();
         }
       }
       

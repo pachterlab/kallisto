@@ -1,9 +1,13 @@
 #include "KmerIndex.h"
-#include <seqan/sequence.h>
-#include <seqan/seq_io.h>
 
 
-using namespace seqan;
+#include <zlib.h>
+#include "kseq.h"
+
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
+KSEQ_INIT(gzFile, gzread)
+#endif
 
 // helper functions
 // pre: u is sorted
@@ -28,65 +32,83 @@ std::vector<int> unique(const std::vector<int>& u) {
   return v;
 }
 
-
-bool KmerIndex::loadSuffixArray(const ProgramOptions& opt ) {
-  // open the fasta sequences
-
-  /*index = TIndex(seqs);
-  // try to open the file
-
-  if (!open(getFibre(index, FibreSA()), (opt.index + ".sa").c_str(), OPEN_RDONLY | OPEN_QUIET)) {
-    return false;
-  }
-  //setHaystack(finder, index); // finder searches index
-  */
-  return true;
+const char Dna(int i) {
+  static const char *dna = "ACGT";
+  return dna[i & 0x03];
 }
 
-void KmerIndex::clearSuffixArray() {
-  //clear(index);
-  //clear(finder);
+std::string revcomp(const std::string s) {
+  std::string r(s);
+  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
+      switch(c) {
+      case 'A': return 'T';
+      case 'C': return 'G';
+      case 'G': return 'C';
+      case 'T': return 'A';
+      default: return 'N';
+      }
+      return 'N';
+    });
+  return r;
 }
 
-void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
+void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
   int k = opt.k;
-  const std::string& fasta = opt.transfasta;
-  std::cerr << "[build] Loading fasta file " << fasta
+  std::cerr << "[build] Loading fasta file " << opt.transfasta
             << std::endl;
   std::cerr << "[build] k: " << k << std::endl;
 
 
-  SeqFileIn seqFileIn(fasta.c_str());
+  std::vector<std::string> seqs;
 
-  // read fasta file
-  seqan::StringSet<seqan::CharString> ids;
-  readRecords(ids, seqs, seqFileIn);
-
-  num_trans = length(seqs);
-  // for each transcript, create it's own equivalence class
-  for (int i = 0; i < length(seqs); i++ ) {
-    std::string name(toCString(ids[i]));
+  // read fasta file  
+  gzFile fp = 0;
+  kseq_t *seq;
+  int l = 0;
+  fp = gzopen(opt.transfasta.c_str(), "r");
+  seq = kseq_init(fp);
+  while (true) {
+    l = kseq_read(seq);
+    if (l <= 0) {
+      break;
+    }
+    seqs.push_back(seq->seq.s);
+    trans_lens_.push_back(seq->seq.l);
+    std::string name(seq->name.s);
     size_t p = name.find(' ');
     if (p != std::string::npos) {
       name = name.substr(0,p);
     }
     target_names_.push_back(name);
 
-    CharString seq = value(seqs,i);
-    trans_lens_.push_back(length(seq));
-
+  }
+  gzclose(fp);
+  fp=0;
+  
+  num_trans = seqs.size();
+  
+  // for each transcript, create it's own equivalence class
+  for (int i = 0; i < seqs.size(); i++ ) {
     std::vector<int> single(1,i);
     //ecmap.insert({i,single});
     ecmap.push_back(single);
     ecmapinv.insert({single,i});
   }
+  
+  BuildDeBruijnGraph(opt, seqs);
+  BuildEquivalenceClasses(opt, seqs);
+  //BuildEdges(opt);
+
+}
+
+void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
+  
 
   std::cerr << "[build] Counting k-mers ... "; std::cerr.flush();
   // gather all k-mers
-  for (int i = 0; i < length(seqs); i++) {
-    CharString seq = value(seqs,i);
-    const char *s = toCString(seq);
+  for (int i = 0; i < seqs.size(); i++) {
+    const char *s = seqs[i].c_str();
     KmerIterator kit(s),kit_end;
     for (; kit != kit_end; ++kit) {
       kmap.insert({kit->first.rep(), KmerEntry()}); // don't care about repeats
@@ -115,7 +137,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
           selfLoop = true;
           break;
         } else if (end == twin) {
-          selfLoop = true;
+          selfLoop = (flist.size() > 1); // hairpins are not loops
           // mobius loop
           break;
         } else if (end == last.twin()) {
@@ -183,14 +205,14 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt) {
   std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
 }
 
-void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
+void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
-
-  for (int i = 0; i < length(seqs); i++) {
-    CharString seq = value(seqs,i);
-    int seqlen = length(seq) - k + 1; // number of k-mers
-    const char *s = toCString(seq);
+  std::cout << "Mapping transcript " << std::endl;
+  for (int i = 0; i < seqs.size(); i++) {
+    int seqlen = seqs[i].size() - k + 1; // number of k-mers
+    const char *s = seqs[i].c_str();
+    std::cout << "sequence number " << i << std::endl;
     KmerIterator kit(s), kit_end;
     for (; kit != kit_end; ++kit) {
       Kmer x = kit->first;
@@ -200,6 +222,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
       KmerEntry val = search->second;
       std::vector<TRInfo>& trinfo = trinfos[val.contig];
       Contig& contig = dbGraph.contigs[val.contig];
+
+      
 
       TRInfo tr;
       tr.trid = i;
@@ -226,6 +250,26 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
         }
       }
 
+      // debugging -->
+      std::cout << "covering seq" << std::endl
+                << seqs[i].substr(kit->second, jump-kit->second +k)
+                << std::endl;
+      std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
+      std::cout << "contig seq" << std::endl;
+      if (forward == val.isFw()) {
+        std::cout << contig.seq << std::endl;
+        assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
+      } else {
+        std::cout << revcomp(contig.seq) << std::endl;
+        //assert(revcomp(contig.seq) == seqs[i].substr(kit->second, jump-kit->second +k));
+        assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
+      }
+      if (jump == seqlen) {
+        std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
+      }
+
+      // <-- debugging
+      
       trinfo.push_back(tr);
       kit.jumpTo(jump);
     }
@@ -238,14 +282,14 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
     bool all = true;
 
     int contigLen = dbGraph.contigs[i].length;
-    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
+    std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
     for (auto x : trinfos[i]) {
       if (x.start!=0 || x.stop !=contigLen) {
         all = false;
       }
-      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+      std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
     }
-    //std::cout << std::endl;
+    std::cout << std::endl;
     if (all) {
       perftr++;
     } 
@@ -265,6 +309,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt) {
       std::vector<int> v = unique(u);
       swap(u,v);
     }
+
+    assert(!u.empty());
 
     auto search = ecmapinv.find(u);
     if (search != ecmapinv.end()) {
@@ -288,15 +334,15 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
     bool all = true;
 
     int contigLen = dbGraph.contigs[i].length;
-    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
+    std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
     for (auto x : trinfos[i]) {
       if (x.start!=0 || x.stop !=contigLen) {
         all = false;
       }
-      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+      std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
       assert(x.start < x.stop);
     }
-    //std::cout << std::endl;
+    std::cout << std::endl;
 
     if (all) {
       perftr++;
@@ -313,10 +359,12 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
       assert(brpoints[brpoints.size()-1]==contigLen);
 
       // find unique points
-      {
+      if (!isUnique(brpoints)) {
         std::vector<int> u = unique(brpoints);
         swap(u,brpoints);
       }
+
+      assert(!brpoints.empty());
       
       // copy sequence
       std::string seq = dbGraph.contigs[i].seq;
@@ -375,12 +423,8 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
   
 }
 
-void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
-  BuildDeBruijnGraph(opt);
-  BuildEquivalenceClasses(opt);
-  //BuildEdges(opt);
 
-}
+
 
 /*
 void dummy_funk() {
@@ -669,6 +713,24 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
     out.write(tid.c_str(), tmp_size);
   }
 
+  // 10. write out contigs
+  assert(dbGraph.contigs.size() == dbGraph.ecs.size());
+  tmp_size = dbGraph.contigs.size();
+  out.write((char*)&tmp_size, sizeof(tmp_size));
+  for (auto& contig : dbGraph.contigs) {
+    out.write((char*)&contig.id, sizeof(contig.id));
+    out.write((char*)&contig.length, sizeof(contig.length));
+    tmp_size = strlen(contig.seq.c_str());
+    out.write((char*)&tmp_size, sizeof(tmp_size));
+    out.write(contig.seq.c_str(), tmp_size);
+  }
+
+  // 11. write out ecs info
+  for (auto ec : dbGraph.ecs) {
+    out.write((char*)&ec, sizeof(ec));
+  }
+  
+
   out.flush();
   out.close();
 }
@@ -720,20 +782,8 @@ bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
-
-
   std::string& index_in = opt.index;
   std::ifstream in;
-
-  // load sequences
-  SeqFileIn seqFileIn;
-
-  if (!open(seqFileIn, (index_in + ".fa").c_str())) {
-    std::cerr << "Error: index fasta could not be opened " << std::endl;
-    exit(1);
-  }
-  seqan::StringSet<seqan::CharString> ids; // not used
-  readRecords(ids, seqs, seqFileIn);
 
 
   in.open(index_in, std::ios::in | std::ios::binary);
@@ -840,22 +890,64 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   target_names_.reserve(num_trans);
 
   size_t tmp_size;
-  char buffer[1024]; // if your target_name is longer than this, screw you.
+  size_t bufsz = 1024;
+  char *buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
     // 9.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
+    if (tmp_size > bufsz+1) {
+      delete[] buffer;
+      bufsz *= 2;
+      buffer = new char[bufsz];
+    }
+    
     // clear the buffer 
-    memset(buffer,0,1024);
+    memset(buffer,0,bufsz);
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
 
     /* std::string tmp_targ_id( buffer ); */
     target_names_.push_back(std::string( buffer ));
-
-
   }
 
+
+  // 10. read contigs
+  size_t contig_size;
+  in.read((char *)&contig_size, sizeof(contig_size));
+  dbGraph.contigs.clear();
+  dbGraph.contigs.reserve(contig_size);
+  for (auto i = 0; i < contig_size; i++) {
+    Contig c;
+    in.read((char *)&c.id, sizeof(c.id));
+    in.read((char *)&c.length, sizeof(c.length));
+    in.read((char *)&tmp_size, sizeof(tmp_size));
+
+    if (tmp_size > bufsz + 1) {
+      delete[] buffer;
+      bufsz *= 2;
+      buffer = new char[bufsz];
+    }
+
+    memset(buffer,0,bufsz);
+    in.read(buffer, tmp_size);
+    c.seq = std::string(buffer); // copy
+    dbGraph.contigs.push_back(c);
+  }
+
+  // 11. read ecs info
+  dbGraph.ecs.clear();
+  dbGraph.ecs.reserve(contig_size);
+  int tmp_ec;
+  for (auto i = 0; i < contig_size; i++) {
+    in.read((char *)&tmp_ec, sizeof(tmp_ec));
+    dbGraph.ecs.push_back(tmp_ec);
+  }
+
+  // delete the buffer
+  delete[] buffer;
+  buffer=nullptr;
+  
   in.close();
 }
 
