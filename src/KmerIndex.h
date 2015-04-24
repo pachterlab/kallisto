@@ -8,9 +8,6 @@
 #include <unordered_map>
 #include <stdint.h>
 
-#include <seqan/sequence.h>
-
-
 //#include <map>
 
 
@@ -23,17 +20,6 @@
 #include "hash.hpp"
 
 
-/*
-namespace seqan {
-
-template<>
-//struct SAValue<TIndex>
-struct SAValue<seqan::StringSet<seqan::CharString>> {
-  typedef Pair<uint32_t, uint32_t> Type;
-};
-
-}
-*/
 
 struct TRInfo {
   int trid;
@@ -68,8 +54,8 @@ struct KmerEntry {
     setDir(isFw);
   }
 
-  inline int getPos() {return (_pos & 0x0FFFFFFF);}
-  inline int isFw()   {return (_pos & 0xF0000000) == 0; }
+  inline int getPos() const {return (_pos & 0x0FFFFFFF);}
+  inline int isFw() const  {return (_pos & 0xF0000000) == 0; }
   inline void setPos(int p) {_pos = (_pos & 0xF0000000) | (p & 0x0FFFFFFF);}
   inline void setDir(bool _isFw) {_pos = (_pos & 0x0FFFFFFF) | ((_isFw) ? 0 : 0xF0000000);}
 };
@@ -112,37 +98,28 @@ struct KmerIndex {
 
 
   void BuildTranscripts(const ProgramOptions& opt);
-  void BuildDeBruijnGraph(const ProgramOptions& opt);
-  void BuildEquivalenceClasses(const ProgramOptions& opt);
+  void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
+  void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
   void write(const std::string& index_out, bool writeKmerTable = true);
   // note opt is not const
   void load(ProgramOptions& opt, bool loadKmerTable = true);
 
-
-  bool loadSuffixArray(const ProgramOptions& opt);
-  void clearSuffixArray();
-
-
-
-
   int k; // k-mer size used
   int num_trans; // number of transcripts
   int skip;
-  //std::unordered_map<Kmer, int, KmerHash> kmap;
-  KmerHashTable<KmerEntry, KmerHash> kmap;
 
+  KmerHashTable<KmerEntry, KmerHash> kmap;
   EcMap ecmap;
   DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-  const size_t INDEX_VERSION = 7; // increase this every time you change the fileformat
+  const size_t INDEX_VERSION = 8; // increase this every time you change the fileformat
 
   std::vector<int> trans_lens_;
 
   std::vector<std::string> target_names_;
 
-  seqan::StringSet<seqan::CharString> seqs;
 
 };
 
