@@ -208,11 +208,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
-  std::cout << "Mapping transcript " << std::endl;
+  //std::cout << "Mapping transcript " << std::endl;
   for (int i = 0; i < seqs.size(); i++) {
     int seqlen = seqs[i].size() - k + 1; // number of k-mers
     const char *s = seqs[i].c_str();
-    std::cout << "sequence number " << i << std::endl;
+    //std::cout << "sequence number " << i << std::endl;
     KmerIterator kit(s), kit_end;
     for (; kit != kit_end; ++kit) {
       Kmer x = kit->first;
@@ -251,21 +251,19 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       }
 
       // debugging -->
-      std::cout << "covering seq" << std::endl
-                << seqs[i].substr(kit->second, jump-kit->second +k)
-                << std::endl;
-      std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
-      std::cout << "contig seq" << std::endl;
+      //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
+      //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
+      //std::cout << "contig seq" << std::endl;
       if (forward == val.isFw()) {
-        std::cout << contig.seq << std::endl;
-        assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
+        //std::cout << contig.seq << std::endl;
+        //assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
       } else {
-        std::cout << revcomp(contig.seq) << std::endl;
+        //std::cout << revcomp(contig.seq) << std::endl;
         //assert(revcomp(contig.seq) == seqs[i].substr(kit->second, jump-kit->second +k));
-        assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
+        //assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
       }
       if (jump == seqlen) {
-        std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
+        //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
       }
 
       // <-- debugging
@@ -282,14 +280,14 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
     bool all = true;
 
     int contigLen = dbGraph.contigs[i].length;
-    std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
+    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
     for (auto x : trinfos[i]) {
       if (x.start!=0 || x.stop !=contigLen) {
         all = false;
       }
-      std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
     if (all) {
       perftr++;
     } 
@@ -334,15 +332,15 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
     bool all = true;
 
     int contigLen = dbGraph.contigs[i].length;
-    std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
+    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
     for (auto x : trinfos[i]) {
       if (x.start!=0 || x.stop !=contigLen) {
         all = false;
       }
-      std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
+      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
       assert(x.start < x.stop);
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     if (all) {
       perftr++;
