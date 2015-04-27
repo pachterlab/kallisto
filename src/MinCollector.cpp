@@ -80,6 +80,12 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
   }
 }
 
+int MinCollector::decreaseCount(const int ec) {
+  assert(ec >= 0 && ec <= index.ecmap.size());
+  --counts[ec];
+  return ec;
+}
+
 struct ComparePairsBySecond {
   bool operator()(std::pair<int,int> a, std::pair<int,int> b) {
     return a.second < b.second;
