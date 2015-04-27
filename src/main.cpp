@@ -607,9 +607,9 @@ int main(int argc, char *argv[]) {
                        eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output + "/expression.txt");
+        em.write(opt.output + "/abundance.txt");
 
-        H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 6);
+        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -629,7 +629,7 @@ int main(int argc, char *argv[]) {
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
             writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
             //            ".txt");
           }
 
@@ -663,7 +663,7 @@ int main(int argc, char *argv[]) {
 
         em.run();
 
-        H5Writer writer(opt.output + "/expression.h5", opt.bootstrap, 7);
+        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 7);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -683,7 +683,7 @@ int main(int argc, char *argv[]) {
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
             writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_expression_" + std::to_string(b) +
+            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
             //            ".txt");
           }
 
