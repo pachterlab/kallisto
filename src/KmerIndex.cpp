@@ -1091,13 +1091,22 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         if (kit2 != kit_end) {
           Kmer rep2 = kit2->first.rep();
           auto search2 = kmap.find(rep2);
-          if (search2 == kmap.end() || (val.contig == search2->second.contig)) {
+          bool found2 = false;
+          int  found2pos = pos+dist;
+          if (search2 == kmap.end()) {
+            found2=true;
+            found2pos = pos;
+          } else if (val.contig == search2->second.contig) {
+            found2=true;
+            found2pos = pos+dist;
+          }
+          if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
-            if (pos + dist >= l-k) {
+            if (found2pos >= l-k) {
               v.push_back({dbGraph.ecs[val.contig], l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({dbGraph.ecs[val.contig], pos+dist});
+              v.push_back({dbGraph.ecs[val.contig], found2pos});
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -1106,6 +1115,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
             if (dist > 4) {
               int middlePos = (pos + nextPos)/2;
               int middleContig = -1;
+              int found3pos = pos+dist;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);
               if (kit3 != kit_end) {
@@ -1115,14 +1125,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
                   middleContig = search3->second.contig;
                   if (middleContig == val.contig) {
                     foundMiddle = true;
+                    found3pos = middlePos;
                   } else if (middleContig == search2->second.contig) {
                     foundMiddle = true;
+                    found3pos = pos+dist;
                   }
                 }
               }
 
               if (foundMiddle) {
-                v.push_back({dbGraph.ecs[middleContig], nextPos});
+                v.push_back({dbGraph.ecs[middleContig], found3pos});
                 if (nextPos >= l-k) {
                   break;
                 } else {
@@ -1181,7 +1193,7 @@ donejumping:
 bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &v, int maxPos) const {
   // kmer-iterator checks for N's and out of bounds
   KmerIterator kit(s+maxPos), kit_end;
-  if (kit != kit_end && kit->second == maxPos) {
+  if (kit != kit_end && kit->second == 0) {
     Kmer last = kit->first;
     auto search = kmap.find(last.rep());
 
@@ -1221,7 +1233,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
       if (searchx != kmap.end()) {
         KmerEntry valx = searchx->second;
         const Contig& branch = dbGraph.contigs[valx.contig];
-        if (branch.length + (k-1) < sizeleft) {
+        if (branch.length < sizeleft) {
           return false; // haven't implemented graph walks yet
         }
         std::string cs;
@@ -1236,6 +1248,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
         if (bestDist >= hdist) {
           numBest++;
           if (bestDist > hdist) {
+            bestDist = hdist;
             numBest = 1;
           }
           bestContig = valx.contig;

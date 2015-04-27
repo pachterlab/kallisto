@@ -28,7 +28,7 @@ ProgramOptions() :
   k(21),
   iterations(500),
   skip(1),
-  min_range(2*k+1),
+  min_range(1),
   fld(0.0),
   bootstrap(0)
   {}
