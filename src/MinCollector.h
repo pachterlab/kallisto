@@ -25,6 +25,7 @@ struct MinCollector {
 
   }
   int increaseCount(const std::vector<int>& u);
+  int decreaseCount(const int ec);
 
   std::vector<int> intersectECs(std::vector<std::pair<int,int>>& v) const;
 

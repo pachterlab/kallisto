@@ -1,5 +1,5 @@
 #include "KmerIndex.h"
-
+#include <algorithm>
 
 #include <zlib.h>
 #include "kseq.h"
@@ -35,6 +35,18 @@ std::vector<int> unique(const std::vector<int>& u) {
 const char Dna(int i) {
   static const char *dna = "ACGT";
   return dna[i & 0x03];
+}
+
+int hamming(const char *a, const char *b) {
+  int h = 0;
+  while (*a != 0 && *b != 0) {
+    if (*a != *b) {
+      h++;
+    }
+    a++;
+    b++;
+  }
+  return h;
 }
 
 std::string revcomp(const std::string s) {
@@ -1042,8 +1054,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
     // need to check it
-    Kmer rep = kit->first.rep();
-    auto search = kmap.find(rep);
+    auto search = kmap.find(kit->first.rep());
     int pos = kit->second;
 
     if (search != kmap.end()) {
@@ -1054,7 +1065,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
       // see if we can skip ahead
       // bring thisback later
-      bool forward = (kit->first == rep);
+      bool forward = (kit->first == search->first);
       int dist = dbGraph.contigs[val.contig].getDist(val, forward);
 
 
@@ -1129,7 +1140,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
           }
         } else {
           // the sequence is messed up at this point, let's just take the match
-          v.push_back({dbGraph.ecs[val.contig], l-k});
+          //v.push_back({dbGraph.ecs[val.contig], l-k});
           break;
         }
       }
@@ -1161,6 +1172,88 @@ donejumping:
     }
   }
 }
+
+// use:  r = matchEnd(s,l,v,p)
+// pre:  v is initialized, p>=0
+// post: v contains all equiv classes for the k-mer in s, as
+//       well as the best match for s[p:]
+//       if r is false then no match was found
+bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &v, int maxPos) const {
+  // kmer-iterator checks for N's and out of bounds
+  KmerIterator kit(s+maxPos), kit_end;
+  if (kit != kit_end && kit->second == maxPos) {
+    Kmer last = kit->first;
+    auto search = kmap.find(last.rep());
+
+    if (search == kmap.end()) {
+      return false; // shouldn't happen
+    }
+
+    KmerEntry val = search->second;
+    bool forward = (kit->first == search->first);
+    int dist = dbGraph.contigs[val.contig].getDist(val, forward);
+    int pos = maxPos + dist + 1; // move 1 past the end of the contig
+    
+    const char* sLeft = s + pos + (k-1);
+    int sizeleft = l -  (pos + k-1); // characters left in sleft
+    if (sizeleft <= 0) {
+      return false; // nothing left to match
+    }
+
+    // figure out end k-mer
+    const Contig& root = dbGraph.contigs[val.contig];
+    Kmer end; // last k-mer
+    bool readFw = (forward == val.isFw());
+    if (readFw) {
+      end = Kmer(root.seq.c_str() + root.length-1);
+    } else {
+      end = Kmer(root.seq.c_str()).twin();
+    }
+
+    
+    int bestContig = -1;
+    int bestDist = sizeleft;
+    int numBest = 0;
+    for (int i = 0; i < 4; i++) {
+      Kmer x = end.forwardBase(Dna(i));
+      Kmer xr = x.rep();
+      auto searchx = kmap.find(xr);
+      if (searchx != kmap.end()) {
+        KmerEntry valx = searchx->second;
+        const Contig& branch = dbGraph.contigs[valx.contig];
+        if (branch.length + (k-1) < sizeleft) {
+          return false; // haven't implemented graph walks yet
+        }
+        std::string cs;
+        bool contigFw = (x==xr) && valx.isFw();
+        // todo: get rid of this string copy
+        if (valx.getPos() == 0 && contigFw) {
+          cs = branch.seq.substr(k-1);
+        } else if (valx.getPos() == branch.length-1 && !contigFw) {
+          cs = revcomp(branch.seq).substr(k-1);
+        }
+        int hdist = hamming(sLeft,cs.c_str());
+        if (bestDist >= hdist) {
+          numBest++;
+          if (bestDist > hdist) {
+            numBest = 1;
+          }
+          bestContig = valx.contig;
+        }
+      }
+    }
+
+    if (numBest == 1 && bestDist < 10) {
+      v.push_back({dbGraph.ecs[bestContig], l-k});
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 
 // use:  res = intersect(ec,v)
 // pre:  ec is in ecmap, v is a vector of valid transcripts
