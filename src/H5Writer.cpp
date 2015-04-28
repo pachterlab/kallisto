@@ -69,6 +69,9 @@ H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) :
 
   std::cout << "[h5dump] found " << n_bs_ << " bootstraps" << std::endl;
   // </aux info>
+  if (n_bs_ > 0) {
+    bs_ = H5Gopen(file_id_, "/bootstrap", H5P_DEFAULT);
+  }
 
   alpha_buf_.resize( n_targs_, 0.0 );
   assert( n_targs_ == alpha_buf_.size() );
@@ -77,8 +80,38 @@ H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) :
   assert( n_targs_ == tpm_buf_.size() );
 }
 
+H5Reader::~H5Reader() {
+  if (n_bs_ > 0) {
+    H5Gclose(bs_);
+  }
+  H5Gclose(aux_);
+  H5Gclose(root_);
+  H5Fclose(file_id_);
+}
+
 void H5Reader::convert() {
+
+  std::cout << "[h5dump] Writing main abundance" << std::endl;
   rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
+
+
+  std::cout << "[h5dump] Writing bootstraps" << std::endl;
+
+  int i;
+  for (i = 0; i < n_bs_; ++i) {
+    if (i % 50 == 0 && i > 0) {
+      std::cout << std::endl;
+    }
+    std::cout << ".";
+    std::cout.flush();
+    std::string bs_out_fname( out_dir_ + "/bs_abundance_" + std::to_string(i) +
+        ".txt" );
+    rw_from_counts(bs_, "bs" + std::to_string(i), bs_out_fname);
+  }
+
+  if (i-1 % 50 != 0 && i > 0) {
+    std::cout << std::endl;
+  }
 }
 
 void H5Reader::rw_from_counts(hid_t group_id, const std::string& count_name, const std::string& out_fname) {
@@ -86,10 +119,4 @@ void H5Reader::rw_from_counts(hid_t group_id, const std::string& count_name, con
   read_dataset(group_id, count_name.c_str(), alpha);
 
   plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);
-}
-
-H5Reader::~H5Reader() {
-  H5Gclose(aux_);
-  H5Gclose(root_);
-  H5Fclose(file_id_);
 }
