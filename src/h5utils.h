@@ -89,8 +89,8 @@ herr_t vector_to_h5(
 
 // begin: reading utils
 
-// pre: v is an empty vector
-// post: v contains the data read in from HDF5
+// pre: out is an empty vector
+// post: out contains the data read in from HDF5
 void read_vector(hid_t dataset_id, hid_t datatype_id, hid_t dataspace_id,
     std::vector<std::string>& out);
 

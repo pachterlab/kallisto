@@ -38,3 +38,23 @@ void H5Writer::write_bootstrap(const EMAlgorithm& em, int bs_id) {
   std::string bs_id_str("bs" + std::to_string( bs_id ));
   vector_to_h5(em.alpha_, bs_, bs_id_str.c_str(), false, compression_);
 }
+
+/**********************************************************************/
+
+H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) {
+  file_id_ = H5Fopen(h5_fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  root_ = H5Gopen(file_id_, "/", H5P_DEFAULT);
+  aux_ = H5Gopen(file_id_, "/aux", H5P_DEFAULT);
+
+  std::vector<int> n_bs_vec;
+  read_dataset(aux_, "num_bootstrap", n_bs_vec);
+  n_bs_ = n_bs_vec[0];
+
+  // TODO: create output directory
+}
+
+H5Reader::~H5Reader() {
+  H5Gclose(aux_);
+  H5Gclose(root_);
+  H5Fclose(file_id_);
+}
