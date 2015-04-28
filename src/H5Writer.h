@@ -38,7 +38,7 @@ class H5Reader {
     void rw_main();
 
     /* EMAlgorithm main_em_; */
-    std::vector<int>& lengths_;
+    std::vector<int> lengths_;
 
     hid_t file_id_;
     hid_t root_;
@@ -46,5 +46,6 @@ class H5Reader {
     hid_t bs_;
 
     int n_bs_;
-}
+};
+
 #endif // KALLISTO_H5WRITER_H

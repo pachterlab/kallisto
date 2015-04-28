@@ -689,6 +689,13 @@ int main(int argc, char *argv[]) {
 
         }
       }
+    } else if (cmd == "h5dump") {
+      if (argc != 4) {
+        cerr << "Usage: kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
+        exit(1);
+      }
+
+      H5Reader h5reader(argv[3], argv[4]);
     } else {
       cerr << "Did not understand command " << cmd << endl;
       usage();
