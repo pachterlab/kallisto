@@ -85,7 +85,7 @@ void H5Reader::rw_from_counts(hid_t group_id, const std::string& count_name, con
   std::vector<double> alpha;
   read_dataset(group_id, count_name.c_str(), alpha);
 
-  plaintext_writer(out_fname, alpha, eff_lengths_, lengths_);
+  plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);
 }
 
 H5Reader::~H5Reader() {
