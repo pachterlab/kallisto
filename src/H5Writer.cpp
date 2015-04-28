@@ -41,16 +41,51 @@ void H5Writer::write_bootstrap(const EMAlgorithm& em, int bs_id) {
 
 /**********************************************************************/
 
-H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) {
+H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) :
+  out_dir_(out_dir)
+{
   file_id_ = H5Fopen(h5_fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
   root_ = H5Gopen(file_id_, "/", H5P_DEFAULT);
   aux_ = H5Gopen(file_id_, "/aux", H5P_DEFAULT);
 
+  // <aux info>
+  // read target ids
+  read_dataset(aux_, "ids", targ_ids_);
+  std::cout << "[h5dump] found " << targ_ids_.size() << " targets " <<
+    std::endl;
+
+  n_targs_ = targ_ids_.size();
+
+  read_dataset(aux_, "lengths", lengths_);
+  assert( n_targs_ == lengths_.size() );
+
+  read_dataset(aux_, "eff_lengths", eff_lengths_);
+  assert( n_targs_ == eff_lengths_.size() );
+
+  // read bootstrap info
   std::vector<int> n_bs_vec;
   read_dataset(aux_, "num_bootstrap", n_bs_vec);
   n_bs_ = n_bs_vec[0];
 
-  // TODO: create output directory
+  std::cout << "[h5dump] found " << n_bs_ << " bootstraps" << std::endl;
+  // </aux info>
+
+  alpha_buf_.resize( n_targs_, 0.0 );
+  assert( n_targs_ == alpha_buf_.size() );
+
+  tpm_buf_.resize( n_targs_, 0.0 );
+  assert( n_targs_ == tpm_buf_.size() );
+}
+
+void H5Reader::convert() {
+  rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
+}
+
+void H5Reader::rw_from_counts(hid_t group_id, const std::string& count_name, const std::string& out_fname) {
+  std::vector<double> alpha;
+  read_dataset(group_id, count_name.c_str(), alpha);
+
+  plaintext_writer(out_fname, alpha, eff_lengths_, lengths_);
 }
 
 H5Reader::~H5Reader() {
