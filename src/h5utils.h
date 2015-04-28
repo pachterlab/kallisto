@@ -12,6 +12,7 @@
 
 #include "hdf5.h"
 
+// begin: writing utils
 // XXX: remember to cleanup result!
 char* vec_to_ptr(const std::vector<std::string>& v);
 
@@ -83,5 +84,59 @@ herr_t vector_to_h5(
 
   return status;
 }
+
+// end: writing utils
+
+// begin: reading utils
+
+// pre: v is an empty vector
+// post: v contains the data read in from HDF5
+void read_vector(hid_t dataset_id, hid_t datatype_id, hid_t dataspace_id,
+    std::vector<std::string>& out);
+
+void read_vector(hid_t dataset_id, hid_t datatype_id, hid_t dataspace_id,
+    std::vector<int>& out);
+
+void read_vector(hid_t dataset_id, hid_t datatype_id, hid_t dataspace_id,
+    std::vector<double>& out);
+
+template <typename T>
+void read_dataset(hid_t group_id,
+    const std::string& dset_name,
+    std::vector<T>& out) {
+
+  hid_t dataset_id;
+  hid_t datatype_id;
+  hid_t dataspace_id;
+  hid_t prop_id;
+
+  H5Z_filter_t filter_type;
+
+  unsigned int flags;
+  unsigned int filter_info;
+
+  size_t nelem = 0;
+
+  herr_t status;
+
+  dataset_id = H5Dopen(group_id, dset_name.c_str(), H5P_DEFAULT);
+  prop_id = H5Dget_create_plist(dataset_id);
+  filter_type = H5Pget_filter(prop_id, 0, &flags, &nelem, NULL, 0, NULL,
+                &filter_info);
+
+  datatype_id = H5Dget_type(dataset_id);
+
+  dataspace_id = H5Dget_space(dataset_id);
+  read_vector(dataset_id, datatype_id, dataspace_id, out);
+
+  status = H5Pclose(prop_id);
+  assert(status >= 0);
+  status = H5Dclose(dataset_id);
+  assert(status >= 0);
+  status = H5Sclose(dataspace_id);
+  assert(status >= 0);
+}
+
+// end: reading utils
 
 #endif // KALLISTO_H5_UTILS
