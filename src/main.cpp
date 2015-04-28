@@ -695,7 +695,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       }
 
-      H5Reader h5reader(argv[3], argv[4]);
+      H5Reader h5reader(argv[2], argv[3]);
     } else {
       cerr << "Did not understand command " << cmd << endl;
       usage();
