@@ -906,9 +906,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 9.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
-    if (tmp_size > bufsz+1) {
+    if (tmp_size +1 > bufsz) {
       delete[] buffer;
-      bufsz *= 2;
+      bufsz = 2*(tmp_size+1);
       buffer = new char[bufsz];
     }
     
@@ -933,9 +933,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char *)&c.length, sizeof(c.length));
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
-    if (tmp_size > bufsz + 1) {
+    if (tmp_size + 1 > bufsz) {
       delete[] buffer;
-      bufsz *= 2;
+      bufsz = 2*(tmp_size+1);
       buffer = new char[bufsz];
     }
 
