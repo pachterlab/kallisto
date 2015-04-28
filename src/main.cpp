@@ -690,12 +690,31 @@ int main(int argc, char *argv[]) {
         }
       }
     } else if (cmd == "h5dump") {
+
       if (argc != 4) {
         cerr << "Usage: kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
         exit(1);
       }
 
-      H5Reader h5reader(argv[2], argv[3]);
+      std::string h5file(argv[2]);
+      std::string out_dir(argv[3]);
+
+      struct stat stFileInfo;
+      auto intStat = stat(out_dir.c_str(), &stFileInfo);
+      if (intStat == 0) {
+        // file/dir exits
+        if (!S_ISDIR(stFileInfo.st_mode)) {
+          cerr << "Error: Tried to open " << out_dir << " but another file already exists there" << endl;
+          exit(1);
+        }
+      } else if (mkdir(out_dir.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << out_dir << endl;
+        exit(1);
+      }
+
+      H5Reader h5read(h5file, out_dir);
+      h5read.convert();
+
     } else {
       cerr << "Did not understand command " << cmd << endl;
       usage();

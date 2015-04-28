@@ -4,6 +4,7 @@
 #include "EMAlgorithm.h"
 
 #include "h5utils.h"
+#include "PlaintextWriter.h"
 
 class H5Writer {
   public:
@@ -15,7 +16,6 @@ class H5Writer {
         const std::vector<int>& lengths);
 
     void write_bootstrap(const EMAlgorithm& em, int bs_id);
-
 
   private:
       int num_bootstrap_;
@@ -29,16 +29,27 @@ class H5Writer {
 
 class H5Reader {
   public:
+    // assumes 'out_dir' is already
     H5Reader(const std::string& h5_fname, const std::string& out_dir);
     ~H5Reader();
 
-    void rw_bootstraps();
+    void convert();
 
   private:
-    void rw_main();
+    void rw_from_counts(hid_t group_id, const std::string& count_name,
+        const std::string& out_fname);
 
-    /* EMAlgorithm main_em_; */
+    std::string out_dir_;
+
+    // auxilary
+    std::vector<std::string> targ_ids_;
     std::vector<int> lengths_;
+    std::vector<double> eff_lengths_;
+
+    // buffers used for every single read/write
+    std::vector<int> kal_id_;
+    std::vector<double> alpha_buf_;
+    std::vector<double> tpm_buf_;
 
     hid_t file_id_;
     hid_t root_;
@@ -46,6 +57,7 @@ class H5Reader {
     hid_t bs_;
 
     int n_bs_;
+    size_t n_targs_;
 };
 
 #endif // KALLISTO_H5WRITER_H
