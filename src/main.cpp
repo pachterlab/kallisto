@@ -117,11 +117,13 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
+  int plaintext_flag = 0;
 
   const char *opt_string = "t:i:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"plaintext", no_argument, &plaintext_flag, 1},
     // short args
     {"seed", required_argument, 0, 'd'},
     {"threads", required_argument, 0, 't'},
@@ -192,6 +194,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (verbose_flag) {
     opt.verbose = true;
+  }
+
+  if (plaintext_flag) {
+    opt.plaintext = true;
   }
 }
 
@@ -511,7 +517,6 @@ void usageEM() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
-       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-i, --index=INT               Filename for index " << endl
        << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
@@ -520,6 +525,7 @@ void usageEM() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
+       << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
 
@@ -527,7 +533,6 @@ void usageEMOnly() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto quant-only [options]" << endl << endl
-       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
@@ -536,20 +541,6 @@ void usageEMOnly() {
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
-}
-
-void write_version(const std::string& fname) {
-  std::ofstream out;
-  out.open(fname, std::ios::out);
-
-  if (!out.is_open()) {
-    cerr << "Error opening '" << fname << "'" << endl;
-    exit(1);
-  }
-
-  out << KALLISTO_VERSION;
-
-  out.close();
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -631,7 +622,6 @@ int main(int argc, char *argv[]) {
         usageEM();
         exit(1);
       } else {
-        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
@@ -654,13 +644,28 @@ int main(int argc, char *argv[]) {
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
         em.run();
-        em.compute_rho();
         /* em.write(opt.output + "/abundance.txt"); */
 
         std::string call = argv_to_string(argc, argv);
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
-            index.INDEX_VERSION, call, start_time);
-        writer.write_main(em, index.target_names_, index.trans_lens_);
+
+        H5Writer writer;
+        if (!opt.plaintext) {
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+              index.INDEX_VERSION, call, start_time);
+          writer.write_main(em, index.target_names_, index.trans_lens_);
+        } else {
+          plaintext_aux(
+              opt.output + "/run_info.json",
+              std::string(std::to_string(eff_lens.size())),
+              std::string(std::to_string(opt.bootstrap)),
+              KALLISTO_VERSION,
+              std::string(std::to_string(index.INDEX_VERSION)),
+              start_time,
+              call);
+
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+              em.alpha_, em.eff_lens_, index.trans_lens_);
+        }
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -678,9 +683,13 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
-            writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
-            //            ".txt");
+
+            if (!opt.plaintext) {
+              writer.write_bootstrap(res, b);
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            }
           }
 
         }
@@ -695,7 +704,6 @@ int main(int argc, char *argv[]) {
         usageEMOnly();
         exit(1);
       } else {
-        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
@@ -707,16 +715,31 @@ int main(int argc, char *argv[]) {
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
-
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
 
         em.run();
 
         std::string call = argv_to_string(argc, argv);
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
-            index.INDEX_VERSION, call, start_time);
-        writer.write_main(em, index.target_names_, index.trans_lens_);
+        H5Writer writer;
+
+        if (!opt.plaintext) {
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+              index.INDEX_VERSION, call, start_time);
+          writer.write_main(em, index.target_names_, index.trans_lens_);
+        } else {
+          plaintext_aux(
+              opt.output + "/run_info.json",
+              std::string(std::to_string(eff_lens.size())),
+              std::string(std::to_string(opt.bootstrap)),
+              KALLISTO_VERSION,
+              std::string(std::to_string(index.INDEX_VERSION)),
+              start_time,
+              call);
+
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+              em.alpha_, em.eff_lens_, index.trans_lens_);
+        }
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -734,11 +757,14 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
-            writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
-            //            ".txt");
-          }
 
+            if (!opt.plaintext) {
+              writer.write_bootstrap(res, b);
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            }
+          }
         }
       }
     } else if (cmd == "h5dump") {

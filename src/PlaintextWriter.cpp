@@ -66,3 +66,51 @@ void plaintext_writer(
 
   of.close();
 }
+
+std::string to_json(const std::string& id, const std::string& val, bool quote,
+    bool comma, int level) {
+  std::string out;
+
+  for (auto i = 0; i < level; ++i) {
+    out += "\t";
+  }
+
+  out += '"';
+  out += id;
+  out += "\": ";
+  if (quote) {
+    out += '"';
+  }
+  out += val;
+  if (quote) {
+    out += '"';
+  }
+  if (comma) {
+    out += ',';
+  }
+
+  return out;
+}
+
+void plaintext_aux(
+    const std::string& out_name,
+    const std::string& n_targs,
+    const std::string& n_bootstrap,
+    const std::string& version,
+    const std::string& index_v,
+    const std::string& start_time,
+    const std::string& call) {
+  std::ofstream of;
+  of.open( out_name );
+
+  of << "{" << std::endl <<
+    to_json("n_targets", n_targs, false) << std::endl <<
+    to_json("n_bootstraps", n_bootstrap, false) << std::endl <<
+    to_json("kallisto_version", version, true) << std::endl <<
+    to_json("index_version", index_v, false) << std::endl <<
+    to_json("start_time", start_time, true) << std::endl <<
+    to_json("call", call, true, false) << std::endl <<
+    "}" << std::endl;
+
+  of.close();
+}
