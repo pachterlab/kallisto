@@ -1,6 +1,7 @@
 #include "H5Writer.h"
 
-H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression) :
+H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression,
+    size_t index_version, const std::string& shell_call) :
   num_bootstrap_(num_bootstrap)
 {
   compression_ = compression;
@@ -10,9 +11,18 @@ H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression
   if (num_bootstrap_ > 0) {
     bs_ = H5Gcreate(file_id_, "/bootstrap", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
   }
-  std::vector<int> n_bs;
-  n_bs.push_back(num_bootstrap);
+  std::vector<int> n_bs {num_bootstrap};
   vector_to_h5(n_bs, aux_, "num_bootstrap", false, compression_);
+
+  // info about run
+  std::vector<std::string> kal_version{ KALLISTO_VERSION };
+  vector_to_h5(kal_version, aux_, "kallisto_version", true, compression_);
+
+  std::vector<int> idx_version{ static_cast<int>(index_version) };
+  vector_to_h5(idx_version, aux_, "index_version", false, compression_);
+
+  std::vector<std::string> call{ shell_call };
+  vector_to_h5(call, aux_, "call", true, compression_);
 }
 
 H5Writer::~H5Writer() {
@@ -41,7 +51,7 @@ void H5Writer::write_bootstrap(const EMAlgorithm& em, int bs_id) {
 
 /**********************************************************************/
 
-H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) :
+H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir) :
   out_dir_(out_dir)
 {
   file_id_ = H5Fopen(h5_fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
@@ -80,7 +90,7 @@ H5Reader::H5Reader(const std::string& h5_fname, const std::string& out_dir) :
   assert( n_targs_ == tpm_buf_.size() );
 }
 
-H5Reader::~H5Reader() {
+H5Converter::~H5Converter() {
   if (n_bs_ > 0) {
     H5Gclose(bs_);
   }
@@ -89,7 +99,7 @@ H5Reader::~H5Reader() {
   H5Fclose(file_id_);
 }
 
-void H5Reader::convert() {
+void H5Converter::convert() {
 
   std::cout << "[h5dump] Writing main abundance" << std::endl;
   rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
@@ -114,7 +124,7 @@ void H5Reader::convert() {
   }
 }
 
-void H5Reader::rw_from_counts(hid_t group_id, const std::string& count_name, const std::string& out_fname) {
+void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, const std::string& out_fname) {
   std::vector<double> alpha;
   read_dataset(group_id, count_name.c_str(), alpha);
 

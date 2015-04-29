@@ -8,7 +8,8 @@
 
 class H5Writer {
   public:
-    H5Writer(const std::string& fname, int num_bootstrap, uint compression);
+    H5Writer(const std::string& fname, int num_bootstrap, uint compression,
+        size_t index_version, const std::string& shell_call);
     ~H5Writer();
 
     void write_main(const EMAlgorithm& em,
@@ -27,11 +28,11 @@ class H5Writer {
       hid_t bs_;
 };
 
-class H5Reader {
+class H5Converter {
   public:
     // assumes 'out_dir' is already
-    H5Reader(const std::string& h5_fname, const std::string& out_dir);
-    ~H5Reader();
+    H5Converter(const std::string& h5_fname, const std::string& out_dir);
+    ~H5Converter();
 
     void convert();
 

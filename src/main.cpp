@@ -525,6 +525,18 @@ void write_version(const std::string& fname) {
   out.close();
 }
 
+std::string argv_to_string(int argc, char *argv[]) {
+  std::string res;
+  for (int i = 0; i < argc; ++i) {
+    res += argv[i];
+    if (i + 1 < argc) {
+      res += " ";
+    }
+  }
+
+  return res;
+}
+
 int main(int argc, char *argv[]) {
 
   if (argc < 2) {
@@ -609,7 +621,9 @@ int main(int argc, char *argv[]) {
         em.compute_rho();
         em.write(opt.output + "/abundance.txt");
 
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6);
+        std::string call = argv_to_string(argc, argv);
+        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
+            index.INDEX_VERSION, call);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -663,7 +677,9 @@ int main(int argc, char *argv[]) {
 
         em.run();
 
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 7);
+        std::string call = argv_to_string(argc, argv);
+        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
+            index.INDEX_VERSION, call);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -712,8 +728,8 @@ int main(int argc, char *argv[]) {
         exit(1);
       }
 
-      H5Reader h5read(h5file, out_dir);
-      h5read.convert();
+      H5Converter h5conv(h5file, out_dir);
+      h5conv.convert();
 
     } else {
       cerr << "Did not understand command " << cmd << endl;
