@@ -1,7 +1,8 @@
 #include "H5Writer.h"
 
 H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression,
-    size_t index_version, const std::string& shell_call) :
+    size_t index_version, const std::string& shell_call,
+    const std::string& start_time) :
   num_bootstrap_(num_bootstrap)
 {
   compression_ = compression;
@@ -23,6 +24,9 @@ H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression
 
   std::vector<std::string> call{ shell_call };
   vector_to_h5(call, aux_, "call", true, compression_);
+
+  std::vector<std::string> s_time{ start_time };
+  vector_to_h5(s_time, aux_, "start_time", true, compression_);
 }
 
 H5Writer::~H5Writer() {
