@@ -262,23 +262,23 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
         }
       }
 
-      // debugging -->
-      //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
-      //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
-      //std::cout << "contig seq" << std::endl;
-      if (forward == val.isFw()) {
-        //std::cout << contig.seq << std::endl;
-        //assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
-      } else {
-        //std::cout << revcomp(contig.seq) << std::endl;
-        //assert(revcomp(contig.seq) == seqs[i].substr(kit->second, jump-kit->second +k));
-        //assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
-      }
-      if (jump == seqlen) {
-        //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
-      }
+      // // debugging -->
+      // //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
+      // //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
+      // //std::cout << "contig seq" << std::endl;
+      // if (forward == val.isFw()) {
+      //   //std::cout << contig.seq << std::endl;
+      //   //assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
+      // } else {
+      //   //std::cout << revcomp(contig.seq) << std::endl;
+      //   //assert(revcomp(contig.seq) == seqs[i].substr(kit->second, jump-kit->second +k));
+      //   //assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
+      // }
+      // if (jump == seqlen) {
+      //   //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
+      // }
 
-      // <-- debugging
+      // // <-- debugging
       
       trinfo.push_back(tr);
       kit.jumpTo(jump);
@@ -304,7 +304,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       perftr++;
     } 
   }
-  std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
+  //std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
   // need to create the equivalence classes
 
   assert(dbGraph.contigs.size() == trinfos.size());
@@ -428,223 +428,13 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
   }
 
 
-  std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
+  //std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
 
   
 }
 
 
 
-
-/*
-void dummy_funk() {
-  const std::string& fasta = opt.transfasta;
-  std::cerr << "[build] Loading fasta file " << fasta
-            << std::endl;
-  std::cerr << "[build] k: " << k << std::endl;
-
-
-  SeqFileIn seqFileIn(fasta.c_str());
-
-  // read fasta file
-  seqan::StringSet<seqan::CharString> ids;
-  readRecords(ids, seqs, seqFileIn);
-
-  int transid = 0;
-
-  // probably remove this -->
-  
-  if (!loadSuffixArray(opt)) {
-    std::cerr << "[build] Constructing suffix array ... "; std::cerr.flush();
-
-    index = TIndex(seqs);
-    indexRequire(index, EsaSA());
-    // write fasta to disk
-    SeqFileOut fastaIndex;
-    if (!open(fastaIndex, (opt.index+".fa").c_str())) {
-      std::cerr << "Error: could not open file " << opt.index << ".fa for writing" << std::endl;
-      exit(1);
-    }
-    try {
-      writeRecords(fastaIndex, ids, seqs);
-    } catch (IOError const& e) {
-      std::cerr << "Error: writing to file " << opt.index << ". " << e.what() << std::endl;
-    }
-    close(fastaIndex);
-
-    // write index to disk
-    save(getFibre(index, FibreSA()),(opt.index + ".sa").c_str());
-
-    std::cerr << " finished " << std::endl;
-  } else {
-    std::cerr << "[build] Found suffix array" << std::endl;
-  }
-
-  TFinder finder(index);
-  find(finder, "A");
-  clear(finder);
-  * /
-  // <-- 
-  
-
-  assert(length(seqs) == length(ids));
-  num_trans = length(seqs);
-
-
-  
-  // for each transcript, create it's own equivalence class
-  for (int i = 0; i < length(seqs); i++ ) {
-    std::string name(toCString(ids[i]));
-    size_t p = name.find(' ');
-    if (p != std::string::npos) {
-      name = name.substr(0,p);
-    }
-    target_names_.push_back(name);
-
-    CharString seq = value(seqs,i);
-    trans_lens_.push_back(length(seq));
-
-    std::vector<int> single(1,i);
-    //ecmap.insert({i,single});
-    ecmap.push_back(single);
-    ecmapinv.insert({single,i});
-  }
-
-
-  // remove this <-- 
-  // traverse the suffix tree
-  / *
-  int nk = 0;
-  Iterator<TIndex, TopDown<ParentLinks<>>>::Type it(index);
-  do {
-
-    if (repLength(it) >= k) {
-      nk++;
-
-      // if (nk % 1000 == 0) {
-      //   std::cerr << "."; std::cerr.flush();
-      // }
-
-      //std::cout << representative(it) << std::endl;
-      // process the k-mers
-      CharString seq = representative(it);
-      Kmer km(toCString(seq));
-      Kmer rep = km.rep();
-      if (kmap.find(rep) == kmap.end()) {
-        // if we have never seen this k-mer before
-
-        std::vector<int> ecv;
-
-        for (auto x : getOccurrences(it)) {
-          ecv.push_back(x.i1); // record transcript
-        }
-
-        // search for second part
-        Kmer twin = km.twin(); // other k-mer
-        clear(finder);
-        while (find(finder, twin.toString().c_str())) {
-          ecv.push_back(getSeqNo(position(finder)));
-        }
-
-        // common case
-        if (ecv.size() == 1) {
-          int ec = ecv[0];
-          kmap.insert({rep, KmerEntry(ec)});
-        } else {
-          sort(ecv.begin(), ecv.end());
-          std::vector<int> u;
-          u.push_back(ecv[0]);
-          for (int i = 1; i < ecv.size(); i++) {
-            if (ecv[i-1] != ecv[i]) {
-              u.push_back(ecv[i]);
-            }
-          }
-
-          auto search = ecmapinv.find(u);
-          if (search != ecmapinv.end()) {
-            kmap.insert({rep, KmerEntry(search->second)});
-          } else {
-            int eqs_id = ecmapinv.size();
-            ecmapinv.insert({u, eqs_id });
-            ecmap.push_back(u);
-            //ecmap.insert({eqs_id, u});
-            kmap.insert({rep, KmerEntry(eqs_id)});
-          }
-        }
-      }
-    }
-    // next step
-    if (!goDown(it) || repLength(it) > k) {
-      // if we can't go down or the sequence is too long
-      do {
-        if (!goRight(it)) {
-          while (goUp(it) && !goRight(it)) {
-            // go up the tree until you can go to the right
-          }
-        }
-      } while (repLength(it) > k);
-    }
-  } while (!isRoot(it));
-  * /
-  // <-- 
-
-  std::cerr << " ... finished creating equivalence classes" << std::endl;
-
-
-  / *
-  // remove polyA close k-mers
-  CharString polyA;
-  resize(polyA, k, 'A');
-  std::cerr << "[build] Removing all k-mers within hamming distance 1 of " << polyA << std::endl;
-
-  {
-    auto search = kmap.find(Kmer(toCString(polyA)).rep());
-    if (search != kmap.end()) {
-      kmap.erase(search);
-    }
-  }
-
-  for (int i = 0; i < k; i++) {
-    for (int a = 1; a < 4; a++) {
-      CharString x(polyA);
-      assignValue(x, i, Dna(a));
-      {
-        auto search = kmap.find(Kmer(toCString(x)).rep());
-        if (search != kmap.end()) {
-          kmap.erase(search);
-        }
-      }
-      
-      for (int j = i+1; j < k; j++) {
-        CharString y(x);
-        for (int b = 1; b < 4; b++) {
-          assignValue(y, j, Dna(b));
-          {
-            auto search = kmap.find(Kmer(toCString(y)).rep());
-            if (search != kmap.end()){
-              kmap.erase(search);
-            }
-          }
-        }
-      }
-      //
-    }
-  }
-  * /
-
-  
-
-  std::cerr << "[build] Found " << num_trans << " transcripts"
-            << std::endl;
-
-  int eqs_id = num_trans;
-
-  std::cerr << "[build] Created " << ecmap.size() << " equivalence classes from " << num_trans << " transcripts" << std::endl;
-
-  std::cerr << "[build] K-mer map has " << kmap.size() << " k-mers" << std::endl;
-}
-
-*/
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   std::ofstream out;
