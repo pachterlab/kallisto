@@ -130,6 +130,7 @@ H5Converter::~H5Converter() {
 
 void H5Converter::write_aux() {
   std::string out_name(out_dir_ + "/run_info.json");
+
   plaintext_aux(
       out_name,
       std::string(std::to_string(n_targs_)),
@@ -139,7 +140,6 @@ void H5Converter::write_aux() {
       start_time_,
       call_
       );
-
 }
 
 void H5Converter::convert() {

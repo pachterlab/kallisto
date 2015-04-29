@@ -185,6 +185,7 @@ struct EMAlgorithm {
     rho_set_ = true;
   }
 
+  // DEPRECATED:
   void write(const std::string& out_fname) const {
     std::ofstream out;
     out.open(out_fname, std::ios::out);

@@ -7,9 +7,6 @@ std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
 
   std::vector<double> tpm(est_counts.size(), 0.0);
 
-  // TODO: get rid of this thing after testing
-  assert(tpm.size() == est_counts.size());
-
   double total_mass = 0.0;
 
   for (size_t i = 0; i < est_counts.size(); ++i) {
@@ -21,7 +18,7 @@ std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
   }
 
   for (size_t i = 0; i < est_counts.size(); ++i) {
-    tpm[i] = (tpm[i] * MILLION) / total_mass;
+    tpm[i] = (tpm[i] / total_mass) * MILLION;
   }
 
   return tpm;
@@ -35,8 +32,6 @@ void plaintext_writer(
     const std::vector<int>& lens
     ){
 
-  // TODO: convert to TPM
-  // writeout in format:
   std::ofstream of;
   of.open( out_name );
 
