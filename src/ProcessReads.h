@@ -50,8 +50,6 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 
 template<typename Index, typename TranscriptCollector>
 void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& tc) {
-  int betterCount = 0;
-  int betterCand = 0;
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
@@ -118,37 +116,37 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     }
 
     // see if we can do better
-    if (ec >= index.num_trans) {
-      // non-trivial ec
-      auto maxpair = [](int max_, std::pair<int,int> a) {return (max_ > a.second) ? max_ : a.second;};
-      int maxPos1 = accumulate(v1.begin(), v1.end(), -1, maxpair);
-      int maxPos2 = -1;
-      if (paired) {
-        maxPos2 = accumulate(v2.begin(), v2.end(), -1, maxpair);
-      }
-      bool better1 = false;
-      bool better2 = false;
-      bool cand = false;
-      if (maxPos1 < seq1->seq.l - index.k) {
-        cand = true;
-        better1 = index.matchEnd(seq1->seq.s, seq1->seq.l, v1, maxPos1);
-      }
-      if (paired) {
-        if (maxPos2 < seq2->seq.l - index.k) {
-          cand = true;
-          better2 = index.matchEnd(seq2->seq.s, seq2->seq.l, v2, maxPos2);
-        }
-      }
+    /* if (ec >= index.num_trans) { */
+    /*   // non-trivial ec */
+    /*   auto maxpair = [](int max_, std::pair<int,int> a) {return (max_ > a.second) ? max_ : a.second;}; */
+    /*   int maxPos1 = accumulate(v1.begin(), v1.end(), -1, maxpair); */
+    /*   int maxPos2 = -1; */
+    /*   if (paired) { */
+    /*     maxPos2 = accumulate(v2.begin(), v2.end(), -1, maxpair); */
+    /*   } */
+    /*   bool better1 = false; */
+    /*   bool better2 = false; */
+    /*   bool cand = false; */
+    /*   if (maxPos1 < seq1->seq.l - index.k) { */
+    /*     cand = true; */
+    /*     better1 = index.matchEnd(seq1->seq.s, seq1->seq.l, v1, maxPos1); */
+    /*   } */
+    /*   if (paired) { */
+    /*     if (maxPos2 < seq2->seq.l - index.k) { */
+    /*       cand = true; */
+    /*       better2 = index.matchEnd(seq2->seq.s, seq2->seq.l, v2, maxPos2); */
+    /*     } */
+    /*   } */
 
-      if (cand) {
-        betterCand++;
-      }
-      if (better1 || better2) {
-        betterCount++;
-        tc.decreaseCount(ec);
-        ec = tc.collect(v1,v2,!paired);
-      }
-    }
+    /*   if (cand) { */
+    /*     betterCand++; */
+    /*   } */
+    /*   if (better1 || better2) { */
+    /*     betterCount++; */
+    /*     tc.decreaseCount(ec); */
+    /*     ec = tc.collect(v1,v2,!paired); */
+    /*   } */
+    /* } */
     
     if (opt.verbose && nreads % 100000 == 0 ) {
       std::cerr << "[quant] Processed " << nreads << std::endl;
@@ -164,10 +162,10 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     kseq_destroy(seq2);
   }
 
-  std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
+  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
   
   // write output to outdir
-  std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
+  std::string outfile = opt.output + "/counts.txt"; 
   std::ofstream of;
   of.open(outfile.c_str(), std::ios::out);
   tc.write(of);
