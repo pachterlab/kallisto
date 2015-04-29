@@ -26,7 +26,7 @@ ProgramOptions() :
   verbose(false),
   seed(42),
   threads(1),
-  k(21),
+  k(31),
   iterations(500),
   skip(1),
   min_range(1),

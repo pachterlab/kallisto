@@ -34,14 +34,13 @@ using namespace std;
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
 
-  const char *opt_string = "i:k:f:";
+  const char *opt_string = "i:k:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
-    {"trans-fasta", required_argument, 0, 'f'},
     {0,0,0,0}
   };
   int c;
@@ -64,10 +63,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.k;
       break;
     }
-    case 'f': {
-      opt.transfasta = optarg;
-      break;
-    }
     default: break;
     }
   }
@@ -75,42 +70,14 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+
+  if (optind < argc) {
+    opt.transfasta = argv[optind];
+  }   
 }
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
-  int verbose_flag = 0;
-
-  const char *opt_string = "i:";
-  static struct option long_options[] = {
-    // long args
-    {"verbose", no_argument, &verbose_flag, 1},
-    // short args
-    {"index", required_argument, 0, 'i'},
-    {0,0,0,0}
-  };
-  int c;
-  int option_index = 0;
-  while (true) {
-    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
-
-    if (c == -1) {
-      break;
-    }
-
-    switch (c) {
-    case 0:
-      break;
-    case 'i': {
-      opt.index = optarg;
-      break;
-    }
-    default: break;
-    }
-  }
-
-  if (verbose_flag) {
-    opt.verbose = true;
-  }
+  opt.index = argv[1];
 }
 
 
@@ -119,7 +86,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
 
-  const char *opt_string = "t:i:s:l:o:n:m:d:b:";
+  const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -128,7 +95,6 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
-    {"skip", required_argument, 0, 's'},
     {"fragment-length", required_argument, 0, 'l'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
@@ -154,10 +120,6 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'i': {
       opt.index = optarg;
-      break;
-    }
-    case 's': {
-      stringstream(optarg) >> opt.skip;
       break;
     }
     case 'l': {
@@ -304,19 +266,25 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 
   bool ret = true;
 
-  if (opt.k <= 0 || opt.k >= Kmer::MAX_K) {
-    cerr << "Error: invalid k-mer size " << opt.k << ", maximum is " << (Kmer::MAX_K -1) << endl;
+  if (opt.k <= 1 || opt.k >= Kmer::MAX_K) {
+    cerr << "Error: invalid k-mer size " << opt.k << ", minimum is 2 and  maximum is " << (Kmer::MAX_K -1) << endl;
     ret = false;
   }
 
-  // we want to generate the index, check k, index and transfasta
-  struct stat stFileInfo;
-  auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
-  if (intStat != 0) {
-    cerr << "Error: transcript fasta file not found " << opt.transfasta << endl;
+  if (opt.transfasta.empty()) {
+    cerr << "Error: no transcript specified" << endl;
     ret = false;
+  } else {
+  
+    // we want to generate the index, check k, index and transfasta
+    struct stat stFileInfo;
+    auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << "Error: transcript fasta file not found " << opt.transfasta << endl;
+      ret = false;
+    }
   }
-
+  
   if (opt.index.empty()) {
     cerr << "Error: need to specify index name" << endl;
     ret = false;
@@ -366,10 +334,6 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       ret = false;
     }
 
-    if (opt.skip <= 0) {
-      cerr << "Error: skip has to be a positive integer" << endl;
-      ret = false;
-    }
   }
 
   if (opt.fld == 0.0) {
@@ -485,8 +449,7 @@ void PrintVersion() {
 }
 
 void usage() {
-  cout << "Kallisto " << endl
-       << "Does transcriptome stuff" << endl << endl
+  cout << "Kallisto " << KALLISTO_VERSION << endl << endl
        << "Usage: kallisto CMD [options] .." << endl << endl
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
@@ -497,47 +460,40 @@ void usage() {
 
 
 void usageIndex() {
-  cout << "Kallisto " << endl
-       << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto index [options]" << endl << endl
-       << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
-       << "-i, --index=STRING          Filename for index to be constructed " << endl
-       << "-f, --trans-fasta=STRING    FASTA file containing reference transcriptome " << endl;
+  cout << "Kallisto " << KALLISTO_VERSION << endl
+       << "Builds the index" << endl << endl
+       << "Usage: Kallisto index [options] FASTA-file" << endl << endl
+       << "-k, --kmer-size=INT         Size of k-mers, default (31), max value is " << (Kmer::MAX_K-1) << endl
+       << "-i, --index=STRING          Filename for index to be constructed " << endl << endl;
 }
 
 void usageInspect() {
-  cout << "Kallisto " << endl
-       << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto inspect [options]" << endl << endl
-       << "-i, --index=STRING             Filename for index to inspect " << endl;
+  cout << "Kallisto " << KALLISTO_VERSION << endl << endl
+       << "Usage: Kallisto inspect INDEX-file" << endl << endl;
 }
 
 void usageEM() {
-  cout << "Kallisto " << endl
-       << "Does transcriptome stuff" << endl << endl
+  cout << "Kallisto " << KALLISTO_VERSION << endl
+       << "Computes equivalence classes for reads and quantifies abundance" << endl << endl
        << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
        << "-i, --index=INT               Filename for index " << endl
-       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
-       << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
-       << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
-       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
-       << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
+       << "                              (default values are estimated from data)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default 0)" << endl
+       << "    --seed=INT                Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
 }
 
 void usageEMOnly() {
-  cout << "Kallisto " << endl
-       << "Does transcriptome stuff" << endl << endl
+  cout << "Kallisto " << KALLISTO_VERSION << endl
+       << "Computes equivalence classes for reads and quantifies abundance" << endl << endl
        << "Usage: Kallisto quant-only [options]" << endl << endl
-       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
-       << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
-       << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
-       << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
+       << "    --seed=INT                Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -763,9 +719,11 @@ int main(int argc, char *argv[]) {
     } else if (cmd == "h5dump") {
 
       if (argc != 4) {
-        cerr << "Usage:\n\tkallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
-        cerr << "\t\tOR\n"
-          << "\tkallisto h5dump --peek /path/to/abundance.h5" << endl;
+        cerr << "Usage:  kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
+        cerr << "     OR" << endl
+             << "        kallisto h5dump --peek /path/to/abundance.h5" << endl
+             << endl
+             << "Where --peek only displays summary information." << endl << endl;
         exit(1);
       }
 

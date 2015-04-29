@@ -128,7 +128,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   }
   std::cerr << "done." << std::endl;
   
-  std::cerr << "[build] Building de Bruijn Graph ... "; std::cerr.flush();
+  std::cerr << "[build] Building Transcriptome de Bruijn Graph ... "; std::cerr.flush();
   // find out how much we can skip ahead for each k-mer.
   for (auto& kv : kmap) {
     if (kv.second.contig == -1) {
@@ -213,11 +213,12 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
       dbGraph.ecs.push_back(-1);
     }
   }
-  std::cerr << " finished building de Bruijn Graph found for " << kmap.size() << " kmers and with " << dbGraph.contigs.size() << " contigs" << std::endl;
-  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
+  std::cerr << " finished building Transcriptome de Bruijn Graph " << std::endl
+            << "[build] Transcriptome de Bruijn Graph has  " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " kmers " << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
+  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
   //std::cout << "Mapping transcript " << std::endl;
@@ -333,6 +334,9 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       dbGraph.ecs[i] = eqs_id;
     }
   }
+
+  std::cerr << " done" << std::endl;
+
 }
 
 void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos) {
