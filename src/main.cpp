@@ -124,8 +124,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"plaintext", no_argument, &plaintext_flag, 1},
-    // short args
     {"seed", required_argument, 0, 'd'},
+    // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"skip", required_argument, 0, 's'},
@@ -203,11 +203,13 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
+  int plaintext_flag = 0;
 
   const char *opt_string = "t:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"plaintext", no_argument, &plaintext_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -265,6 +267,9 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     opt.verbose = true;
   }
 
+  if (plaintext_flag) {
+    opt.plaintext = true;
+  }
 }
 
 bool ParseOptionsH5Dump(int argc, char **argv) {
