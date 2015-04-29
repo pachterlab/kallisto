@@ -35,6 +35,7 @@ class H5Converter {
     H5Converter(const std::string& h5_fname, const std::string& out_dir);
     ~H5Converter();
 
+    void write_aux();
     void convert();
 
   private:
@@ -67,5 +68,8 @@ class H5Converter {
     int n_bs_;
     size_t n_targs_;
 };
+
+std::string to_json(const std::string& id, const std::string& val, bool quote,
+    bool comma = true, int level = 1);
 
 #endif // KALLISTO_H5WRITER_H

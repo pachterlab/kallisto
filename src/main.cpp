@@ -790,6 +790,7 @@ int main(int argc, char *argv[]) {
 
       H5Converter h5conv(h5file, out_dir);
       if (!peek) {
+        h5conv.write_aux();
         h5conv.convert();
       }
     }  else {
