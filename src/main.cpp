@@ -487,12 +487,11 @@ void PrintVersion() {
 void usage() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto CMD [options] .." << endl << endl
+       << "Usage: kallisto CMD [options] .." << endl << endl
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
-       << "    inspect       Inspects a built index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    quant-only    Runs the quantification algorithm without mapping" << endl
+       << "    h5dump        Get info from quantification and optionally output to plaintext " << endl
        << "    cite          Prints citation information " << endl
        << "    version       Prints version information"<< endl << endl;
 }
@@ -504,16 +503,14 @@ void usageIndex() {
        << "Usage: Kallisto index [options]" << endl << endl
        << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
        << "-i, --index=STRING             Filename for index to be constructed " << endl
-       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl;
 }
 
 void usageInspect() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto inspect [options]" << endl << endl
-       << "-i, --index=STRING             Filename for index to inspect " << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-i, --index=STRING             Filename for index to inspect " << endl;
 }
 
 void usageEM() {
@@ -521,15 +518,13 @@ void usageEM() {
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
        << "-i, --index=INT               Filename for index " << endl
-       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl
-       << "    --verbose                 Print lots of messages during run" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl;
 }
 
 void usageEMOnly() {
@@ -543,8 +538,7 @@ void usageEMOnly() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl
-       << "    --verbose                 Print lots of messages during run" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
