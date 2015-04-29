@@ -20,6 +20,7 @@ struct ProgramOptions {
   int bootstrap;
   std::string transfasta;
   std::vector<std::string> files;
+  bool plaintext;
 
 ProgramOptions() :
   verbose(false),
@@ -30,7 +31,8 @@ ProgramOptions() :
   skip(1),
   min_range(2*k+1),
   fld(0.0),
-  bootstrap(0)
+  bootstrap(0),
+  plaintext(false)
   {}
 };
 

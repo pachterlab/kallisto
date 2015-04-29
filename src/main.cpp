@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <getopt.h>
 #include <thread>
+#include <time.h>
 
 #include <zlib.h>
 #include "kseq.h"
@@ -14,7 +15,6 @@
 #define KSEQ_INIT_READY
 KSEQ_INIT(gzFile, gzread)
 #endif
-
 
 #include "common.h"
 #include "ProcessReads.h"
@@ -117,13 +117,15 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
+  int plaintext_flag = 0;
 
   const char *opt_string = "t:i:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
-    // short args
+    {"plaintext", no_argument, &plaintext_flag, 1},
     {"seed", required_argument, 0, 'd'},
+    // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"skip", required_argument, 0, 's'},
@@ -193,15 +195,21 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+
+  if (plaintext_flag) {
+    opt.plaintext = true;
+  }
 }
 
 void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
+  int plaintext_flag = 0;
 
   const char *opt_string = "t:s:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"plaintext", no_argument, &plaintext_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -259,8 +267,38 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     opt.verbose = true;
   }
 
+  if (plaintext_flag) {
+    opt.plaintext = true;
+  }
 }
 
+bool ParseOptionsH5Dump(int argc, char **argv) {
+  int peek_flag = 0;
+  const char *opt_string = "";
+  static struct option long_options[] = {
+    // long args
+    {"peek", no_argument, &peek_flag, 1},
+    {0,0,0,0}
+  };
+
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc, argv, opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    default: break;
+    }
+  }
+
+  return static_cast<bool>(peek_flag);
+}
 
 bool CheckOptionsIndex(ProgramOptions& opt) {
 
@@ -437,8 +475,6 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
   return ret;
 }
 
-
-
 void PrintCite() {
   cout << "The paper describing this software has not been published." << endl;
   //  cerr << "When using this program in your research, please cite" << endl << endl;
@@ -451,12 +487,11 @@ void PrintVersion() {
 void usage() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
-       << "Usage: Kallisto CMD [options] .." << endl << endl
+       << "Usage: kallisto CMD [options] .." << endl << endl
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
-       << "    inspect       Inspects a built index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    quant-only    Runs the quantification algorithm without mapping" << endl
+       << "    h5dump        Get info from quantification and optionally output to plaintext " << endl
        << "    cite          Prints citation information " << endl
        << "    version       Prints version information"<< endl << endl;
 }
@@ -468,39 +503,34 @@ void usageIndex() {
        << "Usage: Kallisto index [options]" << endl << endl
        << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
        << "-i, --index=STRING             Filename for index to be constructed " << endl
-       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl;
 }
 
 void usageInspect() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto inspect [options]" << endl << endl
-       << "-i, --index=STRING             Filename for index to inspect " << endl
-       << "    --verbose               Print lots of messages during run" << endl;
+       << "-i, --index=STRING             Filename for index to inspect " << endl;
 }
 
 void usageEM() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
-       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-i, --index=INT               Filename for index " << endl
-       << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
        << "-n, --iterations=INT          Number of iterations of EM algorithm (default value 500)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --verbose                 Print lots of messages during run" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl;
 }
 
 void usageEMOnly() {
   cout << "Kallisto " << endl
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto quant-only [options]" << endl << endl
-       << "-t, --threads=INT             Number of threads to use (default value 1)" << endl
        << "-s, --skip=INT                Number of k-mers to skip (default value 1)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
        << "-m, --min-range               Minimum range to assign a read to a transcript (default value 2*k+1)" << endl
@@ -508,21 +538,31 @@ void usageEMOnly() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
-       << "    --verbose                 Print lots of messages during run" << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl;
 }
 
-void write_version(const std::string& fname) {
-  std::ofstream out;
-  out.open(fname, std::ios::out);
-
-  if (!out.is_open()) {
-    cerr << "Error opening '" << fname << "'" << endl;
-    exit(1);
+std::string argv_to_string(int argc, char *argv[]) {
+  std::string res;
+  for (int i = 0; i < argc; ++i) {
+    res += argv[i];
+    if (i + 1 < argc) {
+      res += " ";
+    }
   }
 
-  out << KALLISTO_VERSION;
+  return res;
+}
 
-  out.close();
+std::string get_local_time() {
+  time_t rawtime;
+  struct tm * timeinfo;
+
+  time( &rawtime );
+  timeinfo = localtime( &rawtime );
+  std::string ret(asctime(timeinfo));
+
+  // chomp off the newline
+  return ret.substr(0, ret.size() - 1);
 }
 
 int main(int argc, char *argv[]) {
@@ -531,6 +571,7 @@ int main(int argc, char *argv[]) {
     usage();
     exit(1);
   } else {
+    auto start_time(get_local_time());
     ProgramOptions opt;
     string cmd(argv[1]);
     if (cmd == "version") {
@@ -579,15 +620,9 @@ int main(int argc, char *argv[]) {
         usageEM();
         exit(1);
       } else {
-        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
-
-        // temporarily build index
-        /* opt.transfasta = "../test/input/10_trans_gt_500_bp.fasta"; */
-        // std::cerr << "Building index from: " << opt.transfasta << std::endl;
-        // index.BuildTranscripts(opt);
 
         auto firstFile = opt.files[0];
         MinCollector collection(index, opt);
@@ -598,6 +633,7 @@ int main(int argc, char *argv[]) {
         }
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
+
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
         std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
@@ -606,11 +642,27 @@ int main(int argc, char *argv[]) {
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
         em.run();
-        em.compute_rho();
-        em.write(opt.output + "/abundance.txt");
 
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6);
-        writer.write_main(em, index.target_names_, index.trans_lens_);
+        std::string call = argv_to_string(argc, argv);
+
+        H5Writer writer;
+        if (!opt.plaintext) {
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+              index.INDEX_VERSION, call, start_time);
+          writer.write_main(em, index.target_names_, index.trans_lens_);
+        } else {
+          plaintext_aux(
+              opt.output + "/run_info.json",
+              std::string(std::to_string(eff_lens.size())),
+              std::string(std::to_string(opt.bootstrap)),
+              KALLISTO_VERSION,
+              std::string(std::to_string(index.INDEX_VERSION)),
+              start_time,
+              call);
+
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+              em.alpha_, em.eff_lens_, index.trans_lens_);
+        }
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -628,9 +680,13 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
-            writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
-            //            ".txt");
+
+            if (!opt.plaintext) {
+              writer.write_bootstrap(res, b);
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            }
           }
 
         }
@@ -645,7 +701,6 @@ int main(int argc, char *argv[]) {
         usageEMOnly();
         exit(1);
       } else {
-        write_version(opt.output + "/kallisto_version.txt");
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
@@ -657,14 +712,31 @@ int main(int argc, char *argv[]) {
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
-
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
 
         em.run();
 
-        H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 7);
-        writer.write_main(em, index.target_names_, index.trans_lens_);
+        std::string call = argv_to_string(argc, argv);
+        H5Writer writer;
+
+        if (!opt.plaintext) {
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+              index.INDEX_VERSION, call, start_time);
+          writer.write_main(em, index.target_names_, index.trans_lens_);
+        } else {
+          plaintext_aux(
+              opt.output + "/run_info.json",
+              std::string(std::to_string(eff_lens.size())),
+              std::string(std::to_string(opt.bootstrap)),
+              KALLISTO_VERSION,
+              std::string(std::to_string(index.INDEX_VERSION)),
+              start_time,
+              call);
+
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+              em.alpha_, em.eff_lens_, index.trans_lens_);
+        }
 
         if (opt.bootstrap > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
@@ -682,14 +754,64 @@ int main(int argc, char *argv[]) {
                          index.target_names_, eff_lens, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b << std::endl;
             auto res = bs.run_em(em);
-            writer.write_bootstrap(res, b);
-            // res.write( opt.output + "/bs_abundance_" + std::to_string(b) +
-            //            ".txt");
-          }
 
+            if (!opt.plaintext) {
+              writer.write_bootstrap(res, b);
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            }
+          }
         }
       }
-    } else {
+    } else if (cmd == "h5dump") {
+
+      if (argc != 4) {
+        cerr << "Usage:\n\tkallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
+        cerr << "\t\tOR\n"
+          << "\tkallisto h5dump --peek /path/to/abundance.h5" << endl;
+        exit(1);
+      }
+
+      auto peek = ParseOptionsH5Dump(argc-1,argv+1);
+
+      std::string h5file;
+      std::string out_dir;
+
+      if (!peek) {
+        h5file = argv[2];
+        out_dir = argv[3];
+
+        struct stat stFileInfo;
+        auto intStat = stat(out_dir.c_str(), &stFileInfo);
+        if (intStat == 0) {
+          // file/dir exits
+          if (!S_ISDIR(stFileInfo.st_mode)) {
+            cerr << "Error: Tried to open " << out_dir << " but another file already exists there" << endl;
+            exit(1);
+          }
+        } else if (mkdir(out_dir.c_str(), 0777) == -1) {
+          cerr << "Error: could not create directory " << out_dir << endl;
+          exit(1);
+        }
+      } else {
+        h5file = argv[3];
+        out_dir = "";
+      }
+
+      struct stat stFileInfo;
+      auto intStat = stat(h5file.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: couldn't find file " << h5file << endl;
+        exit(1);
+      }
+
+      H5Converter h5conv(h5file, out_dir);
+      if (!peek) {
+        h5conv.write_aux();
+        h5conv.convert();
+      }
+    }  else {
       cerr << "Did not understand command " << cmd << endl;
       usage();
       exit(1);
