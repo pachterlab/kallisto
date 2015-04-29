@@ -124,6 +124,23 @@ H5Converter::~H5Converter() {
   H5Fclose(file_id_);
 }
 
+void H5Converter::write_aux() {
+  std::string out_name(out_dir_ + "/run_info.json");
+  std::ofstream of;
+  of.open( out_name );
+
+  of << "{" << std::endl <<
+    to_json("n_targets", std::string(std::to_string(n_targs_)), false) << std::endl <<
+    to_json("n_bootstraps", std::string(std::to_string(n_bs_)), false) << std::endl <<
+    to_json("kallisto_version", kal_version_, true) << std::endl <<
+    to_json("index_version", std::string(std::to_string(idx_version_)), false) << std::endl <<
+    to_json("start_time", start_time_, true) << std::endl <<
+    to_json("call", call_, true, false) << std::endl <<
+    "}" << std::endl;
+
+  of.close();
+}
+
 void H5Converter::convert() {
 
   std::cout << "[h5dump] Writing main abundance" << std::endl;
@@ -153,4 +170,29 @@ void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, 
   read_dataset(group_id, count_name.c_str(), alpha);
 
   plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);
+}
+
+std::string to_json(const std::string& id, const std::string& val, bool quote,
+    bool comma, int level) {
+  std::string out;
+
+  for (auto i = 0; i < level; ++i) {
+    out += "\t";
+  }
+
+  out += '"';
+  out += id;
+  out += "\": ";
+  if (quote) {
+    out += '"';
+  }
+  out += val;
+  if (quote) {
+    out += '"';
+  }
+  if (comma) {
+    out += ',';
+  }
+
+  return out;
 }
