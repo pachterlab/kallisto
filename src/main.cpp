@@ -557,8 +557,7 @@ std::string argv_to_string(int argc, char *argv[]) {
     }
   }
 
-  // chomp off the newline
-  return res.substr(0, res.size() - 1);
+  return res.substr(0, res.size());
 }
 
 std::string get_local_time() {
@@ -569,6 +568,7 @@ std::string get_local_time() {
   timeinfo = localtime( &rawtime );
   std::string ret(asctime(timeinfo));
 
+  // chomp off the newline
   return ret.substr(0, ret.size() - 1);
 }
 
