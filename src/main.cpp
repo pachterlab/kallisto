@@ -475,8 +475,6 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
   return ret;
 }
 
-
-
 void PrintCite() {
   cout << "The paper describing this software has not been published." << endl;
   //  cerr << "When using this program in your research, please cite" << endl << endl;
@@ -545,6 +543,7 @@ void usageEMOnly() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
        << "--seed=INT                    Seed for bootstrap samples (default value 42)" << endl
        << "-o, --output-dir=STRING       Directory to store output to" << endl
+       << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --verbose                 Print lots of messages during run" << endl;
 }
 
@@ -557,7 +556,7 @@ std::string argv_to_string(int argc, char *argv[]) {
     }
   }
 
-  return res.substr(0, res.size());
+  return res;
 }
 
 std::string get_local_time() {
@@ -649,7 +648,6 @@ int main(int argc, char *argv[]) {
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
                        eff_lens, weights);
         em.run();
-        /* em.write(opt.output + "/abundance.txt"); */
 
         std::string call = argv_to_string(argc, argv);
 
@@ -807,7 +805,6 @@ int main(int argc, char *argv[]) {
         out_dir = "";
       }
 
-      // TODO: make sure H5 file exists
       struct stat stFileInfo;
       auto intStat = stat(h5file.c_str(), &stFileInfo);
       if (intStat != 0) {
