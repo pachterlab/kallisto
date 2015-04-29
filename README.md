@@ -4,6 +4,14 @@ The quickest way to start and publish your Jekyll powered blog. 100% compatible 
 
 ## Usage
 
+### General devel
+
+start a webserver
+
+```
+jekyll serve
+```
+
 For all usage and documentation please see: <http://jekyllbootstrap.com>
 
 ## Version
