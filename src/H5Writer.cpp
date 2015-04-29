@@ -65,7 +65,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   // <aux info>
   // read target ids
   read_dataset(aux_, "ids", targ_ids_);
-  std::cout << "[h5dump] found " << targ_ids_.size() << " targets " <<
+  std::cout << "[h5dump] " << targ_ids_.size() << "\ttargets " <<
     std::endl;
 
   n_targs_ = targ_ids_.size();
@@ -81,11 +81,32 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   read_dataset(aux_, "num_bootstrap", n_bs_vec);
   n_bs_ = n_bs_vec[0];
 
-  std::cout << "[h5dump] found " << n_bs_ << " bootstraps" << std::endl;
+  std::cout << "[h5dump] " << n_bs_ << "\tbootstraps" << std::endl;
   // </aux info>
   if (n_bs_ > 0) {
     bs_ = H5Gopen(file_id_, "/bootstrap", H5P_DEFAULT);
   }
+
+  std::vector<std::string> tmp;
+  read_dataset(aux_, "kallisto_version", tmp);
+  kal_version_ = tmp[0];
+  tmp.clear();
+  std::cout << "[h5dump] kallisto version: " << kal_version_ << std::endl;
+
+  std::vector<int> idx_version;
+  read_dataset(aux_, "index_version", idx_version);
+  idx_version_ = static_cast<size_t>(idx_version[0]);
+  std::cout << "[h5dump] index version: " << idx_version_ << std::endl;
+
+  read_dataset(aux_, "start_time", tmp);
+  start_time_ = tmp[0];
+  tmp.clear();
+  std::cout << "[h5dump] start time: " << start_time_ << std::endl;
+
+  read_dataset(aux_, "call", tmp);
+  call_ = tmp[0];
+  tmp.clear();
+  std::cout << "[h5dump] call: " << call_ << std::endl;
 
   alpha_buf_.resize( n_targs_, 0.0 );
   assert( n_targs_ == alpha_buf_.size() );
@@ -107,7 +128,6 @@ void H5Converter::convert() {
 
   std::cout << "[h5dump] Writing main abundance" << std::endl;
   rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
-
 
   std::cout << "[h5dump] Writing bootstraps" << std::endl;
 

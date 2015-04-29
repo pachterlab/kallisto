@@ -261,6 +261,33 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 
 }
 
+bool ParseOptionsH5Dump(int argc, char **argv) {
+  int peek_flag = 0;
+  const char *opt_string = "";
+  static struct option long_options[] = {
+    // long args
+    {"peek", no_argument, &peek_flag, 1},
+    {0,0,0,0}
+  };
+
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc, argv, opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    default: break;
+    }
+  }
+
+  return static_cast<bool>(peek_flag);
+}
 
 bool CheckOptionsIndex(ProgramOptions& opt) {
 
@@ -721,30 +748,51 @@ int main(int argc, char *argv[]) {
     } else if (cmd == "h5dump") {
 
       if (argc != 4) {
-        cerr << "Usage: kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
+        cerr << "Usage:\n\tkallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
+        cerr << "\t\tOR\n"
+          << "\tkallisto h5dump --peek /path/to/abundance.h5" << endl;
         exit(1);
       }
 
-      std::string h5file(argv[2]);
-      std::string out_dir(argv[3]);
+      auto peek = ParseOptionsH5Dump(argc-1,argv+1);
 
-      struct stat stFileInfo;
-      auto intStat = stat(out_dir.c_str(), &stFileInfo);
-      if (intStat == 0) {
-        // file/dir exits
-        if (!S_ISDIR(stFileInfo.st_mode)) {
-          cerr << "Error: Tried to open " << out_dir << " but another file already exists there" << endl;
+      std::string h5file;
+      std::string out_dir;
+
+      if (!peek) {
+        h5file = argv[2];
+        out_dir = argv[3];
+
+        struct stat stFileInfo;
+        auto intStat = stat(out_dir.c_str(), &stFileInfo);
+        if (intStat == 0) {
+          // file/dir exits
+          if (!S_ISDIR(stFileInfo.st_mode)) {
+            cerr << "Error: Tried to open " << out_dir << " but another file already exists there" << endl;
+            exit(1);
+          }
+        } else if (mkdir(out_dir.c_str(), 0777) == -1) {
+          cerr << "Error: could not create directory " << out_dir << endl;
           exit(1);
         }
-      } else if (mkdir(out_dir.c_str(), 0777) == -1) {
-        cerr << "Error: could not create directory " << out_dir << endl;
+      } else {
+        h5file = argv[3];
+        out_dir = "";
+      }
+
+      // TODO: make sure H5 file exists
+      struct stat stFileInfo;
+      auto intStat = stat(h5file.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: couldn't find file " << h5file << endl;
         exit(1);
       }
 
       H5Converter h5conv(h5file, out_dir);
-      h5conv.convert();
-
-    } else {
+      if (!peek) {
+        h5conv.convert();
+      }
+    }  else {
       cerr << "Did not understand command " << cmd << endl;
       usage();
       exit(1);
