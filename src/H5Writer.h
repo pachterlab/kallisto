@@ -8,10 +8,12 @@
 
 class H5Writer {
   public:
-    H5Writer(const std::string& fname, int num_bootstrap, uint compression,
+    H5Writer() : primed_(false) {}
+    ~H5Writer();
+
+    void init(const std::string& fname, int num_bootstrap, uint compression,
         size_t index_version, const std::string& shell_call,
         const std::string& start_time);
-    ~H5Writer();
 
     void write_main(const EMAlgorithm& em,
         const std::vector<std::string>& targ_ids,
@@ -20,13 +22,15 @@ class H5Writer {
     void write_bootstrap(const EMAlgorithm& em, int bs_id);
 
   private:
-      int num_bootstrap_;
-      uint compression_;
+    bool primed_;
 
-      hid_t file_id_;
-      hid_t root_;
-      hid_t aux_;
-      hid_t bs_;
+    int num_bootstrap_;
+    uint compression_;
+
+    hid_t file_id_;
+    hid_t root_;
+    hid_t aux_;
+    hid_t bs_;
 };
 
 class H5Converter {
@@ -68,8 +72,5 @@ class H5Converter {
     int n_bs_;
     size_t n_targs_;
 };
-
-std::string to_json(const std::string& id, const std::string& val, bool quote,
-    bool comma = true, int level = 1);
 
 #endif // KALLISTO_H5WRITER_H

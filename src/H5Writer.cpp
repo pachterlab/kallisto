@@ -1,10 +1,11 @@
 #include "H5Writer.h"
 
-H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression,
+void H5Writer::init(const std::string& fname, int num_bootstrap, uint compression,
     size_t index_version, const std::string& shell_call,
-    const std::string& start_time) :
-  num_bootstrap_(num_bootstrap)
+    const std::string& start_time)
 {
+  primed_ = true;
+  num_bootstrap_ = num_bootstrap;
   compression_ = compression;
   file_id_ = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   root_ = H5Gopen(file_id_, "/", H5P_DEFAULT);
@@ -30,6 +31,9 @@ H5Writer::H5Writer(const std::string& fname, int num_bootstrap, uint compression
 }
 
 H5Writer::~H5Writer() {
+  if (!primed_) {
+    return;
+  }
   if (num_bootstrap_ > 0) {
     H5Gclose(bs_);
   }
@@ -126,19 +130,16 @@ H5Converter::~H5Converter() {
 
 void H5Converter::write_aux() {
   std::string out_name(out_dir_ + "/run_info.json");
-  std::ofstream of;
-  of.open( out_name );
+  plaintext_aux(
+      out_name,
+      std::string(std::to_string(n_targs_)),
+      std::string(std::to_string(n_bs_)),
+      kal_version_,
+      std::string(std::to_string(idx_version_)),
+      start_time_,
+      call_
+      );
 
-  of << "{" << std::endl <<
-    to_json("n_targets", std::string(std::to_string(n_targs_)), false) << std::endl <<
-    to_json("n_bootstraps", std::string(std::to_string(n_bs_)), false) << std::endl <<
-    to_json("kallisto_version", kal_version_, true) << std::endl <<
-    to_json("index_version", std::string(std::to_string(idx_version_)), false) << std::endl <<
-    to_json("start_time", start_time_, true) << std::endl <<
-    to_json("call", call_, true, false) << std::endl <<
-    "}" << std::endl;
-
-  of.close();
 }
 
 void H5Converter::convert() {
@@ -170,29 +171,4 @@ void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, 
   read_dataset(group_id, count_name.c_str(), alpha);
 
   plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);
-}
-
-std::string to_json(const std::string& id, const std::string& val, bool quote,
-    bool comma, int level) {
-  std::string out;
-
-  for (auto i = 0; i < level; ++i) {
-    out += "\t";
-  }
-
-  out += '"';
-  out += id;
-  out += "\": ";
-  if (quote) {
-    out += '"';
-  }
-  out += val;
-  if (quote) {
-    out += '"';
-  }
-  if (comma) {
-    out += ',';
-  }
-
-  return out;
 }
