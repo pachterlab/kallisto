@@ -9,7 +9,8 @@
 class H5Writer {
   public:
     H5Writer(const std::string& fname, int num_bootstrap, uint compression,
-        size_t index_version, const std::string& shell_call);
+        size_t index_version, const std::string& shell_call,
+        const std::string& start_time);
     ~H5Writer();
 
     void write_main(const EMAlgorithm& em,

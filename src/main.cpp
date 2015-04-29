@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <getopt.h>
 #include <thread>
+#include <time.h>
 
 #include <zlib.h>
 #include "kseq.h"
@@ -14,7 +15,6 @@
 #define KSEQ_INIT_READY
 KSEQ_INIT(gzFile, gzread)
 #endif
-
 
 #include "common.h"
 #include "ProcessReads.h"
@@ -534,7 +534,19 @@ std::string argv_to_string(int argc, char *argv[]) {
     }
   }
 
-  return res;
+  // chomp off the newline
+  return res.substr(0, res.size() - 1);
+}
+
+std::string get_local_time() {
+  time_t rawtime;
+  struct tm * timeinfo;
+
+  time( &rawtime );
+  timeinfo = localtime( &rawtime );
+  std::string ret(asctime(timeinfo));
+
+  return ret.substr(0, ret.size() - 1);
 }
 
 int main(int argc, char *argv[]) {
@@ -543,6 +555,7 @@ int main(int argc, char *argv[]) {
     usage();
     exit(1);
   } else {
+    auto start_time(get_local_time());
     ProgramOptions opt;
     string cmd(argv[1]);
     if (cmd == "version") {
@@ -623,7 +636,7 @@ int main(int argc, char *argv[]) {
 
         std::string call = argv_to_string(argc, argv);
         H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
-            index.INDEX_VERSION, call);
+            index.INDEX_VERSION, call, start_time);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -679,7 +692,7 @@ int main(int argc, char *argv[]) {
 
         std::string call = argv_to_string(argc, argv);
         H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
-            index.INDEX_VERSION, call);
+            index.INDEX_VERSION, call, start_time);
         writer.write_main(em, index.target_names_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
