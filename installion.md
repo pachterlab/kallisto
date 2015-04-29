@@ -24,15 +24,15 @@ If building on Mac, we suggest using a package manager such as
 [Homebrew](http://brew.sh) to deal with dependencies. Other dependencies are
 either included, or can be installed using package managers on the system.
 
-- CMake version >= 2.8.8
+- __CMake__ version >= 2.8.8
     - Mac: `brew install cmake`
     - Ubuntu: `sudo apt-get install cmake`
     - CentOS: `sudo yum install cmake`
-- zlib (should be installed on OSX >= 10.9)
+- __zlib__ (should be installed on OSX >= 10.9)
     - Mac: Should be installed by default
     - Ubuntu: `sudo apt-get install zlib1g-dev`
     - CentOS: `sudo yum install zlib-devel`
-- HDF5 C library
+- __HDF5__ C library
     - Mac: `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
     - CentOS: `sudo yum install hdf5-devel`
