@@ -491,8 +491,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds the index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    h5dump        Get info from quantification and optionally output to plaintext " << endl
-       << "    cite          Prints citation information " << endl
+       << "    h5dump        Convert HDF5 formatted results to plaintext" << endl
        << "    version       Prints version information"<< endl << endl;
 }
 
@@ -502,8 +501,8 @@ void usageIndex() {
        << "Does transcriptome stuff" << endl << endl
        << "Usage: Kallisto index [options]" << endl << endl
        << "-k, --kmer-size=INT         Size of k-mers, default (21), max value is " << (Kmer::MAX_K-1) << endl
-       << "-i, --index=STRING             Filename for index to be constructed " << endl
-       << "-f, --trans-fasta=STRING       FASTA file containing reference transcriptome " << endl;
+       << "-i, --index=STRING          Filename for index to be constructed " << endl
+       << "-f, --trans-fasta=STRING    FASTA file containing reference transcriptome " << endl;
 }
 
 void usageInspect() {
