@@ -41,6 +41,7 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
 }
 
 void InspectIndex(const KmerIndex& index) {
+  int k = index.k;
   cout << "#[inspect] Index version number = " << index.INDEX_VERSION << endl;
   cout << "#[inspect] k = " << index.k << endl;;
   cout << "#[inspect] number of transcripts = " << index.num_trans << endl;
@@ -54,6 +55,15 @@ void InspectIndex(const KmerIndex& index) {
          << ", ecmapinv.size = " << index.ecmapinv.size() << endl;
     exit(1);
   }
+
+  if (index.dbGraph.ecs.size() != index.dbGraph.contigs.size()) {
+    cout << "Error: sizes do not match. ecs.size = " << index.dbGraph.ecs.size()
+         << ", contigs.size = " << index.dbGraph.contigs.size() << endl;
+    exit(1);
+  }
+
+  cout << "#[inspect] number of contigs = " << index.dbGraph.contigs.size() << endl;
+  
 
   unordered_map<int,int> echisto;
 
@@ -119,33 +129,70 @@ void InspectIndex(const KmerIndex& index) {
 
   cout << "#[inspect] Number of k-mers in index = " << index.kmap.size() << endl;
   unordered_map<int,int> kmhisto;
-  unordered_map<int,int> fjumphisto;
-  unordered_map<int,int> bjumphisto;
 
   for (auto& kv : index.kmap) {
-    ++fjumphisto[kv.second.fdist];
-    ++bjumphisto[kv.second.bdist];
-    //auto search = index.ecmap.find(kv.second.id);
-//    if (search == index.ecmap.end()) {
-    if (kv.second.id < 0 || kv.second.id >= index.ecmap.size()) {
-      cerr << "Kmer " << kv.first.toString() << " mapped to ec " << kv.second.id << ", which is not in the index" << endl;
+    int id = kv.second.contig;
+    int pos = kv.second.getPos();
+    int fw = kv.second.isFw();
+
+    if (id < 0 || id >= index.dbGraph.contigs.size()) {
+      cerr << "Kmer " << kv.first.toString() << " mapped to contig " << id << ", which is not in the de Bruijn Graph" << endl;
       exit(1);
     } else {
-      ++kmhisto[index.ecmap[kv.second.id].size()];
+      ++kmhisto[index.ecmap[index.dbGraph.ecs[id]].size()];
+    }
+
+    const Contig& c = index.dbGraph.contigs[id];
+    const char* s = c.seq.c_str();
+    Kmer x = Kmer(s+pos);
+    Kmer xr = x.rep();
+
+    bool bad = (fw != (x==xr)) || (xr != kv.first);
+    if (bad) {
+      cerr << "Kmer " << kv.first.toString() << " mapped to contig " << id << ", pos = " << pos << ", on " << (fw ? "forward" : "reverse") << " strand" << endl;
+      cerr << "seq = " << c.seq << endl;
+      cerr << "x  = " << x.toString() << endl;
+      cerr << "xr = " << xr.toString() << endl;
+      exit(1);
     }
   }
 
+  for (int i = 0; i < index.dbGraph.contigs.size(); i++) {
+    const Contig& c = index.dbGraph.contigs[i];
+
+    if (c.seq.size() != c.length + k-1) {
+      cerr << "Length and string dont match " << endl << "seq = " << c.seq << " (length = " << c.seq.size() << "), c.length = " << c.length << endl;
+      exit(1);
+    }
+
+
+    const char *s = c.seq.c_str();
+    KmerIterator kit(s), kit_end;
+    for (; kit != kit_end; ++kit) {
+      Kmer x = kit->first;
+      Kmer xr = x.rep();
+      auto search = index.kmap.find(xr);
+      if (search == index.kmap.end()) {
+        cerr << "could not find kmer " << x.toString() << " in map " << endl << "seq = " << c.seq << ", pos = " << kit->second << endl;
+        exit(1);
+      }
+
+      KmerEntry val = search->second;
+      if (val.contig != i || val.getPos() != kit->second || val.isFw() != (x==xr)) {
+        cerr << "mismatch " << x.toString() << " in map " << endl << "id = " << i << ", seq = " << c.seq << ", pos = " << kit->second << endl;
+        cerr << "val = " << val.contig << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
+        exit(1);
+      }
+    }
+    
+  }
 
   printHisto(echisto, "#EC.size\tNum.transcripts");
   cout << endl << endl;
 
   printHisto(kmhisto, "#EC.size\tNum.kmers");
 
-  cout << endl << endl;
-  printHisto (fjumphisto, "#Jump.fw\tNum.kmers");
 
-  cout << endl << endl;
-  printHisto (bjumphisto, "#Jump.bw\tNum.kmers");
 
 }
 

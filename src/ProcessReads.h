@@ -12,12 +12,8 @@
 #include <fstream>
 #include "MinCollector.h"
 
-#include <seqan/bam_io.h>
-// for debugging
 
 #include "common.h"
-
-using namespace seqan;
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -50,15 +46,10 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 
 template<typename Index, typename TranscriptCollector>
 void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& tc) {
-
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
   int tlencount = 10000;
-
-  index.loadSuffixArray(opt);
-  TFinder finder(index.index);
-
 
   bool paired = (opt.files.size() == 2);
 
@@ -109,42 +100,51 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
       //bool allSame = true;
       bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
-      /*
-      for (auto x : v1) {
-        if (x.first != ec) {
-          allSame = false;
-          break;
-        }
-      }
-      for (auto x : v2) {
-        if (x.first != ec) {
-          allSame = false;
-          break;
-        }
-      }
-      */
+
       if (allSame) {
         // try to map the reads
-        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec, finder);
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
         if (0 < tl && tl < tc.flens.size()) {
           tc.flens[tl]++;
           tlencount--;
         }
-
-        if (tlencount == 0) {
-          index.clearSuffixArray();
-          /*std::cout << "Fragment length" << std::endl;
-          for (int i = 0; i < tlen.size(); i++) {
-            std::cout << i << "\t" << tlen[i] << "\n";
-          }
-          std::cout << "---------------" << std::endl;
-          */
-        }
       }
     }
 
+    // see if we can do better
+    /* if (ec >= index.num_trans) { */
+    /*   // non-trivial ec */
+    /*   auto maxpair = [](int max_, std::pair<int,int> a) {return (max_ > a.second) ? max_ : a.second;}; */
+    /*   int maxPos1 = accumulate(v1.begin(), v1.end(), -1, maxpair); */
+    /*   int maxPos2 = -1; */
+    /*   if (paired) { */
+    /*     maxPos2 = accumulate(v2.begin(), v2.end(), -1, maxpair); */
+    /*   } */
+    /*   bool better1 = false; */
+    /*   bool better2 = false; */
+    /*   bool cand = false; */
+    /*   if (maxPos1 < seq1->seq.l - index.k) { */
+    /*     cand = true; */
+    /*     better1 = index.matchEnd(seq1->seq.s, seq1->seq.l, v1, maxPos1); */
+    /*   } */
+    /*   if (paired) { */
+    /*     if (maxPos2 < seq2->seq.l - index.k) { */
+    /*       cand = true; */
+    /*       better2 = index.matchEnd(seq2->seq.s, seq2->seq.l, v2, maxPos2); */
+    /*     } */
+    /*   } */
 
-    if (opt.verbose && nreads % 10000 == 0 ) {
+    /*   if (cand) { */
+    /*     betterCand++; */
+    /*   } */
+    /*   if (better1 || better2) { */
+    /*     betterCount++; */
+    /*     tc.decreaseCount(ec); */
+    /*     ec = tc.collect(v1,v2,!paired); */
+    /*   } */
+    /* } */
+    
+    if (opt.verbose && nreads % 100000 == 0 ) {
       std::cerr << "[quant] Processed " << nreads << std::endl;
     }
   }
@@ -158,296 +158,14 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     kseq_destroy(seq2);
   }
 
-  // write output to outdir
-  std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
-  std::ofstream of;
-  of.open(outfile.c_str(), std::ios::out);
-  tc.write(of);
-  of.close();
-}
-
-template<typename Index, typename TranscriptCollector>
-void ProcessBams(Index& index, const ProgramOptions& opt, TranscriptCollector& tc) {
-
-  // need to receive an index map
-  std::ios_base::sync_with_stdio(false);
-  std::vector<std::pair<int,int>> v1, v2;
-  v1.reserve(1000);
-  v2.reserve(1000);
-
-  int tlencount = 10000;
-  index.loadSuffixArray(opt);
-  TFinder finder(index.index);
-
-  std::vector<int> rIdToTrans;
-
-  int l1,l2; // length of read
-  size_t nreads = 0;
-
-  BamFileIn bamFileIn(opt.files[0].c_str());
-  /*
-  if (!open(bamFileIn, opt.files[0].c_str())) {
-    std::cerr << "ERROR: Could not open bamfile " << opt.files[0] << std::endl;
-    exit(1);
-    }*/
-
-  BamHeader header;
-  readHeader(header, bamFileIn);
-
-  //typedef FormattedFileContext<BamFileIn, void>::Type TBamContext;
-
-  ///BamIOContext<StringSet<CharString>>
-  auto const& bamContext = context(bamFileIn);
-
-  {
-    std::unordered_map<std::string, int> inv;
-    for (int i = 0; i < index.target_names_.size(); i++) {
-      inv.insert({index.target_names_[i], i});
-    }
-    auto cnames = contigNames(bamContext);
-    for (int i = 0; i < length(cnames); i++) {
-      std::string cname(toCString(cnames[i]));
-      auto search = inv.find(cname);
-      if (search == inv.end()) {
-        std::cerr << "Error: could not find transcript name " << cname << " from bam file " << opt.files[0] << std::endl;
-        rIdToTrans.push_back(-1);
-      } else {
-        rIdToTrans.push_back(search->second);
-      }
-    }
-  }
-
-
-
-
-
-
-
-  BamAlignmentRecord record;
-  if (atEnd(bamFileIn)) {
-    std::cerr << "Warning: Empty bam file " << opt.files[0] << std::endl;
-    return;
-  }
-  readRecord(record, bamFileIn);
-  std::vector<int> p;
-  CharString s1,s2;
-  CharString lastName;
-  bool done = false;
-
-  int mismatches = 0;
-  int mismBamMoreSpecific = 0;
-  int mismKalMoreSpecific = 0;
-  int mismNonAgreement = 0;
-  int alignKnotB = 0;
-  int alignBnotK = 0;
-  int exactMatches = 0;
-  int alignNone = 0;
-
-  std::ofstream bamKnotB, bamBnotK, bamNotProper, bamBamSpec, bamKalSpec;;
-  bamKnotB.open(opt.output+"/bamKnotB.txt", std::ios::out);
-  bamBnotK.open(opt.output+"/bamBnotK.txt", std::ios::out);
-  bamNotProper.open(opt.output+"/bamNotProper.txt", std::ios::out);
-  bamBamSpec.open(opt.output+"/bamBamSpec.txt", std::ios::out);
-  bamKalSpec.open(opt.output+"/bamKalSpec.txt", std::ios::out);
-
-  bamKnotB << "read1\tread2\tBamEC\tKalEC\n";
-  bamBnotK << "read1\tread2\tBamEC\tKalEC\n";
-  bamBamSpec << "read1\tread2\tBamEC\tKalEC\n";
-  bamKalSpec << "read1\tread2\tBamEC\tKalEC\n";
-  bamNotProper << "read1\tread2\tBamEC\tKalEC\n";
-
+  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
   
-  // for each read
-  while (!done) {
-    bool paired = hasFlagMultiple(record);
-    p.clear();
-    clear(s1);
-    clear(s2);
-
-    // we haven't processed record yet
-    while (true) {
-      // collect sequence
-      if (hasFlagFirst(record) && empty(s1)) {
-        s1 = record.seq;
-        if (hasFlagRC(record)) {
-          reverseComplement(s1);
-        }
-      } else if (paired && hasFlagLast(record) && empty(s2)) {
-        s2 = record.seq;
-        if (hasFlagRC(record)) {
-          reverseComplement(s2);
-        }
-      } else {
-        if (empty(s1) && empty(s2)) {
-          std::cerr << "Warning: weird sequence in bam file " << opt.files[0] << std::endl;
-        }
-      }
-
-
-      // gather alignment info
-      if (!hasFlagUnmapped(record)) {
-        p.push_back(rIdToTrans[record.rID]);
-      }
-
-      // are there more reads?
-      if (atEnd(bamFileIn)) {
-        done = true;
-        break;
-      }
-
-      // look at next read
-      lastName = record.qName;
-      readRecord(record, bamFileIn);
-      if (lastName != record.qName) {
-        break; // process the record next time
-      }
-    }
-
-    if (empty(s1) || empty(s2)) {
-      std::cerr << "Warning: only one read is present " << std::endl << s1 << std::endl << s2 << std::endl;
-    }
-    nreads++;
-
-
-
-    v1.clear();
-    v2.clear();
-    // process read
-    index.match(toCString(s1), length(s1), v1);
-    if (paired) {
-      index.match(toCString(s2), length(s2), v2);
-    }
-
-    // collect the transcript information
-    std::vector<int> u;
-    if (!paired) {
-      if (!v1.empty()) {
-        u = tc.intersectECs(v1);
-      }
-    } else {
-      if (!v1.empty() && !v2.empty()) {
-        std::vector<int> u1 = tc.intersectECs(v1);
-        std::vector<int> u2 = tc.intersectECs(v2);
-
-        u = intersect(u1,u2);
-      }
-    }
-
-    if (opt.verbose && nreads % 10000 == 0 ) {
-      std::cerr << "Processed " << nreads << std::endl;
-    }
-
-    sort(p.begin(), p.end());
-    std::vector<int> lp;
-    if (!p.empty()) {
-      if (p[0] != -1) {
-        lp.push_back(p[0]);
-      }
-      for (int i = 1; i < p.size(); i++) {
-        if (p[i-1] != p[i] && p[i] != -1) {
-          lp.push_back(p[i]);
-        }
-      }
-    }
-
-    if (!lp.empty()) {
-      int ec_lp = tc.increaseCount(lp);
-
-      // collect length distribution
-      if (paired && 0 <= ec_lp && ec_lp < index.num_trans && tlencount > 0) {
-        bool allSame = (v1[0].first == ec_lp && v2[0].first == ec_lp) && (v1[0].second == 0 && v2[0].second == 0);
-        if (allSame) {
-          int tl = index.mapPair(toCString(s1),length(s1),toCString(s2),length(s2), ec_lp, finder);
-          if (0 < tl && tl < tc.flens.size()) {
-            tc.flens[tl]++;
-            tlencount--;
-          }
-        }
-
-        if (tlencount == 0) {
-          index.clearSuffixArray();
-        }
-      }
-      
-
-      if (u.empty()) {
-        // BAM mapped not kallisto
-        alignBnotK++;
-        bamBnotK << s1 << "\t" << s2 << "\t";
-        printVector(lp, bamBnotK);
-        bamBnotK << "\t[]\n";
-      } else {
-        // search for u
-        auto find = index.ecmapinv.find(u);
-        // both mapped, check mapping
-        if (find == index.ecmapinv.end() || find->second != ec_lp) {
-          // mismatch
-          mismatches++;
-          // classify the mismatch
-          if (isSubset(lp, u)) {
-            bamBamSpec << s1 << "\t" << s2 << "\t";
-            printVector(lp, bamBamSpec);
-            bamBamSpec << "\t";
-            printVector(u, bamBamSpec);
-            bamBamSpec << "\n";
-            mismBamMoreSpecific++;
-          } else if (isSubset(u, lp)) {
-            bamKalSpec << s1 << "\t" << s2 << "\t";
-            printVector(lp, bamKalSpec);
-            bamKalSpec << "\t";
-            printVector(u, bamKalSpec);
-            bamKalSpec << "\n";
-            mismKalMoreSpecific++;
-          } else {
-            bamNotProper << s1 << "\t" << s2 << "\t";
-            printVector(lp, bamNotProper);
-            bamNotProper << "\t";
-            printVector(u, bamNotProper);
-            bamNotProper << "\n";
-            mismNonAgreement++;
-          }
-        } else {
-          // both agree
-          exactMatches++;
-        }
-      }
-    } else {
-      if (!u.empty()) {
-        alignKnotB++;
-        bamKnotB << s1 << "\t" << s2 << "\t[]\t";
-        printVector(u, bamKnotB);
-        bamKnotB << "\n";
-      } else {
-        alignNone++;
-      }
-    }
-  }
-
-  std::cerr << "Aligned " <<  nreads << std::endl
-            << "exact matches = " << exactMatches << std::endl
-            << "Kallisto mapped, not BAM = " << alignKnotB << std::endl
-            << "Bam mapped, not Kallisto = " << alignBnotK << std::endl
-            << "Both mapped, mismatches = " << mismatches << std::endl
-            << "  Bam More specific = " << mismBamMoreSpecific << std::endl
-            << "  Kal More specific = " << mismKalMoreSpecific << std::endl
-            << "  Disjoint = " << mismNonAgreement << std::endl
-            << "Neither mapped = " << alignNone << std::endl;
-
-  bamKnotB.close();
-  bamBnotK.close();
-  bamBamSpec.close();
-  bamKalSpec.close();
-  bamNotProper.close();
-
-
-  // writeoutput to outdir
-  std::string outfile = opt.output + "/counts.txt"; // figure out filenaming scheme
+  // write output to outdir
+  std::string outfile = opt.output + "/counts.txt"; 
   std::ofstream of;
   of.open(outfile.c_str(), std::ios::out);
   tc.write(of);
   of.close();
-
-  return;
 }
 
 

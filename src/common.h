@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.3"
+#define KALLISTO_VERSION "0.4"
 
 #include <string>
 #include <vector>
@@ -29,7 +29,7 @@ ProgramOptions() :
   k(21),
   iterations(500),
   skip(1),
-  min_range(2*k+1),
+  min_range(1),
   fld(0.0),
   bootstrap(0),
   plaintext(false)

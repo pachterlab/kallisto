@@ -626,11 +626,8 @@ int main(int argc, char *argv[]) {
 
         auto firstFile = opt.files[0];
         MinCollector collection(index, opt);
-        if (firstFile.size() >= 4 && firstFile.compare(firstFile.size()-4,4,".bam") == 0) {
-          ProcessBams<KmerIndex, MinCollector>(index, opt, collection);
-        } else {
-          ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
-        }
+        ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
+
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
 
