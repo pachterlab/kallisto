@@ -43,6 +43,12 @@ class H5Converter {
 
     std::string out_dir_;
 
+    // run info
+    std::string kal_version_;
+    size_t idx_version_;
+    std::string start_time_;
+    std::string call_;
+
     // auxilary
     std::vector<std::string> targ_ids_;
     std::vector<int> lengths_;
