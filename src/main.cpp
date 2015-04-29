@@ -636,11 +636,6 @@ int main(int argc, char *argv[]) {
         KmerIndex index(opt);
         index.load(opt);
 
-        // temporarily build index
-        /* opt.transfasta = "../test/input/10_trans_gt_500_bp.fasta"; */
-        // std::cerr << "Building index from: " << opt.transfasta << std::endl;
-        // index.BuildTranscripts(opt);
-
         auto firstFile = opt.files[0];
         MinCollector collection(index, opt);
         if (firstFile.size() >= 4 && firstFile.compare(firstFile.size()-4,4,".bam") == 0) {
@@ -650,6 +645,7 @@ int main(int argc, char *argv[]) {
         }
         // save modified index for future use
         index.write((opt.output+"/index.saved"), false);
+
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
         std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
@@ -659,7 +655,7 @@ int main(int argc, char *argv[]) {
                        eff_lens, weights);
         em.run();
         em.compute_rho();
-        em.write(opt.output + "/abundance.txt");
+        /* em.write(opt.output + "/abundance.txt"); */
 
         std::string call = argv_to_string(argc, argv);
         H5Writer writer(opt.output + "/abundance.h5", opt.bootstrap, 6,
