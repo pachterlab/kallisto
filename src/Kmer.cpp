@@ -148,7 +148,7 @@ void Kmer::set_deleted() {
 //       which indicates that the km is invalid
 void Kmer::set_empty() {
   memset(bytes,0xff,MAX_K/4);
-  longs[0] ^= (1ULL<<63); //
+  bytes[0] ^= 1; //
 }
 
 
@@ -218,7 +218,7 @@ void Kmer::set_kmer(const char *s)  {
 // post: i is the hash value of km
 uint64_t Kmer::hash() const {
   uint64_t ret;
-  MurmurHash3_x64_64((const void *)bytes,k_bytes,0,&ret);
+  MurmurHash3_x64_64((const void *)bytes,MAX_K/4,0,&ret);
   return ret;
 }
 

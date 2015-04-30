@@ -1,5 +1,6 @@
 #include "KmerIndex.h"
 #include <algorithm>
+#include <ctype.h>
 
 #include <zlib.h>
 #include "kseq.h"
@@ -85,7 +86,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     if (l <= 0) {
       break;
     }
-    seqs.push_back(seq->seq.s);
+    seqs.emplace_back(seq->seq.s);
+    std::string& str = *seqs.rbegin();
+    std::transform(str.begin(), str.end(),str.begin(), ::toupper);
     trans_lens_.push_back(seq->seq.l);
     std::string name(seq->name.s);
     size_t p = name.find(' ');
@@ -124,6 +127,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
     KmerIterator kit(s),kit_end;
     for (; kit != kit_end; ++kit) {
       kmap.insert({kit->first.rep(), KmerEntry()}); // don't care about repeats
+      //    Kmer rep = kit->first.rep();
+      // std::cout << rep.toString() << "\t" << rep.hash() << std::endl;
     }
   }
   std::cerr << "done." << std::endl;
@@ -264,16 +269,15 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       }
 
       // // debugging -->
-      // //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
-      // //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
-      // //std::cout << "contig seq" << std::endl;
+      //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
+      //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
+      //std::cout << "contig seq" << std::endl;
       // if (forward == val.isFw()) {
       //   //std::cout << contig.seq << std::endl;
-      //   //assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
+      //   assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
       // } else {
       //   //std::cout << revcomp(contig.seq) << std::endl;
-      //   //assert(revcomp(contig.seq) == seqs[i].substr(kit->second, jump-kit->second +k));
-      //   //assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
+      //   assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
       // }
       // if (jump == seqlen) {
       //   //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
