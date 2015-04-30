@@ -445,54 +445,73 @@ void PrintCite() {
 }
 
 void PrintVersion() {
-  cout << "Kallisto, version: " << 	KALLISTO_VERSION << endl;
+  cout << "kallisto, version " << 	KALLISTO_VERSION << endl;
 }
 
 void usage() {
-  cout << "Kallisto " << KALLISTO_VERSION << endl << endl
-       << "Usage: kallisto CMD [options] .." << endl << endl
+  cout << "kallisto " << KALLISTO_VERSION << endl << endl
+       << "Usage: kallisto <CMD> [arguments] .." << endl << endl
        << "Where <CMD> can be one of:" << endl << endl
-       << "    index         Builds the index "<< endl
+       << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    h5dump        Convert HDF5 formatted results to plaintext" << endl
-       << "    version       Prints version information"<< endl << endl;
+       << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
+       << "    version       Prints version information"<< endl << endl
+       << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
 
 
 void usageIndex() {
-  cout << "Kallisto " << KALLISTO_VERSION << endl
-       << "Builds the index" << endl << endl
-       << "Usage: Kallisto index [options] FASTA-file" << endl << endl
-       << "-k, --kmer-size=INT         Size of k-mers, default (31), max value is " << (Kmer::MAX_K-1) << endl
-       << "-i, --index=STRING          Filename for index to be constructed " << endl << endl;
+  cout << "kallisto " << KALLISTO_VERSION << endl
+       << "Builds a kallisto index" << endl << endl
+       << "Usage: kallisto index [arguments] FASTA-file" << endl << endl
+       << "Required argument:" << endl
+       << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
+       << "Optional argument:" << endl
+       << "-k, --kmer-size=INT         k-mer length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
+       
+}
+
+void usageh5dump() {
+  cout << "kallisto " << KALLISTO_VERSION << endl
+       << "Converts HDF5-formatted results to plaintext" << endl << endl
+       << "Usage:  kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl
+       << "     OR" << endl
+       << "        kallisto h5dump --peek /path/to/abundance.h5" << endl << endl
+       << "Where --peek only displays summary information." << endl << endl;       
 }
 
 void usageInspect() {
-  cout << "Kallisto " << KALLISTO_VERSION << endl << endl
-       << "Usage: Kallisto inspect INDEX-file" << endl << endl;
+  cout << "kallisto " << KALLISTO_VERSION << endl << endl
+       << "Usage: kallisto inspect INDEX-file" << endl << endl;
 }
 
 void usageEM() {
-  cout << "Kallisto " << KALLISTO_VERSION << endl
-       << "Computes equivalence classes for reads and quantifies abundance" << endl << endl
-       << "Usage: Kallisto quant [options] FASTQ-files" << endl << endl
-       << "-i, --index=INT               Filename for index " << endl
-       << "-l, --fragment-length=DOUBLE  Estimated fragment length" << endl
-       << "                              (default values are estimated from data)" << endl
-       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default 0)" << endl
-       << "    --seed=INT                Seed for bootstrap samples (default value 42)" << endl
-       << "-o, --output-dir=STRING       Directory to store output to" << endl
+  cout << "kallisto " << KALLISTO_VERSION << endl
+       << "Computes equivalence classes for reads and quantifies abundances" << endl << endl
+       << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=INT               Filename for the kallisto index to be used for" << endl
+       << "                              quantification" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
+       << "Optional arguments:" << endl 
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "                              (default: value is estimated from the input data)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+
 }
 
 void usageEMOnly() {
-  cout << "Kallisto " << KALLISTO_VERSION << endl
+  cout << "kallisto " << KALLISTO_VERSION << endl
        << "Computes equivalence classes for reads and quantifies abundance" << endl << endl
-       << "Usage: Kallisto quant-only [options]" << endl << endl
-       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default values are estimated from data)" << endl
-       << "-b, --bootstrap-samples=INT   Number of bootstrap samples to perform (default value 0)" << endl
-       << "    --seed=INT                Seed for bootstrap samples (default value 42)" << endl
-       << "-o, --output-dir=STRING       Directory to store output to" << endl
+       << "Usage: kallisto quant-only [arguments]" << endl << endl
+       << "Required argument:" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
+       << "Optional arguments:" << endl 
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default: value is estimated from the input data)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
 }
 
@@ -719,11 +738,7 @@ int main(int argc, char *argv[]) {
     } else if (cmd == "h5dump") {
 
       if (argc != 4) {
-        cerr << "Usage:  kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl;
-        cerr << "     OR" << endl
-             << "        kallisto h5dump --peek /path/to/abundance.h5" << endl
-             << endl
-             << "Where --peek only displays summary information." << endl << endl;
+        usageh5dump();
         exit(1);
       }
 
