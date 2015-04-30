@@ -267,12 +267,12 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   bool ret = true;
 
   if (opt.k <= 1 || opt.k >= Kmer::MAX_K) {
-    cerr << "Error: invalid k-mer size " << opt.k << ", minimum is 2 and  maximum is " << (Kmer::MAX_K -1) << endl;
+    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 2 and  maximum is " << (Kmer::MAX_K -1) << endl;
     ret = false;
   }
 
   if (opt.transfasta.empty()) {
-    cerr << "Error: no transcript specified" << endl;
+    cerr << "Error: no FASTA file specified" << endl;
     ret = false;
   } else {
   
@@ -280,13 +280,13 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
     struct stat stFileInfo;
     auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
     if (intStat != 0) {
-      cerr << "Error: transcript fasta file not found " << opt.transfasta << endl;
+      cerr << "Error: FASTA file not found " << opt.transfasta << endl;
       ret = false;
     }
   }
   
   if (opt.index.empty()) {
-    cerr << "Error: need to specify index name" << endl;
+    cerr << "Error: need to specify kallisto index name" << endl;
     ret = false;
   }
 
@@ -301,13 +301,13 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   // check for index
   if (!emonly) {
     if (opt.index.empty()) {
-      cerr << "Error: index file missing" << endl;
+      cerr << "Error: kallisto index file missing" << endl;
       ret = false;
     } else {
       struct stat stFileInfo;
       auto intStat = stat(opt.index.c_str(), &stFileInfo);
       if (intStat != 0) {
-        cerr << "Error: index file not found " << opt.index << endl;
+        cerr << "Error: kallisto index file not found " << opt.index << endl;
         ret = false;
       }
     }
@@ -330,7 +330,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
 
     if (!(opt.files.size() == 1 || opt.files.size() == 2)) {
-      cerr << "Error: Input files should be 1 or 2 files only" << endl;
+      cerr << "Error: number of read files must be either one (single-end) or two (paired-end)" << endl;
       ret = false;
     }
 
@@ -339,21 +339,22 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   if (opt.fld == 0.0) {
     // In the future, if we have single-end data we should require this
     // argument
-    cerr << "[quant] Mean fragment length not provided. Will estimate from data" << endl;
+    // cerr << "Notification: since the average fragment length was not provided the length distribution will be estimated from the data" << endl;
+    // Taken out because it might make users think that it's a bad thing that the length distribution is estimated automatically
   }
 
   if (opt.fld < 0.0) {
-    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    cerr << "Error: invalid value for average fragment length " << opt.fld << endl;
     ret = false;
   }
 
   if (opt.iterations <= 0) {
-    cerr << "Error: Invalid number of iterations " << opt.iterations << endl;
+    cerr << "Error: invalid number of iterations " << opt.iterations << endl;
     ret = false;
   }
 
   if (opt.min_range <= 0) {
-    cerr << "Error: Invalid value for minimum range " << opt.min_range << endl;
+    cerr << "Error: invalid value for minimum range " << opt.min_range << endl;
     ret = false;
   }
 
@@ -425,13 +426,13 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
   bool ret = true;
   // check for index
   if (opt.index.empty()) {
-    cerr << "Error: index file missing" << endl;
+    cerr << "Error: kallisto index file missing" << endl;
     ret = false;
   } else {
     struct stat stFileInfo;
     auto intStat = stat(opt.index.c_str(), &stFileInfo);
     if (intStat != 0) {
-      cerr << "Error: index file not found " << opt.index << endl;
+      cerr << "Error: kallisto index file not found " << opt.index << endl;
       ret = false;
     }
   }
@@ -565,7 +566,7 @@ int main(int argc, char *argv[]) {
         // create an index
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
-        std::cerr << "Building index from: " << opt.transfasta << std::endl;
+        std::cerr << "Building kallisto index from: " << opt.transfasta << std::endl;
         index.BuildTranscripts(opt);
         index.write(opt.index);
       }
@@ -607,7 +608,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
+        std::cerr << "Estimated average fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
@@ -636,7 +637,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.bootstrap > 0) {
-          std::cerr << "Bootstrapping!" << std::endl;
+          std::cerr << "Bootstrapping" << std::endl;
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
           rand.seed( opt.seed );
@@ -679,7 +680,7 @@ int main(int argc, char *argv[]) {
         collection.loadCounts(opt);
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "Estimated mean fragment length: " << mean_fl << std::endl;
+        std::cerr << "Estimated average fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
@@ -756,7 +757,7 @@ int main(int argc, char *argv[]) {
         if (intStat == 0) {
           // file/dir exits
           if (!S_ISDIR(stFileInfo.st_mode)) {
-            cerr << "Error: Tried to open " << out_dir << " but another file already exists there" << endl;
+            cerr << "Error: tried to open " << out_dir << " but another file already exists there" << endl;
             exit(1);
           }
         } else if (mkdir(out_dir.c_str(), 0777) == -1) {
@@ -781,7 +782,7 @@ int main(int argc, char *argv[]) {
         h5conv.convert();
       }
     }  else {
-      cerr << "Did not understand command " << cmd << endl;
+      cerr << "Error: invalid command " << cmd << endl;
       usage();
       exit(1);
     }
