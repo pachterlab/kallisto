@@ -110,7 +110,6 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) 
   sort(vp.begin(), vp.end(), ComparePairsBySecond{});
   */
 
-  int count = 1; // how many k-mer support the ec
   std::vector<int> u = index.ecmap[v[0].first];
 
   for (int i = 1; i < v.size(); i++) {

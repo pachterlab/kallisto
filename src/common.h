@@ -24,13 +24,13 @@ struct ProgramOptions {
 
 ProgramOptions() :
   verbose(false),
-  seed(42),
   threads(1),
   k(31),
   iterations(500),
   skip(1),
-  min_range(1),
+  seed(42),
   fld(0.0),
+  min_range(1),
   bootstrap(0),
   plaintext(false)
   {}

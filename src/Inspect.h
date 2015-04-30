@@ -48,7 +48,6 @@ void InspectIndex(const KmerIndex& index) {
 
   cout << "#[inspect] number of equivalence classes = " << index.ecmap.size() << endl;
 
-  bool verify_ecmap;
 
   if (index.ecmap.size() != index.ecmapinv.size()) {
     cout << "Error: sizes do not match. ecmap.size = " << index.ecmap.size()
