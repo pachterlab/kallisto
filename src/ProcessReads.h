@@ -54,12 +54,12 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   bool paired = (opt.files.size() == 2);
 
   gzFile fp1 = 0, fp2 = 0;
-  kseq_t *seq1 = 0, *seq2;
+  kseq_t *seq1 = 0, *seq2 = 0;
   std::vector<std::pair<int,int>> v1, v2;
   v1.reserve(1000);
   v2.reserve(1000);
 
-  int l1,l2; // length of read
+  int l1 = 0,l2 = 0; // length of read
   size_t nreads = 0;
 
 
