@@ -68,7 +68,7 @@ std::string revcomp(const std::string s) {
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
   int k = opt.k;
-  std::cerr << "[build] Loading fasta file " << opt.transfasta
+  std::cerr << "[build] loading fasta file " << opt.transfasta
             << std::endl;
   std::cerr << "[build] k: " << k << std::endl;
 
@@ -120,7 +120,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
   
 
-  std::cerr << "[build] Counting k-mers ... "; std::cerr.flush();
+  std::cerr << "[build] counting k-mers ... "; std::cerr.flush();
   // gather all k-mers
   for (int i = 0; i < seqs.size(); i++) {
     const char *s = seqs[i].c_str();
@@ -133,7 +133,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   }
   std::cerr << "done." << std::endl;
   
-  std::cerr << "[build] Building Transcriptome de Bruijn Graph ... "; std::cerr.flush();
+  std::cerr << "[build] building Transcriptome de Bruijn Graph ... "; std::cerr.flush();
   // find out how much we can skip ahead for each k-mer.
   for (auto& kv : kmap) {
     if (kv.second.contig == -1) {
@@ -219,11 +219,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
     }
   }
   std::cerr << " finished building Transcriptome de Bruijn Graph " << std::endl
-            << "[build] Transcriptome de Bruijn Graph has  " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " kmers " << std::endl;
+            << "[build] transcriptome de Bruijn Graph has  " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " kmers " << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
-  std::cerr << "[build] Creating equivalence classes ... "; std::cerr.flush();
+  std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
   //std::cout << "Mapping transcript " << std::endl;
@@ -607,8 +607,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.read((char *)&header_version, sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
-    std::cerr << "Error: Incompatiple indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
-              << "Rerun with index to regenerate!";
+    std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
+              << "Rerun with index to regenerate";
     exit(1);
   }
 

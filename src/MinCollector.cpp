@@ -180,7 +180,7 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
       exit(1);
     }
   } else {
-    std::cerr << "Error: Could not open file " << opt.output << "/counts.txt" << std::endl;
+    std::cerr << "Error: could not open file " << opt.output << "/counts.txt" << std::endl;
     exit(1);
 
   }

@@ -144,10 +144,10 @@ void H5Converter::write_aux() {
 
 void H5Converter::convert() {
 
-  std::cerr << "[h5dump] Writing main abundance" << std::endl;
+  std::cerr << "[h5dump] writing main abundance" << std::endl;
   rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
 
-  std::cerr << "[h5dump] Writing bootstraps" << std::endl;
+  std::cerr << "[h5dump] writing bootstraps" << std::endl;
 
   int i;
   for (i = 0; i < n_bs_; ++i) {
