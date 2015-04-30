@@ -8,7 +8,7 @@ EMAlgorithm Bootstrap::run_em(const EMAlgorithm& em_start) {
     EMAlgorithm em(ecmap_, counts, target_names_, eff_lens_, weights);
 
     em.set_start(em_start);
-    em.run(1000, 20);
+    em.run(10000, 20);
     em.compute_rho();
 
     return em;

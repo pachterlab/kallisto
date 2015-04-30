@@ -42,14 +42,15 @@ struct EMAlgorithm {
 
   ~EMAlgorithm() {}
 
-  void run(size_t n_iter = 1000, size_t min_rounds=50) {
+  void run(size_t n_iter = 10000, size_t min_rounds=50) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 
     assert(weight_map_.size() <= counts_.size());
 
     double denom;
     const double alpha_limit = 1e-7;
-    const double alpha_change = 1e-3;
+    const double alpha_change_limit = 1e-4;
+    const double alpha_change = 1e-2;
     bool finalRound = false;
 
     std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
@@ -105,28 +106,38 @@ struct EMAlgorithm {
 
       // TODO: check for relative difference for convergence in EM
 
-      bool stopEM = !finalRound && (i >= min_rounds); // false initially
+      bool stopEM = false; //!finalRound && (i >= min_rounds); // false initially
       //double maxChange = 0.0;
-
+      int chcount = 0;
       for (int ec = 0; ec < num_trans_; ec++) {
-
-        if (stopEM && next_alpha[ec] >= alpha_limit && abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec] >= alpha_change) {
-          stopEM = false;
+        if (next_alpha[ec] > alpha_change_limit && (std::fabs(next_alpha[ec] - alpha_[ec]) / next_alpha[ec]) > alpha_change) {
+          chcount++;
         }
+        
+        //if (stopEM && next_alpha[ec] >= alpha_limit) {
+
+          /* double reldiff = abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec];
+          if (reldiff >= alpha_change) {
+            stopEM = false;
+            }*/
+        //}
 
         /*
         if (next_alpha[ec] > alpha_limit) {
-          maxChange = std::max(maxChange,abs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec]);
+          maxChange = std::max(maxChange,std::fabs(next_alpha[ec]-alpha_[ec]) / next_alpha[ec]);
         }
         */
-
-
         // reassign alpha_ to next_alpha
         alpha_[ec] = next_alpha[ec];
 
         // clear all next_alpha values 0 for next iteration
         next_alpha[ec] = 0.0;
+      }
 
+      //std::cout << chcount << std::endl;
+      if (chcount == 0) {
+
+        stopEM=true;
       }
 
       if (finalRound) {
