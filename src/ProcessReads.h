@@ -72,7 +72,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     seq2 = kseq_init(fp2);
   }
 
-
+  std::cerr << "[quant] finding pseudo-alignments for reads ..."; std::cerr.flush();
   // for each read
   while (true) {
     l1 = kseq_read(seq1);
@@ -158,6 +158,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     kseq_destroy(seq2);
   }
 
+  std::cerr << " done" << std::endl;
+  
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
   
   // write output to outdir

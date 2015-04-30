@@ -53,17 +53,16 @@ struct EMAlgorithm {
     const double alpha_change = 1e-2;
     bool finalRound = false;
 
-    std::cerr << "[em]\tfishing for the right mixture (. = 50 rounds)" <<
-              std::endl;
+    std::cerr << "[em] running the Expectation-Maximization algorithm ..."; std::cerr.flush();
     int i;
     for (i = 0; i < n_iter; ++i) {
-      if (i % 50 == 0) {
+      /*if (i % 50 == 0) {
         std::cerr << ".";
         std::cerr.flush();
         if (i % 500 == 0 && i > 0) {
           std::cerr << std::endl;
         }
-      }
+        }*/
 
       //for (auto& ec_kv : ecmap_ ) {
       for (int ec = 0; ec < num_trans_; ec++) {
@@ -166,7 +165,8 @@ struct EMAlgorithm {
       }
     }
 
-    std::cerr << std::endl << "Ran for " << i << " rounds of EM";
+    std::cerr << " done" << std::endl;
+    std::cerr << "[em] EM algorithm ran for " << i << " rounds";
 
     std::cerr << std::endl;
     std::cerr.flush();

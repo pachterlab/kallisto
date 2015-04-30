@@ -70,7 +70,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   int k = opt.k;
   std::cerr << "[build] loading fasta file " << opt.transfasta
             << std::endl;
-  std::cerr << "[build] k: " << k << std::endl;
+  std::cerr << "[build] k-mer length: " << k << std::endl;
 
 
   std::vector<std::string> seqs;
@@ -133,7 +133,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   }
   std::cerr << "done." << std::endl;
   
-  std::cerr << "[build] building Transcriptome de Bruijn Graph ... "; std::cerr.flush();
+  std::cerr << "[build] building target de Bruijn graph ... "; std::cerr.flush();
   // find out how much we can skip ahead for each k-mer.
   for (auto& kv : kmap) {
     if (kv.second.contig == -1) {
@@ -218,8 +218,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
       dbGraph.ecs.push_back(-1);
     }
   }
-  std::cerr << " finished building Transcriptome de Bruijn Graph " << std::endl
-            << "[build] transcriptome de Bruijn Graph has  " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " kmers " << std::endl;
+  std::cerr << " done " << std::endl
+            << "[build] target de Bruijn craph has " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " k-mers " << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
@@ -644,9 +644,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t kmap_size;
   in.read((char *)&kmap_size, sizeof(kmap_size));
 
-  std::cerr << "[index] k: " << k << std::endl;
-  std::cerr << "[index] num_trans read: " << num_trans << std::endl;
-  std::cerr << "[index] kmap size: " << kmap_size << std::endl;
+  std::cerr << "[index] k-mer length: " << k << std::endl;
+  std::cerr << "[index] number of targets: " << num_trans << std::endl;
+  std::cerr << "[index] number of k-mers: " << kmap_size << std::endl;
 
   kmap.clear();
   if (loadKmerTable) {
@@ -669,7 +669,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
 
-  std::cerr << "[index] ecmap size: " << ecmap_size << std::endl;
+  std::cerr << "[index] number of equivalence classes: " << ecmap_size << std::endl;
   ecmap.resize(ecmap_size);
   int tmp_id;
   int tmp_ecval;

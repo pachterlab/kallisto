@@ -20,8 +20,8 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
   }
 
   if (n_too_short > 0) {
-      std::cerr << "[quant] total transcripts with effective length less than " << mean <<
-          ":\t" << n_too_short  << std::endl;
+    //std::cerr << "[quant] total transcripts with effective length less than " << mean <<
+    //      ":\t" << n_too_short  << std::endl;
   }
 
   return eff_lens;

@@ -267,7 +267,12 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   bool ret = true;
 
   if (opt.k <= 1 || opt.k >= Kmer::MAX_K) {
-    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 2 and  maximum is " << (Kmer::MAX_K -1) << endl;
+    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and  maximum is " << (Kmer::MAX_K -1) << endl;
+    ret = false;
+  }
+
+  if (opt.k % 2 == 0) {
+    cerr << "Error: k needs to be an odd number" << endl;
     ret = false;
   }
 
@@ -468,7 +473,7 @@ void usageIndex() {
        << "Required argument:" << endl
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
-       << "-k, --kmer-size=INT         k-mer length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
+       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
        
 }
 
@@ -608,7 +613,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "Estimated average fragment length: " << mean_fl << std::endl;
+        std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
