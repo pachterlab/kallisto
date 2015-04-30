@@ -339,7 +339,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   if (opt.fld == 0.0) {
     // In the future, if we have single-end data we should require this
     // argument
-    // cerr << "Notification: since the average fragment length was not provided the length distribution will be estimated from the data" << endl;
+    cerr << "[quant] length distribution being estimated from the data" << endl;
     // Taken out because it might make users think that it's a bad thing that the length distribution is estimated automatically
   }
 
