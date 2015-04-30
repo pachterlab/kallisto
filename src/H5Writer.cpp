@@ -69,7 +69,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   // <aux info>
   // read target ids
   read_dataset(aux_, "ids", targ_ids_);
-  std::cerr << "[h5dump] " << targ_ids_.size() << "\ttargets " <<
+  std::cerr << "[h5dump] number of targets: " << targ_ids_.size() << 
     std::endl;
 
   n_targs_ = targ_ids_.size();
@@ -85,7 +85,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   read_dataset(aux_, "num_bootstrap", n_bs_vec);
   n_bs_ = n_bs_vec[0];
 
-  std::cerr << "[h5dump] " << n_bs_ << "\tbootstraps" << std::endl;
+  std::cerr << "[h5dump] number of bootstraps: " << n_bs_ << std::endl;
   // </aux info>
   if (n_bs_ > 0) {
     bs_ = H5Gopen(file_id_, "/bootstrap", H5P_DEFAULT);
@@ -110,7 +110,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   read_dataset(aux_, "call", tmp);
   call_ = tmp[0];
   tmp.clear();
-  std::cerr << "[h5dump] call: " << call_ << std::endl;
+  std::cerr << "[h5dump] shell call: " << call_ << std::endl;
 
   alpha_buf_.resize( n_targs_, 0.0 );
   assert( n_targs_ == alpha_buf_.size() );
@@ -144,11 +144,12 @@ void H5Converter::write_aux() {
 
 void H5Converter::convert() {
 
-  std::cerr << "[h5dump] writing main abundance" << std::endl;
+  std::cerr << "[h5dump] writing abundance file: " << out_dir_ << "/abundance.txt" << std::endl;
   rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
 
-  std::cerr << "[h5dump] writing bootstraps" << std::endl;
-
+  if (n_bs_ > 0) {
+    std::cerr << "[h5dump] writing bootstrap abundance files: " << out_dir_ << "/bs_abundance_*.txt" << std::endl;
+  } 
   int i;
   for (i = 0; i < n_bs_; ++i) {
     if (i % 50 == 0 && i > 0) {
