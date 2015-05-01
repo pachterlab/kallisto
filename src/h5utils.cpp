@@ -8,7 +8,8 @@ char* vec_to_ptr(const std::vector<std::string>& v) {
       max_len = x.size();
     }
   }
-
+  // account for 0 terminator
+  max_len += 1;
   // allocate a contiguous block of memory
   char *pool = new char[max_len * v.size()];
   char *ptr = pool;
