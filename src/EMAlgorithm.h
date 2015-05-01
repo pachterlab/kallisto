@@ -6,6 +6,7 @@
 #include "weights.h"
 
 #include <algorithm>
+#include <numeric>
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -37,6 +38,14 @@ struct EMAlgorithm {
     rho_(num_trans_, 0.0),
     rho_set_(false)
   {
+    for (auto i = 0; i < alpha_.size(); i++) {
+      if (counts_[i] > 0) {
+        alpha_[i] = counts_[i];
+      } else {
+        alpha_[i] = eff_lens_[i] / 1000.0;
+      }
+
+    }
       assert(target_names_.size() == eff_lens.size());
   }
 
@@ -49,7 +58,7 @@ struct EMAlgorithm {
 
     double denom;
     const double alpha_limit = 1e-7;
-    const double alpha_change_limit = 1e-4;
+    const double alpha_change_limit = 1e-2;
     const double alpha_change = 1e-2;
     bool finalRound = false;
 
@@ -234,6 +243,27 @@ struct EMAlgorithm {
 
   void set_start(const EMAlgorithm& em_start) {
     assert(em_start.alpha_before_zeroes_.size() == alpha_.size());
+    double big = 1.0;
+    double sum_counts = std::accumulate(counts_.begin(), counts_.end(), 0.0);
+    double sum_big = 0.0;
+    int count_big = 0;
+    for (auto x : em_start.alpha_before_zeroes_) {
+      if (x >= big) {
+        sum_big += x;
+        count_big++;
+      }
+    }
+    int n = alpha_.size();
+    for (auto i = 0; i < n; i++) {
+      if (em_start.alpha_before_zeroes_[i] >= big) {
+        alpha_[i] = em_start.alpha_before_zeroes_[i];
+      } else {
+        alpha_[i] = sum_counts/(n - count_big);
+      }
+    }
+
+    std::cout << sum_big << " " << count_big << " " << n << std::endl;
+ 
     std::copy(em_start.alpha_before_zeroes_.begin(), em_start.alpha_before_zeroes_.end(),
         alpha_.begin());
   }
