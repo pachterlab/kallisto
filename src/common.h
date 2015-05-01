@@ -22,6 +22,7 @@ struct ProgramOptions {
   std::vector<std::string> files;
   bool plaintext;
   bool write_index;
+  bool peek; // only used for H5Dump
 
 ProgramOptions() :
   verbose(false),
@@ -34,7 +35,8 @@ ProgramOptions() :
   min_range(1),
   bootstrap(0),
   plaintext(false),
-  write_index(false)
+  write_index(false),
+  peek(false)
   {}
 };
 

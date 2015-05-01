@@ -80,8 +80,8 @@ void read_vector(
     out.push_back( buf );
   }
 
-  delete pool;
-  delete buf;
+  delete [] pool;
+  delete [] buf;
 }
 
 void read_vector(
@@ -106,7 +106,7 @@ void read_vector(
     out.push_back( pool[i] );
   }
 
-  delete pool;
+  delete [] pool;
 }
 
 void read_vector(
@@ -131,5 +131,5 @@ void read_vector(
     out.push_back( pool[i] );
   }
 
-  delete pool;
+  delete [] pool;
 }
