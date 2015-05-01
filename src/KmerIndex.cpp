@@ -208,7 +208,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
         Kmer xr = x.rep();
         bool forward = (x==xr);
         auto it = kmap.find(xr);
-        it->second = KmerEntry(contig.id, i, forward);
+        assert(it->second.contig==-1);
+        it->second = KmerEntry(contig.id, contig.length, i, forward);
         if (i > 0) {
           contig.seq.push_back(x.toString()[k-1]);
         }
@@ -218,8 +219,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
       dbGraph.ecs.push_back(-1);
     }
   }
-  std::cerr << " done " << std::endl
-            << "[build] target de Bruijn craph has " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " k-mers " << std::endl;
+  std::cerr << " done " << std::endl;
+
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
@@ -328,18 +329,28 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
     assert(!u.empty());
 
     auto search = ecmapinv.find(u);
+    int ec = -1;
     if (search != ecmapinv.end()) {
       // insert contig -> ec info
-      dbGraph.ecs[i] = search->second;
+      ec = search->second;
     } else {
-      int eqs_id = ecmapinv.size();
-      ecmapinv.insert({u,eqs_id});
+      ec = ecmapinv.size();
+      ecmapinv.insert({u,ec});
       ecmap.push_back(u);
-      dbGraph.ecs[i] = eqs_id;
+    }
+    dbGraph.ecs[i] = ec;
+    assert(ec != -1);
+    // correct ec of all k-mers in contig
+    const Contig& contig = dbGraph.contigs[i];
+    KmerIterator kit(contig.seq.c_str()), kit_end;
+    for (; kit != kit_end; ++kit) {
+      auto ksearch = kmap.find(kit->first.rep());
+      ksearch->second.ec = ec;
     }
   }
 
   std::cerr << " done" << std::endl;
+  std::cerr << "[build] target de Bruijn graph has " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " k-mers " << std::endl;
 
 }
 
@@ -412,7 +423,7 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
           auto search = kmap.find(xr);
           assert(search != kmap.end());
           bool forward = (x==xr);
-          search->second = KmerEntry(newc.id, kit->second, forward);
+          search->second = KmerEntry(newc.id, newc.length,  kit->second, forward);
         }
 
         // repair tr-info
@@ -865,12 +876,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
       KmerEntry val = search->second;
       
-      v.push_back({dbGraph.ecs[val.contig], kit->second});
+      v.push_back({val.ec, kit->second});
 
       // see if we can skip ahead
       // bring thisback later
       bool forward = (kit->first == search->first);
-      int dist = dbGraph.contigs[val.contig].getDist(val, forward);
+      int dist = val.getDist(forward);
 
 
       //const int lastbp = 10;
@@ -907,10 +918,10 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
           if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
             if (found2pos >= l-k) {
-              v.push_back({dbGraph.ecs[val.contig], l-k}); // push back a fake position
+              v.push_back({val.ec, l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({dbGraph.ecs[val.contig], found2pos});
+              v.push_back({val.ec, found2pos});
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -976,7 +987,7 @@ donejumping:
           auto search = kmap.find(rep);
           if (search != kmap.end()) {
             // if k-mer found
-            v.push_back({dbGraph.ecs[search->second.contig], kit->second}); // add equivalence class, and position
+            v.push_back({search->second.ec, kit->second}); // add equivalence class, and position
           }
         }
 
@@ -1007,7 +1018,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
 
     KmerEntry val = search->second;
     bool forward = (kit->first == search->first);
-    int dist = dbGraph.contigs[val.contig].getDist(val, forward);
+    int dist = val.getDist(forward);
     int pos = maxPos + dist + 1; // move 1 past the end of the contig
     
     const char* sLeft = s + pos + (k-1);
