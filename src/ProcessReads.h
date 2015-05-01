@@ -95,7 +95,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       index.match(seq2->seq.s, seq2->seq.l, v2);
     }
 
-    // collect the transcript information
+    // collect the target information
     int ec = tc.collect(v1, v2, !paired);
     if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
       //bool allSame = true;

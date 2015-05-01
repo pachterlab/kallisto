@@ -108,7 +108,7 @@ struct KmerIndex {
   void load(ProgramOptions& opt, bool loadKmerTable = true);
 
   int k; // k-mer size used
-  int num_trans; // number of transcripts
+  int num_trans; // number of targets
   int skip;
 
   KmerHashTable<KmerEntry, KmerHash> kmap;

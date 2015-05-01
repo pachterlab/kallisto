@@ -44,7 +44,7 @@ void InspectIndex(const KmerIndex& index) {
   int k = index.k;
   cout << "#[inspect] Index version number = " << index.INDEX_VERSION << endl;
   cout << "#[inspect] k = " << index.k << endl;;
-  cout << "#[inspect] number of transcripts = " << index.num_trans << endl;
+  cout << "#[inspect] number of targets = " << index.num_trans << endl;
 
   cout << "#[inspect] number of equivalence classes = " << index.ecmap.size() << endl;
 
@@ -77,12 +77,12 @@ void InspectIndex(const KmerIndex& index) {
     }
     for (int i = 0; i < v.size(); i++) {
       if (v[i] < 0 || v[i] >= index.num_trans) {
-        cout << "Error: ec = " << ec  << " has invalid transcript id " << v[i] << endl;
+        cout << "Error: ec = " << ec  << " has invalid target id " << v[i] << endl;
         exit(1);
       }
 
       if (i > 0 && v[i] == v[i-1]) {
-        cout << "Error: ec = " << ec  << " has repeated transcript id " << v[i] << endl;
+        cout << "Error: ec = " << ec  << " has repeated target id " << v[i] << endl;
         exit(1);
       }
 
@@ -186,7 +186,7 @@ void InspectIndex(const KmerIndex& index) {
     
   }
 
-  printHisto(echisto, "#EC.size\tNum.transcripts");
+  printHisto(echisto, "#EC.size\tNum.targets");
   cout << endl << endl;
 
   printHisto(kmhisto, "#EC.size\tNum.kmers");

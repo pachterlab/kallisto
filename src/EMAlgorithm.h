@@ -33,7 +33,7 @@ struct EMAlgorithm {
     target_names_(target_names),
     eff_lens_(eff_lens),
     weight_map_(wm),
-    alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over transcripts
+    alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
     rho_set_(false)
   {
@@ -73,7 +73,7 @@ struct EMAlgorithm {
         denom = 0.0;
 
         // first, compute the denominator: a normalizer
-        // iterate over transcripts in EC map
+        // iterate over targets in EC map
         auto& wv = weight_map_[ec];
 
         // everything in ecmap should be in weight_map

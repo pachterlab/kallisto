@@ -103,7 +103,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   
   num_trans = seqs.size();
   
-  // for each transcript, create it's own equivalence class
+  // for each target, create it's own equivalence class
   for (int i = 0; i < seqs.size(); i++ ) {
     std::vector<int> single(1,i);
     //ecmap.insert({i,single});
@@ -226,7 +226,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
-  //std::cout << "Mapping transcript " << std::endl;
+  //std::cout << "Mapping target " << std::endl;
   for (int i = 0; i < seqs.size(); i++) {
     int seqlen = seqs[i].size() - k + 1; // number of k-mers
     const char *s = seqs[i].c_str();
@@ -249,7 +249,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       if (forward == val.isFw()) {
         tr.start = val.getPos();
         if (contig.length - tr.start > seqlen - kit->second) {
-          // transcript stops
+          // tartget stops
           tr.stop = tr.start + seqlen - kit->second;
           jump = seqlen;
         } else {
@@ -460,10 +460,10 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   // 2. write k
   out.write((char *)&k, sizeof(k));
 
-  // 3. write number of transcripts
+  // 3. write number of targets
   out.write((char *)&num_trans, sizeof(num_trans));
 
-  // 4. write out transcript lengths
+  // 4. write out target lengths
   for (int tlen : trans_lens_) {
     out.write((char *)&tlen, sizeof(tlen));
   }
@@ -627,10 +627,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     exit(1);
   }
 
-  // 3. read number of transcripts
+  // 3. read in number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
 
-  // 4. read length of transcripts
+  // 4. read in length of targets
   trans_lens_.clear();
   trans_lens_.reserve(num_trans);
 
@@ -1067,7 +1067,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
 
 
 // use:  res = intersect(ec,v)
-// pre:  ec is in ecmap, v is a vector of valid transcripts
+// pre:  ec is in ecmap, v is a vector of valid targets
 //       v is sorted in increasing order
 // post: res contains the intersection  of ecmap[ec] and v sorted increasing
 //       res is empty if ec is not in ecma
