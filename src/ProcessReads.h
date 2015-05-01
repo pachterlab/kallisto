@@ -143,7 +143,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     /*     ec = tc.collect(v1,v2,!paired); */
     /*   } */
     /* } */
-    
+
     if (opt.verbose && nreads % 100000 == 0 ) {
       std::cerr << "[quant] Processed " << nreads << std::endl;
     }
@@ -159,15 +159,17 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   }
 
   std::cerr << " done" << std::endl;
-  
+
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
-  
+
   // write output to outdir
-  std::string outfile = opt.output + "/counts.txt"; 
-  std::ofstream of;
-  of.open(outfile.c_str(), std::ios::out);
-  tc.write(of);
-  of.close();
+  if (opt.write_index) {
+    std::string outfile = opt.output + "/counts.txt";
+    std::ofstream of;
+    of.open(outfile.c_str(), std::ios::out);
+    tc.write(of);
+    of.close();
+  }
 }
 
 

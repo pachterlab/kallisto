@@ -21,6 +21,7 @@ struct ProgramOptions {
   std::string transfasta;
   std::vector<std::string> files;
   bool plaintext;
+  bool write_index;
 
 ProgramOptions() :
   verbose(false),
@@ -32,7 +33,8 @@ ProgramOptions() :
   fld(0.0),
   min_range(1),
   bootstrap(0),
-  plaintext(false)
+  plaintext(false),
+  write_index(false)
   {}
 };
 
