@@ -685,7 +685,7 @@ int main(int argc, char *argv[]) {
         collection.loadCounts(opt);
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "Estimated average fragment length: " << mean_fl << std::endl;
+        std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 

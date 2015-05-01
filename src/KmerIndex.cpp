@@ -522,20 +522,26 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   }
 
   // 10. write out contigs
-  assert(dbGraph.contigs.size() == dbGraph.ecs.size());
-  tmp_size = dbGraph.contigs.size();
-  out.write((char*)&tmp_size, sizeof(tmp_size));
-  for (auto& contig : dbGraph.contigs) {
-    out.write((char*)&contig.id, sizeof(contig.id));
-    out.write((char*)&contig.length, sizeof(contig.length));
-    tmp_size = strlen(contig.seq.c_str());
+  if (writeKmerTable) {
+    assert(dbGraph.contigs.size() == dbGraph.ecs.size());
+    tmp_size = dbGraph.contigs.size();
     out.write((char*)&tmp_size, sizeof(tmp_size));
-    out.write(contig.seq.c_str(), tmp_size);
-  }
-
-  // 11. write out ecs info
-  for (auto ec : dbGraph.ecs) {
-    out.write((char*)&ec, sizeof(ec));
+    for (auto& contig : dbGraph.contigs) {
+      out.write((char*)&contig.id, sizeof(contig.id));
+      out.write((char*)&contig.length, sizeof(contig.length));
+      tmp_size = strlen(contig.seq.c_str());
+      out.write((char*)&tmp_size, sizeof(tmp_size));
+      out.write(contig.seq.c_str(), tmp_size);
+    }
+    
+    // 11. write out ecs info
+    for (auto ec : dbGraph.ecs) {
+      out.write((char*)&ec, sizeof(ec));
+    }
+  } else {
+    // write empty dBG
+    tmp_size = 0;
+    out.write((char*)&tmp_size, sizeof(tmp_size));
   }
   
 
