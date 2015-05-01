@@ -83,7 +83,6 @@ struct EMAlgorithm {
         // wv is weights vector
         // v is ec vector
 
-
         auto& v = ecmap_[ec]; //ecmap_.find(ec)->second;
         auto numEC = v.size();
 

@@ -73,7 +73,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 
   if (optind < argc) {
     opt.transfasta = argv[optind];
-  }   
+  }
 }
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
@@ -85,12 +85,14 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
+  int write_index_flag = 0;
 
   const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"plaintext", no_argument, &plaintext_flag, 1},
+    {"write-index", no_argument, &write_index_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -160,6 +162,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (plaintext_flag) {
     opt.plaintext = true;
+  }
+
+  if (write_index_flag) {
+    opt.write_index = true;
   }
 }
 
@@ -280,7 +286,7 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
     cerr << "Error: no FASTA file specified" << endl;
     ret = false;
   } else {
-  
+
     // we want to generate the index, check k, index and transfasta
     struct stat stFileInfo;
     auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
@@ -289,7 +295,7 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
     ret = false;
@@ -474,7 +480,7 @@ void usageIndex() {
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
-       
+
 }
 
 void usageh5dump() {
@@ -483,7 +489,7 @@ void usageh5dump() {
        << "Usage:  kallisto h5dump /path/to/abundance.h5 OUTPUT_DIR" << endl
        << "     OR" << endl
        << "        kallisto h5dump --peek /path/to/abundance.h5" << endl << endl
-       << "Where --peek only displays summary information." << endl << endl;       
+       << "Where --peek only displays summary information." << endl << endl;
 }
 
 void usageInspect() {
@@ -499,7 +505,7 @@ void usageEM() {
        << "-i, --index=INT               Filename for the kallisto index to be used for" << endl
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
-       << "Optional arguments:" << endl 
+       << "Optional arguments:" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
@@ -514,7 +520,7 @@ void usageEMOnly() {
        << "Usage: kallisto quant-only [arguments]" << endl << endl
        << "Required argument:" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
-       << "Optional arguments:" << endl 
+       << "Optional arguments:" << endl
        << "-l, --fragment-length=DOUBLE  Estimated fragment length (default: value is estimated from the input data)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
@@ -609,7 +615,9 @@ int main(int argc, char *argv[]) {
         ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
 
         // save modified index for future use
-        index.write((opt.output+"/index.saved"), false);
+        if (opt.write_index) {
+          index.write((opt.output + "/index.saved"), false);
+        }
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
