@@ -149,7 +149,7 @@ void H5Converter::convert() {
 
   if (n_bs_ > 0) {
     std::cerr << "[h5dump] writing bootstrap abundance files: " << out_dir_ << "/bs_abundance_*.txt" << std::endl;
-  } 
+  }
   int i;
   for (i = 0; i < n_bs_; ++i) {
     if (i % 50 == 0 && i > 0) {

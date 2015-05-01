@@ -37,6 +37,9 @@ hid_t get_datatype_id(const std::vector<std::string>& v) {
     }
   }
 
+  // account for 0 terminator
+  max_len += 1;
+
   hid_t datatype_id = H5Tcopy (H5T_C_S1);
   /* herr_t status = H5Tset_size (datatype_id, H5T_VARIABLE); */
   /* assert( status >= 0 ); */
