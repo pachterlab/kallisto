@@ -634,6 +634,7 @@ int main(int argc, char *argv[]) {
     } else if (cmd == "cite") {
       PrintCite();
     } else if (cmd == "index") {
+      cerr << endl;
       if (argc==2) {
         usageIndex();
         return 0;
@@ -646,10 +647,10 @@ int main(int argc, char *argv[]) {
         // create an index
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
-        std::cerr << "Building kallisto index from: " << opt.transfasta << std::endl;
         index.BuildTranscripts(opt);
         index.write(opt.index);
       }
+      cerr << endl;
     } else if (cmd == "inspect") {
       if (argc==2) {
         usageInspect();
