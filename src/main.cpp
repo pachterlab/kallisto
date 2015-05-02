@@ -350,8 +350,6 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       for (auto& fn : opt.files) {
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
-          // cerr << "\033[1m"<< "Error: file not found " << fn << endl;
-          // cerr << "\033[0m";
           cerr << ERROR_STR << " file not found " << fn << endl;
           ret = false;
         }
