@@ -28,6 +28,9 @@ KSEQ_INIT(gzFile, gzread)
 #include "H5Writer.h"
 
 
+//#define ERROR_STR "\033[1mError:\033[0m"
+#define ERROR_STR "Error:"
+
 using namespace std;
 
 
@@ -321,17 +324,17 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   bool ret = true;
 
-
+  cerr << endl;
   // check for index
   if (!emonly) {
     if (opt.index.empty()) {
-      cerr << "Error: kallisto index file missing" << endl;
+      cerr << ERROR_STR << " kallisto index file missing" << endl;
       ret = false;
     } else {
       struct stat stFileInfo;
       auto intStat = stat(opt.index.c_str(), &stFileInfo);
       if (intStat != 0) {
-        cerr << "Error: kallisto index file not found " << opt.index << endl;
+        cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
         ret = false;
       }
     }
@@ -340,14 +343,16 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   // check for read files
   if (!emonly) {
     if (opt.files.size() == 0) {
-      cerr << "Error: Missing read files" << endl;
+      cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
       struct stat stFileInfo;
       for (auto& fn : opt.files) {
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
-          cerr << "Error: file not found " << fn << endl;
+          // cerr << "\033[1m"<< "Error: file not found " << fn << endl;
+          // cerr << "\033[0m";
+          cerr << ERROR_STR << " file not found " << fn << endl;
           ret = false;
         }
       }
@@ -361,10 +366,10 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   }
 
   if (opt.files.size() == 1 && opt.fld == 0.0) {
-    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl; 
+    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl;
     ret = false;
   }
-  else if (opt.fld == 0.0) {
+  else if (opt.fld == 0.0 && ret) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
@@ -560,10 +565,13 @@ void usageInspect() {
        << "Usage: kallisto inspect INDEX-file" << endl << endl;
 }
 
-void usageEM() {
+void usageEM(bool valid_input = true) {
+  if (valid_input) {
+
   cout << "kallisto " << KALLISTO_VERSION << endl
-       << "Computes equivalence classes for reads and quantifies abundances" << endl << endl
-       << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
+       << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+  }
+  cout << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=INT               Filename for the kallisto index to be used for" << endl
        << "                              quantification" << endl
@@ -666,7 +674,8 @@ int main(int argc, char *argv[]) {
       }
       ParseOptionsEM(argc-1,argv+1,opt);
       if (!CheckOptionsEM(opt)) {
-        usageEM();
+        cerr << endl;
+        usageEM(false);
         exit(1);
       } else {
         // run the em algorithm
