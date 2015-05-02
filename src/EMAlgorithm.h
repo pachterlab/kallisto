@@ -62,7 +62,7 @@ struct EMAlgorithm {
     const double alpha_change = 1e-2;
     bool finalRound = false;
 
-    std::cerr << "[em] quantifying the abundances ..."; std::cerr.flush();
+    std::cerr << "[   em] quantifying the abundances ..."; std::cerr.flush();
     int i;
     for (i = 0; i < n_iter; ++i) {
       /*if (i % 50 == 0) {
@@ -174,7 +174,7 @@ struct EMAlgorithm {
     }
 
     std::cerr << " done" << std::endl;
-    std::cerr << "[em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+    std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
 
     std::cerr << std::endl;
     std::cerr.flush();

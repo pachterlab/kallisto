@@ -707,22 +707,22 @@ int main(int argc, char *argv[]) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.trans_lens_);
-        } else {
-          plaintext_aux(
-              opt.output + "/run_info.json",
-              std::string(std::to_string(eff_lens.size())),
-              std::string(std::to_string(opt.bootstrap)),
-              KALLISTO_VERSION,
-              std::string(std::to_string(index.INDEX_VERSION)),
-              start_time,
-              call);
-
-          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
-              em.alpha_, em.eff_lens_, index.trans_lens_);
         }
 
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(eff_lens.size())),
+            std::string(std::to_string(opt.bootstrap)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
+        plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+            em.alpha_, em.eff_lens_, index.trans_lens_);
+
         if (opt.bootstrap > 0) {
-          std::cerr << "[btstrp] running bootstrap" << std::endl;
+          std::cerr << "[bstrp] running bootstrap" << std::endl;
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
           rand.seed( opt.seed );
@@ -735,7 +735,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            std::cerr << "[btstrp] running EM for bootstrap: " << b << std::endl;
+            std::cerr << "[bstrp] running EM for bootstrap: " << b + 1<< std::endl;
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
@@ -747,6 +747,8 @@ int main(int argc, char *argv[]) {
           }
 
         }
+
+        cerr << endl;
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {
@@ -809,7 +811,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            std::cerr << "Running EM bootstrap: " << b << std::endl;
+            std::cerr << "Running EM bootstrap: " << b + 1 << std::endl;
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
@@ -820,6 +822,7 @@ int main(int argc, char *argv[]) {
             }
           }
         }
+        cerr << endl;
       }
     } else if (cmd == "h5dump") {
 
