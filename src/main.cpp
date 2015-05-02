@@ -360,7 +360,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   }
 
-  if (opt.fld == 0.0) {
+  if (opt.files.size() == 1 && opt.fld == 0.0) {
+    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl; 
+    ret = false;
+  }
+  else if (opt.fld == 0.0) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
@@ -680,7 +684,9 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+        if (opt.fld == 0.0) {
+	  std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+	}
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
