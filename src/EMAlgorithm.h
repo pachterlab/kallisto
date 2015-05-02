@@ -51,7 +51,7 @@ struct EMAlgorithm {
 
   ~EMAlgorithm() {}
 
-  void run(size_t n_iter = 10000, size_t min_rounds=50) {
+  void run(size_t n_iter = 10000, size_t min_rounds=50, bool verbose = true) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 
     assert(weight_map_.size() <= counts_.size());
@@ -62,7 +62,10 @@ struct EMAlgorithm {
     const double alpha_change = 1e-2;
     bool finalRound = false;
 
-    std::cerr << "[   em] quantifying the abundances ..."; std::cerr.flush();
+    if (verbose) {
+      std::cerr << "[   em] quantifying the abundances ..."; std::cerr.flush();
+    }
+
     int i;
     for (i = 0; i < n_iter; ++i) {
       /*if (i % 50 == 0) {
@@ -173,11 +176,13 @@ struct EMAlgorithm {
       }
     }
 
-    std::cerr << " done" << std::endl;
-    std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+    if (verbose) {
+      std::cerr << " done" << std::endl;
+      std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+      std::cerr << std::endl;
+      std::cerr.flush();
+    }
 
-    std::cerr << std::endl;
-    std::cerr.flush();
   }
 
   void compute_rho() {

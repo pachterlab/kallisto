@@ -723,7 +723,6 @@ int main(int argc, char *argv[]) {
             em.alpha_, em.eff_lens_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
-          std::cerr << "[bstrp] running bootstrap" << std::endl;
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
           rand.seed( opt.seed );
@@ -736,7 +735,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            std::cerr << "[bstrp] running EM for bootstrap: " << b + 1<< std::endl;
+            cerr << "[bstrp] running EM for bootstrap: " << b + 1<< "\r";
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
@@ -747,6 +746,7 @@ int main(int argc, char *argv[]) {
             }
           }
 
+          cerr << endl;
         }
 
         cerr << endl;
