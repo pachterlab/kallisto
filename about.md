@@ -10,7 +10,7 @@ __kallisto__ is a program for quantifying abundances of transcripts from RNA-Seq
 
 The speed of __kallisto__ makes it tractable to use the bootstrap to determine uncertainty on estimates. Uncertainty estimates can be used in downstream applications and __kallisto__ includes infrastructure for managing the large amount of data associated with bootstrapped samples. A companion tool to __kallisto__, called __sleuth__ can be used to visualize and interpret __kallisto__ quantifications, and soon to perform many popular differential analyses in a way that accounts for uncertainty in estimates.
 
-The __kallisto__ project was developed by [Nicolas Bray](https://math.berkeley.edu/~nbray/), [Harold Pimentel](http://www.cs.berkeley.edu/~pimentel/), [Pall Melsted](https://notendur.hi.is/pmelsted/) and [Lior Pachter](https://math.berkeley.edu/~lpachter/).
+The __kallisto__ project was developed by [Nicolas Bray](https://math.berkeley.edu/~nbray/), [Harold Pimentel](http://www.cs.berkeley.edu/~pimentel/), [Páll Melsted](https://notendur.hi.is/pmelsted/) and [Lior Pachter](https://math.berkeley.edu/~lpachter/).
 
 To use __kallisto__ [download the software](download.html) and [visit the Getting started page for a quick tutorial](starting.html).
 

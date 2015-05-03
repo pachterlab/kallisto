@@ -5,5 +5,5 @@ layout: page
 
 <!-- Read [Jekyll Quick Start](http://jekyllbootstrap.com/usage/jekyll-quick-start.html) //-->
 
-[<img src = "bear.jpg">](starting.html)
+[<img src = "bear.jpg">](about.html)
 
