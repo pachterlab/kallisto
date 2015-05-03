@@ -735,7 +735,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            cerr << "[bstrp] running EM for bootstrap: " << b + 1<< "\r";
+            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
