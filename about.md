@@ -12,5 +12,5 @@ The speed of __kallisto__ makes it tractable to use the bootstrap to determine u
 
 The __kallisto__ project was developed by [Nicolas Bray](https://math.berkeley.edu/~nbray/), [Harold Pimentel](http://www.cs.berkeley.edu/~pimentel/), [Páll Melsted](https://notendur.hi.is/pmelsted/) and [Lior Pachter](https://math.berkeley.edu/~lpachter/).
 
-To use __kallisto__ [download the software](download.html) and [visit the Getting started page for a quick tutorial](starting.html).
+To use __kallisto__ [download the software](download.html) and visit the [Getting started](starting.html) page for a quick tutorial.
 
