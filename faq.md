@@ -8,7 +8,7 @@ group: navigation
 
 - I'm having trouble with __kallisto__. Can I get help?
 
-Yes. If you have think you have discovered a bug that needs to be fixed please file a report on the GitHub page. If you have a question about installing or running the program please ask on the [Google user group](https://groups.google.com/forum/#!forum/kallisto-sleuth-users).
+Yes. If you think you have discovered a bug that needs to be fixed please file a report on the GitHub page. If you have a question about installing or running the program please ask on the [Google user group](https://groups.google.com/forum/#!forum/kallisto-sleuth-users).
 
 - __kallisto__ is fast but is it as accurate as other quantification tools? 
 
@@ -43,17 +43,6 @@ No. Building indices with __kallisto index__ will be faster in practice than dow
 
 No.
 
-- Do you know how I should pick the k-mer length to use?
-
-Yes. There is a technical condition on the target de Bruijn graph that must be met, namely that the girth should be greater than k (we will soon provide a tool for this calculation with __kallisto__ but it is not yet ready). Subject to satisfying that girth condition, it is best to choose the smallest possible k-mer length as that increases robustness to error. Larger k-mer lengths lead to faster run times but since that is not an issue with kallisto.
-
-- Do I need to unzip my gzipped Fasta or FastQ files before running kallisto?
-
-No.
-
 - Is there a reason you picked the name kallisto for your program?
 
 Yes.
-
-
-
