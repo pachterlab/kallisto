@@ -884,137 +884,13 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 // post: v contains all equiv classes for the k-mers in s
 void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v) const {
   KmerIterator kit(s), kit_end;
-  bool backOff = false;
-  int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
     // need to check it
     auto search = kmap.find(kit->first.rep());
-    int pos = kit->second;
 
     if (search != kmap.end()) {
-
       KmerEntry val = search->second;
-      
       v.push_back({val.ec, kit->second});
-
-      // see if we can skip ahead
-      // bring thisback later
-      bool forward = (kit->first == search->first);
-      int dist = val.getDist(forward);
-
-
-      //const int lastbp = 10;
-      if (dist >= 2) {
-        // where should we jump to?
-        int nextPos = pos+dist; // default jump
-
-        if (pos + dist >= l-k) {
-          // if we can jump beyond the read, check the middle
-          nextPos = l-k;
-          if (pos < (l-k)/2) {
-            // if we are in the first half of the read
-            nextPos = (l-k)/2 + 1;
-          } else {
-            nextPos = l-k;
-          }
-        }
-
-        // check next position
-        KmerIterator kit2(kit);
-        kit2.jumpTo(nextPos);
-        if (kit2 != kit_end) {
-          Kmer rep2 = kit2->first.rep();
-          auto search2 = kmap.find(rep2);
-          bool found2 = false;
-          int  found2pos = pos+dist;
-          if (search2 == kmap.end()) {
-            found2=true;
-            found2pos = pos;
-          } else if (val.contig == search2->second.contig) {
-            found2=true;
-            found2pos = pos+dist;
-          }
-          if (found2) {
-            // great, a match (or nothing) see if we can move the k-mer forward
-            if (found2pos >= l-k) {
-              v.push_back({val.ec, l-k}); // push back a fake position
-              break; //
-            } else {
-              v.push_back({val.ec, found2pos});
-              kit = kit2; // move iterator to this new position
-            }
-          } else {
-            // this is weird, let's try the middle k-mer
-            bool foundMiddle = false;
-            if (dist > 4) {
-              int middlePos = (pos + nextPos)/2;
-              int middleContig = -1;
-              int found3pos = pos+dist;
-              KmerIterator kit3(kit);
-              kit3.jumpTo(middlePos);
-              if (kit3 != kit_end) {
-                Kmer rep3 = kit3->first.rep();
-                auto search3 = kmap.find(rep3);
-                if (search3 != kmap.end()) {
-                  middleContig = search3->second.contig;
-                  if (middleContig == val.contig) {
-                    foundMiddle = true;
-                    found3pos = middlePos;
-                  } else if (middleContig == search2->second.contig) {
-                    foundMiddle = true;
-                    found3pos = pos+dist;
-                  }
-                }
-              }
-
-              if (foundMiddle) {
-                v.push_back({dbGraph.ecs[middleContig], found3pos});
-                if (nextPos >= l-k) {
-                  break;
-                } else {
-                  kit = kit2; 
-                }
-              }
-            }
-
-
-            if (!foundMiddle) {
-              ++kit;
-              backOff = true;
-              goto donejumping; // sue me Dijkstra!
-            }
-          }
-        } else {
-          // the sequence is messed up at this point, let's just take the match
-          //v.push_back({dbGraph.ecs[val.contig], l-k});
-          break;
-        }
-      }
-    }
-
-donejumping:
-
-    if (backOff) {
-      // backup plan, let's play it safe and search incrementally for the rest, until nextStop
-      for (int j = 0; kit != kit_end; ++kit,++j) {
-        if (j==skip) {
-          j=0;
-        }
-        if (j==0) {
-          // need to check it
-          Kmer rep = kit->first.rep();
-          auto search = kmap.find(rep);
-          if (search != kmap.end()) {
-            // if k-mer found
-            v.push_back({search->second.ec, kit->second}); // add equivalence class, and position
-          }
-        }
-
-        if (kit->second >= nextPos) {
-          backOff = false;
-          break; // break out of backoff for loop
-        }
-      }
     }
   }
 }

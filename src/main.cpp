@@ -21,6 +21,7 @@ KSEQ_INIT(gzFile, gzread)
 #include "KmerIndex.h"
 #include "Kmer.hpp"
 #include "MinCollector.h"
+#include "RawCollector.h"
 #include "EMAlgorithm.h"
 #include "weights.h"
 #include "Inspect.h"
@@ -89,6 +90,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
   int write_index_flag = 0;
+  int sto_flag = 0;
 
   const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -96,6 +98,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"verbose", no_argument, &verbose_flag, 1},
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
+    {"sto", no_argument, &sto_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -169,6 +172,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (write_index_flag) {
     opt.write_index = true;
+  }
+
+  if (sto_flag) {
+    opt.sto = true;
   }
 }
 
@@ -677,40 +684,42 @@ int main(int argc, char *argv[]) {
         usageEM(false);
         exit(1);
       } else {
-        // run the em algorithm
-        KmerIndex index(opt);
-        index.load(opt);
+        if (!opt.sto) {
+          // run the em algorithm
+          KmerIndex index(opt);
+          index.load(opt);
 
-        auto firstFile = opt.files[0];
-        MinCollector collection(index, opt);
-        ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
+          auto firstFile = opt.files[0];
+          MinCollector collection(index, opt);
+        
+          ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
 
-        // save modified index for future use
-        if (opt.write_index) {
-          index.write((opt.output + "/index.saved"), false);
-        }
+          // save modified index for future use
+          if (opt.write_index) {
+            index.write((opt.output + "/index.saved"), false);
+          }
 
-        // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        if (opt.fld == 0.0) {
-	  std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-	}
-        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
-        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
-                       eff_lens, weights);
-        em.run();
+          // if mean FL not provided, estimate
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+          if (opt.fld == 0.0) {
+            std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+          }
+          auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
+          auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+          EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                         eff_lens, weights);
+          em.run();
 
-        std::string call = argv_to_string(argc, argv);
+          std::string call = argv_to_string(argc, argv);
 
-        H5Writer writer;
-        if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
-              index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.trans_lens_);
-        }
+          H5Writer writer;
+          if (!opt.plaintext) {
+            writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+                        index.INDEX_VERSION, call, start_time);
+            writer.write_main(em, index.target_names_, index.trans_lens_);
+          }
 
-        plaintext_aux(
+          plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(eff_lens.size())),
             std::string(std::to_string(opt.bootstrap)),
@@ -719,34 +728,110 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
-        plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
-            em.alpha_, em.eff_lens_, index.trans_lens_);
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+                           em.alpha_, em.eff_lens_, index.trans_lens_);
 
-        if (opt.bootstrap > 0) {
-          auto B = opt.bootstrap;
-          std::mt19937_64 rand;
-          rand.seed( opt.seed );
+          if (opt.bootstrap > 0) {
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
 
-          std::vector<size_t> seeds;
-          for (auto s = 0; s < B; ++s) {
-            seeds.push_back( rand() );
-          }
-
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index.ecmap,
-                         index.target_names_, eff_lens, seeds[b]);
-            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
-            auto res = bs.run_em(em);
-
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+              seeds.push_back( rand() );
             }
+
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index.ecmap,
+                           index.target_names_, eff_lens, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
+              auto res = bs.run_em(em);
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                                 em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+              }
+            }
+
+            cerr << endl;
+          }
+        } else {
+          // copy-paste, I'm going straight to hell for this one
+           // run the em algorithm
+          KmerIndex index(opt);
+          index.load(opt);
+
+          auto firstFile = opt.files[0];
+          RawCollector collection(index, opt);
+        
+          ProcessReads<KmerIndex, RawCollector>(index, opt, collection);
+
+          // save modified index for future use
+          if (opt.write_index) {
+            index.write((opt.output + "/index.saved"), false);
           }
 
-          cerr << endl;
+          // if mean FL not provided, estimate
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+          if (opt.fld == 0.0) {
+            std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+          }
+          auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
+          auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
+          EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
+                         eff_lens, weights);
+          em.run();
+
+          std::string call = argv_to_string(argc, argv);
+
+          H5Writer writer;
+          if (!opt.plaintext) {
+            writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+                        index.INDEX_VERSION, call, start_time);
+            writer.write_main(em, index.target_names_, index.trans_lens_);
+          }
+
+          plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(eff_lens.size())),
+            std::string(std::to_string(opt.bootstrap)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
+          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+                           em.alpha_, em.eff_lens_, index.trans_lens_);
+
+          if (opt.bootstrap > 0) {
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
+
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+              seeds.push_back( rand() );
+            }
+
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index.ecmap,
+                           index.target_names_, eff_lens, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
+              auto res = bs.run_em(em);
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                                 em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+              }
+            }
+
+            cerr << endl;
+          }
+
         }
 
         cerr << endl;
