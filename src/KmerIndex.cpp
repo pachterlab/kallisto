@@ -1,5 +1,6 @@
 #include "KmerIndex.h"
 #include <algorithm>
+#include <random>
 #include <ctype.h>
 
 #include <zlib.h>
@@ -79,8 +80,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   gzFile fp = 0;
   kseq_t *seq;
   int l = 0;
+  std::mt19937 gen(42);
   fp = gzopen(opt.transfasta.c_str(), "r");
   seq = kseq_init(fp);
+  int countN = 0;
   while (true) {
     l = kseq_read(seq);
     if (l <= 0) {
@@ -88,7 +91,17 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     }
     seqs.emplace_back(seq->seq.s);
     std::string& str = *seqs.rbegin();
+    auto n = str.size();
+    for (auto i = 0; i < n; i++) {
+      char c = str[i];
+      c = ::toupper(c);
+      if (c=='N') {
+        str[i] = Dna(gen()); // replace with pseudorandom string
+        countN++;
+      }
+    }
     std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+    
     trans_lens_.push_back(seq->seq.l);
     std::string name(seq->name.s);
     size_t p = name.find(' ');
@@ -100,6 +113,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
   gzclose(fp);
   fp=0;
+
+  if (countN > 0) {
+    std::cerr << "[build] warning, replaced " << countN << " N's in the input sequence with pseudorandom nucleotides" << std::endl;
+  }
   
   num_trans = seqs.size();
   
