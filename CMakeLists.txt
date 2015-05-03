@@ -31,7 +31,7 @@ if (BUILD_TESTING)
     include_directories(${CATCH_INCLUDE_DIR} ${COMMON_INCLUDES})
     enable_testing(true)  # Enables unit-testing.
 
-    add_subdirectory(test)
+    add_subdirectory(unit_tests)
 endif(BUILD_TESTING)
 
 # enable_testing()
