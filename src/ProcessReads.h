@@ -72,7 +72,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     seq2 = kseq_init(fp2);
   }
 
-  std::cerr << "[quant] finding pseudo-alignments for reads ..."; std::cerr.flush();
+  std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
   // for each read
   while (true) {
     l1 = kseq_read(seq1);

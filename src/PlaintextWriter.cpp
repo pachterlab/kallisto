@@ -44,7 +44,7 @@ void plaintext_writer(
   auto tpm = counts_to_tpm(alpha, eff_lens);
 
   of << "target_id" << "\t"
-    << "kallisto_id" << "\t"
+    /* << "kallisto_id" << "\t" */
     << "length" << "\t"
     << "eff_length" << "\t"
     << "est_counts" << "\t"
@@ -52,7 +52,7 @@ void plaintext_writer(
 
   for (auto i = 0; i < alpha.size(); ++i) {
     of << targ_ids[i] << '\t'
-      << i << '\t'
+      /* << i << '\t' */
       << lens[i] << '\t'
       << eff_lens[i] << '\t'
       << alpha[i] << '\t'

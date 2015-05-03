@@ -28,6 +28,9 @@ KSEQ_INIT(gzFile, gzread)
 #include "H5Writer.h"
 
 
+//#define ERROR_STR "\033[1mError:\033[0m"
+#define ERROR_STR "Error:"
+
 using namespace std;
 
 
@@ -321,17 +324,17 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   bool ret = true;
 
-
+  cerr << endl;
   // check for index
   if (!emonly) {
     if (opt.index.empty()) {
-      cerr << "Error: kallisto index file missing" << endl;
+      cerr << ERROR_STR << " kallisto index file missing" << endl;
       ret = false;
     } else {
       struct stat stFileInfo;
       auto intStat = stat(opt.index.c_str(), &stFileInfo);
       if (intStat != 0) {
-        cerr << "Error: kallisto index file not found " << opt.index << endl;
+        cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
         ret = false;
       }
     }
@@ -340,14 +343,14 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   // check for read files
   if (!emonly) {
     if (opt.files.size() == 0) {
-      cerr << "Error: Missing read files" << endl;
+      cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
       struct stat stFileInfo;
       for (auto& fn : opt.files) {
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
-          cerr << "Error: file not found " << fn << endl;
+          cerr << ERROR_STR << " file not found " << fn << endl;
           ret = false;
         }
       }
@@ -360,7 +363,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   }
 
-  if (opt.fld == 0.0) {
+  if (opt.files.size() == 1 && opt.fld == 0.0) {
+    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl;
+    ret = false;
+  }
+  else if (opt.fld == 0.0 && ret) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
@@ -556,10 +563,13 @@ void usageInspect() {
        << "Usage: kallisto inspect INDEX-file" << endl << endl;
 }
 
-void usageEM() {
+void usageEM(bool valid_input = true) {
+  if (valid_input) {
+
   cout << "kallisto " << KALLISTO_VERSION << endl
-       << "Computes equivalence classes for reads and quantifies abundances" << endl << endl
-       << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
+       << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+  }
+  cout << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=INT               Filename for the kallisto index to be used for" << endl
        << "                              quantification" << endl
@@ -624,6 +634,7 @@ int main(int argc, char *argv[]) {
     } else if (cmd == "cite") {
       PrintCite();
     } else if (cmd == "index") {
+      cerr << endl;
       if (argc==2) {
         usageIndex();
         return 0;
@@ -636,10 +647,10 @@ int main(int argc, char *argv[]) {
         // create an index
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
-        std::cerr << "Building kallisto index from: " << opt.transfasta << std::endl;
         index.BuildTranscripts(opt);
         index.write(opt.index);
       }
+      cerr << endl;
     } else if (cmd == "inspect") {
       if (argc==2) {
         usageInspect();
@@ -662,7 +673,8 @@ int main(int argc, char *argv[]) {
       }
       ParseOptionsEM(argc-1,argv+1,opt);
       if (!CheckOptionsEM(opt)) {
-        usageEM();
+        cerr << endl;
+        usageEM(false);
         exit(1);
       } else {
         // run the em algorithm
@@ -680,7 +692,9 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
-        std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+        if (opt.fld == 0.0) {
+	  std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+	}
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
@@ -694,22 +708,21 @@ int main(int argc, char *argv[]) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.trans_lens_);
-        } else {
-          plaintext_aux(
-              opt.output + "/run_info.json",
-              std::string(std::to_string(eff_lens.size())),
-              std::string(std::to_string(opt.bootstrap)),
-              KALLISTO_VERSION,
-              std::string(std::to_string(index.INDEX_VERSION)),
-              start_time,
-              call);
-
-          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
-              em.alpha_, em.eff_lens_, index.trans_lens_);
         }
 
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(eff_lens.size())),
+            std::string(std::to_string(opt.bootstrap)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
+        plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+            em.alpha_, em.eff_lens_, index.trans_lens_);
+
         if (opt.bootstrap > 0) {
-          std::cerr << "[btstrp] running bootstrap" << std::endl;
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
           rand.seed( opt.seed );
@@ -722,7 +735,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            std::cerr << "[btstrp] running EM for bootstrap: " << b << std::endl;
+            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
@@ -733,7 +746,10 @@ int main(int argc, char *argv[]) {
             }
           }
 
+          cerr << endl;
         }
+
+        cerr << endl;
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {
@@ -796,7 +812,7 @@ int main(int argc, char *argv[]) {
           for (auto b = 0; b < B; ++b) {
             Bootstrap bs(collection.counts, index.ecmap,
                          index.target_names_, eff_lens, seeds[b]);
-            std::cerr << "Running EM bootstrap: " << b << std::endl;
+            std::cerr << "Running EM bootstrap: " << b + 1 << std::endl;
             auto res = bs.run_em(em);
 
             if (!opt.plaintext) {
@@ -807,6 +823,7 @@ int main(int argc, char *argv[]) {
             }
           }
         }
+        cerr << endl;
       }
     } else if (cmd == "h5dump") {
 
