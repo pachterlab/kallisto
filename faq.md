@@ -39,6 +39,10 @@ No. The mappings are not relevant and not needed for __kallisto__.
 
 No. Building indices with __kallisto index__ will be faster in practice than downloading index files. For example, the __kallisto__ index for the human transcriptome takes between 5--10 minutes to build on a standard desktop or laptop. We are distributing transcriptome fasta files for model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
 
+- My RNA-Seq was prepared with a stranded library. Is there a special option I need to use with kallisto?
+
+No.
+
 - Do you know how I should pick the k-mer length to use?
 
 Yes. There is a technical condition on the target de Bruijn graph that must be met, namely that the girth should be greater than k (we will soon provide a tool for this calculation with __kallisto__ but it is not yet ready). Subject to satisfying that girth condition, it is best to choose the smallest possible k-mer length as that increases robustness to error. Larger k-mer lengths lead to faster run times but since that is not an issue with kallisto.
