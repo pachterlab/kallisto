@@ -2,7 +2,7 @@
 
 Requirements
 ------------
-- CMake version >= 2.8.8
+- CMake version >= 2.8.12
     - Can be installed via homebrew: `brew install cmake`
 - zlib (should be installed on OSX >= 10.9)
 
