@@ -42,7 +42,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
     Usage: kallisto quant [arguments] FASTQ-files
     
     Required arguments:
-    -i, --index=INT               Filename for the kallisto index to be used for
+    -i, --index=STRING            Filename for the kallisto index to be used for
                                   quantification
     -o, --output-dir=STRING       Directory to write output to
     
@@ -52,6 +52,12 @@ The Fasta file supplied can be either in plaintext or gzipped format.
     -b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
         --seed=INT                Seed for the bootstrap sampling (default: 42)
         --plaintext               Output plaintext instead of HDF5
+
+__kallisto__ can process either single-end or paired-end reads. The running mode (single-end vs. paired-end) is determined by the number of FASTQ files provided (one vs. two respectively). 
+
+In the case of single-end reads, the -l option must be used to specify the average framgent length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode).
+
+The number of bootstrap samples is specified using -b. Note that because of the large amount of data that may be produced when the number of bootstrap samples is high, __kallisto__ outputs bootstrap results in HDF5 format. The `h5dump` command can be used afterwards to convert this output to plaintext, however most convenient is to analyze bootstrap results with __sleuth__.
 
 #### h5dump
 
