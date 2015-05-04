@@ -571,7 +571,7 @@ void usageEM(bool valid_input = true) {
   }
   cout << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
-       << "-i, --index=INT               Filename for the kallisto index to be used for" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
