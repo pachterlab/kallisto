@@ -23,6 +23,8 @@ for alignment. On benchmarks with standard RNA-Seq data, __kallisto__ can
 <img src = "assets/timings.png" width="49%" height="49%">
 <img src = "assets/median_relative_diff.png" width="49%" height="49%">
 
+The figures above show the performance of __kallisto__ as compared to other programs. Running times are based on 20 cores used to quantify 20 samples each with 30 million reads. __kallisto__ is hundreds of times faster than standard tools (when disk access is not a limiting factor __kallisto_ is even faster, averaging about 2.5 minutes per run). Sailfish is much faster than most tools, although still significantly slower than __kallisto__, and its approach of shredding reads into k-mers reduces accuracy. This can be seen in the plot on the right which shows the median relative difference of quantifications with respect to the "truth" from simulations. Reads were simulated using the RSEM simulator. 
+
 The speed of __kallisto__ makes it tractable to use the bootstrap to determine
 uncertainty on estimates. Uncertainty estimates can be used in downstream
 applications and __kallisto__ includes infrastructure for managing the large
