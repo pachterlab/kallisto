@@ -47,7 +47,7 @@ The short tutorial below explains how to run __kallisto__ using the test files a
 
 __kallisto__ quantifies read files directly without the need for read alignment, but it does perform a procedure called pseudoalignment. Pseudoalignment requires processing a transcriptome file to create a "transcriptome index". To build an index type:
 
-`kallisto index -i transcripts.idx transcripts.fasta`
+`kallisto index -i transcripts.idx transcripts.fasta.gz`
 
 #### Quantification
 
@@ -57,7 +57,7 @@ Now you can quantify abundances of the transcripts using the two read files read
 
 #### Results
 
-The results of running __kallisto__ are placed in the specified output directory (the -o option), and will therefore be located in the subdirectory "output". The contents of the directory should look like this:
+The results of a __kallisto__ run are placed in the specified output directory (the -o option), and therefore the test results should be located in the subdirectory "output". The contents of the directory should look like this:
 
     total 568
     -rw-r--r--  1 username  staff  282480 May  3 10:10 abundance.h5
@@ -98,3 +98,5 @@ The file is tab delimited so that it can easily parsed. It can also be analyzed 
     }
 
  The h5 file contains the main quantification together with the boostraps in [HDF5 format](https://www.hdfgroup.org/HDF5/whatishdf5.html). The reason for this binary format is to compress the large output of runs with many bootstraps. The __h5dump__ command in __kallisto__ can be used to convert the file to plain-text.
+
+That's it. You can now run kallisto on your dataset of choice. For convenience, we have placed some transcriptome fasta files for human and model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/). Publicly available RNA-Seq data can be found on the [short read archive](http://www.ncbi.nlm.nih.gov/sra) (a convenient mirror and interface to the SRA is available [here](http://sra.dnanexus.com)). While __kallisto__ cannot process .sra files, such files can be converted to fastq with the [fastq-dump](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=fastq-dump) tool which is part of the [SRA Toolkit](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software).
