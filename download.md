@@ -9,12 +9,12 @@ group: navigation
 #### Binaries
 
 - Mac:
-- Ubuntu:
-- CentOS:
+- Linux:
 
 #### Source
 
-The __kallisto__ source code is available [here](here).
+The __kallisto__ source code is available
+[here](http://pachterlab.github.io/kallisto).
 
 #### Transcriptomes
 

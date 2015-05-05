@@ -6,19 +6,21 @@ group: navigation
 ---
 {% include JB/setup %}
 
-#### Download 
+#### Download
 
 - Mac:
-- Ubuntu: 
-- CentOS:
+- Linux:
 
 #### Install
 
 Begin by Copying __kallisto__  to a location where it is universally exeuctable:
 
-`cp kallisto /usr/local/bin/.`
+`cp kallisto /usr/local/bin/`
 
-You should be able to type 
+Depending on your system configuration, you might need to prepend the command
+with `sudo`.
+
+You should be able to type
 
 `kallisto` and see:
 
@@ -28,8 +30,8 @@ You should be able to type
 
     Where <CMD> can be one of:
 
-        index         Builds a kallisto index 
-        quant         Runs the quantification algorithm 
+        index         Builds a kallisto index
+        quant         Runs the quantification algorithm
         h5dump        Converts HDF5-formatted results to plaintext
         version       Prints version information
 
@@ -51,7 +53,7 @@ __kallisto__ quantifies read files directly without the need for read alignment,
 
 Now you can quantify abundances of the transcripts using the two read files reads_1.fastq.gz and reads_2.fastq.gz (the .gz suffix means the read files have been gzipped; __kallisto__ can read in either plain-text or gzipped read files). To quantify abundances type:
 
-`kallisto -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz`
+`kallisto quant -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz`
 
 #### Results
 
@@ -63,7 +65,7 @@ The results of running __kallisto__ are placed in the specified output directory
     -rw-r--r--  1 username  staff     227 May  3 10:10 run_info.json
 
 The results of the main quantification, i.e. the abundance estimate using __kallisto__ on the data is in the `abundance.txt` file. Abundances are reported in "estimated counts" (est_counts) and in [Transcripts Per Million](https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/) (TPM). The abundance.txt file you get should look like this:
-    
+
     target_id       length  eff_length      est_counts      tpm
     NM_001168316    2283    2105.9  164.133 12856.9
     NM_174914       2385    2207.9  1495.6  111741
@@ -81,18 +83,18 @@ The results of the main quantification, i.e. the abundance estimate using __kall
     NM_173860       849     671.903 962     236182
     NR_003084       1640    1462.9  0.00787013      0.887453
 
-The file is tab delimited so that it can easily parsed. It can also be analyzed with the __sleuth__ tool. 
+The file is tab delimited so that it can easily parsed. It can also be analyzed with the __sleuth__ tool.
 
  The `run_info.json` file contains a summary of the run, including data on the number targets used for quantification, the number of bootstraps performed, the version of the program used and how it was called. You should see this:
 
 
     {
             "n_targets": 15,
-            "n_bootstraps": 10000,
+            "n_bootstraps": 100,
             "kallisto_version": "0.42",
             "index_version": 9,
             "start_time": "Sat May  2 15:19:08 2015",
-            "call": "kallisto quant -o tem -i transcripts.idx -b 10000 reads_1.fastq reads_2.fastq"
+            "call": "kallisto quant -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz"
     }
 
  The h5 file contains the main quantification together with the boostraps in [HDF5 format](https://www.hdfgroup.org/HDF5/whatishdf5.html). The reason for this binary format is to compress the large output of runs with many bootstraps. The __h5dump__ command in __kallisto__ can be used to convert the file to plain-text.
