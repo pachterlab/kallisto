@@ -15,7 +15,7 @@ Other dependencies are either included, or can be installed using package manage
 
 #### Requirements: 
 
-- __CMake__ version >= 2.8.8
+- __CMake__ version >= 2.8.12
     - Mac: `brew install cmake`
     - Ubuntu: `sudo apt-get install cmake`
     - CentOS: `sudo yum install cmake`
