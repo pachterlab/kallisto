@@ -23,7 +23,7 @@ The four usage commands are:
 
 #### index
 
-`kallisto index` builds an index from a Fasta formatted file of target sequences. The arguments for the index command are:
+`kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
     Usage: kallisto index [arguments] FASTA-file
 
@@ -58,7 +58,7 @@ mode (single-end vs. paired-end) is determined by the number of FASTQ files
 provided (one vs. two respectively). FASTQ files can be either plaintext or
 gzipped.
 
-In the case of single-end reads, the -l option must be used to specify the average framgent length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode).
+In the case of single-end reads, the -l option must be used to specify the average fragment length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode).
 
 The number of bootstrap samples is specified using -b. Note that because of the large amount of data that may be produced when the number of bootstrap samples is high, __kallisto__ outputs bootstrap results in HDF5 format. The `h5dump` command can be used afterwards to convert this output to plaintext, however most convenient is to analyze bootstrap results with __sleuth__.
 
@@ -71,7 +71,7 @@ The number of bootstrap samples is specified using -b. Note that because of the 
   not contains bootstrap estimates. Please use the `--plaintext` mode to output
   plaintext abundance estimates. Alternatively, `kallisto h5dump` can be used
   to output an HDF5 file to plaintext. The first line contains a header for
-  each column, including estimated counts, TPM, effective length
+  each column, including [estimated counts, TPM, effective length](https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/).
 - __run\_info.json__ is a json file containing information about the run
 
 #### h5dump

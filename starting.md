@@ -13,7 +13,7 @@ group: navigation
 
 #### Install
 
-Begin by Copying __kallisto__  to a location where it is universally exeuctable:
+Begin by Copying __kallisto__  to a location where it is universally executable:
 
 `cp kallisto /usr/local/bin/`
 

@@ -18,4 +18,4 @@ The __kallisto__ source code is available
 
 #### Transcriptomes
 
-Commonly used transcriptome fasta files are available [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
+Commonly used transcriptome FASTA files are available [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
