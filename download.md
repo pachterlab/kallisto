@@ -14,7 +14,7 @@ group: navigation
 #### Source
 
 The __kallisto__ source code is available
-[here](http://pachterlab.github.io/kallisto).
+[here](http://github.com/pachterlab/kallisto).
 
 #### Transcriptomes
 
