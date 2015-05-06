@@ -8,8 +8,8 @@ group: navigation
 
 #### Binaries
 
-- Mac:
-- Linux:
+- [Mac](https://github.com/pachterlab/kallisto/releases/download/v0.42/kallisto_mac_v0.42.tar.gz)
+- [Ubuntu](https://github.com/pachterlab/kallisto/releases/download/v0.42/kallisto_ubuntu_v0.42.tar.gz)
 
 #### Source
 
