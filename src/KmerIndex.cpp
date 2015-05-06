@@ -84,6 +84,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   fp = gzopen(opt.transfasta.c_str(), "r");
   seq = kseq_init(fp);
   int countNonNucl = 0;
+  int countUNuc = 0;
   while (true) {
     l = kseq_read(seq);
     if (l <= 0) {
@@ -97,6 +98,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       c = ::toupper(c);
       if (c=='U') {
         str[i] = 'T';
+	countUNuc++;
       } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
         str[i] = Dna(gen()); // replace with pseudorandom string
         countNonNucl++;
@@ -117,7 +119,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   fp=0;
 
   if (countNonNucl > 0) {
-    std::cerr << "[build] warning, replaced " << countNonNucl << " non-ACGUT characters in the input sequence with pseudorandom nucleotides" << std::endl;
+    std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence with pseudorandom nucleotides" << std::endl;
+  }
+  if (countUNuc > 0) {
+    std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
   }
   
   num_trans = seqs.size();
