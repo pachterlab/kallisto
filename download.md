@@ -22,4 +22,4 @@ Commonly used transcriptome FASTA files are available [here](http://bio.math.ber
 
 ### Licence
 
-Kallisto is distributed under a non-commercial [license](licence.html). For commercial use, contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201
+Kallisto is distributed under a non-commercial [license](license.html). For commercial use, contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201
