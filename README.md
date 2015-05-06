@@ -20,6 +20,4 @@ Please visit http://pachterlab.github.io/kallisto for the manual.
 
 ## License
 
-This code should have been distributed with a `license.txt` file. If not,
-please visit the [kallisto website](http://pachterlab.github.io/kallisto) to
-obtain the license.
+Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` file. The license is also viewable [here](http://pachterlab.github.io/kallisto). 
