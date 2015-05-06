@@ -13,6 +13,8 @@ make
 mkdir kallisto
 
 cp src/kallisto kallisto
+cp -r ../test kallisto
+
 cp ../license.txt kallisto
 cp ../README.md kallisto
 
