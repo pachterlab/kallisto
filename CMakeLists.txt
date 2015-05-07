@@ -4,7 +4,7 @@ project(kallisto)
 
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 
-#add_compile_options(-Wall -Wno-unused-function) 
+#add_compile_options(-Wall -Wno-unused-function)
 add_compile_options(-std=c++11)
 IF(CMAKE_BUILD_TYPE MATCHES Debug)
     message("debug mode")
@@ -17,7 +17,6 @@ if(CMAKE_BUILD_TYPE MATCHES Profile)
 	add_compile_options(-g)
 endif(CMAKE_BUILD_TYPE MATCHES Profile)
 
-find_package(HDF5)
 
 # add_compile_options(-Wdeprecated-register)
 
