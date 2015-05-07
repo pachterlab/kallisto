@@ -15,7 +15,7 @@ for alignment. On benchmarks with standard RNA-Seq data, __kallisto__ can
     computer using only the read sequences and a transcriptome index that
     itself takes less than 10 minutes to build. Pseudoalignment of reads
     preserves the key information needed for quantification, and __kallisto__
-    is therefore not only fast, but also as accurate than existing
+    is therefore not only fast, but also as accurate as existing
     quantification tools. In fact, because the pseudoalignment procedure is
     robust to errors in the reads, in many benchmarks __kallisto__
     significantly outperforms existing tools.
