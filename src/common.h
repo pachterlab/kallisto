@@ -18,10 +18,11 @@ struct ProgramOptions {
   double fld;
   int min_range;
   int bootstrap;
-  std::string transfasta;
+  std::vector<std::string> transfasta;
   std::vector<std::string> files;
   bool plaintext;
   bool write_index;
+  bool single_end;
   bool peek; // only used for H5Dump
 
 ProgramOptions() :
@@ -36,6 +37,7 @@ ProgramOptions() :
   bootstrap(0),
   plaintext(false),
   write_index(false),
+  single_end(false),
   peek(false)
   {}
 };

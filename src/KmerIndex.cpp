@@ -69,8 +69,10 @@ std::string revcomp(const std::string s) {
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
   int k = opt.k;
-  std::cerr << "[build] loading fasta file " << opt.transfasta
-            << std::endl;
+  for (auto& fasta : opt.transfasta) {
+    std::cerr << "[build] loading fasta file " << fasta
+              << std::endl;
+  }
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
 
@@ -81,43 +83,46 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   kseq_t *seq;
   int l = 0;
   std::mt19937 gen(42);
-  fp = gzopen(opt.transfasta.c_str(), "r");
-  seq = kseq_init(fp);
   int countNonNucl = 0;
   int countUNuc = 0;
-  while (true) {
-    l = kseq_read(seq);
-    if (l <= 0) {
-      break;
-    }
-    seqs.emplace_back(seq->seq.s);
-    std::string& str = *seqs.rbegin();
-    auto n = str.size();
-    for (auto i = 0; i < n; i++) {
-      char c = str[i];
-      c = ::toupper(c);
-      if (c=='U') {
-        str[i] = 'T';
-	countUNuc++;
-      } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
-        str[i] = Dna(gen()); // replace with pseudorandom string
-        countNonNucl++;
+
+  for (auto& fasta : opt.transfasta) {
+    fp = gzopen(fasta.c_str(), "r");
+    seq = kseq_init(fp);
+    while (true) {
+      l = kseq_read(seq);
+      if (l <= 0) {
+        break;
       }
-    }
-    std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+      seqs.emplace_back(seq->seq.s);
+      std::string& str = *seqs.rbegin();
+      auto n = str.size();
+      for (auto i = 0; i < n; i++) {
+        char c = str[i];
+        c = ::toupper(c);
+        if (c=='U') {
+          str[i] = 'T';
+          countUNuc++;
+        } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
+          str[i] = Dna(gen()); // replace with pseudorandom string
+          countNonNucl++;
+        }
+      }
+      std::transform(str.begin(), str.end(),str.begin(), ::toupper);
     
-    trans_lens_.push_back(seq->seq.l);
-    std::string name(seq->name.s);
-    size_t p = name.find(' ');
-    if (p != std::string::npos) {
-      name = name.substr(0,p);
+      trans_lens_.push_back(seq->seq.l);
+      std::string name(seq->name.s);
+      size_t p = name.find(' ');
+      if (p != std::string::npos) {
+        name = name.substr(0,p);
+      }
+      target_names_.push_back(name);
+
     }
-    target_names_.push_back(name);
-
+    gzclose(fp);
+    fp=0;
   }
-  gzclose(fp);
-  fp=0;
-
+  
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence with pseudorandom nucleotides" << std::endl;
   }

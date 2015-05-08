@@ -74,8 +74,8 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     opt.verbose = true;
   }
 
-  if (optind < argc) {
-    opt.transfasta = argv[optind];
+  for (int i = optind; i < argc; i++) {
+    opt.transfasta.push_back(argv[i]);
   }
 }
 
@@ -89,6 +89,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
   int write_index_flag = 0;
+  int single_flag = 0;
 
   const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -96,6 +97,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"verbose", no_argument, &verbose_flag, 1},
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
+    {"single", no_argument, &single_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -169,6 +171,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (write_index_flag) {
     opt.write_index = true;
+  }
+
+  if (single_flag) {
+    opt.single_end = true;
   }
 }
 
@@ -299,16 +305,18 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   }
 
   if (opt.transfasta.empty()) {
-    cerr << "Error: no FASTA file specified" << endl;
+    cerr << "Error: no FASTA files specified" << endl;
     ret = false;
   } else {
 
-    // we want to generate the index, check k, index and transfasta
-    struct stat stFileInfo;
-    auto intStat = stat(opt.transfasta.c_str(), &stFileInfo);
-    if (intStat != 0) {
-      cerr << "Error: FASTA file not found " << opt.transfasta << endl;
-      ret = false;
+    for (auto& fasta : opt.transfasta) {
+      // we want to generate the index, check k, index and transfasta
+      struct stat stFileInfo;
+      auto intStat = stat(fasta.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: FASTA file not found " << fasta << endl;
+        ret = false;
+      }
     }
   }
 
@@ -356,18 +364,19 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       }
     }
 
-    if (!(opt.files.size() == 1 || opt.files.size() == 2)) {
-      cerr << "Error: number of read files must be either one (single-end) or two (paired-end)" << endl;
-      ret = false;
+    if (!opt.single_end) {
+      if (opt.files.size() % 2 != 0) {
+        cerr << "Error: paired-end mode requires an even number of input files" << endl
+             << "       (use --single for processing single-end reads)" << endl;
+        ret = false;
+      }
     }
-
   }
 
-  if (opt.files.size() == 1 && opt.fld == 0.0) {
+  if (opt.single_end && opt.fld == 0.0) {
     cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl;
     ret = false;
-  }
-  else if (opt.fld == 0.0 && ret) {
+  } else if (opt.fld == 0.0 && ret) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
@@ -542,7 +551,7 @@ void usage() {
 void usageIndex() {
   cout << "kallisto " << KALLISTO_VERSION << endl
        << "Builds a kallisto index" << endl << endl
-       << "Usage: kallisto index [arguments] FASTA-file" << endl << endl
+       << "Usage: kallisto index [arguments] FASTA-files" << endl << endl
        << "Required argument:" << endl
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
@@ -576,7 +585,8 @@ void usageEM(bool valid_input = true) {
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
+       << "                              (default: value is estimated from the input data,)" << endl
+       << "    --single                  Quantify single-end reads" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
@@ -681,7 +691,6 @@ int main(int argc, char *argv[]) {
         KmerIndex index(opt);
         index.load(opt);
 
-        auto firstFile = opt.files[0];
         MinCollector collection(index, opt);
         ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
 
@@ -693,8 +702,8 @@ int main(int argc, char *argv[]) {
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
         if (opt.fld == 0.0) {
-	  std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-	}
+          std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+        }
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
         EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
