@@ -1,5 +1,7 @@
 # kallisto
 
+[![Join the chat at https://gitter.im/pachterlab/kallisto](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/pachterlab/kallisto?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 __kallisto__ is a program for quantifying abundances of transcripts from
 RNA-Seq data, or more generally of target sequences using high-throughput
 sequencing reads. It is based on the novel idea of _pseudoalignment_ for
