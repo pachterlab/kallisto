@@ -584,9 +584,9 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
-       << "                              (default: value is estimated from the input data,)" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "                              (default: value is estimated from the input data)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;

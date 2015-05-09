@@ -124,7 +124,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
   
   if (countNonNucl > 0) {
-    std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence with pseudorandom nucleotides" << std::endl;
+    std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl << "        with pseudorandom nucleotides" << std::endl;
   }
   if (countUNuc > 0) {
     std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;

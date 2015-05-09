@@ -74,7 +74,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << opt.files[i] << std::endl 
                 << "                             " << opt.files[i+1] << std::endl;
     } else {
-      std::cerr << "[quant] will process file " << i << ": " << opt.files[i] << std::endl;
+      std::cerr << "[quant] will process file " << i+1 << ": " << opt.files[i] << std::endl;
     }
   }
 
