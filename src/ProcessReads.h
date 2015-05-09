@@ -50,6 +50,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   std::ios_base::sync_with_stdio(false);
 
   int tlencount = 10000;
+  size_t numreads = 0;
+  size_t nummapped = 0;
 
   bool paired = !opt.single_end;
 
@@ -60,7 +62,6 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   v2.reserve(1000);
 
   int l1 = 0,l2 = 0; // length of read
-  size_t nreads = 0;
 
   if (paired) {
     std::cerr << "[quant] running in paired-end mode" << std::endl;
@@ -104,7 +105,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
         break;
       }
 
-      nreads++;
+      numreads++;
       v1.clear();
       v2.clear();
       // process read
@@ -115,6 +116,9 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
       // collect the target information
       int ec = tc.collect(v1, v2, !paired);
+      if (ec != -1) {
+        nummapped++;
+      }
       if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
         //bool allSame = true;
         bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
@@ -162,8 +166,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       /*   } */
       /* } */
 
-      if (opt.verbose && nreads % 100000 == 0 ) {
-        std::cerr << "[quant] Processed " << nreads << std::endl;
+      if (opt.verbose && numreads % 100000 == 0 ) {
+        std::cerr << "[quant] Processed " << numreads << std::endl;
       }
     }
     gzclose(fp1);
@@ -181,6 +185,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
+  std::cerr << "[quant] processed " << numreads << " reads, " << nummapped << " reads pseudoaligned" << std::endl;
+  
   // write output to outdir
   if (opt.write_index) {
     std::string outfile = opt.output + "/counts.txt";
