@@ -85,6 +85,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   std::mt19937 gen(42);
   int countNonNucl = 0;
   int countUNuc = 0;
+  int polyAcount = 0;
 
   for (auto& fasta : opt.transfasta) {
     fp = gzopen(fasta.c_str(), "r");
@@ -109,6 +110,16 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
         }
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+
+      if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
+        // clip off polyA tail
+        //std::cerr << "[index] clipping off polyA tail" << std::endl;
+        polyAcount++;
+        int j;
+        for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
+        str = str.substr(0,j+1);
+      }
+
     
       trans_lens_.push_back(seq->seq.l);
       std::string name(seq->name.s);
@@ -122,6 +133,11 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     gzclose(fp);
     fp=0;
   }
+
+  if (polyAcount > 0) {
+    std::cerr << "[build] warning: clipped off poly-A tail (longer than 10) from " << polyAcount << " target sequences" << std::endl;
+  }
+
   
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl << "        with pseudorandom nucleotides" << std::endl;
