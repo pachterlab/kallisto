@@ -135,7 +135,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
 
   if (polyAcount > 0) {
-    std::cerr << "[build] warning: clipped off poly-A tail (longer than 10) from " << polyAcount << " target sequences" << std::endl;
+    std::cerr << "[build] warning: clipped off poly-A tail (longer than 10)" << std::endl << "        from " << polyAcount << " target sequences" << std::endl;
   }
 
   
