@@ -935,14 +935,8 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         int nextPos = pos+dist; // default jump
 
         if (pos + dist >= l-k) {
-          // if we can jump beyond the read, check the middle
+          // if we can jump beyond the read, check the end
           nextPos = l-k;
-          if (pos < (l-k)/2) {
-            // if we are in the first half of the read
-            nextPos = (l-k)/2 + 1;
-          } else {
-            nextPos = l-k;
-          }
         }
 
         // check next position
