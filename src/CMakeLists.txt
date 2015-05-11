@@ -1,9 +1,15 @@
 file(GLOB sources *.cpp)
 file(GLOB headers *.h *.hpp)
 
-list(REMOVE_ITEM sources main.cpp h5kal.cpp)
+list(REMOVE_ITEM sources main.cpp)
 
 set(BUILD_SHARED_LIBS OFF)
+
+
+if (UNIX AND NOT APPLE)
+#    target_link_libraries(kallisto rt)
+    set(CMAKE_EXE_LINKER_FLAGS  "-static -static-libgcc -static-libstdc++")
+endif()
 
 set(HDF5_USE_STATIC_LIBRARIES 1)
 
@@ -11,7 +17,7 @@ find_package( HDF5 REQUIRED )
 find_package( ZLIB REQUIRED )
 
 include_directories(../ext/)
-add_library(kallisto_core ${sources} ${headers})
+add_library(kallisto_core STATIC ${sources} ${headers})
 target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kallisto main.cpp)
@@ -30,11 +36,8 @@ else()
     message(FATAL_ERROR "HDF5 not found. Required to output files")
 endif()
 
-target_link_libraries(kallisto kallisto_core pthread)
+target_link_libraries(kallisto kallisto_core)
+#target_link_libraries(kallisto kallisto_core pthread)
 
-if (UNIX AND NOT APPLE)
-    target_link_libraries(kallisto rt)
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-static")
-endif()
 
 install(TARGETS kallisto DESTINATION bin)
