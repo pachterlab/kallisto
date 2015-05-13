@@ -1,7 +1,7 @@
 #ifndef KALLISTO_MULTINOMIAL_H
 #define KALLISTO_MULTINOMIAL_H
 
-#include <exception>
+#include <stdexcept>
 #include <random>
 
 class Multinomial {

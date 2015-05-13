@@ -69,8 +69,10 @@ std::string revcomp(const std::string s) {
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
   int k = opt.k;
-  std::cerr << "[build] loading fasta file " << opt.transfasta
-            << std::endl;
+  for (auto& fasta : opt.transfasta) {
+    std::cerr << "[build] loading fasta file " << fasta
+              << std::endl;
+  }
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
 
@@ -81,45 +83,64 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   kseq_t *seq;
   int l = 0;
   std::mt19937 gen(42);
-  fp = gzopen(opt.transfasta.c_str(), "r");
-  seq = kseq_init(fp);
   int countNonNucl = 0;
   int countUNuc = 0;
-  while (true) {
-    l = kseq_read(seq);
-    if (l <= 0) {
-      break;
-    }
-    seqs.emplace_back(seq->seq.s);
-    std::string& str = *seqs.rbegin();
-    auto n = str.size();
-    for (auto i = 0; i < n; i++) {
-      char c = str[i];
-      c = ::toupper(c);
-      if (c=='U') {
-        str[i] = 'T';
-	countUNuc++;
-      } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
-        str[i] = Dna(gen()); // replace with pseudorandom string
-        countNonNucl++;
+  int polyAcount = 0;
+
+  for (auto& fasta : opt.transfasta) {
+    fp = gzopen(fasta.c_str(), "r");
+    seq = kseq_init(fp);
+    while (true) {
+      l = kseq_read(seq);
+      if (l <= 0) {
+        break;
       }
-    }
-    std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+      seqs.emplace_back(seq->seq.s);
+      std::string& str = *seqs.rbegin();
+      auto n = str.size();
+      for (auto i = 0; i < n; i++) {
+        char c = str[i];
+        c = ::toupper(c);
+        if (c=='U') {
+          str[i] = 'T';
+          countUNuc++;
+        } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
+          str[i] = Dna(gen()); // replace with pseudorandom string
+          countNonNucl++;
+        }
+      }
+      std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+
+      if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
+        // clip off polyA tail
+        //std::cerr << "[index] clipping off polyA tail" << std::endl;
+        polyAcount++;
+        int j;
+        for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
+        str = str.substr(0,j+1);
+      }
+
     
-    trans_lens_.push_back(seq->seq.l);
-    std::string name(seq->name.s);
-    size_t p = name.find(' ');
-    if (p != std::string::npos) {
-      name = name.substr(0,p);
+      trans_lens_.push_back(seq->seq.l);
+      std::string name(seq->name.s);
+      size_t p = name.find(' ');
+      if (p != std::string::npos) {
+        name = name.substr(0,p);
+      }
+      target_names_.push_back(name);
+
     }
-    target_names_.push_back(name);
-
+    gzclose(fp);
+    fp=0;
   }
-  gzclose(fp);
-  fp=0;
 
+  if (polyAcount > 0) {
+    std::cerr << "[build] warning: clipped off poly-A tail (longer than 10)" << std::endl << "        from " << polyAcount << " target sequences" << std::endl;
+  }
+
+  
   if (countNonNucl > 0) {
-    std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence with pseudorandom nucleotides" << std::endl;
+    std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl << "        with pseudorandom nucleotides" << std::endl;
   }
   if (countUNuc > 0) {
     std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
@@ -914,14 +935,8 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
         int nextPos = pos+dist; // default jump
 
         if (pos + dist >= l-k) {
-          // if we can jump beyond the read, check the middle
+          // if we can jump beyond the read, check the end
           nextPos = l-k;
-          if (pos < (l-k)/2) {
-            // if we are in the first half of the read
-            nextPos = (l-k)/2 + 1;
-          } else {
-            nextPos = l-k;
-          }
         }
 
         // check next position

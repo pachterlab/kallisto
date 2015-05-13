@@ -25,11 +25,12 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
                           std::vector<std::pair<int,int>>& v2, bool nonpaired) {
 
-  if (v1.empty()) {
+  /*if (v1.empty()) {
     return -1;
   } else if (!nonpaired && v2.empty()) {
     return -1;
   }
+  */
 
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
@@ -42,9 +43,17 @@ int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
 
   // non-strict intersection.
   if (u1.empty()) {
-    u = u2;
+    if (v1.empty()) {
+      u = u2;
+    } else {
+      return -1;
+    }
   } else if (u2.empty()) {
-    u = u1;
+    if (v2.empty()) {
+      u = u1;
+    } else {
+      return -1;
+    }
   } else {
     u = intersect(u1,u2);
   }

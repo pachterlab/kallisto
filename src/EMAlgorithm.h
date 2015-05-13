@@ -84,6 +84,10 @@ struct EMAlgorithm {
       for (int ec = num_trans_; ec < ecmap_.size();  ec++) {
         denom = 0.0;
 
+        if (counts_[ec] == 0) {
+          continue;
+        }
+        
         // first, compute the denominator: a normalizer
         // iterate over targets in EC map
         auto& wv = weight_map_[ec];
