@@ -26,7 +26,7 @@ The __kallisto__ source code is available
 
 {% for post in site.categories.releases %}
     <tr>
-    	<td><a href="{{ site.url }}/kallisto/{{ post.url }}">{{ post.version }}</a></td>
+    	<td>Release notes: <a href="{{ site.url }}/kallisto/{{ post.url }}">{{ post.version }}</a></td>
     	<td><span class="entry-date"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %d, %Y" }}</time></span></td>
 
         <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_mac-{{ post.version }}.tar.gz">Mac</a></td>
