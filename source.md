@@ -32,7 +32,8 @@ Other dependencies are either included, or can be installed using package manage
 
 __kallisto__ is hosted on GitHub. The source code can be obtained by cloning the repository as follows:
 
-`git clone git@github.com:pachterlab/kallisto.git`
+`git clone https://github.com/pachterlab/kallisto.git`
+
 
 #### Compile
 

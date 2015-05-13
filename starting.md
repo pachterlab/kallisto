@@ -8,8 +8,8 @@ group: navigation
 
 #### Download
 
-- [Mac](https://github.com/pachterlab/kallisto/releases/download/v0.42/kallisto_mac_v0.42.tar.gz)
-- [Ubuntu](https://github.com/pachterlab/kallisto/releases/download/v0.42/kallisto_ubuntu_v0.42.tar.gz)
+- [Mac](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac_v0.42.1.tar.gz)
+- [Ubuntu](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu_v0.42.1.tar.gz)
 
 #### Install
 
@@ -24,18 +24,20 @@ You should be able to type
 
 `kallisto` and see:
 
-    kallisto 0.42
+~~~
+kallisto 0.42.1
 
-    Usage: kallisto <CMD> [arguments] ..
+Usage: kallisto <CMD> [arguments] ..
 
-    Where <CMD> can be one of:
+Where <CMD> can be one of:
 
-        index         Builds a kallisto index
-        quant         Runs the quantification algorithm
-        h5dump        Converts HDF5-formatted results to plaintext
-        version       Prints version information
+    index         Builds a kallisto index
+    quant         Runs the quantification algorithm
+    h5dump        Converts HDF5-formatted results to plaintext
+    version       Prints version information
 
-    Running kallisto <CMD> without arguments prints usage information for <CMD>
+Running kallisto <CMD> without arguments prints usage information for <CMD>
+~~~
 
 Next, change directories to where the test files distributed with the __kallisto__ executable are located:
 
@@ -54,6 +56,12 @@ __kallisto__ quantifies read files directly without the need for read alignment,
 Now you can quantify abundances of the transcripts using the two read files reads_1.fastq.gz and reads_2.fastq.gz (the .gz suffix means the read files have been gzipped; __kallisto__ can read in either plain-text or gzipped read files). To quantify abundances type:
 
 `kallisto quant -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz`
+
+You can also call __kallisto__ with
+
+`kallisto quant -i transcripts.idx -o output -b 100 <(gzcat reads_1.fastq.gz) <(gzcat reads_2.fastq.gz)`
+
+for linux you replace `gzcat` with `zcat` or any other program that writes the FASTQ to stdout.
 
 #### Results
 
