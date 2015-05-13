@@ -29,8 +29,8 @@ The __kallisto__ source code is available
     	<td><a href="{{ site.url }}{{ post.url }}">{{ post.version }}</a></td>
     	<td><span class="entry-date"><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %d, %Y" }}</time></span></td>
 
-        <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_mac_{{ post.version }}.tar.gz">Mac</a></td>
-        <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_ubuntu_{{ post.version }}.tar.gz">Linux</a></td>
+        <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_mac-{{ post.version }}.tar.gz">Mac</a></td>
+        <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_linux-{{ post.version }}.tar.gz">Linux</a></td>
         <td><a href="https://github.com/pachterlab/kallisto/archive/{{ post.version }}.tar.gz">Source</a></td>
     </tr>
 {% endfor %} 
