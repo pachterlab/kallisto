@@ -13,16 +13,14 @@ group: navigation
 
 #### Install
 
-Begin by Copying __kallisto__  to a location where it is universally executable:
+Begin by copying the __kallisto__ executable to a location where it is universally executable:
 
 `cp kallisto /usr/local/bin/`
 
 Depending on your system configuration, you might need to prepend the command
 with `sudo`.
 
-You should be able to type
-
-`kallisto` and see:
+You should be able to type `kallisto` and see:
 
 ~~~
 kallisto 0.42.1
@@ -61,7 +59,7 @@ You can also call __kallisto__ with
 
 `kallisto quant -i transcripts.idx -o output -b 100 <(gzcat reads_1.fastq.gz) <(gzcat reads_2.fastq.gz)`
 
-for linux you replace `gzcat` with `zcat` or any other program that writes the FASTQ to stdout.
+or with linux, you replace `gzcat` with `zcat` or any other program that writes the FASTQ to stdout. This utilizes an additional core to uncompress the FASTQ files, and speeds up the program by 10--15%.
 
 #### Results
 
@@ -107,4 +105,6 @@ The file is tab delimited so that it can easily parsed. It can also be analyzed 
 
  The h5 file contains the main quantification together with the boostraps in [HDF5 format](https://www.hdfgroup.org/HDF5/whatishdf5.html). The reason for this binary format is to compress the large output of runs with many bootstraps. The __h5dump__ command in __kallisto__ can be used to convert the file to plain-text.
 
-That's it. You can now run kallisto on your dataset of choice. For convenience, we have placed some transcriptome fasta files for human and model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/). Publicly available RNA-Seq data can be found on the [short read archive](http://www.ncbi.nlm.nih.gov/sra) (a convenient mirror and interface to the SRA is available [here](http://sra.dnanexus.com)). While __kallisto__ cannot process .sra files, such files can be converted to fastq with the [fastq-dump](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=fastq-dump) tool which is part of the [SRA Toolkit](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software).
+That's it. 
+
+You can now run kallisto on your dataset of choice. For convenience, we have placed some transcriptome fasta files for human and model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/). Publicly available RNA-Seq data can be found on the [short read archive](http://www.ncbi.nlm.nih.gov/sra) (a convenient mirror and interface to the SRA is available [here](http://sra.dnanexus.com)). While __kallisto__ cannot process .sra files, such files can be converted to FASTQ with the [fastq-dump](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=fastq-dump) tool which is part of the [SRA Toolkit](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software).

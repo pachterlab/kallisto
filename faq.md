@@ -24,7 +24,7 @@ group: navigation
 - Can __kallisto__ be used to quantify single-cell RNA-Seq data?
   - Yes.
 
-- I've already mapped all my reads. Can I use those mapping with __kallisto__?
+- I've already mapped all my reads. Can I use those mappings with __kallisto__?
   - No. The mappings are not relevant and not needed for __kallisto__. 
 
 

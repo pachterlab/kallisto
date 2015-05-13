@@ -37,7 +37,7 @@ The __kallisto__ project was developed by [Nicolas
 Bray](https://math.berkeley.edu/~nbray/), [Harold
 Pimentel](http://www.cs.berkeley.edu/~pimentel/), [Páll
 Melsted](https://notendur.hi.is/pmelsted/) and [Lior
-Pachter](https://math.berkeley.edu/~lpachter/).
+Pachter](https://math.berkeley.edu/~lpachter/). A preprint with more details about the program is available [here](http://arxiv.org/abs/1505.02710).
 
 To use __kallisto__ [download the software](download.html) and visit the
 [Getting started](starting.html) page for a quick tutorial.

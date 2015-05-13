@@ -6,10 +6,9 @@ group: navigation
 
 {% include JB/setup %}
 
-#### Source
+#### Repository
 
-The __kallisto__ source code is available
-[here](http://github.com/pachterlab/kallisto).
+The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallisto).
 
 #### Releases
 
@@ -41,6 +40,6 @@ The __kallisto__ source code is available
 
 Commonly used transcriptome FASTA files are available [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
 
-### Licence
+#### Licence
 
 Kallisto is distributed under a non-commercial [license](license.html). For commercial use, contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201

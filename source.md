@@ -6,7 +6,7 @@ group: navigation
 ---
 {% include JB/setup %}
 
-The __kallisto__ source code is available [here](https://github.com/pachterlab/kallisto). Currently, __kallisto__ can be built on Linux and Mac. If building on Mac, we suggest using a package manager such as [Homebrew](http://brew.sh) to download dependencies. Homebrew is easily installed by copying and pasting the command below at a terminal prompt:
+The __kallisto__ GitHub repository is [here](https://github.com/pachterlab/kallisto). Source code can also be downloaded from the [download page](download.md). Currently, __kallisto__ can be built on Linux and Mac. If building on Mac, we suggest using a package manager such as [Homebrew](http://brew.sh) to download dependencies. Homebrew is easily installed by copying and pasting the command below at a terminal prompt:
 
 `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
