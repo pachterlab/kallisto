@@ -6,25 +6,29 @@ group: navigation
 ---
 {% include JB/setup %}
 
+The short tutorial below explains how to run __kallisto__ using a small example distributed with the program. If you already know how to use __kallisto__ but just want to get it quickly installed on your Mac, the easiest way to do so is using brew. Type:
+
+`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` to install brew, followed by
+
+`brew tap homebrew/science` and then
+
+`brew install kallisto` 
+
+to have kallisto universally executable. 
+
+
 #### Download
 
-- The easiest way to install kallisto on a Mac is using brew. Type:
+The example/test distributed with __kallisto__ is included with the binaries we distribute with the program:
 
-`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` <br>to install brew
+- For Mac download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac-v0.42.1.tar.gz)
 
-`brew tap homebrew/science`
 
-`brew install kallisto`
-
-If you have used brew you can skip the __Install__ section below.
-
-The program can also be downloaded from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac_v0.42.1.tar.gz)
-
-- For Ubuntu download kallisto [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu_v0.42.1.tar.gz)
+- For Ubuntu download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu-v0.42.1.tar.gz)
 
 #### Install
 
-Begin by copying the __kallisto__ executable to a location where it is universally executable:
+If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to 
 
 `cp kallisto /usr/local/bin/`
 
@@ -48,15 +52,13 @@ Where <CMD> can be one of:
 Running kallisto <CMD> without arguments prints usage information for <CMD>
 ~~~
 
-Next, change directories to where the test files distributed with the __kallisto__ executable are located:
+#### Building an index
+
+__kallisto__ quantifies read files directly without the need for read alignment, but it does perform a procedure called pseudoalignment. Pseudoalignment requires processing a transcriptome file to create a "transcriptome index". To begin, first change directories to where the test files distributed with the __kallisto__ executable are located:
 
 `cd kallisto/tests`
 
-The short tutorial below explains how to run __kallisto__ using the test files as an example.
-
-#### Building an index
-
-__kallisto__ quantifies read files directly without the need for read alignment, but it does perform a procedure called pseudoalignment. Pseudoalignment requires processing a transcriptome file to create a "transcriptome index". To build an index type:
+Next, build an index type:
 
 `kallisto index -i transcripts.idx transcripts.fasta.gz`
 
