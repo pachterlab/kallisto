@@ -8,8 +8,19 @@ group: navigation
 
 #### Download
 
-- [Mac](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac_v0.42.1.tar.gz)
-- [Ubuntu](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu_v0.42.1.tar.gz)
+- The easiest way to install kallisto on a Mac is using brew. Type:
+
+`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` <br>to install brew
+
+`brew tap homebrew/science`
+
+`brew install kallisto`
+
+If you have used brew you can skip the __Install__ section below.
+
+The program can also be downloaded from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac_v0.42.1.tar.gz)
+
+- For Ubuntu download kallisto [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu_v0.42.1.tar.gz)
 
 #### Install
 
