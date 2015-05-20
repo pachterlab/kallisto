@@ -24,6 +24,7 @@ struct ProgramOptions {
   bool write_index;
   bool single_end;
   bool peek; // only used for H5Dump
+  bool bias;
 
 ProgramOptions() :
   verbose(false),
@@ -38,7 +39,8 @@ ProgramOptions() :
   plaintext(false),
   write_index(false),
   single_end(false),
-  peek(false)
+  peek(false),
+  bias(false)
   {}
 };
 

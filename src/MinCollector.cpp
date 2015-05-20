@@ -206,3 +206,40 @@ double get_mean_frag_len(const MinCollector& mc) {
 
   return total_mass / static_cast<double>(total_counts);
 }
+
+
+int hexamerToInt(const char *s, bool revcomp) {
+  int hex = 0;
+  if (!revcomp) {
+    for (int i = 0; i < 6; i++) {
+      hex <<= 2;
+      switch (*(s+i) & 0xDF) {
+      case 'A': break;
+      case 'C': hex += 1; break;
+      case 'G': hex += 2; break;
+      case 'T': hex += 3; break;
+      default: return -1;
+      }    
+    }
+  } else {
+    for (int i = 0; i < 6; i++) {
+      switch (*(s+i) & 0xDF) {
+      case 'A': hex += 3 << (2*i);break;
+      case 'C': hex += 2 << (2*i); break;
+      case 'G': hex += 1 << (2*i); break;
+      case 'T': break;
+      default: return -1;
+      }    
+    }
+  }
+  return hex;
+}
+
+void MinCollector::countBias(const char *s1, const char *s2) {
+  int hex3 = hexamerToInt(s1, false); // forward strand
+  int hex5 = hexamerToInt(s2, true);  // reverse complement
+  if (hex3 >= 0 && hex5 >= 0) {
+    ++bias3[hex3];
+    ++bias5[hex5];
+  }
+}

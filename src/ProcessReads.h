@@ -118,6 +118,9 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       int ec = tc.collect(v1, v2, !paired);
       if (ec != -1) {
         nummapped++;
+        if (opt.bias) {
+          tc.countBias(seq1->seq.s, seq2->seq.s);
+        }
       }
       if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
         //bool allSame = true;
