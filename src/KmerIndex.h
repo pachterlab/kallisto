@@ -25,6 +25,7 @@ struct TRInfo {
   int trid;
   int start;
   int stop; //exclusive [start,stop)
+  bool sense; // true for sense, false for anti-sense
 };
 
 using EcMap = std::vector<std::vector<int>>; //std::unordered_map<int, std::vector<int>>;
@@ -69,10 +70,18 @@ struct KmerEntry {
   }
 };
 
+struct ContigToTranscript {
+  int trid;
+  int pos; 
+  bool sense; // true for sense, 
+};
+
 struct Contig {
   int id; // internal id
   int length; // number of k-mers
+  int ec;
   std::string seq; // sequence
+  std::vector<ContigToTranscript> transcripts;
 };
 
 struct DBGraph {
