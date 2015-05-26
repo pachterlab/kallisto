@@ -394,11 +394,13 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
     Contig& contig = dbGraph.contigs[i];
     contig.ec = ec;
     // correct ec of all k-mers in contig
+    /*
     KmerIterator kit(contig.seq.c_str()), kit_end;
     for (; kit != kit_end; ++kit) {
       auto ksearch = kmap.find(kit->first.rep());
-      ksearch->second.ec = ec;
+      //ksearch->second.ec = ec;
     }
+    */
   }
 
   // map transcripts to contigs
@@ -689,12 +691,23 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
       tmp_size = strlen(contig.seq.c_str());
       out.write((char*)&tmp_size, sizeof(tmp_size));
       out.write(contig.seq.c_str(), tmp_size);
+
+      // 10.1 write out transcript info
+      tmp_size = contig.transcripts.size();
+      out.write((char*)&tmp_size, sizeof(tmp_size));
+      for (auto& info : contig.transcripts) {
+        out.write((char*)&info.trid, sizeof(info.trid));
+        out.write((char*)&info.pos, sizeof(info.pos));
+        out.write((char*)&info.sense, sizeof(info.sense));
+      }
     }
     
     // 11. write out ecs info
     for (auto ec : dbGraph.ecs) {
       out.write((char*)&ec, sizeof(ec));
     }
+
+
   } else {
     // write empty dBG
     tmp_size = 0;
@@ -903,6 +916,20 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     memset(buffer,0,bufsz);
     in.read(buffer, tmp_size);
     c.seq = std::string(buffer); // copy
+    
+    // 10.1 read transcript info
+    in.read((char*)&tmp_size, sizeof(tmp_size));
+    c.transcripts.clear();
+    c.transcripts.reserve(tmp_size);
+
+    for (auto j = 0; j < tmp_size; j++) {
+      ContigToTranscript info;
+      in.read((char*)&info.trid, sizeof(info.trid));
+      in.read((char*)&info.pos, sizeof(info.pos));
+      in.read((char*)&info.sense, sizeof(info.sense));
+      c.transcripts.push_back(info);
+    }
+
     dbGraph.contigs.push_back(c);
   }
 
@@ -1009,7 +1036,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v) const {
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<KmerEntry, int>>& v) const {
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
@@ -1022,7 +1049,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
 
       KmerEntry val = search->second;
       
-      v.push_back({val.ec, kit->second});
+      v.push_back({val, kit->second});
 
       // see if we can skip ahead
       // bring thisback later
@@ -1058,10 +1085,10 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
           if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
             if (found2pos >= l-k) {
-              v.push_back({val.ec, l-k}); // push back a fake position
+              v.push_back({val, l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({val.ec, found2pos});
+              v.push_back({val, found2pos});
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -1073,6 +1100,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
               int found3pos = pos+dist;
               KmerIterator kit3(kit);
               kit3.jumpTo(middlePos);
+              KmerEntry val3;
               if (kit3 != kit_end) {
                 Kmer rep3 = kit3->first.rep();
                 auto search3 = kmap.find(rep3);
@@ -1086,14 +1114,15 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<int, int>>& v)
                     found3pos = pos+dist;
                   }
                 }
-              }
 
-              if (foundMiddle) {
-                v.push_back({dbGraph.ecs[middleContig], found3pos});
-                if (nextPos >= l-k) {
-                  break;
-                } else {
-                  kit = kit2; 
+
+                if (foundMiddle) {
+                  v.push_back({search3->second, found3pos});
+                  if (nextPos >= l-k) {
+                    break;
+                  } else {
+                    kit = kit2; 
+                  }
                 }
               }
             }
@@ -1127,7 +1156,7 @@ donejumping:
           auto search = kmap.find(rep);
           if (search != kmap.end()) {
             // if k-mer found
-            v.push_back({search->second.ec, kit->second}); // add equivalence class, and position
+            v.push_back({search->second, kit->second}); // add equivalence class, and position
           }
         }
 
@@ -1140,6 +1169,7 @@ donejumping:
   }
 }
 
+/*
 // use:  r = matchEnd(s,l,v,p)
 // pre:  v is initialized, p>=0
 // post: v contains all equiv classes for the k-mer in s, as
@@ -1221,6 +1251,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
     return false;
   }
 }
+*/
 
 
 // use:  res = intersect(ec,v)

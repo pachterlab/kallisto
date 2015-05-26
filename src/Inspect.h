@@ -177,9 +177,9 @@ void InspectIndex(const KmerIndex& index) {
       }
 
       KmerEntry val = search->second;
-      if (val.contig != i || val.ec != index.dbGraph.ecs[i] || val.contig_length != c.length || val.getPos() != kit->second || val.isFw() != (x==xr)) {
+      if (val.contig != i /*|| val.ec != index.dbGraph.ecs[i]*/ || val.contig_length != c.length || val.getPos() != kit->second || val.isFw() != (x==xr)) {
         cerr << "mismatch " << x.toString() << " in map " << endl << "id = " << i << ", ec = " << index.dbGraph.ecs[i] << ", length = " << c.length << ", seq = " << c.seq << ", pos = " << kit->second << endl;
-        cerr << "val = " << val.contig << ", ec = " << val.ec << ", length = " << val.contig_length << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
+        cerr << "val = " << val.contig << /* ", ec = " << val.ec << */ ", length = " << val.contig_length << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
         exit(1);
       }
     }

@@ -22,8 +22,8 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 }
 
 
-int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
-                          std::vector<std::pair<int,int>>& v2, bool nonpaired) {
+int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
 
   /*if (v1.empty()) {
     return -1;
@@ -96,36 +96,38 @@ int MinCollector::decreaseCount(const int ec) {
 }
 
 struct ComparePairsBySecond {
-  bool operator()(std::pair<int,int> a, std::pair<int,int> b) {
+  bool operator()(std::pair<KmerEntry,int> a, std::pair<KmerEntry,int> b) {
     return a.second < b.second;
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) const {
+std::vector<int> MinCollector::intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const {
   if (v.empty()) {
     return {};
   }
-  sort(v.begin(), v.end()); // sort by ec, and then first position
+  sort(v.begin(), v.end(), [&](std::pair<KmerEntry, int> a, std::pair<KmerEntry, int> b)
+       {
+         if (a.first.contig==b.first.contig) {
+           return a.second < b.second;
+         } else {
+           return a.first.contig < b.first.contig;
+         }
+       }); // sort by contig, and then first position
 
-  /*
-  std::vector<std::pair<int,int>> vp;
-  vp.push_back(v[0]);
-  for (int i = 1; i < v.size(); i++) {
-    if (v[i].first != v[i-1].first) {
-      vp.push_back(v[i-1]);
-    }
-    }
 
-  sort(vp.begin(), vp.end(), ComparePairsBySecond{});
-  */
-
-  std::vector<int> u = index.ecmap[v[0].first];
+  int ec = index.dbGraph.ecs[v[0].first.contig];
+  int lastEC = ec;
+  std::vector<int> u = index.ecmap[ec];
 
   for (int i = 1; i < v.size(); i++) {
-    if (v[i].first != v[i-1].first) {
-      u = index.intersect(v[i].first, u);
-      if (u.empty()) {
-        return u;
+    if (v[i].first.contig != v[i-1].first.contig) {
+      ec = index.dbGraph.ecs[v[i].first.contig];
+      if (ec != lastEC) {
+        u = index.intersect(ec, u);
+        lastEC = ec;
+        if (u.empty()) {
+          return u;
+        }
       }
     }
   }
@@ -235,11 +237,66 @@ int hexamerToInt(const char *s, bool revcomp) {
   return hex;
 }
 
-void MinCollector::countBias(const char *s1, const char *s2) {
-  int hex3 = hexamerToInt(s1, false); // forward strand
-  int hex5 = hexamerToInt(s2, true);  // reverse complement
-  if (hex3 >= 0 && hex5 >= 0) {
-    ++bias3[hex3];
-    ++bias5[hex5];
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+
+  const int pre = 2, post = 4;
+  int hex3 = -1, hex5 = -1;
+  
+  if (v1.empty() || v2.empty()) {
+    return false;
   }
+  
+  // find first contig of read
+  KmerEntry val1 = v1[0].first;
+  int p1 = v1[0].second;
+
+  for (auto &x : v1) {
+    if (x.second < p1) {
+      val1 = x.first;
+      p1 = x.second;
+    }
+  }
+
+  Kmer km1 = Kmer((s1+p1));
+  bool fw1 = (km1==km1.rep());
+  bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+  
+  if ((csense1 && val1.getPos() - p1 >= pre) || (!csense1 && (val1.contig_length - 1 - val1.getPos() - p1) >= pre )) {
+    const Contig &c = index.dbGraph.contigs[val1.contig];
+    bool allSame = true;
+    bool sense = c.transcripts[0].sense;
+    for (auto x : c.transcripts) {
+      if (x.sense != sense) {
+        allSame = false;
+        break;
+      }
+    }
+    
+    if (allSame) {
+      int hex = -1;
+      std::cout << "  " << s1 << "\n";
+      if (csense1) {
+        hex = hexamerToInt(c.seq.c_str() + (val1.getPos()-p1 - pre), true);
+        std::cout << c.seq.substr(val1.getPos()-p1 - pre,6) << "\n";
+      } else {
+        int pos = (val1.getPos() + p1) + k - post;
+        hex = hexamerToInt(c.seq.c_str() + (pos), false);
+        std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
+      }
+
+      if (hex >= 0) {
+        if (sense == csense1) { // review this
+          ++bias5[hex];
+        } else {
+          ++bias3[hex];
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+
+
+  return false;
 }
