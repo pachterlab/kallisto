@@ -13,7 +13,7 @@ Installation
 1. First clone the repository:
 
     ```
-    git clone git@github.com:pachterlab/kallisto.git
+    git clone https://github.com/pachterlab/kallisto.git
     ```
 
 1. Move to the source directory:
