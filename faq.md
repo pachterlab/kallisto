@@ -7,13 +7,34 @@ group: navigation
 {% include JB/setup %}
 
 - I'm having trouble with __kallisto__. Can I get help?
-  - Yes. If you think you have discovered a bug that needs to be fixed please file a report on the GitHub page. If you have a question about installing or running the program please ask on the [Google user group](https://groups.google.com/forum/#!forum/kallisto-sleuth-users).
+  - Yes. If you think you have discovered a bug that needs to be fixed please
+    file a report on the GitHub page. If you have a question about installing
+    or running the program please ask on the [kallisto-sleuth-users Google user
+    group](https://groups.google.com/forum/#!forum/kallisto-sleuth-users).
 
-- __kallisto__ is fast but is it as accurate as other quantification tools? 
-  - Yes. The source of  __kallisto__'s speed is the novel concept of _pseudoalignment_ of reads. Pseudosalignment is all that is needed for accurate quantification, and in tests on both real and simulated data we find that __kallisto__ is frequently _more_ accurate than existing methods. The increase in accuracy over some methods is due to the robustness of pseudoalignment to read base errors and indels, and the ability to perform many rounds of the Expectation-Maximization algorithm.
+- Where can I get announcements about new releases?
+  - You can get announcements via the [kallisto-sleuth-announcements Google
+    group](https://groups.google.com/forum/#!forum/kallisto-sleuth-announcements).
+    This is a read-only, low traffic mailing list that only sends an email when
+    a major version is released.
 
-- Can __kallisto__  be used for finding differentially expressed genes in RNA-Seq analysis? 
-  - No. __kallisto__ can be used to build indices for quantification, and it can quantify RNA-Seq samples. It is also useful for assessing the reliability of abundance estimates via the bootstrap samples it produces. But it is not a tool for performing differential analysis. However the companion tool __sleuth__ is designed to for that purpose, and __sleuth__  uses the boostrapped samples produced by __kallisto__.
+- __kallisto__ is fast but is it as accurate as other quantification tools?
+  - Yes. The source of  __kallisto__'s speed is the novel concept of
+    _pseudoalignment_ of reads. Pseudosalignment is all that is needed for
+    accurate quantification, and in tests on both real and simulated data we
+    find that __kallisto__ is frequently _more_ accurate than existing methods.
+    The increase in accuracy over some methods is due to the robustness of
+    pseudoalignment to read base errors and indels, and the ability to perform
+    many rounds of the Expectation-Maximization algorithm.
+
+- Can __kallisto__  be used for finding differentially expressed genes in
+  RNA-Seq analysis?
+  - No. __kallisto__ can be used to build indices for quantification, and it
+    can quantify RNA-Seq samples. It is also useful for assessing the
+    reliability of abundance estimates via the bootstrap samples it produces.
+    But it is not a tool for performing differential analysis. However the
+    companion tool __sleuth__ is designed to for that purpose, and __sleuth__
+    uses the boostrapped samples produced by __kallisto__.
 
 - Is __kallisto__ usable with both single-end and paired-end reads?
   - Yes.
@@ -25,7 +46,7 @@ group: navigation
   - Yes.
 
 - I've already mapped all my reads. Can I use those mappings with __kallisto__?
-  - No. The mappings are not relevant and not needed for __kallisto__. 
+  - No. The mappings are not relevant and not needed for __kallisto__.
 
 
 - Are you distributing pre-built indices?
