@@ -240,63 +240,81 @@ int hexamerToInt(const char *s, bool revcomp) {
 bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
 
   const int pre = 2, post = 4;
-  int hex3 = -1, hex5 = -1;
   
-  if (v1.empty() || v2.empty()) {
+  if (v1.empty() || (paired && v2.empty())) {
     return false;
   }
-  
+
+  auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
+    if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
+      const Contig &c = index.dbGraph.contigs[val.contig];
+      bool allSame = true;
+      bool sense = c.transcripts[0].sense;
+      for (auto x : c.transcripts) {
+        if (x.sense != sense) {
+          allSame = false;
+          break;
+        }
+      }
+      
+      if (allSame) {
+        int hex = -1;
+        std::cout << "  " << s << "\n";
+        if (csense) {
+          hex = hexamerToInt(c.seq.c_str() + (val.getPos()-p - pre), true);
+          std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
+        } else {
+          int pos = (val.getPos() + p) + k - post;
+          hex = hexamerToInt(c.seq.c_str() + (pos), false);
+          std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
+        }
+        return hex;
+      } 
+    }
+
+    return -1;
+  };
+
   // find first contig of read
   KmerEntry val1 = v1[0].first;
   int p1 = v1[0].second;
-
   for (auto &x : v1) {
     if (x.second < p1) {
       val1 = x.first;
       p1 = x.second;
     }
   }
-
+  
   Kmer km1 = Kmer((s1+p1));
   bool fw1 = (km1==km1.rep());
   bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
-  
-  if ((csense1 && val1.getPos() - p1 >= pre) || (!csense1 && (val1.contig_length - 1 - val1.getPos() - p1) >= pre )) {
-    const Contig &c = index.dbGraph.contigs[val1.contig];
-    bool allSame = true;
-    bool sense = c.transcripts[0].sense;
-    for (auto x : c.transcripts) {
-      if (x.sense != sense) {
-        allSame = false;
-        break;
+
+  int hex5 = getPreSeq(s1, km1, fw1, csense1, val1, p1);
+  int hex3 = -1;
+  if (paired) {
+    // do the same for the second read
+    KmerEntry val2 = v2[0].first;
+    int p2 = v2[0].second;
+    for (auto &x : v2) {
+      if (x.second < p2) {
+        val2 = x.first;
+        p2 = x.second;
       }
     }
     
-    if (allSame) {
-      int hex = -1;
-      std::cout << "  " << s1 << "\n";
-      if (csense1) {
-        hex = hexamerToInt(c.seq.c_str() + (val1.getPos()-p1 - pre), true);
-        std::cout << c.seq.substr(val1.getPos()-p1 - pre,6) << "\n";
-      } else {
-        int pos = (val1.getPos() + p1) + k - post;
-        hex = hexamerToInt(c.seq.c_str() + (pos), false);
-        std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
-      }
-
-      if (hex >= 0) {
-        if (sense == csense1) { // review this
-          ++bias5[hex];
-        } else {
-          ++bias3[hex];
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
+    Kmer km2 = Kmer((s2+p2));
+    bool fw2 = (km2==km2.rep());
+    bool csense2 = (fw2 == val2.isFw()); // is this in the direction of the contig?
+    
+    hex3 = getPreSeq(s2, km2, fw2, csense2, val2, p2);
   }
-
+  
+  if (hex5 >=0  && (!paired || hex3 >= 0)) {
+    bias5[hex5]++;
+    bias3[hex3]++;
+  } else {
+    return false;
+  }
 
   return false;
 }
