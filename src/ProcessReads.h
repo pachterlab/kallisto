@@ -194,6 +194,10 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
+  if (opt.bias) {
+    std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
+  }
+  
   std::cerr << "[quant] processed " << numreads << " reads, " << nummapped << " reads pseudoaligned" << std::endl;
 
   /*

@@ -108,17 +108,20 @@ std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const 
       int fwlimit = (int) seqlen - mean-6;
       for (int j = 0; j < fwlimit; j++) {
         //int hex = hexamerToInt(cs+j,false);
-        efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
+        //efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
+        efflen += tc.bias5[hex] / dbias5[hex];
         hex = update_hexamer(hex,*(cs+j+6),false);
       }
       int bwlimit = (int) std::max(mean-6,0.0);
       hex = hexamerToInt(cs+bwlimit,true);
       for (int j = bwlimit; j < seqlen - 6; j++) {
-        efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
+        efflen += tc.bias5[hex] / dbias5[hex];
         if (j < seqlen-6) {
           hex = update_hexamer(hex,*(cs+j+6),true);
         }
       }
+
+      efflen *= 0.5*biasAlphaNorm/biasDataNorm;
     }
 
     

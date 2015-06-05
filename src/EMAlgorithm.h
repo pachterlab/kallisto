@@ -85,7 +85,7 @@ struct EMAlgorithm {
         }*/
 
 
-      if (recomputeEffLen && i >= min_rounds && (i-min_rounds) % 100 == 0) {
+      if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
         eff_lens_ = update_eff_lens(mean_fl, tc_, index_, alpha_, eff_lens_);
         weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
       }
