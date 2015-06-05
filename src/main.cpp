@@ -591,7 +591,7 @@ void usageEM(bool valid_input = true) {
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
        << "    --single                  Quantify single-end reads" << endl
-       << "    --bias                    Perform sequence based bias correction"
+       << "    --bias                    Perform sequence based bias correction" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
