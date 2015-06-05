@@ -719,7 +719,7 @@ int main(int argc, char *argv[]) {
         
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, mean_fl);
-        em.run();
+        em.run(10000, 50, true, opt.bias);
 
         //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
 
@@ -796,7 +796,7 @@ int main(int argc, char *argv[]) {
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, mean_fl);
-        em.run();
+        em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
         H5Writer writer;
