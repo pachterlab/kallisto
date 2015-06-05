@@ -53,6 +53,6 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 // compute the mean fragment length from a min_collector
 double get_mean_frag_len(const MinCollector& mc);
 
-int hexamerToInt(const char *s);
+int hexamerToInt(const char *s, bool revcomp);
 
 #endif // KALLISTO_MINCOLLECTOR_H

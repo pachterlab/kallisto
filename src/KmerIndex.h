@@ -93,7 +93,7 @@ struct DBGraph {
 
 
 struct KmerIndex {
-  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip) {
+  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
   }
 
@@ -115,6 +115,7 @@ struct KmerIndex {
   void write(const std::string& index_out, bool writeKmerTable = true);
   // note opt is not const
   void load(ProgramOptions& opt, bool loadKmerTable = true);
+  void loadTranscriptSequences() const;
 
   int k; // k-mer size used
   int num_trans; // number of targets
@@ -129,6 +130,8 @@ struct KmerIndex {
   std::vector<int> trans_lens_;
 
   std::vector<std::string> target_names_;
+  std::vector<std::string> target_seqs_; // populated on demand
+  bool target_seqs_loaded;
 
 
 };

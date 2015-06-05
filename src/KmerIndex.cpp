@@ -1286,3 +1286,47 @@ std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
   }
   return res;
 }
+
+
+void KmerIndex::loadTranscriptSequences() const {
+  if (target_seqs_loaded) {
+    return;
+  }
+
+
+  
+  std::vector<std::vector<std::pair<int, ContigToTranscript>>> trans_contigs(num_trans);
+  for (auto &c : dbGraph.contigs) {
+    for (auto &ct : c.transcripts) {
+      trans_contigs[ct.trid].push_back({c.id, ct});
+    }
+  }
+
+  auto &target_seqs = const_cast<std::vector<std::string>&>(target_seqs_);
+  
+  for (int i = 0; i < trans_contigs.size(); i++) {
+    auto &v = trans_contigs[i];
+    std::sort(v.begin(), v.end(), [](std::pair<int,ContigToTranscript> a, std::pair<int,ContigToTranscript> b) {
+        return a.second.pos < b.second.pos;
+      });
+
+    std::string seq;
+    seq.reserve(trans_lens_[i]);
+
+    for (auto &pct : v) {
+      auto ct = pct.second;
+      int start = (ct.pos==0) ? 0 : k-1;
+      const auto& contig = dbGraph.contigs[pct.first];
+      if (ct.sense) {
+        seq.append(contig.seq.substr(start));
+      } else {
+        seq.append(revcomp(contig.seq).substr(start));
+      }
+    }
+    target_seqs.push_back(seq);
+  }
+
+  bool &t = const_cast<bool&>(target_seqs_loaded);
+  t = true;//target_seqs_loaded = true;
+  return;
+}

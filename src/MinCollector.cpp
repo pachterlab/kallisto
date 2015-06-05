@@ -245,6 +245,8 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     return false;
   }
 
+
+  
   auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
     if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
       const Contig &c = index.dbGraph.contigs[val.contig];
@@ -259,14 +261,14 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
       
       if (allSame) {
         int hex = -1;
-        std::cout << "  " << s << "\n";
+        //std::cout << "  " << s << "\n";
         if (csense) {
           hex = hexamerToInt(c.seq.c_str() + (val.getPos()-p - pre), true);
-          std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
+          //std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
         } else {
           int pos = (val.getPos() + p) + k - post;
           hex = hexamerToInt(c.seq.c_str() + (pos), false);
-          std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
+          //std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
         }
         return hex;
       } 

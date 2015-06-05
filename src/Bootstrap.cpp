@@ -4,11 +4,10 @@
 
 EMAlgorithm Bootstrap::run_em(const EMAlgorithm& em_start) {
     auto counts = mult_.sample();
-    auto weights = calc_weights(counts, ecmap_, eff_lens_);
-    EMAlgorithm em(ecmap_, counts, target_names_, eff_lens_, weights);
+    EMAlgorithm em(counts, index_, tc_, mean_fl);
 
     //em.set_start(em_start);
-    em.run(10000, 20, false);
+    em.run(10000, 50, false, false);
     /* em.compute_rho(); */
 
     return em;

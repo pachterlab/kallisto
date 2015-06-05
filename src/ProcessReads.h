@@ -195,6 +195,11 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
   std::cerr << "[quant] processed " << numreads << " reads, " << nummapped << " reads pseudoaligned" << std::endl;
+
+  /*
+  for (int i = 0; i < 4096; i++) {
+    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
+    }*/
   
   // write output to outdir
   if (opt.write_index) {

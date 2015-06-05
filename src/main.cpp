@@ -712,17 +712,18 @@ int main(int argc, char *argv[]) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         }
 
-        /*
-        for (int i = 0; i < collection.bias3.size(); i++) {
+        
+        /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
         
-        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
-        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
-        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
-                       eff_lens, weights);
+        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
+        EMAlgorithm em(collection.counts, index, collection, mean_fl);
         em.run();
 
+        //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
+
+        
         std::string call = argv_to_string(argc, argv);
 
         H5Writer writer;
@@ -734,7 +735,7 @@ int main(int argc, char *argv[]) {
 
         plaintext_aux(
             opt.output + "/run_info.json",
-            std::string(std::to_string(eff_lens.size())),
+            std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(opt.bootstrap)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
@@ -755,8 +756,7 @@ int main(int argc, char *argv[]) {
           }
 
           for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index.ecmap,
-                         index.target_names_, eff_lens, seeds[b]);
+            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
             cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
             auto res = bs.run_em(em);
 
@@ -794,9 +794,8 @@ int main(int argc, char *argv[]) {
         auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
-        EMAlgorithm em(index.ecmap, collection.counts, index.target_names_,
-                       eff_lens, weights);
-
+        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
+        EMAlgorithm em(collection.counts, index, collection, mean_fl);
         em.run();
 
         std::string call = argv_to_string(argc, argv);
@@ -832,8 +831,7 @@ int main(int argc, char *argv[]) {
           }
 
           for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index.ecmap,
-                         index.target_names_, eff_lens, seeds[b]);
+            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
             std::cerr << "Running EM bootstrap: " << b + 1 << std::endl;
             auto res = bs.run_em(em);
 
