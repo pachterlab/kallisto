@@ -63,7 +63,12 @@ std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const 
   for (int i = 0; i < index.num_trans; i++) {
     if (index.trans_lens_[i] < mean) {
       continue;
-    } 
+    }
+
+    if (alpha[i] < 1e-8) {
+      continue;
+    }
+    
     double contrib = 0.5*alpha[i]/eff_lens[i];
     int seqlen = index.target_seqs_[i].size();
     const char* cs = index.target_seqs_[i].c_str();
@@ -93,7 +98,7 @@ std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const 
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
-    if (index.trans_lens_[i] >= mean) {
+    if (index.trans_lens_[i] >= mean && alpha[i] >= 1e-8) {
 
       int seqlen = index.target_seqs_[i].size();
       const char* cs = index.target_seqs_[i].c_str();
