@@ -54,7 +54,7 @@ struct EMAlgorithm {
       }
       
     }
-    assert(target_names_.size() == eff_lens.size());
+    assert(target_names_.size() == eff_lens_.size());
   }
   
   ~EMAlgorithm() {}
