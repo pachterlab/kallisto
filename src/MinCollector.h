@@ -13,21 +13,21 @@
 
 struct MinCollector {
 
-  MinCollector(KmerIndex& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0), flens(1000), min_range(opt.min_range), k(opt.k) {}
+  MinCollector(KmerIndex& ind, const ProgramOptions& opt) : index(ind), counts(index.ecmap.size(), 0), flens(1000), bias3(4096), bias5(4096), min_range(opt.min_range), k(opt.k) {}
 
-  int collect(std::vector<std::pair<int,int>>& v1,
-              std::vector<std::pair<int,int>>& v2,
+  int collect(std::vector<std::pair<KmerEntry,int>>& v1,
+              std::vector<std::pair<KmerEntry,int>>& v2,
               bool nonpaired=false);
 
-  int collect(std::vector<std::pair<int,int>>& v1) {
-    std::vector<std::pair<int,int>> dummy;
+  int collect(std::vector<std::pair<KmerEntry,int>>& v1) {
+    std::vector<std::pair<KmerEntry,int>> dummy;
     return collect(v1,dummy,true);
 
   }
   int increaseCount(const std::vector<int>& u);
   int decreaseCount(const int ec);
 
-  std::vector<int> intersectECs(std::vector<std::pair<int,int>>& v) const;
+  std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
 
 
   void write(std::ostream& o) {
@@ -37,9 +37,12 @@ struct MinCollector {
   }
   void loadCounts(ProgramOptions& opt);
 
+  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
+
   KmerIndex& index;
   std::vector<int> counts;
   std::vector<int> flens;
+  std::vector<int> bias3, bias5;
   int min_range;
   int k;
 
@@ -49,5 +52,7 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 
 // compute the mean fragment length from a min_collector
 double get_mean_frag_len(const MinCollector& mc);
+
+int hexamerToInt(const char *s, bool revcomp);
 
 #endif // KALLISTO_MINCOLLECTOR_H

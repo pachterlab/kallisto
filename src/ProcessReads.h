@@ -57,7 +57,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   gzFile fp1 = 0, fp2 = 0;
   kseq_t *seq1 = 0, *seq2 = 0;
-  std::vector<std::pair<int,int>> v1, v2;
+  std::vector<std::pair<KmerEntry,int>> v1, v2;
   v1.reserve(1000);
   v2.reserve(1000);
 
@@ -80,6 +80,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
+  int biasCount = 0;
+  const int maxBiasCount = 1000000;
   
   for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
   
@@ -118,10 +120,17 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       int ec = tc.collect(v1, v2, !paired);
       if (ec != -1) {
         nummapped++;
+        if (opt.bias && biasCount < maxBiasCount) {
+          if (tc.countBias(seq1->seq.s, seq2->seq.s, v1, v2, paired)) {
+            biasCount++;
+          }
+        }
       }
       if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
         //bool allSame = true;
-        bool allSame = (v1[0].first == ec && v2[0].first == ec) && (v1[0].second == 0 && v2[0].second == 0);
+        bool allSame = (index.dbGraph.ecs[v1[0].first.contig] == ec
+                        && index.dbGraph.ecs[v2[0].first.contig] == ec)
+          && (v1[0].second == 0 && v2[0].second == 0);
 
         if (allSame) {
           // try to map the reads
@@ -185,7 +194,16 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
+  if (opt.bias) {
+    std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
+  }
+  
   std::cerr << "[quant] processed " << numreads << " reads, " << nummapped << " reads pseudoaligned" << std::endl;
+
+  /*
+  for (int i = 0; i < 4096; i++) {
+    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
+    }*/
   
   // write output to outdir
   if (opt.write_index) {
