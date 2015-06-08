@@ -9,6 +9,7 @@
 #include "weights.h"
 #include "EMAlgorithm.h"
 #include "Multinomial.hpp"
+#include "H5Writer.h"
 
 class Bootstrap {
     // needs:
@@ -34,7 +35,7 @@ public:
   // EM Algorithm generates a sample from the Multinomial, then returns
   // an "EMAlgorithm" that has already run the EM as well as compute the
         // rho values
-  EMAlgorithm run_em(const EMAlgorithm& em_start);
+  EMAlgorithm run_em();
 
 private:
   const KmerIndex& index_;
@@ -51,8 +52,16 @@ class BootstrapThreadPool {
   public:
     BootstrapThreadPool(
         size_t n_threads,
-        std::vector<size_t> seeds
+        std::vector<size_t> seeds,
+        const std::vector<int>& true_counts,
+        const KmerIndex& index,
+        const MinCollector& tc,
+        const std::vector<double>& eff_lens,
+        double mean,
+        const ProgramOptions& p_opts,
+        H5Writer& h5writer
         );
+
     size_t num_threads() {return n_threads_;}
 
     ~BootstrapThreadPool();
@@ -65,6 +74,15 @@ class BootstrapThreadPool {
     std::mutex write_lock_;
 
     size_t n_complete_;
+
+    // things to run bootstrap
+    const std::vector<int> true_counts_;
+    const KmerIndex& index_;
+    const MinCollector& tc_;
+    const std::vector<double>& eff_lens_;
+    double mean_fl_;
+    const ProgramOptions& opt_;
+    H5Writer& writer_;
 };
 
 class BootstrapWorker {
