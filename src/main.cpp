@@ -742,7 +742,7 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
-        plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+        plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
             em.alpha_, em.eff_lens_, index.trans_lens_);
 
         if (opt.bootstrap > 0) {
@@ -815,7 +815,7 @@ int main(int argc, char *argv[]) {
               start_time,
               call);
 
-          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+          plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
               em.alpha_, em.eff_lens_, index.trans_lens_);
         }
 
