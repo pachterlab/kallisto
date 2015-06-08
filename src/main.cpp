@@ -755,16 +755,20 @@ int main(int argc, char *argv[]) {
             seeds.push_back( rand() );
           }
 
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
-            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
-            auto res = bs.run_em(em);
+          if (opt.threads > 1) {
+            BootstrapThreadPool pool(3, seeds);
+          } else {
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
+              auto res = bs.run_em(em);
 
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+              }
             }
           }
 
