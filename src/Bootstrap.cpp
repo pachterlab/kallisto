@@ -63,8 +63,8 @@ void BootstrapWorker::operator() (){
       cur_id = pool_.seeds_.size() - 1;
       cur_seed = pool_.seeds_.back();
       pool_.seeds_.pop_back();
-      std::cout << "cur seed from thread (" << thread_id_ << "): " <<
-        cur_seed <<  " id: " << cur_id << std::endl;
+      // std::cout << "cur seed from thread (" << thread_id_ << "): " <<
+      //   cur_seed <<  " id: " << cur_id << std::endl;
     } // release lock
 
     Bootstrap bs(pool_.true_counts_,
@@ -79,9 +79,8 @@ void BootstrapWorker::operator() (){
     if (!pool_.opt_.plaintext) {
       std::unique_lock<std::mutex> lock(pool_.write_lock_);
       ++pool_.n_complete_;
-      //std::cerr << "[bstrp] bootstraps complete: " << pool_.n_complete_ << "\r";
+      std::cerr << "[bstrp] number of EM bootstraps complete: " << pool_.n_complete_ << "\r";
       pool_.writer_.write_bootstrap(res, cur_id);
-
       // release write lock
     } else {
       // can write out plaintext in parallel
