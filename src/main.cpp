@@ -91,6 +91,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int write_index_flag = 0;
   int single_flag = 0;
   int bias_flag = 0;
+  int pbam_flag = 0;
 
   const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -100,6 +101,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
+    {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -181,6 +183,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (bias_flag) {
     opt.bias = true;
+  }
+
+  if (pbam_flag) {
+    opt.pseudobam = true;
   }
 }
 
@@ -638,7 +644,7 @@ std::string get_local_time() {
 }
 
 int main(int argc, char *argv[]) {
-
+  std::cout.sync_with_stdio(false);
   if (argc < 2) {
     usage();
     exit(1);
@@ -699,7 +705,7 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
+        ProcessReads(index, opt, collection);
 
         // save modified index for future use
         if (opt.write_index) {

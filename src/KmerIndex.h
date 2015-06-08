@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
-
+#include <ostream>
 //#include <map>
 
 
@@ -112,8 +112,13 @@ struct KmerIndex {
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
+
+  // output methods
   void write(const std::string& index_out, bool writeKmerTable = true);
+  void writePseudoBamHeader(std::ostream &o) const;
+  
   // note opt is not const
+  // load methods
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
 

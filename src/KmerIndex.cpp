@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <random>
 #include <ctype.h>
-
 #include <zlib.h>
 #include "kseq.h"
 
@@ -1329,4 +1328,16 @@ void KmerIndex::loadTranscriptSequences() const {
   bool &t = const_cast<bool&>(target_seqs_loaded);
   t = true;//target_seqs_loaded = true;
   return;
+}
+
+
+
+void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
+  // write out header
+  o << "@HD\tVN:1.0\n";
+  for (int i = 0; i < num_trans; i++) {
+    o << "@SQ\tSN:" << target_names_[i] << "\tLN:" << trans_lens_[i] << "\n";
+  }
+  o << "@PG\tID:kallisto\tPN:kallisto\tVN:"<< KALLISTO_VERSION << "\n";
+  o.flush();
 }

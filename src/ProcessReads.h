@@ -15,6 +15,9 @@
 
 #include "common.h"
 
+
+void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
+
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
   int i = 0;
@@ -44,8 +47,8 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
   return (a==x.end());
 }
 
-template<typename Index, typename TranscriptCollector>
-void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& tc) {
+
+void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
@@ -82,6 +85,11 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
   int biasCount = 0;
   const int maxBiasCount = 1000000;
+
+  if (opt.pseudobam) {
+    index.writePseudoBamHeader(std::cout);
+  }
+  
   
   for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
   
@@ -120,13 +128,16 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       int ec = tc.collect(v1, v2, !paired);
       if (ec != -1) {
         nummapped++;
+        // collect sequence specific bias info
         if (opt.bias && biasCount < maxBiasCount) {
           if (tc.countBias(seq1->seq.s, seq2->seq.s, v1, v2, paired)) {
             biasCount++;
           }
         }
       }
-      if (paired && 0 <= ec &&  ec < index.num_trans && tlencount > 0) {
+
+      // collect fragment length info
+      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans) {
         //bool allSame = true;
         bool allSame = (index.dbGraph.ecs[v1[0].first.contig] == ec
                         && index.dbGraph.ecs[v2[0].first.contig] == ec)
@@ -140,6 +151,11 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
             tlencount--;
           }
         }
+      }
+
+      // pseudobam
+      if (opt.pseudobam) {
+        outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
       }
 
       // see if we can do better
@@ -212,6 +228,165 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     of.open(outfile.c_str(), std::ios::out);
     tc.write(of);
     of.close();
+  }
+}
+
+void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
+  if (ec == -1) {
+    // no mapping
+    if (paired) {
+      printf("%s\t77\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq1->name.s, seq1->name.s, seq1->qual.s);
+      printf("%s\t141\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq2->name.s, seq2->name.s, seq2->qual.s);
+      //o << seq1->name.s << "" << seq1->seq.s << "\t" << seq1->qual.s << "\n";
+      //o << seq2->name.s << "\t141\t*\t0\t0\t*\t*\t0\t0\t" << seq2->seq.s << "\t" << seq2->qual.s << "\n";
+    } else {
+      printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq1->name.s, seq1->name.s, seq1->qual.s);
+    }
+  } else {
+    
+    auto getPos = [&](int tr, bool csense, KmerEntry val, int p) -> std::pair<int, bool> {
+      const Contig &c = index.dbGraph.contigs[val.contig];
+      int trpos = -1;
+      bool trsense = true;
+      
+      for (auto x : c.transcripts) {
+        if (x.trid == tr) {
+          trpos = x.pos;
+          trsense = x.sense;
+          break;
+        }
+      }
+
+      if (trpos == -1) {
+        return {-1,true};
+      }
+
+      if (trsense) {
+        if (csense) {
+          return {trpos + val.getPos() - p + 1, csense}; // 1-based, case I
+        } else {
+          return {trpos + val.getPos() + index.k + p, csense}; // 1-based, case III
+        }
+      } else {
+        if (csense) {
+          return {trpos + (c.length - val.getPos() -1) + index.k + p, !csense};  // 1-based, case IV
+        } else {
+          return {trpos + (c.length - val.getPos())  - p, !csense}; // 1-based, case II
+        }
+      }
+    };
+    
+    if (paired) {
+
+      int flag1 = 0x01 + 0x40;
+      int flag2 = 0x01 + 0x80;
+      
+      if (v1.empty()) {
+        flag1 += 0x04; // read unmapped
+        flag2 += 0x08; // mate unmapped
+      }
+
+      if (v2.empty()) {
+        flag1 += 0x08; // mate unmapped
+        flag2 += 0x04; // read unmapped
+      }
+      
+
+      int p1 = -1, p2 = -1;
+      bool fw1 = true, fw2 = true;
+      bool csense1 = true, csense2 = true;
+      KmerEntry val1, val2;
+      
+      if (!v1.empty()) {
+        val1 = v1[0].first;
+        p1 = v1[0].second;
+        for (auto &x : v1) {
+          if (x.second < p1) {
+            val1 = x.first;
+            p1 = x.second;
+          }
+        }
+      
+        Kmer km1 = Kmer((seq1->seq.s+p1));
+        fw1 = (km1==km1.rep());
+        csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+      }
+
+      if (!v2.empty()) {
+        val2 = v2[0].first;
+        p2 = v2[0].second;
+        for (auto &x : v2) {
+          if (x.second < p2) {
+            val2 = x.first;
+            p2 = x.second;
+          }
+        }
+
+        Kmer km2 = Kmer((seq2->seq.s+p2));
+        fw2 = (km2==km2.rep());
+        csense2 = (fw2 == val2.isFw()); // is this in the direction of the contig?
+      }
+      
+      for (auto tr : index.ecmap[ec]) {
+        int f1 = flag1;
+        std::pair<int, bool> x1 {-1,true};
+        std::pair<int, bool> x2 {-1,true};
+        if (p1 != -1) {
+          x1 = getPos(tr, csense1, val1, p1);
+          if (p2 == -1) {
+            x2 = {x1.first,!x1.second};
+          }
+        }
+        if (p2 != -1) {
+          x2 = getPos(tr, csense2, val2, p2);
+          if (p1 == -1) {
+            x1 = {x2.first, !x2.second};
+          }
+        }
+
+        
+        printf("%s\t%d\t%s\t%d\t%dM\t%d\t=\t%d\t%s\t%s\n", seq1->name.s, flag1, index.target_names_[tr].c_str(), x1.first, (int) seq1->seq.l, x2.first, (x2.first-x1.first), seq1->name.s, seq1->qual.s);
+        //o << seq1->name.s << "\t?\t" << index.target_names_[tr] << "\t" << x1.first << "\t0\t" << seq1->seq.l << "M\t=\t" << x2.first << "\t" << (x2.first - x1.first) << "\t" << seq1->seq.s << "\t" << seq1->qual.s << "\n";
+      }
+
+      for (auto tr : index.ecmap[ec]) {
+        std::pair<int, bool> x1 {-1,true};
+        std::pair<int, bool> x2 {-1,true};
+        if (p1 != -1) {
+          x1 = getPos(tr, csense1, val1, p1);
+          if (p2 == -1) {
+            x2 = {x1.first,!x1.second};
+          }
+        }
+        if (p2 != -1) {
+          x2 = getPos(tr, csense2, val2, p2);
+          if (p1 == -1) {
+            x1 = {x2.first, !x2.second};
+          }
+        }
+        // need to figure out flag business
+        printf("%s\t%d\t%s\t%d\t%dM\t%d\t=\t%d\t%s\t%s\n", seq2->name.s, flag2, index.target_names_[tr].c_str(), x2.first, (int) seq2->seq.l, x1.first, (x1.first-x2.first), seq2->name.s, seq2->qual.s);
+        //o << seq2->name.s << "\t?\t" << index.target_names_[tr] << "\t" << x2.first << "\t0\t" << seq1->seq.l << "M\t=\t" << x1.first << "\t" << (x1.first - x2.first) << "\t" << seq2->seq.s << "\t" << seq2->qual.s << "\n";
+      }
+      
+      
+    } else {
+      KmerEntry val1 = v1[0].first;
+      int p1 = v1[0].second;
+      for (auto &x : v1) {
+        if (x.second < p1) {
+          val1 = x.first;
+          p1 = x.second;
+        }
+      }
+      
+      Kmer km1 = Kmer((seq1->seq.s+p1));
+      bool fw1 = (km1==km1.rep());
+      bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+      
+    }
+    
+    
   }
 }
 
