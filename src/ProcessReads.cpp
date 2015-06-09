@@ -58,7 +58,7 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
-  int tlencount = 10000;
+  int tlencount = (opt.fld == 0.0) ? 10000 : 0;
   size_t numreads = 0;
   size_t nummapped = 0;
 
