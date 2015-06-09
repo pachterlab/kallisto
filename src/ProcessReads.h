@@ -12,7 +12,6 @@
 #include <fstream>
 #include "MinCollector.h"
 
-
 #include "common.h"
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
@@ -176,7 +175,7 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
       /* } */
 
       if (opt.verbose && numreads % 100000 == 0 ) {
-        std::cerr << "[quant] Processed " << numreads << std::endl;
+        std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
       }
     }
     gzclose(fp1);
@@ -198,7 +197,8 @@ void ProcessReads(Index& index, const ProgramOptions& opt, TranscriptCollector& 
     std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
   }
   
-  std::cerr << "[quant] processed " << numreads << " reads, " << nummapped << " reads pseudoaligned" << std::endl;
+  std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
+    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
 
   /*
   for (int i = 0; i < 4096; i++) {
