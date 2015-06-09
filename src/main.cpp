@@ -8,13 +8,9 @@
 #include <thread>
 #include <time.h>
 
-#include <zlib.h>
-#include "kseq.h"
+#include <cstdio>
 
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
+#include <zlib.h>
 
 #include "common.h"
 #include "ProcessReads.h"
@@ -645,6 +641,9 @@ std::string get_local_time() {
 
 int main(int argc, char *argv[]) {
   std::cout.sync_with_stdio(false);
+  setvbuf(stdout, NULL, _IOFBF, 1048576);
+
+  
   if (argc < 2) {
     usage();
     exit(1);
@@ -876,5 +875,8 @@ int main(int argc, char *argv[]) {
     }
 
   }
+
+  fflush(stdout);
+  
   return 0;
 }
