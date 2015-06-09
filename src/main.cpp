@@ -758,6 +758,16 @@ int main(int argc, char *argv[]) {
           }
 
           if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr
+                << "[~warn] number of threads (" << opt.threads <<
+                ") greater than number of bootstraps" << endl
+                << "[~warn] (cont'd) updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
+
             BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
                 collection, em.eff_lens_, mean_fl, opt, writer);
           } else {
@@ -838,7 +848,16 @@ int main(int argc, char *argv[]) {
           }
 
           if (opt.threads > 1) {
-            BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr << "[btstrp] Warning: number of threads (" << opt.threads <<
+                ") greater than number of bootstraps." << endl
+                << "[btstrp] (cont'd): Updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
+
+            BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
                 collection, em.eff_lens_, mean_fl, opt, writer);
           } else {
             for (auto b = 0; b < B; ++b) {
