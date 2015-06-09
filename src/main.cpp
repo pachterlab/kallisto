@@ -712,7 +712,7 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         if (opt.fld == 0.0) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         }
@@ -735,7 +735,7 @@ int main(int argc, char *argv[]) {
         if (!opt.plaintext) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.trans_lens_);
+          writer.write_main(em, index.target_names_, index.target_lens_);
         }
 
         plaintext_aux(
@@ -748,7 +748,7 @@ int main(int argc, char *argv[]) {
             call);
 
         plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
-            em.alpha_, em.eff_lens_, index.trans_lens_);
+            em.alpha_, em.eff_lens_, index.target_lens_);
 
         if (opt.bootstrap > 0) {
           auto B = opt.bootstrap;
@@ -769,7 +769,7 @@ int main(int argc, char *argv[]) {
               writer.write_bootstrap(res, b);
             } else {
               plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+                  em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
             }
           }
 
@@ -794,9 +794,9 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
+        auto eff_lens = calc_eff_lens(index.target_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
@@ -809,7 +809,7 @@ int main(int argc, char *argv[]) {
         if (!opt.plaintext) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.trans_lens_);
+          writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
           plaintext_aux(
               opt.output + "/run_info.json",
@@ -821,7 +821,7 @@ int main(int argc, char *argv[]) {
               call);
 
           plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
-              em.alpha_, em.eff_lens_, index.trans_lens_);
+              em.alpha_, em.eff_lens_, index.target_lens_);
         }
 
         if (opt.bootstrap > 0) {
@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
               writer.write_bootstrap(res, b);
             } else {
               plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+                  em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
             }
           }
         }

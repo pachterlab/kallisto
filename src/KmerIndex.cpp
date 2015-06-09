@@ -120,7 +120,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       }
 
     
-      trans_lens_.push_back(seq->seq.l);
+      target_lens_.push_back(seq->seq.l);
       std::string name(seq->name.s);
       size_t p = name.find(' ');
       if (p != std::string::npos) {
@@ -622,7 +622,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   out.write((char *)&num_trans, sizeof(num_trans));
 
   // 4. write out target lengths
-  for (int tlen : trans_lens_) {
+  for (int tlen : target_lens_) {
     out.write((char *)&tlen, sizeof(tlen));
   }
 
@@ -806,13 +806,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.read((char *)&num_trans, sizeof(num_trans));
 
   // 4. read in length of targets
-  trans_lens_.clear();
-  trans_lens_.reserve(num_trans);
+  target_lens_.clear();
+  target_lens_.reserve(num_trans);
 
   for (int i = 0; i < num_trans; i++) {
     int tlen;
     in.read((char *)&tlen, sizeof(tlen));
-    trans_lens_.push_back(tlen);
+    target_lens_.push_back(tlen);
   }
 
   // 5. read number of k-mers
@@ -1168,6 +1168,45 @@ donejumping:
   }
 }
 
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, KmerEntry val, int p) const {
+  bool fw = (km == km.rep());
+  bool csense = (fw == val.isFw());
+
+  int trpos = -1;
+  bool trsense = true;
+  if (val.contig < 0) {
+    return {-1, true};
+  }
+  const Contig &c = dbGraph.contigs[val.contig];
+  for (auto x : c.transcripts) {
+    if (x.trid == tr) {
+      trpos = x.pos;
+      trsense = x.sense;
+      break;
+    }
+  }
+
+  if (trpos == -1) {
+    return {-1,true};
+  }
+
+
+  if (trsense) {
+    if (csense) {
+      return {trpos + val.getPos() - p + 1, csense}; // 1-based, case I
+    } else {
+      return {trpos + val.getPos() + k + p, csense}; // 1-based, case III
+    }
+  } else {
+    if (csense) {
+      return {trpos + (c.length - val.getPos() -1) + k + p, !csense};  // 1-based, case IV
+    } else {
+      return {trpos + (c.length - val.getPos())  - p, !csense}; // 1-based, case II
+    }
+  }
+  
+}
+
 /*
 // use:  r = matchEnd(s,l,v,p)
 // pre:  v is initialized, p>=0
@@ -1310,7 +1349,7 @@ void KmerIndex::loadTranscriptSequences() const {
       });
 
     std::string seq;
-    seq.reserve(trans_lens_[i]);
+    seq.reserve(target_lens_[i]);
 
     for (auto &pct : v) {
       auto ct = pct.second;
@@ -1336,7 +1375,7 @@ void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
   // write out header
   o << "@HD\tVN:1.0\n";
   for (int i = 0; i < num_trans; i++) {
-    o << "@SQ\tSN:" << target_names_[i] << "\tLN:" << trans_lens_[i] << "\n";
+    o << "@SQ\tSN:" << target_names_[i] << "\tLN:" << target_lens_[i] << "\n";
   }
   o << "@PG\tID:kallisto\tPN:kallisto\tVN:"<< KALLISTO_VERSION << "\n";
   o.flush();

@@ -132,6 +132,60 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
 
       // collect the target information
       int ec = tc.collect(v1, v2, !paired);
+
+      if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
+        // inspect the positions
+        int fl = (int) tc.get_mean_frag_len();
+        if (v2.empty()) {
+          int p = -1;
+          KmerEntry val;
+          Kmer km;
+          
+          if (!v1.empty()) {
+            val = v1[0].first;
+            p = v1[0].second;
+            for (auto &x : v1) {
+              if (x.second < p) {
+                val = x.first;
+                p = x.second;
+              }
+            }
+            km = Kmer((seq1->seq.s+p));
+          }
+          if (!v2.empty()) {
+            val = v2[0].first;
+            p = v2[0].second;
+            for (auto &x : v2) {
+              if (x.second < p) {
+                val = x.first;
+                p = x.second;
+              }
+            }
+            km = Kmer((seq2->seq.s+p));
+          }
+
+          std::vector<int> u = index.ecmap[ec]; // copy
+          std::vector<int> v;
+          v.reserve(u.size());
+
+          for (auto tr : u) {
+            auto x = index.findPosition(tr, km, val, p);
+            if (x.second && x.first + fl <= index.target_lens_[tr]) {
+              v.push_back(tr);
+            }
+            if (!x.second && x.first - fl >= 0) {
+              v.push_back(tr);
+            }
+          }
+
+          if (v.size() < u.size()) {
+            // fix the ec
+            tc.decreaseCount(ec);
+            ec = tc.increaseCount(v);
+          }
+        }
+      }
+      
       if (ec != -1) {
         nummapped++;
         // collect sequence specific bias info
@@ -264,39 +318,6 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
       printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq1->name.s, seq1->seq.s, seq1->qual.s);
     }
   } else {
-    
-    auto getPos = [&](int tr, bool csense, KmerEntry val, int p) -> std::pair<int, bool> {
-      const Contig &c = index.dbGraph.contigs[val.contig];
-      int trpos = -1;
-      bool trsense = true;
-      
-      for (auto x : c.transcripts) {
-        if (x.trid == tr) {
-          trpos = x.pos;
-          trsense = x.sense;
-          break;
-        }
-      }
-
-      if (trpos == -1) {
-        return {-1,true};
-      }
-
-      if (trsense) {
-        if (csense) {
-          return {trpos + val.getPos() - p + 1, csense}; // 1-based, case I
-        } else {
-          return {trpos + val.getPos() + index.k + p, csense}; // 1-based, case III
-        }
-      } else {
-        if (csense) {
-          return {trpos + (c.length - val.getPos() -1) + index.k + p, !csense};  // 1-based, case IV
-        } else {
-          return {trpos + (c.length - val.getPos())  - p, !csense}; // 1-based, case II
-        }
-      }
-    };
-    
     if (paired) {
 
       int flag1 = 0x01 + 0x40;
@@ -319,10 +340,9 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
       
 
       int p1 = -1, p2 = -1;
-      bool fw1 = true, fw2 = true;
-      bool csense1 = true, csense2 = true;
       KmerEntry val1, val2;
       int nmap = index.ecmap[ec].size();
+      Kmer km1, km2;
       
       if (!v1.empty()) {
         val1 = v1[0].first;
@@ -333,10 +353,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
             p1 = x.second;
           }
         }
-      
-        Kmer km1 = Kmer((seq1->seq.s+p1));
-        fw1 = (km1==km1.rep());
-        csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+        km1 = Kmer((seq1->seq.s+p1));
       }
 
       if (!v2.empty()) {
@@ -348,10 +365,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
             p2 = x.second;
           }
         }
-
-        Kmer km2 = Kmer((seq2->seq.s+p2));
-        fw2 = (km2==km2.rep());
-        csense2 = (fw2 == val2.isFw()); // is this in the direction of the contig?
+        km2 = Kmer((seq2->seq.s+p2));
       }
 
       bool revset = false;
@@ -362,7 +376,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = getPos(tr, csense1, val1, p1);
+          x1 = index.findPosition(tr, km1, val1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -375,7 +389,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
         if (p2 != -1) {
-          x2 = getPos(tr, csense2, val2, p2);
+          x2 = index.findPosition(tr, km2 , val2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -396,7 +410,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = getPos(tr, csense1, val1, p1);
+          x1 = index.findPosition(tr, km1, val1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -405,7 +419,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
         if (p2 != -1) {
-          x2 = getPos(tr, csense2, val2, p2);
+          x2 = index.findPosition(tr, km2, val2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -434,16 +448,13 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           p1 = x.second;
         }
       }
-      
       Kmer km1 = Kmer((seq1->seq.s+p1));
-      bool fw1 = (km1==km1.rep());
-      bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
-      
+
       bool revset = false;
 
       for (auto tr : index.ecmap[ec]) {
         int f1 = 0;
-        auto x1 = getPos(tr, csense1, val1, p1);
+        auto x1 = index.findPosition(tr, km1, val1, p1);
 
         if (!x1.second) {
           f1 += 0x10;
@@ -456,8 +467,6 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t*\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), x1.first, (int) seq1->seq.l, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
     }
-    
-    
   }
 }
 

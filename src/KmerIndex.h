@@ -122,6 +122,9 @@ struct KmerIndex {
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
 
+  // positional information
+  std::pair<int,bool> findPosition(int tr, Kmer km, KmerEntry val, int p = 0) const;
+
   int k; // k-mer size used
   int num_trans; // number of targets
   int skip;
@@ -132,7 +135,7 @@ struct KmerIndex {
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
   const size_t INDEX_VERSION = 10; // increase this every time you change the fileformat
 
-  std::vector<int> trans_lens_;
+  std::vector<int> target_lens_;
 
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
