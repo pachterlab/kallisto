@@ -14,9 +14,8 @@ if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
     set(HDF5_USE_STATIC_LIBRARIES 1)
 
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-
     if (UNIX AND NOT APPLE)
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
         set(CMAKE_EXE_LINKER_FLAGS  "-static -static-libgcc -static-libstdc++")
     endif(UNIX AND NOT APPLE)
 
