@@ -596,6 +596,7 @@ void usageEM(bool valid_input = true) {
        << "    --bias                    Perform sequence based bias correction" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
