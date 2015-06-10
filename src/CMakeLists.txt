@@ -10,11 +10,23 @@ target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kallisto main.cpp)
 
+if(LINK MATCHES static)
+    set(BUILD_SHARED_LIBS OFF)
+    set(HDF5_USE_STATIC_LIBRARIES 1)
+
+    if (UNIX AND NOT APPLE)
+        set(CMAKE_EXE_LINKER_FLAGS  "-static -static-libgcc -static-libstdc++")
+    endif(UNIX AND NOT APPLE)
+
+endif(LINK MATCHES static)
+
+find_package( HDF5 REQUIRED )
 find_package( ZLIB REQUIRED )
+
 if ( ZLIB_FOUND )
     include_directories( ${ZLIB_INCLUDE_DIRS} )
 else()
-    message(FATA_ERROR "zlib not found. Required for to output files" )
+    message(FATAL_ERROR "zlib not found. Required for to output files" )
 endif( ZLIB_FOUND )
 
 if(HDF5_FOUND)

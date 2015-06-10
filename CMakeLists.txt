@@ -17,7 +17,11 @@ if(CMAKE_BUILD_TYPE MATCHES Profile)
 	add_compile_options(-g)
 endif(CMAKE_BUILD_TYPE MATCHES Profile)
 
-find_package(HDF5)
+if(LINK MATCHES static)
+    message("static build")
+ELSE(LINK MATCHES shared)
+    message("shared build")
+ENDIF(LINK MATCHES static)
 
 # add_compile_options(-Wdeprecated-register)
 
