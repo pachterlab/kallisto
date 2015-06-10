@@ -8,13 +8,9 @@
 #include <thread>
 #include <time.h>
 
-#include <zlib.h>
-#include "kseq.h"
+#include <cstdio>
 
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
+#include <zlib.h>
 
 #include "common.h"
 #include "ProcessReads.h"
@@ -91,6 +87,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int write_index_flag = 0;
   int single_flag = 0;
   int bias_flag = 0;
+  int pbam_flag = 0;
 
   const char *opt_string = "t:i:l:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -100,6 +97,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
+    {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -181,6 +179,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (bias_flag) {
     opt.bias = true;
+  }
+
+  if (pbam_flag) {
+    opt.pseudobam = true;
   }
 }
 
@@ -594,6 +596,7 @@ void usageEM(bool valid_input = true) {
        << "    --bias                    Perform sequence based bias correction" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "-t, --threads=INT             Number of threads to use for bootstraping (default: 1)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
@@ -639,7 +642,10 @@ std::string get_local_time() {
 }
 
 int main(int argc, char *argv[]) {
+  std::cout.sync_with_stdio(false);
+  setvbuf(stdout, NULL, _IOFBF, 1048576);
 
+  
   if (argc < 2) {
     usage();
     exit(1);
@@ -700,7 +706,7 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        ProcessReads<KmerIndex, MinCollector>(index, opt, collection);
+        ProcessReads(index, opt, collection);
 
         // save modified index for future use
         if (opt.write_index) {
@@ -708,30 +714,30 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         if (opt.fld == 0.0) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         }
 
-        
+
         /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
-        
+
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, mean_fl);
         em.run(10000, 50, true, opt.bias);
 
         //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
 
-        
+
         std::string call = argv_to_string(argc, argv);
 
         H5Writer writer;
         if (!opt.plaintext) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.trans_lens_);
+          writer.write_main(em, index.target_names_, index.target_lens_);
         }
 
         plaintext_aux(
@@ -744,7 +750,7 @@ int main(int argc, char *argv[]) {
             call);
 
         plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
-            em.alpha_, em.eff_lens_, index.trans_lens_);
+            em.alpha_, em.eff_lens_, index.target_lens_);
 
         if (opt.bootstrap > 0) {
           auto B = opt.bootstrap;
@@ -753,19 +759,36 @@ int main(int argc, char *argv[]) {
 
           std::vector<size_t> seeds;
           for (auto s = 0; s < B; ++s) {
+            // TODO: check whether or not there are collisions. they happen
+            // with tiny probability... but technically still can happen - HP
             seeds.push_back( rand() );
           }
 
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
-            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
-            auto res = bs.run_em(em);
+          if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr
+                << "[~warn] number of threads (" << opt.threads <<
+                ") greater than number of bootstraps" << endl
+                << "[~warn] (cont'd) updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
 
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, mean_fl, opt, writer);
+          } else {
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+              }
             }
           }
 
@@ -790,9 +813,9 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : get_mean_frag_len(collection);
+        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-        auto eff_lens = calc_eff_lens(index.trans_lens_, mean_fl);
+        auto eff_lens = calc_eff_lens(index.target_lens_, mean_fl);
         auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
@@ -805,7 +828,7 @@ int main(int argc, char *argv[]) {
         if (!opt.plaintext) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.trans_lens_);
+          writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
           plaintext_aux(
               opt.output + "/run_info.json",
@@ -817,7 +840,7 @@ int main(int argc, char *argv[]) {
               call);
 
           plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
-              em.alpha_, em.eff_lens_, index.trans_lens_);
+              em.alpha_, em.eff_lens_, index.target_lens_);
         }
 
         if (opt.bootstrap > 0) {
@@ -831,16 +854,30 @@ int main(int argc, char *argv[]) {
             seeds.push_back( rand() );
           }
 
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
-            std::cerr << "Running EM bootstrap: " << b + 1 << std::endl;
-            auto res = bs.run_em(em);
+          if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr << "[btstrp] Warning: number of threads (" << opt.threads <<
+                ") greater than number of bootstraps." << endl
+                << "[btstrp] (cont'd): Updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
 
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.trans_lens_);
+            BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, mean_fl, opt, writer);
+          } else {
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+              }
             }
           }
         }
@@ -871,5 +908,8 @@ int main(int argc, char *argv[]) {
     }
 
   }
+
+  fflush(stdout);
+  
   return 0;
 }
