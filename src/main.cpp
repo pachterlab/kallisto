@@ -718,18 +718,18 @@ int main(int argc, char *argv[]) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         }
 
-        
+
         /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
-        
+
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, mean_fl);
         em.run(10000, 50, true, opt.bias);
 
         //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
 
-        
+
         std::string call = argv_to_string(argc, argv);
 
         H5Writer writer;
@@ -758,19 +758,36 @@ int main(int argc, char *argv[]) {
 
           std::vector<size_t> seeds;
           for (auto s = 0; s < B; ++s) {
+            // TODO: check whether or not there are collisions. they happen
+            // with tiny probability... but technically still can happen - HP
             seeds.push_back( rand() );
           }
 
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
-            cerr << "[bstrp] running EM for the bootstrap: " << b + 1<< "\r";
-            auto res = bs.run_em(em);
+          if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr
+                << "[~warn] number of threads (" << opt.threads <<
+                ") greater than number of bootstraps" << endl
+                << "[~warn] (cont'd) updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
 
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+            BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, mean_fl, opt, writer);
+          } else {
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+              }
             }
           }
 
@@ -836,16 +853,30 @@ int main(int argc, char *argv[]) {
             seeds.push_back( rand() );
           }
 
-          for (auto b = 0; b < B; ++b) {
-            Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
-            std::cerr << "Running EM bootstrap: " << b + 1 << std::endl;
-            auto res = bs.run_em(em);
+          if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr << "[btstrp] Warning: number of threads (" << opt.threads <<
+                ") greater than number of bootstraps." << endl
+                << "[btstrp] (cont'd): Updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
 
-            if (!opt.plaintext) {
-              writer.write_bootstrap(res, b);
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
-                  em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+            BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, mean_fl, opt, writer);
+          } else {
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
+
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+              }
             }
           }
         }
