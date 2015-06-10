@@ -748,7 +748,7 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
-        plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+        plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
             em.alpha_, em.eff_lens_, index.target_lens_);
 
         if (opt.bootstrap > 0) {
@@ -769,7 +769,7 @@ int main(int argc, char *argv[]) {
             if (!opt.plaintext) {
               writer.write_bootstrap(res, b);
             } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                   em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
             }
           }
@@ -821,7 +821,7 @@ int main(int argc, char *argv[]) {
               start_time,
               call);
 
-          plaintext_writer(opt.output + "/abundance.txt", em.target_names_,
+          plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
               em.alpha_, em.eff_lens_, index.target_lens_);
         }
 
@@ -844,7 +844,7 @@ int main(int argc, char *argv[]) {
             if (!opt.plaintext) {
               writer.write_bootstrap(res, b);
             } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".txt",
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                   em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
             }
           }
