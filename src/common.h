@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.42.1"
+#define KALLISTO_VERSION "0.42.2"
 
 #include <string>
 #include <vector>
@@ -24,6 +24,8 @@ struct ProgramOptions {
   bool write_index;
   bool single_end;
   bool peek; // only used for H5Dump
+  bool bias;
+  bool pseudobam;
 
 ProgramOptions() :
   verbose(false),
@@ -38,8 +40,13 @@ ProgramOptions() :
   plaintext(false),
   write_index(false),
   single_end(false),
-  peek(false)
+  peek(false),
+  bias(false),
+  pseudobam(false)   
   {}
 };
+
+std::string pretty_num(size_t num);
+std::string pretty_num(int num);
 
 #endif // KALLISTO_COMMON_H

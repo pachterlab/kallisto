@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "KmerIndex.h"
+#include "MinCollector.h"
 #include "weights.h"
 
 #include <algorithm>
@@ -22,36 +23,43 @@ struct EMAlgorithm {
   // counts is vector from collector, with indices corresponding to ec ids
   // target_names is the target_names_ from collector
   // TODO: initialize alpha a bit more intelligently
-  EMAlgorithm(const EcMap& ecmap,
+  EMAlgorithm(const std::vector<int>& counts,
+              const KmerIndex& index,
+              const MinCollector& tc,
+              double mean
+/*    const EcMap& ecmap,
               const std::vector<int>& counts,
               const std::vector<std::string>& target_names,
-              const std::vector<double>& eff_lens,
-              const WeightMap& wm) :
+
+              const WeightMap& wm*/) :
     //idx_(idx),
-    num_trans_(target_names.size()),
-    ecmap_(ecmap),
+    index_(index),
+    tc_(tc),
+    num_trans_(index.target_names_.size()),
+    ecmap_(index.ecmap),
     counts_(counts),
-    target_names_(target_names),
-    eff_lens_(eff_lens),
-    weight_map_(wm),
+    target_names_(index.target_names_),
     alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
-    rho_set_(false)
+    rho_set_(false),
+    mean_fl(mean)
   {
+    eff_lens_ = calc_eff_lens(index_.target_lens_, mean_fl);
+    weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
     for (auto i = 0; i < alpha_.size(); i++) {
       if (counts_[i] > 0) {
         alpha_[i] = counts_[i];
       } else {
         alpha_[i] = eff_lens_[i] / 1000.0;
       }
-
+      
     }
-      assert(target_names_.size() == eff_lens.size());
+    assert(target_names_.size() == eff_lens_.size());
   }
-
+  
   ~EMAlgorithm() {}
-
-  void run(size_t n_iter = 10000, size_t min_rounds=50, bool verbose = true) {
+  
+  void run(size_t n_iter = 10000, size_t min_rounds=50, bool verbose = true, bool recomputeEffLen = true) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 
     assert(weight_map_.size() <= counts_.size());
@@ -76,11 +84,19 @@ struct EMAlgorithm {
         }
         }*/
 
+
+      if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
+        eff_lens_ = update_eff_lens(mean_fl, tc_, index_, alpha_, eff_lens_);
+        weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
+      }
+
+      
       //for (auto& ec_kv : ecmap_ ) {
       for (int ec = 0; ec < num_trans_; ec++) {
         next_alpha[ec] = counts_[ec];
       }
 
+      
       for (int ec = num_trans_; ec < ecmap_.size();  ec++) {
         denom = 0.0;
 
@@ -182,7 +198,8 @@ struct EMAlgorithm {
 
     if (verbose) {
       std::cerr << " done" << std::endl;
-      std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+      std::cerr << "[   em] the Expectation-Maximization algorithm ran for "
+        << pretty_num(i) << " rounds";
       std::cerr << std::endl;
       std::cerr.flush();
     }
@@ -279,15 +296,18 @@ struct EMAlgorithm {
 
 
   int num_trans_;
+  const KmerIndex& index_;
+  const MinCollector& tc_;
   const EcMap& ecmap_;
   const std::vector<int>& counts_;
   const std::vector<std::string>& target_names_;
-  const std::vector<double>& eff_lens_;
-  const WeightMap& weight_map_;
+  std::vector<double> eff_lens_;
+  WeightMap weight_map_;
   std::vector<double> alpha_;
   std::vector<double> alpha_before_zeroes_;
   std::vector<double> rho_;
   bool rho_set_;
+  double mean_fl;
 };
 
 

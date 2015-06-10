@@ -144,11 +144,11 @@ void H5Converter::write_aux() {
 
 void H5Converter::convert() {
 
-  std::cerr << "[h5dump] writing abundance file: " << out_dir_ << "/abundance.txt" << std::endl;
-  rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.txt");
+  std::cerr << "[h5dump] writing abundance file: " << out_dir_ << "/abundance.tsv" << std::endl;
+  rw_from_counts(root_, "est_counts", out_dir_ + "/abundance.tsv");
 
   if (n_bs_ > 0) {
-    std::cerr << "[h5dump] writing bootstrap abundance files: " << out_dir_ << "/bs_abundance_*.txt" << std::endl;
+    std::cerr << "[h5dump] writing bootstrap abundance files: " << out_dir_ << "/bs_abundance_*.tsv" << std::endl;
   }
   int i;
   for (i = 0; i < n_bs_; ++i) {
@@ -158,7 +158,7 @@ void H5Converter::convert() {
     std::cerr << ".";
     std::cerr.flush();
     std::string bs_out_fname( out_dir_ + "/bs_abundance_" + std::to_string(i) +
-        ".txt" );
+        ".tsv" );
     rw_from_counts(bs_, "bs" + std::to_string(i), bs_out_fname);
   }
 

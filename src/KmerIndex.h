@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
-
+#include <ostream>
 //#include <map>
 
 
@@ -19,12 +19,14 @@
 
 #include "hash.hpp"
 
+std::string revcomp(const std::string s);
 
 
 struct TRInfo {
   int trid;
   int start;
   int stop; //exclusive [start,stop)
+  bool sense; // true for sense, false for anti-sense
 };
 
 using EcMap = std::vector<std::vector<int>>; //std::unordered_map<int, std::vector<int>>;
@@ -48,9 +50,8 @@ struct KmerEntry {
   int32_t contig; // id of contig
   uint32_t _pos; // 0-based forward distance to EC-junction
   int32_t contig_length;
-  int32_t ec;
 
-  KmerEntry() : contig(-1), _pos(0xFFFFFFF), contig_length(0), ec(-1) {}
+  KmerEntry() : contig(-1), _pos(0xFFFFFFF), contig_length(0) {}
   KmerEntry(int id, int length, int pos, bool isFw) : contig(id), contig_length(length) {
     setPos(pos);
     setDir(isFw);
@@ -69,10 +70,18 @@ struct KmerEntry {
   }
 };
 
+struct ContigToTranscript {
+  int trid;
+  int pos; 
+  bool sense; // true for sense, 
+};
+
 struct Contig {
   int id; // internal id
   int length; // number of k-mers
+  int ec;
   std::string seq; // sequence
+  std::vector<ContigToTranscript> transcripts;
 };
 
 struct DBGraph {
@@ -84,14 +93,14 @@ struct DBGraph {
 
 
 struct KmerIndex {
-  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip) {
+  KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
   }
 
   ~KmerIndex() {}
 
-  void match(const char *s, int l, std::vector<std::pair<int, int>>& v) const;
-  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
+  void match(const char *s, int l, std::vector<std::pair<KmerEntry, int>>& v) const;
+//  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
   int mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const;
   std::vector<int> intersect(int ec, const std::vector<int>& v) const;
 
@@ -103,9 +112,18 @@ struct KmerIndex {
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
+
+  // output methods
   void write(const std::string& index_out, bool writeKmerTable = true);
+  void writePseudoBamHeader(std::ostream &o) const;
+  
   // note opt is not const
+  // load methods
   void load(ProgramOptions& opt, bool loadKmerTable = true);
+  void loadTranscriptSequences() const;
+
+  // positional information
+  std::pair<int,bool> findPosition(int tr, Kmer km, KmerEntry val, int p = 0) const;
 
   int k; // k-mer size used
   int num_trans; // number of targets
@@ -115,11 +133,13 @@ struct KmerIndex {
   EcMap ecmap;
   DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-  const size_t INDEX_VERSION = 9; // increase this every time you change the fileformat
+  const size_t INDEX_VERSION = 10; // increase this every time you change the fileformat
 
-  std::vector<int> trans_lens_;
+  std::vector<int> target_lens_;
 
   std::vector<std::string> target_names_;
+  std::vector<std::string> target_seqs_; // populated on demand
+  bool target_seqs_loaded;
 
 
 };

@@ -22,8 +22,8 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
 }
 
 
-int MinCollector::collect(std::vector<std::pair<int,int>>& v1,
-                          std::vector<std::pair<int,int>>& v2, bool nonpaired) {
+int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
 
   /*if (v1.empty()) {
     return -1;
@@ -96,36 +96,38 @@ int MinCollector::decreaseCount(const int ec) {
 }
 
 struct ComparePairsBySecond {
-  bool operator()(std::pair<int,int> a, std::pair<int,int> b) {
+  bool operator()(std::pair<KmerEntry,int> a, std::pair<KmerEntry,int> b) {
     return a.second < b.second;
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<int,int>>& v) const {
+std::vector<int> MinCollector::intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const {
   if (v.empty()) {
     return {};
   }
-  sort(v.begin(), v.end()); // sort by ec, and then first position
+  sort(v.begin(), v.end(), [&](std::pair<KmerEntry, int> a, std::pair<KmerEntry, int> b)
+       {
+         if (a.first.contig==b.first.contig) {
+           return a.second < b.second;
+         } else {
+           return a.first.contig < b.first.contig;
+         }
+       }); // sort by contig, and then first position
 
-  /*
-  std::vector<std::pair<int,int>> vp;
-  vp.push_back(v[0]);
-  for (int i = 1; i < v.size(); i++) {
-    if (v[i].first != v[i-1].first) {
-      vp.push_back(v[i-1]);
-    }
-    }
 
-  sort(vp.begin(), vp.end(), ComparePairsBySecond{});
-  */
-
-  std::vector<int> u = index.ecmap[v[0].first];
+  int ec = index.dbGraph.ecs[v[0].first.contig];
+  int lastEC = ec;
+  std::vector<int> u = index.ecmap[ec];
 
   for (int i = 1; i < v.size(); i++) {
-    if (v[i].first != v[i-1].first) {
-      u = index.intersect(v[i].first, u);
-      if (u.empty()) {
-        return u;
+    if (v[i].first.contig != v[i-1].first.contig) {
+      ec = index.dbGraph.ecs[v[i].first.contig];
+      if (ec != lastEC) {
+        u = index.intersect(ec, u);
+        lastEC = ec;
+        if (u.empty()) {
+          return u;
+        }
       }
     }
   }
@@ -195,14 +197,126 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
 }
 
-double get_mean_frag_len(const MinCollector& mc) {
+double MinCollector::get_mean_frag_len() const {
+  if (has_mean_fl) {
+    return mean_fl;
+  }
+  
   auto total_counts = 0;
   double total_mass = 0.0;
 
-  for ( size_t i = 0 ; i < mc.flens.size(); ++i ) {
-    total_counts += mc.flens[i];
-    total_mass += static_cast<double>(mc.flens[i] * i);
+  for ( size_t i = 0 ; i < flens.size(); ++i ) {
+    total_counts += flens[i];
+    total_mass += static_cast<double>(flens[i] * i);
+  }
+  // cache the value
+  const_cast<double&>(mean_fl) = total_mass / static_cast<double>(total_counts);
+  const_cast<bool&>(has_mean_fl) = true;
+  return mean_fl;
+}
+
+
+int hexamerToInt(const char *s, bool revcomp) {
+  int hex = 0;
+  if (!revcomp) {
+    for (int i = 0; i < 6; i++) {
+      hex <<= 2;
+      switch (*(s+i) & 0xDF) {
+      case 'A': break;
+      case 'C': hex += 1; break;
+      case 'G': hex += 2; break;
+      case 'T': hex += 3; break;
+      default: return -1;
+      }    
+    }
+  } else {
+    for (int i = 0; i < 6; i++) {
+      switch (*(s+i) & 0xDF) {
+      case 'A': hex += 3 << (2*i);break;
+      case 'C': hex += 2 << (2*i); break;
+      case 'G': hex += 1 << (2*i); break;
+      case 'T': break;
+      default: return -1;
+      }    
+    }
+  }
+  return hex;
+}
+
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+
+  const int pre = 2, post = 4;
+  
+  if (v1.empty() || (paired && v2.empty())) {
+    return false;
   }
 
-  return total_mass / static_cast<double>(total_counts);
+
+  
+  auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
+    if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
+      const Contig &c = index.dbGraph.contigs[val.contig];
+      bool sense = c.transcripts[0].sense;
+      
+      int hex = -1;
+      //std::cout << "  " << s << "\n";
+      if (csense) {
+        hex = hexamerToInt(c.seq.c_str() + (val.getPos()-p - pre), true);
+        //std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
+      } else {
+        int pos = (val.getPos() + p) + k - post;
+        hex = hexamerToInt(c.seq.c_str() + (pos), false);
+        //std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
+      }
+      return hex;
+    }
+
+    return -1;
+  };
+
+  // find first contig of read
+  KmerEntry val1 = v1[0].first;
+  int p1 = v1[0].second;
+  for (auto &x : v1) {
+    if (x.second < p1) {
+      val1 = x.first;
+      p1 = x.second;
+    }
+  }
+  
+  Kmer km1 = Kmer((s1+p1));
+  bool fw1 = (km1==km1.rep());
+  bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+
+  int hex5 = getPreSeq(s1, km1, fw1, csense1, val1, p1);
+
+  /*
+  int hex3 = -1;
+  if (paired) {
+    // do the same for the second read
+    KmerEntry val2 = v2[0].first;
+    int p2 = v2[0].second;
+    for (auto &x : v2) {
+      if (x.second < p2) {
+        val2 = x.first;
+        p2 = x.second;
+      }
+    }
+    
+    Kmer km2 = Kmer((s2+p2));
+    bool fw2 = (km2==km2.rep());
+    bool csense2 = (fw2 == val2.isFw()); // is this in the direction of the contig?
+    
+    hex3 = getPreSeq(s2, km2, fw2, csense2, val2, p2);
+  }
+  */
+  
+  if (hex5 >=0) { // && (!paired || hex3 >= 0)) {
+    bias5[hex5]++;
+    //bias3[hex3]++;
+  } else {
+    return false;
+  }
+
+  return false;
 }
