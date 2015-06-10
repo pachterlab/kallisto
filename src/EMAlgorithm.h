@@ -198,7 +198,8 @@ struct EMAlgorithm {
 
     if (verbose) {
       std::cerr << " done" << std::endl;
-      std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+      std::cerr << "[   em] the Expectation-Maximization algorithm ran for "
+        << pretty_num(i) << " rounds";
       std::cerr << std::endl;
       std::cerr.flush();
     }
