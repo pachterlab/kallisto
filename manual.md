@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.42.1
+kallisto 0.42.2
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -30,7 +30,7 @@ The four usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.42.1
+kallisto 0.42.2
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -49,7 +49,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.42.1
+kallisto 0.42.2
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -61,12 +61,14 @@ Required arguments:
 
 Optional arguments:
     --single                  Quantify single-end reads
+    --bias                    Perform sequence based bias correction
 -l, --fragment-length=DOUBLE  Estimated average fragment length
                               (default: value is estimated from the input data)
+    --pseudobam               Output pseudoalignments in SAM format to stdout
 -b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
+-t, --threads=INT             Number of threads to use for bootstraping (default: 1)
     --seed=INT                Seed for the bootstrap sampling (default: 42)
     --plaintext               Output plaintext instead of HDF5
-
 ~~~
 
 __kallisto__ can process either single-end or paired-end reads. The default running mode is paired-end and requires an even number of FASTQ files represented as pairs, e.g.
@@ -93,12 +95,37 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 - __abundances.h5__ is a HDF5 binary file containing run info, abundance
   esimates, bootstrap estimates, and transcript length information length. This
   file can be read in by __sleuth__
-- __abundances.txt__ is a plaintext file of the abundance estimates. It does
+- __abundances.tsv__ is a plaintext file of the abundance estimates. It does
   not contains bootstrap estimates. Please use the `--plaintext` mode to output
   plaintext abundance estimates. Alternatively, `kallisto h5dump` can be used
   to output an HDF5 file to plaintext. The first line contains a header for
   each column, including [estimated counts, TPM, effective length](https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/).
 - __run\_info.json__ is a json file containing information about the run
+
+
+##### Optional arguments
+
++ `--bias` learns parameters for a model of sequences specific bias and corrects the abundances accordlingly.
+
++ `-t, --threads` specifies the number of threads to be used while running bootstrap. The default value is 1 thread, specifying more than the number of bootstraps or the number of cores on your machine has no additional effect.
+
+##### Pseudobam
+
+`--pseudobam` outputs all pseudoalignments in SAM format to the standard output. The stream can either be redirected into a file, or converted to bam using `samtools`.
+
+For example
+
+~~~
+kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq > out.sam
+~~~
+
+or by piping directly into `samtools`
+
+~~~
+kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq | samtools view -Sb - > out.bam
+~~~
+
+A detailed description of the SAM output is [here](pseudobam.html).
 
 #### h5dump
 
@@ -107,7 +134,7 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.42.1
+kallisto 0.42.2
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
