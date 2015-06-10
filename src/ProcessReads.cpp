@@ -398,9 +398,11 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
 
+        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
+        int posmate = (f1 & 0x20) ? (x2.first - seq2->seq.l) : x2.first;
         
         
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), x1.first, (int) seq1->seq.l, x2.first, (x2.first-x1.first), (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq1->seq.l, posmate, (x2.first-x1.first), (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
 
       revset = false;
@@ -433,7 +435,11 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
 
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), x2.first, (int) seq2->seq.l, x1.first, (x1.first-x2.first), (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
+        int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l) : x2.first;
+        int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l) : x1.first;
+        
+
+        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq2->seq.l, posmate, (x1.first-x2.first), (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
       }
       
       
@@ -463,8 +469,10 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
             revset = true;
           }
         }
+
+        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
         
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t*\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), x1.first, (int) seq1->seq.l, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t*\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq1->seq.l, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
     }
   }
