@@ -197,16 +197,22 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
 }
 
-double get_mean_frag_len(const MinCollector& mc) {
+double MinCollector::get_mean_frag_len() const {
+  if (has_mean_fl) {
+    return mean_fl;
+  }
+  
   auto total_counts = 0;
   double total_mass = 0.0;
 
-  for ( size_t i = 0 ; i < mc.flens.size(); ++i ) {
-    total_counts += mc.flens[i];
-    total_mass += static_cast<double>(mc.flens[i] * i);
+  for ( size_t i = 0 ; i < flens.size(); ++i ) {
+    total_counts += flens[i];
+    total_mass += static_cast<double>(flens[i] * i);
   }
-
-  return total_mass / static_cast<double>(total_counts);
+  // cache the value
+  const_cast<double&>(mean_fl) = total_mass / static_cast<double>(total_counts);
+  const_cast<bool&>(has_mean_fl) = true;
+  return mean_fl;
 }
 
 

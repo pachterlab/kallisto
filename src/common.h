@@ -25,6 +25,7 @@ struct ProgramOptions {
   bool single_end;
   bool peek; // only used for H5Dump
   bool bias;
+  bool pseudobam;
 
 ProgramOptions() :
   verbose(false),
@@ -40,8 +41,12 @@ ProgramOptions() :
   write_index(false),
   single_end(false),
   peek(false),
-  bias(false)
+  bias(false),
+  pseudobam(false)   
   {}
 };
+
+std::string pretty_num(size_t num);
+std::string pretty_num(int num);
 
 #endif // KALLISTO_COMMON_H

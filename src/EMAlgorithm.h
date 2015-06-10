@@ -44,7 +44,7 @@ struct EMAlgorithm {
     rho_set_(false),
     mean_fl(mean)
   {
-    eff_lens_ = calc_eff_lens(index_.trans_lens_, mean_fl);
+    eff_lens_ = calc_eff_lens(index_.target_lens_, mean_fl);
     weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
     for (auto i = 0; i < alpha_.size(); i++) {
       if (counts_[i] > 0) {
@@ -198,7 +198,8 @@ struct EMAlgorithm {
 
     if (verbose) {
       std::cerr << " done" << std::endl;
-      std::cerr << "[   em] the Expectation-Maximization algorithm ran for " << i << " rounds";
+      std::cerr << "[   em] the Expectation-Maximization algorithm ran for "
+        << pretty_num(i) << " rounds";
       std::cerr << std::endl;
       std::cerr.flush();
     }

@@ -7,7 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
-
+#include <ostream>
 //#include <map>
 
 
@@ -112,10 +112,18 @@ struct KmerIndex {
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
+
+  // output methods
   void write(const std::string& index_out, bool writeKmerTable = true);
+  void writePseudoBamHeader(std::ostream &o) const;
+  
   // note opt is not const
+  // load methods
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
+
+  // positional information
+  std::pair<int,bool> findPosition(int tr, Kmer km, KmerEntry val, int p = 0) const;
 
   int k; // k-mer size used
   int num_trans; // number of targets
@@ -127,7 +135,7 @@ struct KmerIndex {
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
   const size_t INDEX_VERSION = 10; // increase this every time you change the fileformat
 
-  std::vector<int> trans_lens_;
+  std::vector<int> target_lens_;
 
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand

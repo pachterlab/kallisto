@@ -85,9 +85,9 @@ void BootstrapWorker::operator() (){
     } else {
       // can write out plaintext in parallel
       plaintext_writer(pool_.opt_.output + "/bs_abundance_" +
-          std::to_string(cur_id) + ".txt",
+          std::to_string(cur_id) + ".tsv",
           pool_.index_.target_names_, res.alpha_,
-          pool_.eff_lens_, pool_.index_.trans_lens_);
+          pool_.eff_lens_, pool_.index_.target_lens_);
     }
   }
 }
