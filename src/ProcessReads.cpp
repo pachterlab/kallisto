@@ -23,6 +23,7 @@ KSEQ_INIT(gzFile, gzread)
 
 void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
 void revseq(char *b1, char *b2, const kseq_t *seq);
+void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength);
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -298,6 +299,8 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
 
   static char buf1[32768];
   static char buf2[32768];
+  static char cig_[1000];
+  char *cig = &cig_[0];
   
   
   if (seq1->name.l > 2 && seq1->name.s[seq1->name.l-2] == '/') {
@@ -401,9 +404,11 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
 
         int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
         int posmate = (f1 & 0x20) ? (x2.first - seq2->seq.l) : x2.first;
+
+        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, posmate, seq1->seq.l, index.target_lens_[tr]);
+
         
-        
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq1->seq.l, posmate, (x2.first-x1.first), (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, (x2.first-x1.first), (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
 
       revset = false;
@@ -438,9 +443,11 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
 
         int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l) : x2.first;
         int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l) : x1.first;
-        
 
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t=\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq2->seq.l, posmate, (x1.first-x2.first), (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
+
+        getCIGARandSoftClip(cig, bool(f2 & 0x10), (f2 & 0x04) == 0, posread, posmate, seq2->seq.l, index.target_lens_[tr]);
+
+        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, (x1.first-x2.first), (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
       }
       
       
@@ -472,8 +479,10 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         }
 
         int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
+        int dummy=1;
+        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, seq1->seq.l, index.target_lens_[tr]);
         
-        printf("%s\t%d\t%s\t%d\t255\t%dM\t%d\t*\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (int) seq1->seq.l, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%s\t*\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
     }
   }
@@ -506,3 +515,32 @@ void revseq(char *b1, char *b2, const kseq_t *seq) {
 
 
 
+void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength) {
+  int softclip = 1 - posread;
+  int overhang = (posread + length) - targetlength;
+  
+  if (posread <= 0) {
+    posread = 1;
+  }
+
+  if (mapped) {
+    if (softclip > 0) {
+      if (overhang > 0) {
+        sprintf(cig, "%dS%dM%dS",softclip, (length-overhang-softclip), overhang);
+      } else {
+        sprintf(cig, "%dS%dM",softclip,length-softclip);
+      }
+    } else if (overhang > 0) {
+      sprintf(cig, "%dM%dS", length-overhang, overhang);
+    } else {
+      sprintf(cig, "%dM",length);
+    }
+  } else {
+    sprintf(cig, "*");
+  }
+
+  
+  if (posmate <= 0) {
+    posmate = 1;
+  }
+}
