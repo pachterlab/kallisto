@@ -15,7 +15,7 @@ fi
 mkdir $RELEASE
 
 cd $RELEASE
-cmake ..
+cmake -DLINK=static ..
 make VERBOSE=1
 mkdir kallisto
 
