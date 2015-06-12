@@ -254,6 +254,9 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
 
   
   auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
+    if (s==0) {
+      return -1;
+    }
     if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
       const Contig &c = index.dbGraph.contigs[val.contig];
       bool sense = c.transcripts[0].sense;
