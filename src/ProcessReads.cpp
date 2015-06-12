@@ -517,7 +517,9 @@ void revseq(char *b1, char *b2, const kseq_t *seq) {
 
 void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength) {
   int softclip = 1 - posread;
-  int overhang = (posread + length) - targetlength;
+  int overhang = (posread + length) - targetlength - 1;
+  std::cerr << "posread = " << posread << ", length = " << length << ", targetlength = " << targetlength << ", softclip = " << softclip << ", overhang = " << overhang << std::endl;
+
   
   if (posread <= 0) {
     posread = 1;
@@ -526,7 +528,7 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
   if (mapped) {
     if (softclip > 0) {
       if (overhang > 0) {
-        sprintf(cig, "%dS%dM%dS",softclip, (length-overhang-softclip), overhang);
+        sprintf(cig, "%dS%dM%dS",softclip, (length-overhang - softclip), overhang);
       } else {
         sprintf(cig, "%dS%dM",softclip,length-softclip);
       }
