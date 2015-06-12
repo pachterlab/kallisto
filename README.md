@@ -16,11 +16,11 @@ significantly outperforms existing tools.
 
 ## Manual
 
-Please visit http://pachterlab.github.io/kallisto for the manual.
+Please visit http://pachterlab.github.io/kallisto/manual.html for the manual.
 
 ## License
 
-Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` also viewable [here](http://pachterlab.github.io/kallisto).
+Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` also viewable [here](http://pachterlab.github.io/kallisto/license.html).
 
 ## Announcements
 
