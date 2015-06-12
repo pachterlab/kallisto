@@ -5,7 +5,7 @@
 #include <vector>
 #include <sys/stat.h>
 #include <getopt.h>
-#include <thread>
+/* #include <thread> */
 #include <time.h>
 
 #include <cstdio>
@@ -449,16 +449,16 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
   }
 
-  if (opt.threads <= 0) {
-    cerr << "Error: invalid number of threads " << opt.threads << endl;
-    ret = false;
-  } else {
-    unsigned int n = std::thread::hardware_concurrency();
-    if (n != 0 && n < opt.threads) {
-      cerr << "Warning: you asked for " << opt.threads
-           << ", but only " << n << " cores on the machine" << endl;
-    }
-  }
+  // if (opt.threads <= 0) {
+  //   cerr << "Error: invalid number of threads " << opt.threads << endl;
+  //   ret = false;
+  // } else {
+  //   unsigned int n = std::thread::hardware_concurrency();
+  //   if (n != 0 && n < opt.threads) {
+  //     cerr << "Warning: you asked for " << opt.threads
+  //          << ", but only " << n << " cores on the machine" << endl;
+  //   }
+  // }
 
   if (opt.bootstrap < 0) {
     cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;

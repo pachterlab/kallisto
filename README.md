@@ -20,4 +20,21 @@ Please visit http://pachterlab.github.io/kallisto for the manual.
 
 ## License
 
-Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` file and is also viewable [here](http://pachterlab.github.io/kallisto). 
+Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` also viewable [here](http://pachterlab.github.io/kallisto).
+
+## Announcements
+
+There is a low traffic Google Group,
+[kallisto-sleuth-announcements](https://groups.google.com/d/forum/kallisto-sleuth-announcements)
+where we make announcements about new releases. This is a read-only mailing
+list.
+
+## Getting help
+
+For help running __kallisto__, please post to the [kallisto-sleuth-users
+Google Group](https://groups.google.com/d/forum/kallisto-sleuth-users).
+
+## Reporting bugs
+
+Please report bugs to the [Github issues
+page](https://github.com/pachterlab/kallisto/issues)

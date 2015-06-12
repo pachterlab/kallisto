@@ -190,7 +190,7 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
         nummapped++;
         // collect sequence specific bias info
         if (opt.bias && biasCount < maxBiasCount) {
-          if (tc.countBias(seq1->seq.s, seq2->seq.s, v1, v2, paired)) {
+          if (tc.countBias(seq1->seq.s, (paired) ? seq2->seq.s : nullptr, v1, v2, paired)) {
             biasCount++;
           }
         }
