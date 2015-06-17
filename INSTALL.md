@@ -30,7 +30,6 @@ Installation
     ```
 
 1. Execute cmake. There are a few options:
-    - `-DBUILD_TESTING=ON` builds tests (off by default)
     - `-DCMAKE_INSTALL_PREFIX:PATH=$HOME` which will put kallisto in
        `$HOME/bin` as opposed to the default (`/usr/local/bin`)
 
