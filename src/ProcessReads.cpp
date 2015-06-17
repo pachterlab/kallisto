@@ -198,19 +198,12 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
       }
 
       // collect fragment length info
-      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans) {
-        //bool allSame = true;
-        bool allSame = (index.dbGraph.ecs[v1[0].first.contig] == ec
-                        && index.dbGraph.ecs[v2[0].first.contig] == ec)
-          && (v1[0].second == 0 && v2[0].second == 0);
-
-        if (allSame) {
-          // try to map the reads
-          int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
-          if (0 < tl && tl < tc.flens.size()) {
-            tc.flens[tl]++;
-            tlencount--;
-          }
+      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+        // try to map the reads
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
+        if (0 < tl && tl < tc.flens.size()) {
+          tc.flens[tl]++;
+          tlencount--;
         }
       }
 
