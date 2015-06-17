@@ -951,6 +951,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in.close();
 }
 
+
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
   bool d1 = true;
   bool d2 = true;
@@ -1171,6 +1172,12 @@ donejumping:
   }
 }
 
+
+//use:  (pos,sense) = index.findPosition(tr,km,val,p)
+//pre:  index.kmap[km] == val,
+//      km is the p-th k-mer of a read
+//      val.contig maps to tr
+//post: km is found in position pos (1-based) on the sense/!sense strand of tr
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, KmerEntry val, int p) const {
   bool fw = (km == km.rep());
   bool csense = (fw == val.isFw());
@@ -1207,7 +1214,6 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, KmerEntry val, int 
       return {trpos + (c.length - val.getPos())  - p, !csense}; // 1-based, case II
     }
   }
-  
 }
 
 /*

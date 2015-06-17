@@ -198,19 +198,12 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
       }
 
       // collect fragment length info
-      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans) {
-        //bool allSame = true;
-        bool allSame = (index.dbGraph.ecs[v1[0].first.contig] == ec
-                        && index.dbGraph.ecs[v2[0].first.contig] == ec)
-          && (v1[0].second == 0 && v2[0].second == 0);
-
-        if (allSame) {
-          // try to map the reads
-          int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
-          if (0 < tl && tl < tc.flens.size()) {
-            tc.flens[tl]++;
-            tlencount--;
-          }
+      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+        // try to map the reads
+        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
+        if (0 < tl && tl < tc.flens.size()) {
+          tc.flens[tl]++;
+          tlencount--;
         }
       }
 
@@ -402,13 +395,16 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
 
-        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
-        int posmate = (f1 & 0x20) ? (x2.first - seq2->seq.l) : x2.first;
+        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l + 1) : x1.first;
+        int posmate = (f1 & 0x20) ? (x2.first - seq2->seq.l + 1) : x2.first;
 
         getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, posmate, seq1->seq.l, index.target_lens_[tr]);
-
+        int tlen = x2.first - x1.first;
+        if (tlen != 0) {
+          tlen += (tlen>0) ? 1 : -1;
+        }
         
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, (x2.first-x1.first), (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
 
       revset = false;
@@ -441,13 +437,16 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
 
-        int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l) : x2.first;
-        int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l) : x1.first;
-
+        int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l + 1) : x2.first;
+        int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l + 1) : x1.first;
 
         getCIGARandSoftClip(cig, bool(f2 & 0x10), (f2 & 0x04) == 0, posread, posmate, seq2->seq.l, index.target_lens_[tr]);
+        int tlen = x1.first - x2.first;
+        if (tlen != 0) {
+          tlen += (tlen > 0) ? 1 : -1;
+        }
 
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, (x1.first-x2.first), (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
+        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
       }
       
       
@@ -478,7 +477,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
           }
         }
 
-        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l) : x1.first;
+        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l+1) : x1.first;
         int dummy=1;
         getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, seq1->seq.l, index.target_lens_[tr]);
         
