@@ -209,6 +209,14 @@ double MinCollector::get_mean_frag_len() const {
     total_counts += flens[i];
     total_mass += static_cast<double>(flens[i] * i);
   }
+
+  if (total_counts == 0) {
+    std::cerr << "Error: could not determine mean fragment length from paired end reads, no pairs mapped to a unique transcript." << std::endl
+              << "       Run kallisto quant again with a pre-specified fragment length (option -l)." << std::endl;
+    exit(1);
+    
+  }
+  
   // cache the value
   const_cast<double&>(mean_fl) = total_mass / static_cast<double>(total_counts);
   const_cast<bool&>(has_mean_fl) = true;
