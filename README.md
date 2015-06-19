@@ -38,3 +38,12 @@ Google Group](https://groups.google.com/d/forum/kallisto-sleuth-users).
 
 Please report bugs to the [Github issues
 page](https://github.com/pachterlab/kallisto/issues)
+
+## Development and pull requests
+
+We typically develop on separate branches, then merge into devel once features
+have been sufficiently tested. `devel` is the latest, stable, development
+branch. `master` is used only for official releases and is considered to be
+stable. If you submit a pull request (thanks!) please make sure to request to
+merge into `devel` and NOT `master`. Merges usually only go into `master`, but
+not out.
