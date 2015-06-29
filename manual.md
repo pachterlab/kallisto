@@ -86,6 +86,10 @@ kallisto quant -i index -o output --single -l 180 file1.fastq.gz file2.fastq.gz 
 FASTQ files can be either plaintext or
 gzipped.
 
+**Important note:** only supply one sample at a time to _kallisto_. The
+multiple FASTQ (pair) option is for users who have samples that span multiple
+FASTQ files.
+
 In the case of single-end reads, the -l option must be used to specify the average fragment length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode).
 
 The number of bootstrap samples is specified using -b. Note that because of the large amount of data that may be produced when the number of bootstrap samples is high, __kallisto__ outputs bootstrap results in HDF5 format. The `h5dump` command can be used afterwards to convert this output to plaintext, however most convenient is to analyze bootstrap results with __sleuth__.
