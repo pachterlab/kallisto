@@ -15,9 +15,9 @@ std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
   for (size_t i = 0; i < lengths.size(); ++i) {
 
     if (lengths[i] >= MAX_FRAG_LEN) {
-      frag_len_means[i] = marginal_mean;
+      frag_len_means.push_back(marginal_mean);
     } else {
-      frag_len_means[i] = mean_frag_len_trunc[i];
+      frag_len_means.push_back(mean_frag_len_trunc[ lengths[i] ]);
     }
 
   }
