@@ -16,8 +16,12 @@ std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
     const std::vector<double>& mean_frag_len_trunc);
 
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean);
+
+// @param lengths the lengths of all the targets
+// @param means the mean frag len of every transcript
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
     const std::vector<double>& means);
+
 std::vector<double> update_eff_lens(double mean, const MinCollector& tc, const KmerIndex &index, const std::vector<double> alpha, const std::vector<double> eff_lens);
 
 

@@ -717,16 +717,21 @@ int main(int argc, char *argv[]) {
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         if (opt.fld == 0.0) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+          // TODO: eventually remove the 'mean fl' calculation above
+          // I think the way to get around this for SE reads is simply to dump
+          // the inputted mean into every position in the vector to reduce the
+          // extra logic everywhere. -HP
+          collection.get_mean_frag_lens_trunc();
         }
 
-        collection.get_mean_frag_lens_trunc();
 
         /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
-        EMAlgorithm em(collection.counts, index, collection, mean_fl);
+        auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+        EMAlgorithm em(collection.counts, index, collection, mean_fl, fl_means);
         em.run(10000, 50, true, opt.bias);
 
         //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);

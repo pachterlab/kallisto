@@ -57,6 +57,22 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
   std::vector<double> eff_lens;
   eff_lens.reserve( lengths.size() );
 
+  assert( lengths.size() == means.size() );
+
+  // Sir Too $hort comin' straight from Oakland
+  auto n_too_short = 0;
+
+  for (size_t i = 0; i < lengths.size(); ++i) {
+    double cur_len_dbl = static_cast<double>(lengths[i]);
+    double cur_eff_len = cur_len_dbl - means[i] + 1;
+    if (cur_eff_len < 1.0) {
+      cur_eff_len = cur_len_dbl;
+      ++n_too_short;
+    }
+    eff_lens.push_back( cur_eff_len );
+  }
+
+  return eff_lens;
 }
 
 inline int update_hexamer(int hex, char c, bool revcomp) {
@@ -78,8 +94,13 @@ inline int update_hexamer(int hex, char c, bool revcomp) {
   return hex;
 }
 
-std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const KmerIndex &index, const std::vector<double> alpha, const std::vector<double> eff_lens) {
+std::vector<double> update_eff_lens(double mean,
+    const MinCollector& tc,
+    const KmerIndex &index,
+    const std::vector<double> alpha,
+    const std::vector<double> eff_lens) {
   // Pall: is there a reason 'eff_lens' isn't passed by ref?
+  // TODO: need to go through this and replace 'mean' with the vector of means
 
   double biasDataNorm = 0.0;
   double biasAlphaNorm = 0.0;
@@ -94,6 +115,8 @@ std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const 
 
   for (int i = 0; i < index.num_trans; i++) {
     if (index.target_lens_[i] < mean) {
+      // if we replace 'mean' with the proposed vector, then this case
+      // shouldn't happen
       continue;
     }
 

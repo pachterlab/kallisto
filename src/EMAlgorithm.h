@@ -26,7 +26,8 @@ struct EMAlgorithm {
   EMAlgorithm(const std::vector<int>& counts,
               const KmerIndex& index,
               const MinCollector& tc,
-              double mean
+              double mean,
+              const std::vector<double>& all_means // TODO: get rid of 'mean' soon
 /*    const EcMap& ecmap,
               const std::vector<int>& counts,
               const std::vector<std::string>& target_names,
@@ -42,11 +43,13 @@ struct EMAlgorithm {
     alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
     rho_set_(false),
-    mean_fl(mean)
+    mean_fl(mean),
+    all_fl_means(all_means)
   {
-    eff_lens_ = calc_eff_lens(index_.target_lens_, mean_fl);
+    assert(all_fl_means.size() == index_.target_lens_.size());
+    eff_lens_ = calc_eff_lens(index_.target_lens_, all_fl_means);
     weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
-    for (auto i = 0; i < alpha_.size(); i++) {
+    for (size_t i = 0; i < alpha_.size(); i++) {
       if (counts_[i] > 0) {
         alpha_[i] = counts_[i];
       } else {
@@ -301,6 +304,7 @@ struct EMAlgorithm {
   const EcMap& ecmap_;
   const std::vector<int>& counts_;
   const std::vector<std::string>& target_names_;
+  const std::vector<double>& all_fl_means;
   std::vector<double> eff_lens_;
   WeightMap weight_map_;
   std::vector<double> alpha_;
