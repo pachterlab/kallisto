@@ -9,7 +9,15 @@
 
 using WeightMap = std::vector<std::vector<double>>;
 
+// this function takes the 'mean_fl_trunc' from MinCollector and simply gives
+// you back a 'mean fragment length' for every single transcript. this avoids
+// you having to check the length every single time
+std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
+    const std::vector<double>& mean_frag_len_trunc);
+
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean);
+std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
+    const std::vector<double>& means);
 std::vector<double> update_eff_lens(double mean, const MinCollector& tc, const KmerIndex &index, const std::vector<double> alpha, const std::vector<double> eff_lens);
 
 

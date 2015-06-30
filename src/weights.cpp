@@ -1,5 +1,29 @@
 #include "weights.h"
+
 #include <cmath>
+
+std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
+    const std::vector<double>& mean_frag_len_trunc) {
+
+  std::vector<double> frag_len_means;
+  frag_len_means.reserve( lengths.size() );
+
+  // we'll just assume we don't see any fragments longer or equal to
+  // MAX_FRAG_LEN
+  double marginal_mean = mean_frag_len_trunc[MAX_FRAG_LEN - 1];
+
+  for (size_t i = 0; i < lengths.size(); ++i) {
+
+    if (lengths[i] >= MAX_FRAG_LEN) {
+      frag_len_means[i] = marginal_mean;
+    } else {
+      frag_len_means[i] = mean_frag_len_trunc[i];
+    }
+
+  }
+
+  return frag_len_means;
+}
 
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
 {
@@ -28,6 +52,13 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
   return eff_lens;
 }
 
+std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
+    const std::vector<double>& means) {
+  std::vector<double> eff_lens;
+  eff_lens.reserve( lengths.size() );
+
+}
+
 inline int update_hexamer(int hex, char c, bool revcomp) {
   if (!revcomp) {
     hex = ((hex & 0x3FF) << 2);
@@ -48,6 +79,7 @@ inline int update_hexamer(int hex, char c, bool revcomp) {
 }
 
 std::vector<double> update_eff_lens(double mean, const MinCollector& tc,  const KmerIndex &index, const std::vector<double> alpha, const std::vector<double> eff_lens) {
+  // Pall: is there a reason 'eff_lens' isn't passed by ref?
 
   double biasDataNorm = 0.0;
   double biasAlphaNorm = 0.0;

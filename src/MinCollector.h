@@ -10,7 +10,7 @@
 
 #include "KmerIndex.h"
 
-const size_t MAX_FRAG_LEN = 1000;
+const int MAX_FRAG_LEN = 1000;
 
 struct MinCollector {
 
@@ -27,6 +27,7 @@ struct MinCollector {
       has_mean_fl(false),
       mean_fl_trunc(MAX_FRAG_LEN, 0.0),
       has_mean_fl_trunc(false)
+      // eff_len_cache(MAX_FRAG_LEN, 0.0)
        {}
 
   int collect(std::vector<std::pair<KmerEntry,int>>& v1,
@@ -57,6 +58,7 @@ struct MinCollector {
 
   void get_mean_frag_lens_trunc() const;
 
+  /* double eff_len(int len) const; */
 
   KmerIndex& index;
   std::vector<int> counts;
@@ -70,6 +72,8 @@ struct MinCollector {
 
   std::vector<double> mean_fl_trunc;
   bool has_mean_fl_trunc;
+
+  // std::vector<double> eff_len_cache;
 };
 
 std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y);
