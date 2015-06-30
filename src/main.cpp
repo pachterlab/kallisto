@@ -719,6 +719,7 @@ int main(int argc, char *argv[]) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
         }
 
+        collection.get_mean_frag_lens_trunc();
 
         /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
