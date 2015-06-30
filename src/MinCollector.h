@@ -58,6 +58,9 @@ struct MinCollector {
 
   void get_mean_frag_lens_trunc() const;
 
+  // this function is a bit of a hack. should only be used with SE data
+  void init_mean(double mean);
+
   /* double eff_len(int len) const; */
 
   KmerIndex& index;

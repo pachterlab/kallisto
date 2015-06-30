@@ -21,6 +21,15 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
   return v;
 }
 
+void MinCollector::init_mean(double mean) {
+  for (size_t i = 0 ; i < mean_fl_trunc.size(); ++i) {
+    mean_fl_trunc[i] = mean;
+  }
+  mean_fl = mean;
+
+  has_mean_fl = true;
+  has_mean_fl_trunc = true;
+}
 
 int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
                           std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
