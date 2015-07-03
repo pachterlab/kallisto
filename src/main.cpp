@@ -715,6 +715,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+        auto sd_fl = 80.0;
         if (opt.fld == 0.0) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
           // TODO: eventually remove the 'mean fl' calculation above
@@ -723,7 +724,11 @@ int main(int argc, char *argv[]) {
           // extra logic everywhere. -HP
           collection.get_mean_frag_lens_trunc();
         } else {
-          collection.init_mean( mean_fl );
+          collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          cout << collection.mean_fl_trunc.size() << endl;
+          for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+            cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          }
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -824,6 +829,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+        auto sd_fl = 80.0;
         if (opt.fld == 0.0) {
           std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
           // TODO: eventually remove the 'mean fl' calculation above
@@ -832,7 +838,11 @@ int main(int argc, char *argv[]) {
           // extra logic everywhere. -HP
           collection.get_mean_frag_lens_trunc();
         } else {
-          collection.init_mean( mean_fl );
+          collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          cout << collection.mean_fl_trunc.size() << endl;
+          for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+            cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          }
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);

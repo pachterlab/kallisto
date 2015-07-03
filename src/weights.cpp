@@ -123,7 +123,7 @@ std::vector<double> update_eff_lens(double mean,
     if (alpha[i] < 1e-8) {
       continue;
     }
-    
+
     double contrib = 0.5*alpha[i]/eff_lens[i];
     int seqlen = index.target_seqs_[i].size();
     const char* cs = index.target_seqs_[i].c_str();
@@ -179,7 +179,7 @@ std::vector<double> update_eff_lens(double mean,
       efflen *= 0.5*biasAlphaNorm/biasDataNorm;
     }
 
-    
+
     if (efflen > mean) {
       //efflen *= ((seqlen-mean) / ((double) (seqlen-mean-6));
       biaslens[i] = efflen;
@@ -188,7 +188,7 @@ std::vector<double> update_eff_lens(double mean,
     }
     //std::cout << index.target_names_[i] << "\t" << eff_lens[i] << "\t" << biaslens[i] << "\t" << efflen << "\n";
   }
-  
+
 
 
   return biaslens;
@@ -223,4 +223,29 @@ WeightMap calc_weights(
 
 
   return weights;
+}
+
+std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
+    double sd) {
+  size_t n = stop - start;
+  std::vector<double> mean_fl(n, 0.0);
+
+  double total_mass = 0.0;
+  double total_density = 0.0;
+
+  for (size_t i = 0; i < n + 1; ++i) {
+    double x = static_cast<double>(start + i);
+    x = (x - mean) / sd;
+    // XXX: this isn't normalized, but it doesn't matter since it gets
+    // normalized below
+    double cur_density = std::exp( - 0.5 * x * x ) / sd;
+
+    total_mass += cur_density * i;
+    total_density += cur_density;
+    if (total_mass > 0) {
+      mean_fl[i] = total_mass / total_density;
+    }
+  }
+
+  return mean_fl;
 }

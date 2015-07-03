@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include "KmerIndex.h"
+#include "weights.h"
 
 const int MAX_FRAG_LEN = 1000;
 
@@ -59,7 +60,7 @@ struct MinCollector {
   void get_mean_frag_lens_trunc() const;
 
   // this function is a bit of a hack. should only be used with SE data
-  void init_mean(double mean);
+  void init_mean_fl_trunc(double mean, double sd);
 
   /* double eff_len(int len) const; */
 

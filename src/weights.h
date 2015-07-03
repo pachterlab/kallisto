@@ -3,9 +3,12 @@
 
 #include "KmerIndex.h"
 #include "MinCollector.h"
+#include <cmath>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+struct MinCollector;
 
 using WeightMap = std::vector<std::vector<double>>;
 
@@ -29,5 +32,16 @@ WeightMap calc_weights(
   const std::vector<int>& counts,
   const EcMap& ecmap,
   const std::vector<double>& eff_lens);
+
+
+// truncated gaussian fragment length distribution
+//
+// use this for single-end reads since we don't have an empirical distribution
+//
+// start: inclusive
+// stop: exclusive
+// let's pretend all the input is sane
+std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
+    double sd);
 
 #endif // KALLISTO_WEIGHTS_H

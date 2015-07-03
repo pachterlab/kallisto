@@ -21,11 +21,13 @@ std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y)
   return v;
 }
 
-void MinCollector::init_mean(double mean) {
-  for (size_t i = 0 ; i < mean_fl_trunc.size(); ++i) {
-    mean_fl_trunc[i] = mean;
-  }
-  mean_fl = mean;
+void MinCollector::init_mean_fl_trunc(double mean, double sd) {
+  auto tmp_trunc_fl = trunc_gaussian_fld(0, MAX_FRAG_LEN, mean, sd);
+  assert( tmp_trunc_fl.size() == mean_fl_trunc.size() );
+
+  std::copy( tmp_trunc_fl.begin(), tmp_trunc_fl.end(), mean_fl_trunc.begin() );
+
+  mean_fl = mean_fl_trunc[ MAX_FRAG_LEN - 1 ];
 
   has_mean_fl = true;
   has_mean_fl_trunc = true;
