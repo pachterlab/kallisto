@@ -97,8 +97,9 @@ inline int update_hexamer(int hex, char c, bool revcomp) {
 std::vector<double> update_eff_lens(double mean,
     const MinCollector& tc,
     const KmerIndex &index,
-    const std::vector<double> alpha,
-    const std::vector<double> eff_lens) {
+    const std::vector<double>& alpha,
+    const std::vector<double>& eff_lens,
+    const std::vector<double>& means) {
   // Pall: is there a reason 'eff_lens' isn't passed by ref?
   // TODO: need to go through this and replace 'mean' with the vector of means
 
@@ -129,13 +130,13 @@ std::vector<double> update_eff_lens(double mean,
     const char* cs = index.target_seqs_[i].c_str();
 
     int hex = hexamerToInt(cs,false);
-    int fwlimit = (int) (seqlen - mean - 6);
+    int fwlimit = (int) (seqlen - means[i] - 6);
     for (int j = 0; j < fwlimit; j++) {
       dbias5[hex] += contrib;
       hex = update_hexamer(hex,*(cs+j+6),false);
     }
 
-    int bwlimit = (int) (mean - 6);
+    int bwlimit = (int) (means[i] - 6);
     hex = hexamerToInt(cs+bwlimit,true);
     for (int j = bwlimit; j < seqlen - 6; j++) {
       dbias5[hex] += contrib;
@@ -153,6 +154,7 @@ std::vector<double> update_eff_lens(double mean,
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
+    // i think we can safely remove the 'mean' ineq here - HP
     if (index.target_lens_[i] >= mean && alpha[i] >= 1e-8) {
 
       int seqlen = index.target_seqs_[i].size();
@@ -160,14 +162,14 @@ std::vector<double> update_eff_lens(double mean,
 
       // forward direction
       int hex = hexamerToInt(cs,false);
-      int fwlimit = (int) seqlen - mean-6;
+      int fwlimit = (int) seqlen - means[i] -6;
       for (int j = 0; j < fwlimit; j++) {
         //int hex = hexamerToInt(cs+j,false);
         //efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
         efflen += tc.bias5[hex] / dbias5[hex];
         hex = update_hexamer(hex,*(cs+j+6),false);
       }
-      int bwlimit = (int) std::max(mean-6,0.0);
+      int bwlimit = (int) std::max(means[i]-6,0.0);
       hex = hexamerToInt(cs+bwlimit,true);
       for (int j = bwlimit; j < seqlen - 6; j++) {
         efflen += tc.bias5[hex] / dbias5[hex];
