@@ -4,7 +4,7 @@ title: "Download"
 group: navigation
 ---
 
-{% include JB/setup %}
+{% include JB/setup %} 
 
 #### Repository
 
