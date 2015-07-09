@@ -4,7 +4,7 @@
 
 EMAlgorithm Bootstrap::run_em() {
     auto counts = mult_.sample();
-    EMAlgorithm em(counts, index_, tc_, mean_fl, mean_fls_);
+    EMAlgorithm em(counts, index_, tc_, mean_fls_);
 
     //em.set_start(em_start);
     em.run(10000, 50, false, false);
@@ -20,7 +20,6 @@ BootstrapThreadPool::BootstrapThreadPool(
     const KmerIndex& index,
     const MinCollector& tc,
     const std::vector<double>& eff_lens,
-    double mean,
     const ProgramOptions& p_opts,
     H5Writer& h5writer,
     const std::vector<double>& mean_fls
@@ -32,7 +31,6 @@ BootstrapThreadPool::BootstrapThreadPool(
   index_(index),
   tc_(tc),
   eff_lens_(eff_lens),
-  mean_fl_(mean),
   opt_(p_opts),
   writer_(h5writer),
   mean_fls_(mean_fls)
@@ -73,7 +71,6 @@ void BootstrapWorker::operator() (){
         pool_.index_,
         pool_.tc_,
         pool_.eff_lens_,
-        pool_.mean_fl_,
         cur_seed,
         pool_.mean_fls_);
 

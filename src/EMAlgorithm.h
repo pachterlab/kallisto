@@ -26,7 +26,6 @@ struct EMAlgorithm {
   EMAlgorithm(const std::vector<int>& counts,
               const KmerIndex& index,
               const MinCollector& tc,
-              double mean,
               const std::vector<double>& all_means // TODO: get rid of 'mean' soon
 /*    const EcMap& ecmap,
               const std::vector<int>& counts,
@@ -43,7 +42,6 @@ struct EMAlgorithm {
     alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
     rho_set_(false),
-    mean_fl(mean),
     all_fl_means(all_means)
   {
     assert(all_fl_means.size() == index_.target_lens_.size());
@@ -311,7 +309,6 @@ struct EMAlgorithm {
   std::vector<double> alpha_before_zeroes_;
   std::vector<double> rho_;
   bool rho_set_;
-  double mean_fl;
 };
 
 

@@ -714,16 +714,12 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-        auto sd_fl = 80.0;
         if (opt.fld == 0.0) {
-          std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-          // TODO: eventually remove the 'mean fl' calculation above
-          // I think the way to get around this for SE reads is simply to dump
-          // the inputted mean into every position in the vector to reduce the
-          // extra logic everywhere. -HP
           collection.get_mean_frag_lens_trunc();
+
         } else {
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+          auto sd_fl = 80.0;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           cout << collection.mean_fl_trunc.size() << endl;
           for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
@@ -738,7 +734,7 @@ int main(int argc, char *argv[]) {
           }*/
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
-        EMAlgorithm em(collection.counts, index, collection, mean_fl, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
 
         //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
@@ -789,10 +785,10 @@ int main(int argc, char *argv[]) {
             }
 
             BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, mean_fl, opt, writer, fl_means);
+                collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -825,31 +821,25 @@ int main(int argc, char *argv[]) {
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
-        // if mean FL not provided, estimate
 
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-        auto sd_fl = 80.0;
         if (opt.fld == 0.0) {
-          std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-          // TODO: eventually remove the 'mean fl' calculation above
-          // I think the way to get around this for SE reads is simply to dump
-          // the inputted mean into every position in the vector to reduce the
-          // extra logic everywhere. -HP
           collection.get_mean_frag_lens_trunc();
         } else {
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+          auto sd_fl = 80.0;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           cout << collection.mean_fl_trunc.size() << endl;
-          for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-            cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-          }
+          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          // }
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
 
         //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
-        EMAlgorithm em(collection.counts, index, collection, mean_fl, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -895,10 +885,10 @@ int main(int argc, char *argv[]) {
             }
 
             BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, mean_fl, opt, writer, fl_means);
+                collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -940,6 +930,6 @@ int main(int argc, char *argv[]) {
   }
 
   fflush(stdout);
-  
+
   return 0;
 }

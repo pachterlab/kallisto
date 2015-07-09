@@ -248,8 +248,11 @@ void MinCollector::get_mean_frag_lens_trunc() const {
     if (counts[i] > 0) {
       const_cast<double&>(mean_fl_trunc[i]) = mass[i] / static_cast<double>(counts[i]);
     }
-    std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
+    // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
+
+  std::cerr << "[quant] estimated average fragment length: " <<
+    mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;
 }
 
 int hexamerToInt(const char *s, bool revcomp) {
