@@ -45,7 +45,6 @@ struct MinCollector {
 
   std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
 
-
   void write(std::ostream& o) {
     for (int id = 0; id < counts.size(); id++) {
       o << id << "\t" << counts[id] << "\n";
@@ -55,14 +54,14 @@ struct MinCollector {
 
   bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
 
+  // DEPRECATED
   double get_mean_frag_len() const;
 
+  // compute the conditional mean of each target given the FLD
   void get_mean_frag_lens_trunc() const;
 
-  // this function is a bit of a hack. should only be used with SE data
+  // this function should only be used for SE data
   void init_mean_fl_trunc(double mean, double sd);
-
-  /* double eff_len(int len) const; */
 
   KmerIndex& index;
   std::vector<int> counts;
@@ -76,14 +75,9 @@ struct MinCollector {
 
   std::vector<double> mean_fl_trunc;
   bool has_mean_fl_trunc;
-
-  // std::vector<double> eff_len_cache;
 };
 
 std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y);
-
-// compute the mean fragment length from a min_collector
-
 
 int hexamerToInt(const char *s, bool revcomp);
 

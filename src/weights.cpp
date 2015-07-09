@@ -104,7 +104,6 @@ std::vector<double> update_eff_lens(
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens
     ) {
-  // TODO: need to go through this and replace 'mean' with the vector of means
 
   double biasDataNorm = 0.0;
   double biasAlphaNorm = 0.0;

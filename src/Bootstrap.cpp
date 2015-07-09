@@ -1,6 +1,4 @@
 #include "Bootstrap.h"
-// #include "weights.h"
-// #include "EMAlgorithm.h"
 
 EMAlgorithm Bootstrap::run_em() {
     auto counts = mult_.sample();

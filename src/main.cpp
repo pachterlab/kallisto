@@ -645,7 +645,7 @@ int main(int argc, char *argv[]) {
   std::cout.sync_with_stdio(false);
   setvbuf(stdout, NULL, _IOFBF, 1048576);
 
-  
+
   if (argc < 2) {
     usage();
     exit(1);
@@ -716,15 +716,13 @@ int main(int argc, char *argv[]) {
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
           collection.get_mean_frag_lens_trunc();
-
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = 80.0;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          cout << collection.mean_fl_trunc.size() << endl;
-          for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-            cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-          }
+          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          // }
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -733,12 +731,8 @@ int main(int argc, char *argv[]) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
-        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
-
-        //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
-
 
         std::string call = argv_to_string(argc, argv);
 
@@ -768,8 +762,6 @@ int main(int argc, char *argv[]) {
 
           std::vector<size_t> seeds;
           for (auto s = 0; s < B; ++s) {
-            // TODO: check whether or not there are collisions. they happen
-            // with tiny probability... but technically still can happen - HP
             seeds.push_back( rand() );
           }
 
@@ -837,8 +829,6 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-
-        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
         EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
 

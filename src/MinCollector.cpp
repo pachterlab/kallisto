@@ -212,7 +212,7 @@ double MinCollector::get_mean_frag_len() const {
   if (has_mean_fl) {
     return mean_fl;
   }
-  
+
   auto total_counts = 0;
   double total_mass = 0.0;
 
@@ -225,9 +225,9 @@ double MinCollector::get_mean_frag_len() const {
     std::cerr << "Error: could not determine mean fragment length from paired end reads, no pairs mapped to a unique transcript." << std::endl
               << "       Run kallisto quant again with a pre-specified fragment length (option -l)." << std::endl;
     exit(1);
-    
+
   }
-  
+
   // cache the value
   const_cast<double&>(mean_fl) = total_mass / static_cast<double>(total_counts);
   const_cast<bool&>(has_mean_fl) = true;
@@ -251,6 +251,8 @@ void MinCollector::get_mean_frag_lens_trunc() const {
     // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
 
+  const_cast<bool&>(has_mean_fl_trunc) = true;
+
   std::cerr << "[quant] estimated average fragment length: " <<
     mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;
 }
@@ -266,7 +268,7 @@ int hexamerToInt(const char *s, bool revcomp) {
       case 'G': hex += 2; break;
       case 'T': hex += 3; break;
       default: return -1;
-      }    
+      }
     }
   } else {
     for (int i = 0; i < 6; i++) {
@@ -276,7 +278,7 @@ int hexamerToInt(const char *s, bool revcomp) {
       case 'G': hex += 1 << (2*i); break;
       case 'T': break;
       default: return -1;
-      }    
+      }
     }
   }
   return hex;
@@ -285,13 +287,13 @@ int hexamerToInt(const char *s, bool revcomp) {
 bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
 
   const int pre = 2, post = 4;
-  
+
   if (v1.empty() || (paired && v2.empty())) {
     return false;
   }
 
 
-  
+
   auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
     if (s==0) {
       return -1;
@@ -299,7 +301,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
       const Contig &c = index.dbGraph.contigs[val.contig];
       bool sense = c.transcripts[0].sense;
-      
+
       int hex = -1;
       //std::cout << "  " << s << "\n";
       if (csense) {
@@ -325,7 +327,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
       p1 = x.second;
     }
   }
-  
+
   Kmer km1 = Kmer((s1+p1));
   bool fw1 = (km1==km1.rep());
   bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
@@ -344,15 +346,15 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
         p2 = x.second;
       }
     }
-    
+
     Kmer km2 = Kmer((s2+p2));
     bool fw2 = (km2==km2.rep());
     bool csense2 = (fw2 == val2.isFw()); // is this in the direction of the contig?
-    
+
     hex3 = getPreSeq(s2, km2, fw2, csense2, val2, p2);
   }
   */
-  
+
   if (hex5 >=0) { // && (!paired || hex3 >= 0)) {
     bias5[hex5]++;
     //bias3[hex3]++;
