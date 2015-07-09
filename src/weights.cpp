@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+const double MIN_ALPHA = 1e-8;
+
 std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
     const std::vector<double>& mean_frag_len_trunc) {
 
@@ -25,6 +27,7 @@ std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
   return frag_len_means;
 }
 
+// XXX: DEPRECATED
 std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
 {
   // for now do the total naive thing and subtract mean frag length
@@ -94,12 +97,13 @@ inline int update_hexamer(int hex, char c, bool revcomp) {
   return hex;
 }
 
-std::vector<double> update_eff_lens(double mean,
+std::vector<double> update_eff_lens(
+    const std::vector<double>& means,
     const MinCollector& tc,
     const KmerIndex &index,
     const std::vector<double>& alpha,
-    const std::vector<double>& eff_lens,
-    const std::vector<double>& means) {
+    const std::vector<double>& eff_lens
+    ) {
   // TODO: need to go through this and replace 'mean' with the vector of means
 
   double biasDataNorm = 0.0;
@@ -120,7 +124,7 @@ std::vector<double> update_eff_lens(double mean,
       continue;
     }
 
-    if (alpha[i] < 1e-8) {
+    if (alpha[i] < MIN_ALPHA) {
       continue;
     }
 
@@ -153,7 +157,7 @@ std::vector<double> update_eff_lens(double mean,
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
-    if (index.target_lens_[i] >= means[i] && alpha[i] >= 1e-8) {
+    if (index.target_lens_[i] >= means[i] && alpha[i] >= MIN_ALPHA) {
 
       int seqlen = index.target_seqs_[i].size();
       const char* cs = index.target_seqs_[i].c_str();
@@ -180,7 +184,7 @@ std::vector<double> update_eff_lens(double mean,
     }
 
 
-    if (efflen > mean) {
+    if (efflen > means[i]) {
       //efflen *= ((seqlen-mean) / ((double) (seqlen-mean-6));
       biaslens[i] = efflen;
     } else {
@@ -206,8 +210,7 @@ WeightMap calc_weights(
   // weights are stored _exactly_ in the same orientation as the ec map
   WeightMap weights(ecmap.size());
 
-//  for (auto& kv : ecmap) {
-  for (int ec = 0; ec < ecmap.size(); ec++) {
+  for (size_t ec = 0; ec < ecmap.size(); ec++) {
     auto& v = ecmap[ec];
     //std::cout << ec;
     std::vector<double> trans_weights;
