@@ -100,7 +100,6 @@ std::vector<double> update_eff_lens(double mean,
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens,
     const std::vector<double>& means) {
-  // Pall: is there a reason 'eff_lens' isn't passed by ref?
   // TODO: need to go through this and replace 'mean' with the vector of means
 
   double biasDataNorm = 0.0;
@@ -115,9 +114,9 @@ std::vector<double> update_eff_lens(double mean,
   index.loadTranscriptSequences();
 
   for (int i = 0; i < index.num_trans; i++) {
-    if (index.target_lens_[i] < mean) {
-      // if we replace 'mean' with the proposed vector, then this case
-      // shouldn't happen
+    if (index.target_lens_[i] < means[i]) {
+      // this should never happen.. but I'll sleep better at night with this
+      // condition -HP
       continue;
     }
 
@@ -154,8 +153,7 @@ std::vector<double> update_eff_lens(double mean,
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
-    // i think we can safely remove the 'mean' ineq here - HP
-    if (index.target_lens_[i] >= mean && alpha[i] >= 1e-8) {
+    if (index.target_lens_[i] >= means[i] && alpha[i] >= 1e-8) {
 
       int seqlen = index.target_seqs_[i].size();
       const char* cs = index.target_seqs_[i].c_str();
