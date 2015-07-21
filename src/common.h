@@ -26,6 +26,7 @@ struct ProgramOptions {
   bool peek; // only used for H5Dump
   bool bias;
   bool pseudobam;
+  std::string gfa; // used for inspect
 
 ProgramOptions() :
   verbose(false),

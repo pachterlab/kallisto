@@ -76,7 +76,35 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
-  opt.index = argv[1];
+
+
+  const char *opt_string = "";
+  static struct option long_options[] = {
+    // long args
+    {"gfa", required_argument, 0, 'g'},
+    {0,0,0,0}
+  };
+
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 'g': {
+      opt.gfa = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+  opt.index = argv[optind];
 }
 
 
@@ -577,7 +605,9 @@ void usageh5dump() {
 
 void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
-       << "Usage: kallisto inspect INDEX-file" << endl << endl;
+       << "Usage: kallisto inspect INDEX-file" << endl << endl
+       << "Optional arguments:" << endl
+       << "    --gfa=STRING              Filename for GFA output of T-DBG" << endl << endl;
 }
 
 void usageEM(bool valid_input = true) {
@@ -687,7 +717,7 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt);
-        InspectIndex(index);
+        InspectIndex(index,opt.gfa);
       }
 
     } else if (cmd == "quant") {

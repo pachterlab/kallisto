@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 void printVector(const vector<int>& v) {
   cout << "[";
   int i = 0;
@@ -40,7 +41,11 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
   }
 }
 
-void InspectIndex(const KmerIndex& index) {
+void InspectIndex(const KmerIndex& index, const std::string& gfa) {
+
+  static const char *dna = "ACGT";
+  auto Dna = [](int i) {return dna[i & 0x03];};
+
   int k = index.k;
   cout << "#[inspect] Index version number = " << index.INDEX_VERSION << endl;
   cout << "#[inspect] k = " << index.k << endl;;
@@ -191,6 +196,65 @@ void InspectIndex(const KmerIndex& index) {
 
   printHisto(kmhisto, "#EC.size\tNum.kmers");
 
+
+  if (!gfa.empty()) {
+    std::ofstream out;
+    out.open(gfa);
+    out << "H\tVN:Z:1.0\n";
+    int i = 0;
+    for (auto& c : index.dbGraph.contigs) {
+      out << "S\t" << i << "\t" << c.seq << "\tXT:S:";
+      for (int j = 0; j < c.transcripts.size(); j++) {
+        auto &ct = c.transcripts[j];
+        if (j > 0) {
+          out << ",";
+        }
+        out << index.target_names_[ct.trid];
+      }
+      out << "\n";
+      i++;
+    }
+
+    const auto& kmap = index.kmap;
+    i = 0;
+    for (auto& c : index.dbGraph.contigs) {
+      auto& seq = c.seq;
+
+      Kmer last(seq.c_str() + seq.size()-k);
+      for (int j = 0; j < 4; j++) {
+        Kmer after = last.forwardBase(Dna(j));
+        auto search = kmap.find(after.rep());
+        if (search != kmap.end()) {
+          KmerEntry val = search->second;
+          // check if + or -
+          bool strand = val.isFw() == (after == after.rep());
+          out << "L\t" << i << "\t+\t" << val.contig
+              << "\t" << (strand ? '+' : '-') << "\t" << (k-1) << "M\n";
+        }
+      }
+
+      // enumerate bw links
+      Kmer first(seq.c_str());
+      for (int j = 0; j < 4; j++) {
+        Kmer before = first.backwardBase(Dna(j));
+        auto search = kmap.find(before.rep());
+        if (search != kmap.end()) {
+          KmerEntry val = search->second;
+          // check if + or -
+          bool strand = val.isFw() == (before == before.rep());
+          out << "L\t" << i << "\t-\t"
+              << val.contig << "\t" << (strand ? '-' : '+')
+              << "\t" << (k-1) << "M\n";
+        }
+      }
+
+      i++;
+    }
+
+    out.flush();
+    
+    out.close();
+  }
 
 
 }
