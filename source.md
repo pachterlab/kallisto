@@ -15,6 +15,8 @@ Other dependencies are either included, or can be installed using package manage
 
 #### Requirements: 
 
+- A 64-bit operating system
+- g++ version >= 4.8
 - __CMake__ version >= 2.8.12
     - Mac: `brew install cmake`
     - Ubuntu: `sudo apt-get install cmake`
@@ -23,7 +25,7 @@ Other dependencies are either included, or can be installed using package manage
     - Mac: Should be installed by default
     - Ubuntu: `sudo apt-get install zlib1g-dev`
     - CentOS: `sudo yum install zlib-devel`
-- __HDF5__ C library
+- __HDF5__ C library version >= 18.12
     - Mac: `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
     - CentOS: `sudo yum install hdf5-devel`
