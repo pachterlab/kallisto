@@ -29,7 +29,12 @@ struct MinCollector {
       mean_fl_trunc(MAX_FRAG_LEN, 0.0),
       has_mean_fl_trunc(false)
       // eff_len_cache(MAX_FRAG_LEN, 0.0)
-       {}
+       {
+         if (opt.fld != 0.0) {
+           mean_fl = opt.fld;
+           has_mean_fl = true;
+         }
+       }
 
   int collect(std::vector<std::pair<KmerEntry,int>>& v1,
               std::vector<std::pair<KmerEntry,int>>& v2,
