@@ -24,6 +24,7 @@ void plaintext_aux(
     const std::string& out_fname,
     const std::string& n_targs,
     const std::string& n_bootstrap,
+    const std::string& n_processed,
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,

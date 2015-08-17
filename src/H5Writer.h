@@ -11,7 +11,7 @@ class H5Writer {
     H5Writer() : primed_(false) {}
     ~H5Writer();
 
-    void init(const std::string& fname, int num_bootstrap, uint compression,
+    void init(const std::string& fname, int num_bootstrap, int num_processed, uint compression,
         size_t index_version, const std::string& shell_call,
         const std::string& start_time);
 
@@ -70,6 +70,7 @@ class H5Converter {
     hid_t bs_;
 
     int n_bs_;
+    int n_proc_;
     size_t n_targs_;
 };
 
