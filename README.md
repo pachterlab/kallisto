@@ -14,6 +14,8 @@ quantification tools. In fact, because the pseudoalignment procedure is
 robust to errors in the reads, in many benchmarks __kallisto__
 significantly outperforms existing tools.
 
+__kallisto__ quantified RNA-Seq can be analyzed with [__sleuth__](http://pachterlab.github.io/sleuth). 
+
 ## Manual
 
 Please visit http://pachterlab.github.io/kallisto/manual.html for the manual.
