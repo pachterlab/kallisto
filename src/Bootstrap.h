@@ -22,14 +22,14 @@ public:
             const KmerIndex& index,
             const MinCollector& tc,
             const std::vector<double>& eff_lens,
-            double mean,
-            size_t seed) :
+            size_t seed,
+            const std::vector<double>& mean_fls) :
     index_(index),
     tc_(tc),
     eff_lens_(eff_lens),
-    mean_fl(mean),
     seed_(seed),
-    mult_(true_counts, seed_)
+    mult_(true_counts, seed_),
+    mean_fls_(mean_fls)
     {}
 
   // EM Algorithm generates a sample from the Multinomial, then returns
@@ -41,9 +41,9 @@ private:
   const KmerIndex& index_;
   const MinCollector& tc_;
   const std::vector<double>& eff_lens_;
-  double mean_fl;
   size_t seed_;
   Multinomial mult_;
+  const std::vector<double>& mean_fls_;
 };
 
 class BootstrapThreadPool {
@@ -57,9 +57,9 @@ class BootstrapThreadPool {
         const KmerIndex& index,
         const MinCollector& tc,
         const std::vector<double>& eff_lens,
-        double mean,
         const ProgramOptions& p_opts,
-        H5Writer& h5writer
+        H5Writer& h5writer,
+        const std::vector<double>& mean_fls
         );
 
     size_t num_threads() {return n_threads_;}
@@ -80,9 +80,9 @@ class BootstrapThreadPool {
     const KmerIndex& index_;
     const MinCollector& tc_;
     const std::vector<double>& eff_lens_;
-    double mean_fl_;
     const ProgramOptions& opt_;
     H5Writer& writer_;
+    const std::vector<double>& mean_fls_;
 };
 
 class BootstrapWorker {
