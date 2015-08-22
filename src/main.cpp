@@ -736,7 +736,8 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        ProcessReads(index, opt, collection);
+        int num_processed = 0;
+        num_processed = ProcessReads(index, opt, collection);
 
         // save modified index for future use
         if (opt.write_index) {
@@ -768,7 +769,7 @@ int main(int argc, char *argv[]) {
 
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
@@ -777,6 +778,7 @@ int main(int argc, char *argv[]) {
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(opt.bootstrap)),
+            std::string(std::to_string(num_processed)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
@@ -866,7 +868,8 @@ int main(int argc, char *argv[]) {
         H5Writer writer;
 
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+          // setting num_processed to 0 because quant-only is for debugging/special ops
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
@@ -874,6 +877,7 @@ int main(int argc, char *argv[]) {
               opt.output + "/run_info.json",
               std::string(std::to_string(index.num_trans)),
               std::string(std::to_string(opt.bootstrap)),
+              std::string(std::to_string(0)),
               KALLISTO_VERSION,
               std::string(std::to_string(index.INDEX_VERSION)),
               start_time,

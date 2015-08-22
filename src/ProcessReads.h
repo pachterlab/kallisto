@@ -20,6 +20,6 @@ KSEQ_INIT(gzFile, gzread)
 #endif
 
 
-void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc);
+int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc);
 
 #endif // KALLISTO_PROCESSREADS_H
