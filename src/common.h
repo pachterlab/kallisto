@@ -26,6 +26,7 @@ struct ProgramOptions {
   bool peek; // only used for H5Dump
   bool bias;
   bool pseudobam;
+  bool make_unique;
   std::string gfa; // used for inspect
 
 ProgramOptions() :
@@ -43,7 +44,8 @@ ProgramOptions() :
   single_end(false),
   peek(false),
   bias(false),
-  pseudobam(false)   
+  pseudobam(false),
+  make_unique(false)
   {}
 };
 
