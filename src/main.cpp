@@ -32,11 +32,12 @@ using namespace std;
 
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
-
+  int make_unique_flag = 0;
   const char *opt_string = "i:k:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"make-unique", no_argument, &make_unique_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -68,6 +69,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 
   if (verbose_flag) {
     opt.verbose = true;
+  }
+  if (make_unique_flag) {
+    opt.make_unique = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -591,7 +595,9 @@ void usageIndex() {
        << "Required argument:" << endl
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
-       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
+       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl
+       << "    --make-unique           Replace repeated target names with unique names" << endl
+       << endl;
 
 }
 

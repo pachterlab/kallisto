@@ -3,6 +3,7 @@
 #include <random>
 #include <ctype.h>
 #include <zlib.h>
+#include <unordered_set>
 #include "kseq.h"
 
 #ifndef KSEQ_INIT_READY
@@ -67,6 +68,7 @@ std::string revcomp(const std::string s) {
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
+  std::unordered_set<std::string> unique_names;
   int k = opt.k;
   for (auto& fasta : opt.transfasta) {
     std::cerr << "[build] loading fasta file " << fasta
@@ -126,6 +128,22 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       if (p != std::string::npos) {
         name = name.substr(0,p);
       }
+
+      if (unique_names.find(name) != unique_names.end()) {
+        if (!opt.make_unique) {
+          std::cerr << "Error: repeated name in FASTA file " << fasta << "\n" << name << "\n\n" << "Run with --make-unique to replace repeated names with unique names" << std::endl;
+          exit(1);
+        } else {
+          for (int i = 1; ; i++) { // potential bug if you have more than 2^32 repeated names
+            std::string new_name = name + "_" + std::to_string(i);
+            if (unique_names.find(new_name) == unique_names.end()) {
+              name = new_name;
+              break;
+            }
+          }
+        }
+      }
+      unique_names.insert(name);
       target_names_.push_back(name);
 
     }
