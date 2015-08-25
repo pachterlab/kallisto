@@ -16,6 +16,7 @@ struct ProgramOptions {
   int skip;
   size_t seed;
   double fld;
+  double sd;
   int min_range;
   int bootstrap;
   std::vector<std::string> transfasta;
@@ -37,6 +38,7 @@ ProgramOptions() :
   skip(1),
   seed(42),
   fld(0.0),
+  sd(0.0),
   min_range(1),
   bootstrap(0),
   plaintext(false),

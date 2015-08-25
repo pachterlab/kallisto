@@ -121,7 +121,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int bias_flag = 0;
   int pbam_flag = 0;
 
-  const char *opt_string = "t:i:l:o:n:m:d:b:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -135,6 +135,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
@@ -163,6 +164,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'l': {
       stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
       break;
     }
     case 'o': {
@@ -222,7 +227,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
 
-  const char *opt_string = "t:s:l:o:n:m:d:b:";
+  const char *opt_string = "t:s:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -231,6 +236,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"threads", required_argument, 0, 't'},
     {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
@@ -255,6 +261,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'l': {
       stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
       break;
     }
     case 'o': {
@@ -413,18 +423,35 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
   }
 
-  if (opt.single_end && opt.fld == 0.0) {
-    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl;
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+
+  if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
+    cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
     ret = false;
   } else if (opt.fld == 0.0 && ret) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
+  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[quant] fragment length distribution is truncate gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
 
+  if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
+    cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
+    cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
   }
 
   if (opt.fld < 0.0) {
-    cerr << "Error: invalid value for average fragment length " << opt.fld << endl;
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+
+  if (opt.sd < 0.0) {
+    cerr << "Error: invalid value for fragment length standard deviation " << opt.sd << endl;
     ret = false;
   }
 
@@ -755,7 +782,7 @@ int main(int argc, char *argv[]) {
           collection.get_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-          auto sd_fl = 80.0;
+          auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
@@ -857,7 +884,7 @@ int main(int argc, char *argv[]) {
           collection.get_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-          auto sd_fl = 80.0;
+          auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           cout << collection.mean_fl_trunc.size() << endl;
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
