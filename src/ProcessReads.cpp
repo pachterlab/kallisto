@@ -55,7 +55,7 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
-void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
+int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
@@ -284,6 +284,8 @@ void ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc)
     tc.write(of);
     of.close();
   }
+
+  return numreads;
 }
 
 

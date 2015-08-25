@@ -91,6 +91,7 @@ void plaintext_aux(
     const std::string& out_name,
     const std::string& n_targs,
     const std::string& n_bootstrap,
+    const std::string& n_processed,
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,
@@ -101,6 +102,7 @@ void plaintext_aux(
   of << "{" << std::endl <<
     to_json("n_targets", n_targs, false) << std::endl <<
     to_json("n_bootstraps", n_bootstrap, false) << std::endl <<
+    to_json("n_processed", n_processed, false) << std::endl <<
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
     to_json("start_time", start_time, true) << std::endl <<

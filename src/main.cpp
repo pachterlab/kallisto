@@ -32,11 +32,12 @@ using namespace std;
 
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
-
+  int make_unique_flag = 0;
   const char *opt_string = "i:k:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
+    {"make-unique", no_argument, &make_unique_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -69,6 +70,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+  if (make_unique_flag) {
+    opt.make_unique = true;
+  }
 
   for (int i = optind; i < argc; i++) {
     opt.transfasta.push_back(argv[i]);
@@ -76,7 +80,35 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
-  opt.index = argv[1];
+
+
+  const char *opt_string = "";
+  static struct option long_options[] = {
+    // long args
+    {"gfa", required_argument, 0, 'g'},
+    {0,0,0,0}
+  };
+
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 'g': {
+      opt.gfa = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+  opt.index = argv[optind];
 }
 
 
@@ -89,7 +121,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int bias_flag = 0;
   int pbam_flag = 0;
 
-  const char *opt_string = "t:i:l:o:n:m:d:b:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -103,6 +135,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
@@ -131,6 +164,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'l': {
       stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
       break;
     }
     case 'o': {
@@ -190,7 +227,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int plaintext_flag = 0;
 
-  const char *opt_string = "t:s:l:o:n:m:d:b:";
+  const char *opt_string = "t:s:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -199,6 +236,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"threads", required_argument, 0, 't'},
     {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
@@ -223,6 +261,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'l': {
       stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
       break;
     }
     case 'o': {
@@ -381,18 +423,35 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     }
   }
 
-  if (opt.single_end && opt.fld == 0.0) {
-    cerr << "Error: average fragment length must be supplied for single-end reads using -l" << endl;
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+
+  if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
+    cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
     ret = false;
   } else if (opt.fld == 0.0 && ret) {
     // In the future, if we have single-end data we should require this
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
+  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[quant] fragment length distribution is truncate gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
 
+  if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
+    cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
+    cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
   }
 
   if (opt.fld < 0.0) {
-    cerr << "Error: invalid value for average fragment length " << opt.fld << endl;
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+
+  if (opt.sd < 0.0) {
+    cerr << "Error: invalid value for fragment length standard deviation " << opt.sd << endl;
     ret = false;
   }
 
@@ -563,7 +622,9 @@ void usageIndex() {
        << "Required argument:" << endl
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
-       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl << endl;
+       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl
+       << "    --make-unique           Replace repeated target names with unique names" << endl
+       << endl;
 
 }
 
@@ -577,7 +638,9 @@ void usageh5dump() {
 
 void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
-       << "Usage: kallisto inspect INDEX-file" << endl << endl;
+       << "Usage: kallisto inspect INDEX-file" << endl << endl
+       << "Optional arguments:" << endl
+       << "    --gfa=STRING              Filename for GFA output of T-DBG" << endl << endl;
 }
 
 void usageEM(bool valid_input = true) {
@@ -645,7 +708,7 @@ int main(int argc, char *argv[]) {
   std::cout.sync_with_stdio(false);
   setvbuf(stdout, NULL, _IOFBF, 1048576);
 
-  
+
   if (argc < 2) {
     usage();
     exit(1);
@@ -687,7 +750,7 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt);
-        InspectIndex(index);
+        InspectIndex(index,opt.gfa);
       }
 
     } else if (cmd == "quant") {
@@ -706,7 +769,8 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        ProcessReads(index, opt, collection);
+        int num_processed = 0;
+        num_processed = ProcessReads(index, opt, collection);
 
         // save modified index for future use
         if (opt.write_index) {
@@ -714,28 +778,31 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
         if (opt.fld == 0.0) {
-          std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
+          collection.get_mean_frag_lens_trunc();
+        } else {
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+          auto sd_fl = opt.sd;
+          collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          // }
         }
 
+        auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
         /*for (int i = 0; i < collection.bias3.size(); i++) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
-        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
-        EMAlgorithm em(collection.counts, index, collection, mean_fl);
+        EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
-
-        //update_eff_lens(mean_fl, collection, index, em.alpha_, eff_lens);
-
 
         std::string call = argv_to_string(argc, argv);
 
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
@@ -744,6 +811,7 @@ int main(int argc, char *argv[]) {
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(opt.bootstrap)),
+            std::string(std::to_string(num_processed)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
@@ -759,8 +827,6 @@ int main(int argc, char *argv[]) {
 
           std::vector<size_t> seeds;
           for (auto s = 0; s < B; ++s) {
-            // TODO: check whether or not there are collisions. they happen
-            // with tiny probability... but technically still can happen - HP
             seeds.push_back( rand() );
           }
 
@@ -776,10 +842,10 @@ int main(int argc, char *argv[]) {
             }
 
             BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, mean_fl, opt, writer);
+                collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -812,28 +878,39 @@ int main(int argc, char *argv[]) {
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
-        // if mean FL not provided, estimate
-        auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-        std::cerr << "[quant] estimated average fragment length: " << mean_fl << std::endl;
-        auto eff_lens = calc_eff_lens(index.target_lens_, mean_fl);
-        auto weights = calc_weights (collection.counts, index.ecmap, eff_lens);
 
-        //EMAlgorithm em(index.ecmap, collection.counts, index.target_names_, eff_lens, weights);
-        EMAlgorithm em(collection.counts, index, collection, mean_fl);
+        // if mean FL not provided, estimate
+        if (opt.fld == 0.0) {
+          collection.get_mean_frag_lens_trunc();
+        } else {
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+          auto sd_fl = opt.sd;
+          collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          cout << collection.mean_fl_trunc.size() << endl;
+          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          // }
+        }
+
+        auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+
+        EMAlgorithm em(collection.counts, index, collection, fl_means);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
         H5Writer writer;
 
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 6,
+          // setting num_processed to 0 because quant-only is for debugging/special ops
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
           plaintext_aux(
               opt.output + "/run_info.json",
-              std::string(std::to_string(eff_lens.size())),
+              std::string(std::to_string(index.num_trans)),
               std::string(std::to_string(opt.bootstrap)),
+              std::string(std::to_string(0)),
               KALLISTO_VERSION,
               std::string(std::to_string(index.INDEX_VERSION)),
               start_time,
@@ -865,10 +942,10 @@ int main(int argc, char *argv[]) {
             }
 
             BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, mean_fl, opt, writer);
+                collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, mean_fl, seeds[b]);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -910,6 +987,6 @@ int main(int argc, char *argv[]) {
   }
 
   fflush(stdout);
-  
+
   return 0;
 }
