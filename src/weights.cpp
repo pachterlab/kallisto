@@ -235,7 +235,7 @@ std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
   double total_mass = 0.0;
   double total_density = 0.0;
 
-  for (size_t i = 0; i < n + 1; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     double x = static_cast<double>(start + i);
     x = (x - mean) / sd;
     // XXX: this isn't normalized, but it doesn't matter since it gets
