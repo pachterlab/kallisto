@@ -13,7 +13,8 @@ tutorial](source.html).
 
 We will assume you have the following installed:
 
-- A C++11 compiler >= g++-4.8 (might work on g++-4.7, though untested)
+- A C++11 compatible compiler such as >= g++-4.8 (might work on g++-4.7, though
+  untested)
     - Since this is very system specific, it is usually best to ask your
       administrator to install this. If not, you should search how to install
       it locally on your system.
@@ -33,7 +34,9 @@ export PATH=$HOME/bin:$PATH
 
 Afterwards, place the same code into your shell startup file (e.g. one of ~/.bashrc, ~/.zshrc, etc.).
 
-All downloads can go somewhere, let's say `~/downloads`.
+We'll assume all downloads are in `~/Downloads`. Make sure to change to the
+downloads directory before downloading each one of the source archives
+(\*.tar.gz files)
 
 ### Building and installing CMake
 
@@ -86,8 +89,7 @@ files at: `$HOME/lib` and `$HOME/include`.
 
 ### Building and installing kallisto
 
-Now that we have the depencies installed, __kallisto__ should install pretty
-easily. Download the latest source tarball [from
+Download the latest source tarball [from
 GitHub](https://github.com/pachterlab/kallisto/releases), extract, and change
 directories:
 
