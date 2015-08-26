@@ -21,12 +21,14 @@ to have kallisto universally executable.
 
 The example/test distributed with __kallisto__ is included with the binaries we distribute with the program:
 
-- For Mac download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_mac-v0.42.1.tar.gz)
+- For Mac download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.3/kallisto_mac-v0.42.3.tar.gz)
 
-
-- For Ubuntu download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.1/kallisto_ubuntu-v0.42.1.tar.gz)
+- For Linux, please [download the source code](https://github.com/pachterlab/kallisto/releases) and compile.
 
 #### Install
+
+**\*\*Note\*\*** For users who do not have 'root' access, please follow the [local build
+tutorial](local_build.html).
 
 If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to 
 
