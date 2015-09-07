@@ -14,6 +14,8 @@
 #include "common.h"
 */
 
+#include <fstream>
+
 #include "ProcessReads.h"
 #include "kseq.h"
 #ifndef KSEQ_INIT_READY
@@ -22,6 +24,7 @@ KSEQ_INIT(gzFile, gzread)
 #endif
 
 void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
+void searchFusion(const KmerIndex &index, const ProgramOptions& opt, const MinCollector& tc, std::ofstream& o, int ec,const kseq_t *seq1,  std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2,  std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
 void revseq(char *b1, char *b2, const kseq_t *seq);
 void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength);
 
@@ -62,7 +65,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   int tlencount = (opt.fld == 0.0) ? 10000 : 0;
   size_t numreads = 0;
   size_t nummapped = 0;
-
+  size_t testFusion = 0;
   bool paired = !opt.single_end;
 
   gzFile fp1 = 0, fp2 = 0;
@@ -70,6 +73,13 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   std::vector<std::pair<KmerEntry,int>> v1, v2;
   v1.reserve(1000);
   v2.reserve(1000);
+
+  std::ofstream ofusion;
+  if (opt.fusion) {
+    ofusion.open(opt.output + "/fusion.txt");
+    ofusion << "TYPE\tTRANSCRIPTS1\tTRANSCRIPTS2\tNAME1\tSEQ1\tNAME2\tSEQ2\tINFO\n";
+  }
+  
 
   int l1 = 0,l2 = 0; // length of read
 
@@ -207,6 +217,11 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
         }
       }
 
+      if (opt.fusion && (ec == -1 || v1.empty() || v2.empty())) {
+        testFusion++;
+        searchFusion(index,opt,tc,ofusion,  ec,seq1,v1,seq2,v2,paired);
+      }
+
       // pseudobam
       if (opt.pseudobam) {
         outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
@@ -260,6 +275,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
     kseq_destroy(seq2);
   }
 
+  if (opt.fusion) {
+    ofusion.close();
+  }
+
   std::cerr << " done" << std::endl;
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
@@ -271,6 +290,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
 
+  if (opt.fusion) {
+    std::cerr << "[quant] classified " << testFusion << " reads for fusion breakpoints" << std::endl;
+  }
+  
   /*
   for (int i = 0; i < 4096; i++) {
     std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
@@ -289,7 +312,189 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 }
 
 
+/** -- fusion functions -- **/
 
+
+void printTranscripts(const KmerIndex& index, std::ofstream& o, const std::vector<int> u) {
+  for (int i = 0; i < u.size(); i++) {
+    if (i > 0) {
+      o << ","; 
+    }
+    o << index.target_names_[u[i]];
+  }
+}
+
+std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::pair<KmerEntry,int>>& v) {
+  if (v.empty()) {
+    return {};
+  }
+  int ec = index.dbGraph.ecs[v[0].first.contig];
+  int lastEC = ec;
+  std::vector<int> u = index.ecmap[ec];
+
+  for (int i = 1; i < v.size(); i++) {
+    if (v[i].first.contig != v[i-1].first.contig) {
+      ec = index.dbGraph.ecs[v[i].first.contig];
+      if (ec != lastEC) {
+        u = index.intersect(ec, u);
+        lastEC = ec;
+        if (u.empty()) {
+          return u;
+        }
+      }
+    }
+  }
+  return u;
+  
+}
+
+void searchFusion(const KmerIndex &index, const ProgramOptions& opt, const MinCollector& tc, std::ofstream& o, int ec,const kseq_t *seq1, std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
+
+  bool partialMap = false;
+  if (ec != -1) {
+    partialMap = true;
+  }
+
+  // no mapping information
+  if (v1.empty() && v2.empty()) {
+    o << "UNMAPPED\t\t\t" << seq1->name.s << "\t" << seq1->seq.s << "\t";
+    if (paired) {
+      o << seq2->name.s << "\t" << seq2->seq.s << "\t\n";
+    } else {
+      o << "\t\t\n";
+    }
+    return;
+  }
+
+  // discordant pairs
+  auto u1 = simpleIntersect(index, v1);
+  auto u2 = simpleIntersect(index, v2);
+  if (!u1.empty() && !u2.empty()) {
+    // each pair maps to either end
+    o << "PAIR\t";
+    printTranscripts(index, o, u1); o << "\t"; printTranscripts(index, o, u2);
+    o << "\t"  << seq1->name.s << "\t" << seq1->seq.s << "\t";
+    // what to put as info?
+    if (paired) {
+      o << seq2->name.s << "\t" << seq2->seq.s << "\t\n";
+    } else {
+      o << "\t\t\n";
+    }
+    return;
+  }
+
+  if ((v1.empty() && !u2.empty()) ||  (v2.empty() && !u1.empty())) {
+    // read was trimmed
+    partialMap = true;
+  }
+
+  // partial mapping info, e.g. ec != -1 or read was trimmed
+  if (partialMap) {
+    if (v2.empty()) {
+      o << "LEFTMAPPED\t";
+      printTranscripts(index, o, index.ecmap[ec]);
+      o << "\t\t";
+    } else if (v1.empty()) {
+      o << "RIGHTMAPPED\t\t";
+      printTranscripts(index, o, index.ecmap[ec]);
+      o << "\t";
+    } else {
+      assert(false);
+      return;
+    }
+    o << seq1->name.s << "\t" << seq1->seq.s << "\t";
+    if (paired) {
+      o << seq2->name.s << "\t" << seq2->seq.s << "\t\n";
+    } else {
+      o << "\t\t\n";
+    }
+    return; 
+  }
+  
+
+  // ok so ec == -1 and not both v1 and v2 are empty
+  // exactly one of u1 and u2 are empty
+  std::vector<std::pair<KmerEntry,int>> vsafe, vsplit;
+
+  if (!v1.empty() && !v2.empty()) {
+    if (u1.empty()) {
+      std::copy(v1.begin(), v1.end(), std::back_inserter(vsplit));
+      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsafe));
+    } else {
+      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsplit));
+      std::copy(v1.begin(), v1.end(), std::back_inserter(vsafe));
+    }
+  } else if (v1.empty()) {
+    if (u2.empty()) {
+      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsplit));
+    } else {
+      assert(false);
+      return; // can this happen?
+    }
+  } else if (v2.empty()) {
+    if (u1.empty()) {
+      std::copy(v1.begin(), v1.end(), std::back_inserter(vsplit));
+    } else {
+      assert(false);
+      return;
+    }
+  }
+      
+      
+  // now we look for a split j s.t. vsplit[0:j] and vsplit[j:] + vsafe both have nonempty ec
+  int j = vsplit.size()-1;
+  while (!vsplit.empty()) {
+    auto x = vsplit.back();
+    vsplit.pop_back();
+    vsafe.push_back(x);
+        
+    auto ut1 = simpleIntersect(index,vsplit);
+    auto ut2 = simpleIntersect(index,vsafe);
+        
+    if (!ut1.empty() && !ut2.empty()) {
+      o << "SPLIT\t";
+      printTranscripts(index, o, ut1); o << "\t"; printTranscripts(index, o, ut2);
+      o << "\t"  << seq1->name.s << "\t" << seq1->seq.s << "\t";
+      // what to put as info?
+      if (paired) {
+        o << seq2->name.s << "\t" << seq2->seq.s << "\t";
+      } else {
+        o << "\t\t";
+      }
+      o << "splitat=";
+      if (u1.empty()) {
+        o << "(0,";
+      } else {
+        o << "(1,";
+      }
+      o << vsafe.back().second << ")\n";
+      return;
+    } else {
+      j--;
+    }
+  }
+
+  // can't split the read in two
+  o << "CANTSPLIT\t";
+  if (!u1.empty()) {
+    printTranscripts(index,o,u1);
+  }
+  o << "\t";
+  if (!u2.empty()) {
+    printTranscripts(index,o,u2);
+  }
+  o << "\t" << seq1->name.s << "\t" << seq1->seq.s << "\t";
+  if (paired) {
+    o << seq2->name.s << "\t" << seq2->seq.s << "\t\n";
+  } else {
+    o << "\t\t\n";
+  }
+  return;
+
+}
+
+
+/** -- pseudobam functions -- **/
 void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
 
   static char buf1[32768];

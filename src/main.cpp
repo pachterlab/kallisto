@@ -120,6 +120,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int single_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
+  int fusion_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -130,6 +131,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"single", no_argument, &single_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -220,6 +222,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+
+  if (fusion_flag) {
+    opt.fusion = true;
   }
 }
 
@@ -663,7 +669,8 @@ void usageEM(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "-t, --threads=INT             Number of threads to use for bootstraping (default: 1)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl 
+       << "    --fusion                  Search for fusions for Pizzly" << endl << endl;
 
 }
 

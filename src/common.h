@@ -28,6 +28,7 @@ struct ProgramOptions {
   bool bias;
   bool pseudobam;
   bool make_unique;
+  bool fusion;
   std::string gfa; // used for inspect
 
 ProgramOptions() :
@@ -47,7 +48,8 @@ ProgramOptions() :
   peek(false),
   bias(false),
   pseudobam(false),
-  make_unique(false)
+  make_unique(false),
+  fusion(false)
   {}
 };
 
