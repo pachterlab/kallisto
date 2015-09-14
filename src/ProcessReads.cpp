@@ -415,18 +415,25 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt, const MinCo
   // ok so ec == -1 and not both v1 and v2 are empty
   // exactly one of u1 and u2 are empty
   std::vector<std::pair<KmerEntry,int>> vsafe, vsplit;
+  // sort v1 and v2 by read position
+  auto vsorter =  [&](std::pair<KmerEntry, int> a, std::pair<KmerEntry, int> b) {
+    return a.second < b.second;
+  };
 
+  std::sort(v1.begin(), v1.end(), vsorter);
+  std::sort(v2.begin(), v2.end(), vsorter);
+  
   if (!v1.empty() && !v2.empty()) {
     if (u1.empty()) {
       std::copy(v1.begin(), v1.end(), std::back_inserter(vsplit));
-      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsafe));
+      std::copy(v2.begin(), v2.end(), std::back_inserter(vsafe));
     } else {
-      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsplit));
+      std::copy(v2.begin(), v2.end(), std::back_inserter(vsplit));
       std::copy(v1.begin(), v1.end(), std::back_inserter(vsafe));
     }
   } else if (v1.empty()) {
     if (u2.empty()) {
-      std::copy(v2.rbegin(), v2.rend(), std::back_inserter(vsplit));
+      std::copy(v2.begin(), v2.end(), std::back_inserter(vsplit));
     } else {
       assert(false);
       return; // can this happen?
