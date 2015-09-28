@@ -54,6 +54,21 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
   return (a==x.end());
 }
 
+void get_first_kmer(const std::vector<std::pair<KmerEntry,int>> &v, KmerEntry &val, int &p, Kmer &km, const char *s) {
+  if (v.empty()) {
+    return;
+  }
+  val = v[0].first;
+  p = v[0].second;
+  for (auto &x : v) {
+    if (x.second < p) {
+      val = x.first;
+      p = x.second;
+    }
+  }
+  km = Kmer(s + p);
+}
+
 
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
   // need to receive an index map
@@ -134,56 +149,69 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       // collect the target information
       int ec = tc.collect(v1, v2, !paired);
 
+      if (paired && ec != -1 && (!v1.empty() && !v2.empty())) {
+        // check for out of bounds
+        int p1 = -1, p2 = -1;
+        KmerEntry val1, val2;
+        Kmer km1, km2;
+        get_first_kmer(v1, val1, p1, km1, seq1->seq.s);
+        get_first_kmer(v2, val2, p2, km2, seq2->seq.s);
+        
+        std::vector<int> &u = index.ecmap[ec];
+        std::vector<int> v;
+        v.reserve(u.size());
+
+        for (auto tr : u) {
+          auto x1 = index.findPosition(tr, km1, val1, p1);
+          auto x2 = index.findPosition(tr, km2, val2, p2);
+
+          if (std::min(x1.first, x2.first) >= 0 && 
+              std::max(x1.first + seq1->seq.l-1, x2.first + seq2->seq.l-1) <= index.target_lens_[tr]) {
+            // because 1-based
+            v.push_back(tr);
+          }
+        }
+
+        if (v.size() < u.size()) {
+          tc.decreaseCount(ec);
+          ec = tc.increaseCount(v);
+        }
+      }
+
+      // check hanging chads
       if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
         // inspect the positions
         int fl = (int) tc.get_mean_frag_len();
-        if (v2.empty()) {
-          int p = -1;
-          KmerEntry val;
-          Kmer km;
+
+        int p = -1;
+        KmerEntry val;
+        Kmer km;
           
-          if (!v1.empty()) {
-            val = v1[0].first;
-            p = v1[0].second;
-            for (auto &x : v1) {
-              if (x.second < p) {
-                val = x.first;
-                p = x.second;
-              }
-            }
-            km = Kmer((seq1->seq.s+p));
-          }
-          if (!v2.empty()) {
-            val = v2[0].first;
-            p = v2[0].second;
-            for (auto &x : v2) {
-              if (x.second < p) {
-                val = x.first;
-                p = x.second;
-              }
-            }
-            km = Kmer((seq2->seq.s+p));
-          }
+        if (!v1.empty()) {
+          get_first_kmer(v1,val,p,km,seq1->seq.s);
+        }
+        if (!v2.empty()) {
+          get_first_kmer(v2,val,p,km,seq2->seq.s);
+        }
 
-          std::vector<int> u = index.ecmap[ec]; // copy
-          std::vector<int> v;
-          v.reserve(u.size());
-
-          for (auto tr : u) {
-            auto x = index.findPosition(tr, km, val, p);
-            if (x.second && x.first + fl <= index.target_lens_[tr]) {
-              v.push_back(tr);
-            }
-            if (!x.second && x.first - fl >= 0) {
-              v.push_back(tr);
-            }
+        std::vector<int> &u = index.ecmap[ec];
+        std::vector<int> v;
+        v.reserve(u.size());
+        
+        for (auto tr : u) {
+          auto x = index.findPosition(tr, km, val, p);
+          if (x.second && x.first + fl <= index.target_lens_[tr]) {
+            v.push_back(tr);
           }
-
-          if (v.size() < u.size()) {
-            // fix the ec
-            tc.decreaseCount(ec);
-            ec = tc.increaseCount(v);
+          if (!x.second && x.first - fl >= 0) {
+            v.push_back(tr);
           }
+        }
+        
+        if (v.size() < u.size()) {
+          // fix the ec
+          tc.decreaseCount(ec);
+          ec = tc.increaseCount(v);
         }
       }
       
