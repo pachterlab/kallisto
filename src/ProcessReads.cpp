@@ -165,7 +165,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
           auto x1 = index.findPosition(tr, km1, val1, p1);
           auto x2 = index.findPosition(tr, km2, val2, p2);
 
-          if (std::min(x1.first, x2.first) >= 0 && 
+          if (std::min(x1.first, x2.first) >= 1 && 
               std::max(x1.first + seq1->seq.l-1, x2.first + seq2->seq.l-1) <= index.target_lens_[tr]) {
             // because 1-based
             v.push_back(tr);
