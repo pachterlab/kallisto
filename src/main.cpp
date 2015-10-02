@@ -436,7 +436,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
   } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
-    cerr << "[quant] fragment length distribution is truncate gaussian with mean = " <<
+    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
       opt.fld << ", sd = " << opt.sd << endl;
   }
 
@@ -658,6 +658,7 @@ void usageEM(bool valid_input = true) {
        << "    --single                  Quantify single-end reads" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
        << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
