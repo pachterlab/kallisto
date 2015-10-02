@@ -26,7 +26,7 @@ Other dependencies are either included, or can be installed using package manage
     - Ubuntu: `sudo apt-get install zlib1g-dev`
     - CentOS: `sudo yum install zlib-devel`
 - __HDF5__ C library version >= 18.12
-    - Mac: `brew install hdf5`
+    - Mac: first get homebrew/science with `brew tap homebrew/science` then run `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
     - CentOS: `sudo yum install hdf5-devel`
 
