@@ -81,7 +81,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
     if (paired) {
-      std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << opt.files[i] << std::endl 
+      std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << opt.files[i] << std::endl
                 << "                             " << opt.files[i+1] << std::endl;
     } else {
       std::cerr << "[quant] will process file " << i+1 << ": " << opt.files[i] << std::endl;
@@ -96,10 +96,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   if (opt.pseudobam) {
     index.writePseudoBamHeader(std::cout);
   }
-  
-  
+
+
   for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
-  
+
     fp1 = gzopen(opt.files[i].c_str(), "r");
     seq1 = kseq_init(fp1);
     if (paired) {
@@ -107,7 +107,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       seq2 = kseq_init(fp2);
     }
 
-    
+
 
     // for each read
     while (true) {
@@ -134,59 +134,87 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       // collect the target information
       int ec = tc.collect(v1, v2, !paired);
 
+      if (opt.strand_specific && ec != -1 && !v1.empty()) {
+
+        Kmer km;
+        KmerEntry val = v1[0].first;
+        int p = v1[0].second;
+        for (auto &x : v1) {
+          if (x.second < p) {
+            val = x.first;
+            p = x.second;
+          }
+        }
+        km = Kmer((seq1->seq.s+p));
+
+        std::vector<int> u = index.ecmap[ec];
+        std::vector<int> v;
+        v.reserve(u.size());
+
+        for (auto tr : u)  {
+          bool strand = ((km == km.rep()) == val.isFw());
+          if (!strand) {
+            v.push_back(tr);
+          }
+        }
+        if (v.size() < u.size()) {
+          tc.decreaseCount(ec);
+          ec = tc.increaseCount(v);
+        }
+      }
+
       if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
         // inspect the positions
         int fl = (int) tc.get_mean_frag_len();
-        if (v2.empty()) {
-          int p = -1;
-          KmerEntry val;
-          Kmer km;
-          
-          if (!v1.empty()) {
-            val = v1[0].first;
-            p = v1[0].second;
-            for (auto &x : v1) {
-              if (x.second < p) {
-                val = x.first;
-                p = x.second;
-              }
-            }
-            km = Kmer((seq1->seq.s+p));
-          }
-          if (!v2.empty()) {
-            val = v2[0].first;
-            p = v2[0].second;
-            for (auto &x : v2) {
-              if (x.second < p) {
-                val = x.first;
-                p = x.second;
-              }
-            }
-            km = Kmer((seq2->seq.s+p));
-          }
+        int p = -1;
+        KmerEntry val;
+        Kmer km;
 
-          std::vector<int> u = index.ecmap[ec]; // copy
-          std::vector<int> v;
-          v.reserve(u.size());
-
-          for (auto tr : u) {
-            auto x = index.findPosition(tr, km, val, p);
-            if (x.second && x.first + fl <= index.target_lens_[tr]) {
-              v.push_back(tr);
-            }
-            if (!x.second && x.first - fl >= 0) {
-              v.push_back(tr);
+        if (!v1.empty()) {
+          val = v1[0].first;
+          p = v1[0].second;
+          for (auto &x : v1) {
+            if (x.second < p) {
+              val = x.first;
+              p = x.second;
             }
           }
+          km = Kmer((seq1->seq.s+p));
+        }
+        if (!v2.empty()) {
+          val = v2[0].first;
+          p = v2[0].second;
+          for (auto &x : v2) {
+            if (x.second < p) {
+              val = x.first;
+              p = x.second;
+            }
+          }
+          km = Kmer((seq2->seq.s+p));
+        }
 
-          if (v.size() < u.size()) {
-            // fix the ec
-            tc.decreaseCount(ec);
-            ec = tc.increaseCount(v);
+        std::vector<int> u = index.ecmap[ec]; // copy
+        std::vector<int> v;
+        v.reserve(u.size());
+
+        for (auto tr : u) {
+          auto x = index.findPosition(tr, km, val, p);
+          if (x.second && x.first + fl <= index.target_lens_[tr]) {
+            v.push_back(tr);
+          }
+          if (!x.second && x.first - fl >= 0) {
+            v.push_back(tr);
           }
         }
+
+        if (v.size() < u.size()) {
+          // fix the ec
+          tc.decreaseCount(ec);
+          ec = tc.increaseCount(v);
+        }
       }
-      
+
+
       if (ec != -1) {
         nummapped++;
         // collect sequence specific bias info
@@ -254,7 +282,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       gzclose(fp2);
     }
   }
-    
+
   kseq_destroy(seq1);
   if (paired) {
     kseq_destroy(seq2);
@@ -267,7 +295,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   if (opt.bias) {
     std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
   }
-  
+
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
 
@@ -275,7 +303,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   for (int i = 0; i < 4096; i++) {
     std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
     }*/
-  
+
   // write output to outdir
   if (opt.write_index) {
     std::string outfile = opt.output + "/counts.txt";
@@ -296,16 +324,16 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
   static char buf2[32768];
   static char cig_[1000];
   char *cig = &cig_[0];
-  
-  
+
+
   if (seq1->name.l > 2 && seq1->name.s[seq1->name.l-2] == '/') {
-    seq1->name.s[seq1->name.l-2] = 0; 
+    seq1->name.s[seq1->name.l-2] = 0;
   }
 
   if (paired && seq2->name.l > 2 && seq2->name.s[seq2->name.l-2] == '/') {
-    seq2->name.s[seq2->name.l-2] = 0; 
+    seq2->name.s[seq2->name.l-2] = 0;
   }
-  
+
   if (ec == -1) {
     // no mapping
     if (paired) {
@@ -321,7 +349,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
 
       int flag1 = 0x01 + 0x40;
       int flag2 = 0x01 + 0x80;
-      
+
       if (v1.empty()) {
         flag1 += 0x04; // read unmapped
         flag2 += 0x08; // mate unmapped
@@ -336,13 +364,13 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         flag1 += 0x02; // proper pair
         flag2 += 0x02; // proper pair
       }
-      
+
 
       int p1 = -1, p2 = -1;
       KmerEntry val1, val2;
       int nmap = index.ecmap[ec].size();
       Kmer km1, km2;
-      
+
       if (!v1.empty()) {
         val1 = v1[0].first;
         p1 = v1[0].second;
@@ -368,7 +396,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
       }
 
       bool revset = false;
-      
+
       // output pseudoalignments for read 1
       for (auto tr : index.ecmap[ec]) {
         int f1 = flag1;
@@ -405,7 +433,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         if (tlen != 0) {
           tlen += (tlen>0) ? 1 : -1;
         }
-        
+
         printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
 
@@ -435,7 +463,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
               revseq(&buf1[0], &buf2[0], seq2);
               revset = true;
             }
-            
+
           }
         }
 
@@ -450,8 +478,8 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
 
         printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
       }
-      
-      
+
+
     } else {
       // single end
       int nmap = (int) index.ecmap[ec].size();
@@ -482,7 +510,7 @@ void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const s
         int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l+1) : x1.first;
         int dummy=1;
         getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, seq1->seq.l, index.target_lens_[tr]);
-        
+
         printf("%s\t%d\t%s\t%d\t255\t%s\t*\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
       }
     }
@@ -511,7 +539,7 @@ void revseq(char *b1, char *b2, const kseq_t *seq) {
     b2[n-1-i] = s[i];
   }
 
-  
+
 }
 
 
@@ -519,7 +547,7 @@ void revseq(char *b1, char *b2, const kseq_t *seq) {
 void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength) {
   int softclip = 1 - posread;
   int overhang = (posread + length) - targetlength - 1;
-  
+
   if (posread <= 0) {
     posread = 1;
   }
@@ -540,7 +568,7 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
     sprintf(cig, "*");
   }
 
-  
+
   if (posmate <= 0) {
     posmate = 1;
   }

@@ -118,6 +118,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int strand_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
 
@@ -128,6 +129,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
+    {"strand-specific", no_argument, &strand_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
@@ -212,6 +214,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+  }
+
+  if (strand_flag) {
+    opt.strand_specific = true;
   }
 
   if (bias_flag) {
@@ -412,6 +418,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
           ret = false;
         }
       }
+    }
+
+    if (opt.strand_specific && !opt.single_end) {
+      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      ret = false;
     }
 
     if (!opt.single_end) {
