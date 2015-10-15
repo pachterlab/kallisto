@@ -118,6 +118,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int fast_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
 
@@ -131,6 +132,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
+    {"fast-and-loose", no_argument, &fast_flag, 1},
     // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
@@ -212,6 +214,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+  }
+
+  if (fast_flag) {
+    opt.fast = true;
   }
 
   if (bias_flag) {
@@ -656,6 +662,7 @@ void usageEM(bool valid_input = true) {
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "    --fast-and-loose          Don't check fragment lengths for pseudoalignments" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
