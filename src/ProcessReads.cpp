@@ -16,10 +16,7 @@
 
 #include "ProcessReads.h"
 #include "kseq.h"
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
+
 
 void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
 void revseq(char *b1, char *b2, const kseq_t *seq);
@@ -55,7 +52,16 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
+
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
+
+  int limit = 1048576;
+  char *buf = new char[limit];
+  std::vector<std::pair<const char*, int>> seqs;
+  seqs.reserve(limit/50);
+
+  SequenceReader SR(opt);
+
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
@@ -65,13 +71,12 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   bool paired = !opt.single_end;
 
-  gzFile fp1 = 0, fp2 = 0;
-  kseq_t *seq1 = 0, *seq2 = 0;
+
   std::vector<std::pair<KmerEntry,int>> v1, v2;
   v1.reserve(1000);
   v2.reserve(1000);
 
-  int l1 = 0,l2 = 0; // length of read
+
 
   if (paired) {
     std::cerr << "[quant] running in paired-end mode" << std::endl;
@@ -94,41 +99,31 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   const int maxBiasCount = 1000000;
 
   if (opt.pseudobam) {
-    index.writePseudoBamHeader(std::cout);
+    //index.writePseudoBamHeader(std::cout);
   }
 
-
-  for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
-
-    fp1 = gzopen(opt.files[i].c_str(), "r");
-    seq1 = kseq_init(fp1);
-    if (paired) {
-      fp2 = gzopen(opt.files[i+1].c_str(),"r");
-      seq2 = kseq_init(fp2);
-    }
-
-
-
-    // for each read
-    while (true) {
-      l1 = kseq_read(seq1);
+  const char* s1 = 0;
+  const char* s2 = 0;
+  int l1,l2;
+  bool cont = true;
+  while (cont) {
+    cont = SR.fetchSequences(buf, limit, seqs);
+    for (int i = 0; i < seqs.size(); i++) {
+      s1 = seqs[i].first;
+      l1 = seqs[i].second;
       if (paired) {
-        l2 = kseq_read(seq2);
-      }
-      if (l1 <= 0) {
-        break;
-      }
-      if (paired && l2 <= 0) {
-        break;
+        i++;
+        s2 = seqs[i].first;
+        l2 = seqs[i].second;
       }
 
       numreads++;
       v1.clear();
       v2.clear();
       // process read
-      index.match(seq1->seq.s, seq1->seq.l, v1);
+      index.match(s1,l1, v1);
       if (paired) {
-        index.match(seq2->seq.s, seq2->seq.l, v2);
+        index.match(s2,l2, v2);
       }
 
       // collect the target information
@@ -145,7 +140,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
             p = x.second;
           }
         }
-        km = Kmer((seq1->seq.s+p));
+        km = Kmer((s1+p));
 
         std::vector<int> u = index.ecmap[ec];
         std::vector<int> v;
@@ -179,7 +174,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
               p = x.second;
             }
           }
-          km = Kmer((seq1->seq.s+p));
+          km = Kmer((s1+p));
         }
         if (!v2.empty()) {
           val = v2[0].first;
@@ -190,7 +185,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
               p = x.second;
             }
           }
-          km = Kmer((seq2->seq.s+p));
+          km = Kmer((s2+p));
         }
 
         std::vector<int> u = index.ecmap[ec]; // copy
@@ -219,7 +214,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
         nummapped++;
         // collect sequence specific bias info
         if (opt.bias && biasCount < maxBiasCount) {
-          if (tc.countBias(seq1->seq.s, (paired) ? seq2->seq.s : nullptr, v1, v2, paired)) {
+          if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired)) {
             biasCount++;
           }
         }
@@ -228,7 +223,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       // collect fragment length info
       if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
         // try to map the reads
-        int tl = index.mapPair(seq1->seq.s, seq1->seq.l, seq2->seq.s, seq2->seq.l, ec);
+        int tl = index.mapPair(s1, l1, s2, l2, ec);
         if (0 < tl && tl < tc.flens.size()) {
           tc.flens[tl]++;
           tlencount--;
@@ -237,7 +232,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
       // pseudobam
       if (opt.pseudobam) {
-        outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
+        //outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
       }
 
       // see if we can do better
@@ -277,15 +272,6 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
         std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
       }
     }
-    gzclose(fp1);
-    if (paired) {
-      gzclose(fp2);
-    }
-  }
-
-  kseq_destroy(seq1);
-  if (paired) {
-    kseq_destroy(seq2);
   }
 
   std::cerr << " done" << std::endl;
@@ -317,6 +303,97 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 }
 
 
+
+/** -- sequence reader -- **/
+SequenceReader::~SequenceReader() {
+  if (fp1) {
+    gzclose(fp1);
+  }
+  if (paired && fp2) {
+    gzclose(fp2);
+  }
+
+  kseq_destroy(seq1);
+  if (paired) {
+    kseq_destroy(seq2);
+  }
+}
+
+// returns true if there is more left to read from the files
+bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs) {
+  seqs.clear();
+  int bufpos = 0;
+  char * p1 = 0;
+  char * p2 = 0;
+  int pad = (paired) ? 2 : 1;
+  while (true) {
+    if (!state) { // should we open a file
+      if (current_file >= files.size()) {
+        // nothing left
+        return false;
+      } else {
+        // close the current file
+        if(fp1) {
+          gzclose(fp1);
+        }
+        if (paired && fp2) {
+          gzclose(fp2);
+        }
+        // open the next one
+        fp1 = gzopen(files[current_file].c_str(),"r");
+        seq1 = kseq_init(fp1);
+        l1 = kseq_read(seq1);
+        state = true;
+        if (paired) {
+          current_file++;
+          fp2 = gzopen(files[current_file].c_str(),"r");
+          seq2 = kseq_init(fp2);
+          l2 = kseq_read(seq2);
+        }
+      }
+    }
+    // the file is open and we have read into seq1 and seq2
+
+    if (l1 > 0 && (!paired || l2 > 0)) {
+
+      // fits into the buffer
+      if (bufpos+l1+l2+pad < limit) {
+        p1 = buf+bufpos;
+        memcpy(p1, seq1->seq.s, l1+1);
+        bufpos += l1+1;
+        if (paired) {
+          p2 = buf+bufpos;
+          memcpy(p2, seq2->seq.s,l2+1);
+          bufpos += l2+1;
+        }
+        seqs.emplace_back(p1,l1);
+        if (paired) {
+          seqs.emplace_back(p2,l2);
+        }
+      } else {
+        return true; // read it next time
+      }
+
+      // read for the next one
+      l1 = kseq_read(seq1);
+      if (paired) {
+        l2 = kseq_read(seq2);
+      }
+    } else {
+      current_file++; // move to next file
+      state = false; // haven't opened file yet
+    }
+  }
+}
+
+bool SequenceReader::fetchSequencesFull(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs, std::vector<std::pair<const char *, int> > &names, std::vector<std::pair<const char *, int> > &quals) {
+  return false;
+}
+
+
+
+
+/** --- pseudobam functions -- **/
 
 void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
 
