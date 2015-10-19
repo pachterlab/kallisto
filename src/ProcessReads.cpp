@@ -65,17 +65,17 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
-  int tlencount = (opt.fld == 0.0) ? 10000 : 0;
+  //int tlencount = (opt.fld == 0.0) ? 10000 : 0;
   size_t numreads = 0;
   size_t nummapped = 0;
 
   bool paired = !opt.single_end;
 
-
+  /*
   std::vector<std::pair<KmerEntry,int>> v1, v2;
   v1.reserve(1000);
   v2.reserve(1000);
-
+  */
 
 
   if (paired) {
@@ -95,19 +95,129 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
+  /*
   int biasCount = 0;
   const int maxBiasCount = 1000000;
 
   if (opt.pseudobam) {
     //index.writePseudoBamHeader(std::cout);
   }
+  */
 
-  const char* s1 = 0;
-  const char* s2 = 0;
-  int l1,l2;
-  bool cont = true;
-  while (cont) {
-    cont = SR.fetchSequences(buf, limit, seqs);
+  MasterProcessor MP(index, opt, tc);
+  MP.processReads();
+  numreads = MP.numreads;
+  nummapped = MP.nummapped;
+
+  std::cerr << " done" << std::endl;
+
+  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
+
+  if (opt.bias) {
+    std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
+  }
+
+  std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
+    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
+
+  /*
+  for (int i = 0; i < 4096; i++) {
+    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
+    }*/
+
+  // write output to outdir
+  if (opt.write_index) {
+    std::string outfile = opt.output + "/counts.txt";
+    std::ofstream of;
+    of.open(outfile.c_str(), std::ios::out);
+    tc.write(of);
+    of.close();
+  }
+
+  return numreads;
+}
+
+
+/** -- read processors -- **/
+
+void MasterProcessor::processReads() {
+  // start worker threads
+  std::vector<std::thread> workers;
+  for (int i = 0; i < opt.threads; i++) {
+    workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
+  }
+  // let the workers do their thing
+
+  for (int i = 0; i < opt.threads; i++) {
+    workers[i].join(); //wait for them to finish
+  }
+
+}
+
+void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs, int n) {
+  // acquire the writer lock
+  std::lock_guard<std::mutex> lock(this->writer_lock);
+
+  for (int i = 0; i < c.size(); i++) {
+    tc.counts[i] += c[i]; // add up ec counts
+    nummapped += c[i];
+  }
+
+  for(auto &u : newEcs) {
+    tc.increaseCount(u);
+  }
+  nummapped += newEcs.size();
+
+  numreads += n;
+  // releases the lock
+}
+
+ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp) :
+ paired(!opt.single_end), tc(tc), index(index), mp(mp) {
+   // initialize buffer
+   bufsize = 1ULL<<23;
+   buffer = new char[bufsize];
+
+   seqs.reserve(bufsize/50);
+   newEcs.reserve(1000);
+   counts.reserve((int) (tc.counts.size() * 1.25));
+   clear();
+}
+
+ReadProcessor::~ReadProcessor() {
+  if (buffer) {
+      /*delete[] buffer;
+    buffer = nullptr;*/
+  }
+}
+
+void ReadProcessor::operator()() {
+  // set up thread variables
+  std::vector<std::pair<KmerEntry,int>> v1, v2;
+  std::vector<int> u;
+  u.reserve(1000);
+  v1.reserve(1000);
+  v2.reserve(1000);
+
+
+  while (true) {
+    // grab the reader lock
+    {
+      std::lock_guard<std::mutex> lock(mp.reader_lock);
+      if (mp.SR.empty()) {
+        // nothing to do
+        return;
+      } else {
+        mp.SR.fetchSequences(buffer, bufsize, seqs);
+      }
+    } // release the reader lock
+
+    // process our sequences
+
+    const char* s1 = 0;
+    const char* s2 = 0;
+    int l1,l2;
+
     for (int i = 0; i < seqs.size(); i++) {
       s1 = seqs[i].first;
       l1 = seqs[i].second;
@@ -127,8 +237,19 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
       }
 
       // collect the target information
-      int ec = tc.collect(v1, v2, !paired);
+      int r = tc.intersectKmers(v1, v2, !paired,u);
+      if (u.empty()) {
+        continue;
+      } else {
+        int ec = tc.findEC(u);
+        if (ec == -1 || ec >= counts.size()) {
+          newEcs.push_back(u);
+        } else {
+          ++counts[ec];
+        }
+      }
 
+      /*
       if (opt.strand_specific && ec != -1 && !v1.empty()) {
 
         Kmer km;
@@ -157,7 +278,8 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
           ec = tc.increaseCount(v);
         }
       }
-
+      */
+      /*
       if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
         // inspect the positions
         int fl = (int) tc.get_mean_frag_len();
@@ -208,8 +330,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
           ec = tc.increaseCount(v);
         }
       }
+      */
 
 
+      /*
       if (ec != -1) {
         nummapped++;
         // collect sequence specific bias info
@@ -219,7 +343,9 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
           }
         }
       }
+      */
 
+      /*
       // collect fragment length info
       if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
         // try to map the reads
@@ -229,78 +355,36 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
           tlencount--;
         }
       }
+      */
 
       // pseudobam
-      if (opt.pseudobam) {
+      if (mp.opt.pseudobam) {
         //outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
       }
-
-      // see if we can do better
-      /* if (ec >= index.num_trans) { */
-      /*   // non-trivial ec */
-      /*   auto maxpair = [](int max_, std::pair<int,int> a) {return (max_ > a.second) ? max_ : a.second;}; */
-      /*   int maxPos1 = accumulate(v1.begin(), v1.end(), -1, maxpair); */
-      /*   int maxPos2 = -1; */
-      /*   if (paired) { */
-      /*     maxPos2 = accumulate(v2.begin(), v2.end(), -1, maxpair); */
-      /*   } */
-      /*   bool better1 = false; */
-      /*   bool better2 = false; */
-      /*   bool cand = false; */
-      /*   if (maxPos1 < seq1->seq.l - index.k) { */
-      /*     cand = true; */
-      /*     better1 = index.matchEnd(seq1->seq.s, seq1->seq.l, v1, maxPos1); */
-      /*   } */
-      /*   if (paired) { */
-      /*     if (maxPos2 < seq2->seq.l - index.k) { */
-      /*       cand = true; */
-      /*       better2 = index.matchEnd(seq2->seq.s, seq2->seq.l, v2, maxPos2); */
-      /*     } */
-      /*   } */
-
-      /*   if (cand) { */
-      /*     betterCand++; */
-      /*   } */
-      /*   if (better1 || better2) { */
-      /*     betterCount++; */
-      /*     tc.decreaseCount(ec); */
-      /*     ec = tc.collect(v1,v2,!paired); */
-      /*   } */
-      /* } */
-
+      /*
       if (opt.verbose && numreads % 100000 == 0 ) {
         std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
-      }
+      }*/
     }
+
+
+
+
+    // update the results, MP acquires the lock
+    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size());
+    clear();
   }
-
-  std::cerr << " done" << std::endl;
-
-  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
-
-  if (opt.bias) {
-    std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
-  }
-
-  std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
-    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
-
-  /*
-  for (int i = 0; i < 4096; i++) {
-    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
-    }*/
-
-  // write output to outdir
-  if (opt.write_index) {
-    std::string outfile = opt.output + "/counts.txt";
-    std::ofstream of;
-    of.open(outfile.c_str(), std::ios::out);
-    tc.write(of);
-    of.close();
-  }
-
-  return numreads;
 }
+
+void ReadProcessor::clear() {
+  numreads=0;
+  memset(buffer,0,bufsize);
+  newEcs.clear();
+  counts.clear();
+  counts.resize(tc.counts.size(),0);
+}
+
+
 
 
 
@@ -318,6 +402,8 @@ SequenceReader::~SequenceReader() {
     kseq_destroy(seq2);
   }
 }
+
+
 
 // returns true if there is more left to read from the files
 bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs) {
@@ -384,6 +470,10 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
       state = false; // haven't opened file yet
     }
   }
+}
+
+bool SequenceReader::empty() {
+  return (!state && current_file >= files.size());
 }
 
 bool SequenceReader::fetchSequencesFull(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs, std::vector<std::pair<const char *, int> > &names, std::vector<std::pair<const char *, int> > &quals) {

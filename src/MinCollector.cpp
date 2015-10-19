@@ -33,20 +33,10 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
-
-  /*if (v1.empty()) {
-    return -1;
-  } else if (!nonpaired && v2.empty()) {
-    return -1;
-  }
-  */
-
+int MinCollector::intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
-
-  std::vector<int> u;
 
   if (u1.empty() && u2.empty()) {
     return -1;
@@ -72,13 +62,55 @@ int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
   if (u.empty()) {
     return -1;
   }
-  return increaseCount(u);
+  return 1;
 }
 
-int MinCollector::increaseCount(const std::vector<int>& u) {
+int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
+  std::vector<int> u;
+  int r = intersectKmers(v1, v2, nonpaired, u);
+  if (r != -1) {
+    return increaseCount(u);
+  } else {
+    return -1;
+  }
+}
+
+int MinCollector::findEC(const std::vector<int>& u) const {
   if (u.empty()) {
     return -1;
   }
+  if (u.size() == 1) {
+    return u[0];
+  }
+  auto search = index.ecmapinv.find(u);
+  if (search != index.ecmapinv.end()) {
+    return search ->second;
+  } else {
+    return -1;
+  }
+}
+
+int MinCollector::increaseCount(const std::vector<int>& u) {
+  int ec = findEC(u);
+
+  if (u.empty()) {
+    return -1;
+  } else {
+    if (ec != -1) {
+      ++counts[ec];
+      return ec;
+    } else {
+      auto necs = counts.size();
+      //index.ecmap.insert({necs,u});
+      index.ecmap.push_back(u);
+      index.ecmapinv.insert({u,necs});
+      counts.push_back(1);
+      return necs;
+    }
+  }
+
+  /* -- removable
   if (u.size() == 1) {
     int ec = u[0];
     ++counts[ec];
@@ -98,6 +130,7 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
     counts.push_back(1);
     return necs;
   }
+  */
 }
 
 int MinCollector::decreaseCount(const int ec) {

@@ -49,6 +49,10 @@ struct MinCollector {
   int decreaseCount(const int ec);
 
   std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
+  int intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
+                    std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const;
+  int findEC(const std::vector<int>& u) const;
+
 
   void write(std::ostream& o) {
     for (int id = 0; id < counts.size(); id++) {
