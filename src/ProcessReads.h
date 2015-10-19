@@ -64,7 +64,9 @@ public:
   const ProgramOptions& opt;
   int numreads;
   int nummapped;
+  std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   void processReads();
+
   void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n);
 };
 

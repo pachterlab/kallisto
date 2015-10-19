@@ -152,6 +152,18 @@ void MasterProcessor::processReads() {
     workers[i].join(); //wait for them to finish
   }
 
+  // now handle the modification of the mincollector
+  for (auto &t : newECcount) {
+    if (t.second <= 0) {
+      continue;
+    }
+    int ec = tc.increaseCount(t.first); // modifies the ecmap
+    
+    if (ec != -1 && t.second > 1) {
+      tc.counts[ec] += (t.second-1);
+    }
+  }
+
 }
 
 void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs, int n) {
@@ -164,7 +176,7 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
   }
 
   for(auto &u : newEcs) {
-    tc.increaseCount(u);
+    ++newECcount[u];
   }
   nummapped += newEcs.size();
 
@@ -175,7 +187,7 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp) {
    // initialize buffer
-   bufsize = 1ULL<<23;
+   bufsize = 1ULL<<13;
    buffer = new char[bufsize];
 
    seqs.reserve(bufsize/50);
