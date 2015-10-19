@@ -158,7 +158,7 @@ void MasterProcessor::processReads() {
       continue;
     }
     int ec = tc.increaseCount(t.first); // modifies the ecmap
-    
+
     if (ec != -1 && t.second > 1) {
       tc.counts[ec] += (t.second-1);
     }
@@ -242,6 +242,7 @@ void ReadProcessor::operator()() {
       numreads++;
       v1.clear();
       v2.clear();
+      u.clear();
       // process read
       index.match(s1,l1, v1);
       if (paired) {
