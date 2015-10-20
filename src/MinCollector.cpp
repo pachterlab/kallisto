@@ -267,7 +267,9 @@ double MinCollector::get_mean_frag_len() const {
   return mean_fl;
 }
 
-void MinCollector::get_mean_frag_lens_trunc() const {
+
+
+void MinCollector::compute_mean_frag_lens_trunc()  {
 
   std::vector<int> counts(MAX_FRAG_LEN, 0);
   std::vector<double> mass(MAX_FRAG_LEN, 0.0);
@@ -279,12 +281,12 @@ void MinCollector::get_mean_frag_lens_trunc() const {
     mass[i] = static_cast<double>( flens[i] * i) + mass[i-1];
     counts[i] = flens[i] + counts[i-1];
     if (counts[i] > 0) {
-      const_cast<double&>(mean_fl_trunc[i]) = mass[i] / static_cast<double>(counts[i]);
+      mean_fl_trunc[i] = mass[i] / static_cast<double>(counts[i]);
     }
     // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
 
-  const_cast<bool&>(has_mean_fl_trunc) = true;
+  has_mean_fl_trunc = true;
 
   std::cerr << "[quant] estimated average fragment length: " <<
     mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;

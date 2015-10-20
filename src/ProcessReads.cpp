@@ -141,6 +141,20 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 /** -- read processors -- **/
 
 void MasterProcessor::processReads() {
+
+  /*if (!opt.single_end && opt.fld == 0){
+    // just start a single worker to estimate the mean fragment length
+    ReadProcessor RP(index,opt,tc,*this);
+    RP.findFragmentLength = true;
+    std::cerr << "\nEstimating fragment length";
+    while (tlencount < 10000) {
+      std::cerr << "."; std::cerr.flush();
+      RP(); //
+      std::cerr << "(" << tlencount << ") "; std::cerr.flush();
+    }
+    std::cerr << std::endl; std::cerr.flush();
+  }*/
+
   // start worker threads
   std::vector<std::thread> workers;
   for (int i = 0; i < opt.threads; i++) {
@@ -166,7 +180,7 @@ void MasterProcessor::processReads() {
 
 }
 
-void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs, int n) {
+void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs, int n, std::vector<int>& flens) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -180,14 +194,21 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
   }
   nummapped += newEcs.size();
 
+  if (!flens.empty()) {
+    for (int i = 0; i < flens.size(); i++) {
+      tc.flens[i] += flens[i];
+      tlencount += flens[i];
+    }
+  }
+
   numreads += n;
   // releases the lock
 }
 
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp) :
- paired(!opt.single_end), tc(tc), index(index), mp(mp) {
+ paired(!opt.single_end), tc(tc), index(index), mp(mp), findFragmentLength(false) {
    // initialize buffer
-   bufsize = 1ULL<<13;
+   bufsize = 1ULL<<23;
    buffer = new char[bufsize];
 
    seqs.reserve(bufsize/50);
@@ -204,14 +225,6 @@ ReadProcessor::~ReadProcessor() {
 }
 
 void ReadProcessor::operator()() {
-  // set up thread variables
-  std::vector<std::pair<KmerEntry,int>> v1, v2;
-  std::vector<int> u;
-  u.reserve(1000);
-  v1.reserve(1000);
-  v2.reserve(1000);
-
-
   while (true) {
     // grab the reader lock
     {
@@ -220,54 +233,107 @@ void ReadProcessor::operator()() {
         // nothing to do
         return;
       } else {
+        // get new sequences
         mp.SR.fetchSequences(buffer, bufsize, seqs);
       }
     } // release the reader lock
 
     // process our sequences
+    processBuffer();
 
-    const char* s1 = 0;
-    const char* s2 = 0;
-    int l1,l2;
+    // update the results, MP acquires the lock
+    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens);
+    clear();
+  }
+}
 
-    for (int i = 0; i < seqs.size(); i++) {
-      s1 = seqs[i].first;
-      l1 = seqs[i].second;
-      if (paired) {
-        i++;
-        s2 = seqs[i].first;
-        l2 = seqs[i].second;
-      }
+void ReadProcessor::processBuffer() {
+  // set up thread variables
+  std::vector<std::pair<KmerEntry,int>> v1, v2;
+  std::vector<int> u;
+  u.reserve(1000);
+  v1.reserve(1000);
+  v2.reserve(1000);
+  const char* s1 = 0;
+  const char* s2 = 0;
+  int l1,l2;
 
-      numreads++;
-      v1.clear();
-      v2.clear();
-      u.clear();
-      // process read
-      index.match(s1,l1, v1);
-      if (paired) {
-        index.match(s2,l2, v2);
-      }
+  findFragmentLength = (mp.tlencount < 10000);
 
-      // collect the target information
-      int r = tc.intersectKmers(v1, v2, !paired,u);
-      if (u.empty()) {
-        continue;
+  int flengoal = 0;
+  if (findFragmentLength) {
+    flengoal = (10000 - mp.tlencount);
+    flens.resize(tc.flens.size(), 0);
+  }
+
+  for (int i = 0; i < seqs.size(); i++) {
+    s1 = seqs[i].first;
+    l1 = seqs[i].second;
+    if (paired) {
+      i++;
+      s2 = seqs[i].first;
+      l2 = seqs[i].second;
+    }
+
+    numreads++;
+    v1.clear();
+    v2.clear();
+    u.clear();
+    // process read
+    index.match(s1,l1, v1);
+    if (paired) {
+      index.match(s2,l2, v2);
+    }
+
+    // collect the target information
+    int ec = -1;
+    int r = tc.intersectKmers(v1, v2, !paired,u);
+    if (u.empty()) {
+      continue;
+    } else {
+      ec = tc.findEC(u);
+      if (ec == -1 || ec >= counts.size()) {
+        newEcs.push_back(u);
       } else {
-        int ec = tc.findEC(u);
-        if (ec == -1 || ec >= counts.size()) {
-          newEcs.push_back(u);
-        } else {
-          ++counts[ec];
+        ++counts[ec];
+      }
+    }
+
+
+    /*
+    if (ec != -1 && ) {
+      // collect sequence specific bias info
+      if (opt.bias && biasCount < maxBiasCount) {
+        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired), bias3) {
+          biasCount++;
         }
       }
+    }
+    */
 
-      /*
-      if (opt.strand_specific && ec != -1 && !v1.empty()) {
 
-        Kmer km;
-        KmerEntry val = v1[0].first;
-        int p = v1[0].second;
+
+    // collect fragment length info
+    if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+      // try to map the reads
+      int tl = index.mapPair(s1, l1, s2, l2, ec);
+      if (0 < tl && tl < flens.size()) {
+        flens[tl]++;
+        flengoal--;
+      }
+    }
+
+    /*
+    if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
+      // inspect the positions
+      int fl = (int) tc.get_mean_frag_len();
+      int p = -1;
+      KmerEntry val;
+      Kmer km;
+
+      if (!v1.empty()) {
+        val = v1[0].first;
+        p = v1[0].second;
         for (auto &x : v1) {
           if (x.second < p) {
             val = x.first;
@@ -275,118 +341,87 @@ void ReadProcessor::operator()() {
           }
         }
         km = Kmer((s1+p));
-
-        std::vector<int> u = index.ecmap[ec];
-        std::vector<int> v;
-        v.reserve(u.size());
-
-        for (auto tr : u)  {
-          bool strand = ((km == km.rep()) == val.isFw());
-          if (!strand) {
-            v.push_back(tr);
+      }
+      if (!v2.empty()) {
+        val = v2[0].first;
+        p = v2[0].second;
+        for (auto &x : v2) {
+          if (x.second < p) {
+            val = x.first;
+            p = x.second;
           }
         }
-        if (v.size() < u.size()) {
-          tc.decreaseCount(ec);
-          ec = tc.increaseCount(v);
+        km = Kmer((s2+p));
+      }
+
+      std::vector<int> u = index.ecmap[ec]; // copy
+      std::vector<int> v;
+      v.reserve(u.size());
+
+      for (auto tr : u) {
+        auto x = index.findPosition(tr, km, val, p);
+        if (x.second && x.first + fl <= index.target_lens_[tr]) {
+          v.push_back(tr);
+        }
+        if (!x.second && x.first - fl >= 0) {
+          v.push_back(tr);
         }
       }
-      */
-      /*
-      if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
-        // inspect the positions
-        int fl = (int) tc.get_mean_frag_len();
-        int p = -1;
-        KmerEntry val;
-        Kmer km;
 
-        if (!v1.empty()) {
-          val = v1[0].first;
-          p = v1[0].second;
-          for (auto &x : v1) {
-            if (x.second < p) {
-              val = x.first;
-              p = x.second;
-            }
-          }
-          km = Kmer((s1+p));
-        }
-        if (!v2.empty()) {
-          val = v2[0].first;
-          p = v2[0].second;
-          for (auto &x : v2) {
-            if (x.second < p) {
-              val = x.first;
-              p = x.second;
-            }
-          }
-          km = Kmer((s2+p));
-        }
-
-        std::vector<int> u = index.ecmap[ec]; // copy
-        std::vector<int> v;
-        v.reserve(u.size());
-
-        for (auto tr : u) {
-          auto x = index.findPosition(tr, km, val, p);
-          if (x.second && x.first + fl <= index.target_lens_[tr]) {
-            v.push_back(tr);
-          }
-          if (!x.second && x.first - fl >= 0) {
-            v.push_back(tr);
-          }
-        }
-
-        if (v.size() < u.size()) {
-          // fix the ec
-          tc.decreaseCount(ec);
-          ec = tc.increaseCount(v);
-        }
+      if (v.size() < u.size()) {
+        // fix the ec
+        tc.decreaseCount(ec);
+        ec = tc.increaseCount(v);
       }
-      */
-
-
-      /*
-      if (ec != -1) {
-        nummapped++;
-        // collect sequence specific bias info
-        if (opt.bias && biasCount < maxBiasCount) {
-          if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired)) {
-            biasCount++;
-          }
-        }
-      }
-      */
-
-      /*
-      // collect fragment length info
-      if (tlencount > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
-        // try to map the reads
-        int tl = index.mapPair(s1, l1, s2, l2, ec);
-        if (0 < tl && tl < tc.flens.size()) {
-          tc.flens[tl]++;
-          tlencount--;
-        }
-      }
-      */
-
-      // pseudobam
-      if (mp.opt.pseudobam) {
-        //outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
-      }
-      /*
-      if (opt.verbose && numreads % 100000 == 0 ) {
-        std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
-      }*/
     }
+    */
+
+
+    /*
+    // Deal with strand specific reads
+    if (opt.strand_specific && ec != -1 && !v1.empty()) {
+
+      Kmer km;
+      KmerEntry val = v1[0].first;
+      int p = v1[0].second;
+      for (auto &x : v1) {
+        if (x.second < p) {
+          val = x.first;
+          p = x.second;
+        }
+      }
+      km = Kmer((s1+p));
+
+      std::vector<int> u = index.ecmap[ec];
+      std::vector<int> v;
+      v.reserve(u.size());
+
+      for (auto tr : u)  {
+        bool strand = ((km == km.rep()) == val.isFw());
+        if (!strand) {
+          v.push_back(tr);
+        }
+      }
+      if (v.size() < u.size()) {
+        tc.decreaseCount(ec);
+        ec = tc.increaseCount(v);
+      }
+    }
+    */
 
 
 
 
-    // update the results, MP acquires the lock
-    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size());
-    clear();
+    // pseudobam
+    if (mp.opt.pseudobam) {
+      //outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
+    }
+    /*
+    if (opt.verbose && numreads % 100000 == 0 ) {
+      std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
+    }*/
   }
+
 }
 
 void ReadProcessor::clear() {

@@ -53,7 +53,7 @@ private:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc)
-    : tc(tc), index(index), opt(opt), SR(opt), numreads(0), nummapped(0) {}
+    : tc(tc), index(index), opt(opt), SR(opt), numreads(0), nummapped(0), tlencount(0) { }
 
   std::mutex reader_lock;
   std::mutex writer_lock;
@@ -64,10 +64,11 @@ public:
   const ProgramOptions& opt;
   int numreads;
   int nummapped;
+  std::atomic<int> tlencount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   void processReads();
 
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n);
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n, std::vector<int>& flens);
 };
 
 class ReadProcessor {
@@ -80,16 +81,19 @@ public:
   const MinCollector& tc;
   const KmerIndex& index;
   MasterProcessor& mp;
+  bool findFragmentLength;
   int numreads;
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
   std::vector<std::vector<int>> newEcs;
+  std::vector<int> flens;
 
   std::vector<int> counts;
 
   void operator()();
+  void processBuffer();
   void clear();
 };
 

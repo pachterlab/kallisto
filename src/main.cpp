@@ -791,7 +791,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
@@ -893,7 +893,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
