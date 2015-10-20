@@ -53,7 +53,8 @@ private:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc)
-    : tc(tc), index(index), opt(opt), SR(opt), numreads(0), nummapped(0), tlencount(0) { }
+    : tc(tc), index(index), opt(opt), SR(opt), numreads(0)
+    ,nummapped(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) { }
 
   std::mutex reader_lock;
   std::mutex writer_lock;
@@ -65,10 +66,12 @@ public:
   int numreads;
   int nummapped;
   std::atomic<int> tlencount;
+  std::atomic<int> biasCount;
+  const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   void processReads();
 
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n, std::vector<int>& flens);
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n, std::vector<int>& flens, std::vector<int> &bias);
 };
 
 class ReadProcessor {
@@ -81,7 +84,6 @@ public:
   const MinCollector& tc;
   const KmerIndex& index;
   MasterProcessor& mp;
-  bool findFragmentLength;
   int numreads;
 
   std::vector<std::pair<const char*, int>> seqs;
@@ -89,6 +91,7 @@ public:
   std::vector<std::pair<const char*, int>> quals;
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
+  std::vector<int> bias5;
 
   std::vector<int> counts;
 

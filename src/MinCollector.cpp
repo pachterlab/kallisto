@@ -320,6 +320,10 @@ int hexamerToInt(const char *s, bool revcomp) {
 }
 
 bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+  return countBias(s1,s2,v1,v2,paired,bias5);
+}
+
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const {
 
   const int pre = 2, post = 4;
 
@@ -391,7 +395,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
   */
 
   if (hex5 >=0) { // && (!paired || hex3 >= 0)) {
-    bias5[hex5]++;
+    biasOut[hex5]++;
     //bias3[hex3]++;
   } else {
     return false;

@@ -141,20 +141,6 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 /** -- read processors -- **/
 
 void MasterProcessor::processReads() {
-
-  /*if (!opt.single_end && opt.fld == 0){
-    // just start a single worker to estimate the mean fragment length
-    ReadProcessor RP(index,opt,tc,*this);
-    RP.findFragmentLength = true;
-    std::cerr << "\nEstimating fragment length";
-    while (tlencount < 10000) {
-      std::cerr << "."; std::cerr.flush();
-      RP(); //
-      std::cerr << "(" << tlencount << ") "; std::cerr.flush();
-    }
-    std::cerr << std::endl; std::cerr.flush();
-  }*/
-
   // start worker threads
   std::vector<std::thread> workers;
   for (int i = 0; i < opt.threads; i++) {
@@ -180,7 +166,8 @@ void MasterProcessor::processReads() {
 
 }
 
-void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs, int n, std::vector<int>& flens) {
+void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs,
+                            int n, std::vector<int>& flens, std::vector<int>& bias) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -195,10 +182,21 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
   nummapped += newEcs.size();
 
   if (!flens.empty()) {
+    int local_tlencount = 0;
     for (int i = 0; i < flens.size(); i++) {
       tc.flens[i] += flens[i];
-      tlencount += flens[i];
+      local_tlencount += flens[i];
     }
+    tlencount += local_tlencount;
+  }
+
+  if (!bias.empty()) {
+    int local_biasCount = 0;
+    for (int i = 0; i < bias.size(); i++) {
+      tc.bias5[i] += bias[i];
+      local_biasCount += bias[i];
+    }
+    biasCount += local_biasCount;
   }
 
   numreads += n;
@@ -206,7 +204,7 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
 }
 
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp) :
- paired(!opt.single_end), tc(tc), index(index), mp(mp), findFragmentLength(false) {
+ paired(!opt.single_end), tc(tc), index(index), mp(mp) {
    // initialize buffer
    bufsize = 1ULL<<23;
    buffer = new char[bufsize];
@@ -242,7 +240,7 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens);
+    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens, bias5);
     clear();
   }
 }
@@ -250,22 +248,47 @@ void ReadProcessor::operator()() {
 void ReadProcessor::processBuffer() {
   // set up thread variables
   std::vector<std::pair<KmerEntry,int>> v1, v2;
+  std::vector<int> vtmp;
   std::vector<int> u;
+
   u.reserve(1000);
   v1.reserve(1000);
   v2.reserve(1000);
+  vtmp.reserve(1000);
+
   const char* s1 = 0;
   const char* s2 = 0;
   int l1,l2;
 
-  findFragmentLength = (mp.tlencount < 10000);
+  bool findFragmentLength = (mp.opt.fld == 0) && (mp.tlencount < 10000);
 
   int flengoal = 0;
   if (findFragmentLength) {
     flengoal = (10000 - mp.tlencount);
-    flens.resize(tc.flens.size(), 0);
+    if (flengoal <= 0) {
+      findFragmentLength = false;
+      flengoal = 0;
+    } else {
+      flens.resize(tc.flens.size(), 0);
+    }
   }
 
+  int maxBiasCount = 0;
+  bool findBias = mp.opt.bias && (mp.biasCount < mp.maxBiasCount);
+
+
+  int biasgoal  = 0;
+  if (findBias) {
+    biasgoal = (mp.maxBiasCount - mp.biasCount);
+    if (biasgoal <= 0) {
+      findBias = false;
+    } else {
+      bias5.resize(tc.bias5.size(),0);
+    }
+  }
+
+
+  // actually process the sequences
   for (int i = 0; i < seqs.size(); i++) {
     s1 = seqs[i].first;
     l1 = seqs[i].second;
@@ -279,6 +302,7 @@ void ReadProcessor::processBuffer() {
     v1.clear();
     v2.clear();
     u.clear();
+
     // process read
     index.match(s1,l1, v1);
     if (paired) {
@@ -292,39 +316,15 @@ void ReadProcessor::processBuffer() {
       continue;
     } else {
       ec = tc.findEC(u);
-      if (ec == -1 || ec >= counts.size()) {
-        newEcs.push_back(u);
-      } else {
-        ++counts[ec];
-      }
     }
 
+    /* --  possibly modify the pseudoalignment  -- */
 
     /*
-    if (ec != -1 && ) {
-      // collect sequence specific bias info
-      if (opt.bias && biasCount < maxBiasCount) {
-        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired), bias3) {
-          biasCount++;
-        }
-      }
-    }
-    */
-
-
-
-    // collect fragment length info
-    if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
-      // try to map the reads
-      int tl = index.mapPair(s1, l1, s2, l2, ec);
-      if (0 < tl && tl < flens.size()) {
-        flens[tl]++;
-        flengoal--;
-      }
-    }
-
-    /*
-    if (paired && ec != -1 && (v1.empty() || v2.empty()) && tlencount == 0) {
+    // If we have paired end reads where one end maps, check if some transcsripts
+    // are not compatible with the mean fragment length
+    if (paired && !u.empty() && (v1.empty() || v2.empty()) && flengoal == 0) {
+      vtmp.clear();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
       int p = -1;
@@ -354,29 +354,21 @@ void ReadProcessor::processBuffer() {
         km = Kmer((s2+p));
       }
 
-      std::vector<int> u = index.ecmap[ec]; // copy
-      std::vector<int> v;
-      v.reserve(u.size());
-
       for (auto tr : u) {
         auto x = index.findPosition(tr, km, val, p);
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
-          v.push_back(tr);
+          vtmp.push_back(tr);
         }
         if (!x.second && x.first - fl >= 0) {
-          v.push_back(tr);
+          vtmp.push_back(tr);
         }
       }
 
-      if (v.size() < u.size()) {
-        // fix the ec
-        tc.decreaseCount(ec);
-        ec = tc.increaseCount(v);
+      if (vtmp.size() < u.size()) {
+        u = vtmp; // copy
       }
     }
     */
-
-
     /*
     // Deal with strand specific reads
     if (opt.strand_specific && ec != -1 && !v1.empty()) {
@@ -409,8 +401,33 @@ void ReadProcessor::processBuffer() {
     }
     */
 
+    // count the pseudoalignment
+    if (ec == -1 || ec >= counts.size()) {
+      newEcs.push_back(u);
+    } else {
+      ++counts[ec];
+    }
 
 
+
+    /* -- collect extra information -- */
+    // collect bias info
+    if (findBias && !u.empty() && biasgoal > 0) {
+      // collect sequence specific bias info
+      if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+        biasgoal--;
+      }
+    }
+
+    // collect fragment length info
+    if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+      // try to map the reads
+      int tl = index.mapPair(s1, l1, s2, l2, ec);
+      if (0 < tl && tl < flens.size()) {
+        flens[tl]++;
+        flengoal--;
+      }
+    }
 
     // pseudobam
     if (mp.opt.pseudobam) {

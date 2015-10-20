@@ -62,6 +62,7 @@ struct MinCollector {
   void loadCounts(ProgramOptions& opt);
 
   bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
+  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const;
 
   // DEPRECATED
   double get_mean_frag_len() const;
