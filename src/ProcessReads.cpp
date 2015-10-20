@@ -320,7 +320,6 @@ void ReadProcessor::processBuffer() {
 
     /* --  possibly modify the pseudoalignment  -- */
 
-    /*
     // If we have paired end reads where one end maps, check if some transcsripts
     // are not compatible with the mean fragment length
     if (paired && !u.empty() && (v1.empty() || v2.empty()) && flengoal == 0) {
@@ -354,8 +353,10 @@ void ReadProcessor::processBuffer() {
         km = Kmer((s2+p));
       }
 
+      // for each transcript in the pseudoalignment
       for (auto tr : u) {
         auto x = index.findPosition(tr, km, val, p);
+        // if the fragment is within bounds for this transcript, keep it
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
           vtmp.push_back(tr);
         }
@@ -368,7 +369,7 @@ void ReadProcessor::processBuffer() {
         u = vtmp; // copy
       }
     }
-    */
+
     /*
     // Deal with strand specific reads
     if (opt.strand_specific && ec != -1 && !v1.empty()) {
@@ -403,8 +404,10 @@ void ReadProcessor::processBuffer() {
 
     // count the pseudoalignment
     if (ec == -1 || ec >= counts.size()) {
+      // something we haven't seen before
       newEcs.push_back(u);
     } else {
+      // add to count vector
       ++counts[ec];
     }
 
