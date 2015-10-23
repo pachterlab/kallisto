@@ -666,16 +666,16 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "    --single                  Quantify single-end reads" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
+       << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
-       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
-       << "-t, --threads=INT             Number of threads to use for bootstraping (default: 1)" << endl
-       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
