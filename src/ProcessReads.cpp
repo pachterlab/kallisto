@@ -225,7 +225,7 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals,mp.opt.pseudobam);
       }
     } // release the reader lock
 
@@ -427,7 +427,17 @@ void ReadProcessor::processBuffer() {
 
     // pseudobam
     if (mp.opt.pseudobam) {
-      outputPseudoBam(index, u, s1, v1, s2, v2, paired);
+      if (paired) {
+        outputPseudoBam(index, u,
+          s1, names[i-1].first, quals[i-1].first, l1, names[i-1].second, v1,
+          s2, names[i].first, quals[i].first, l2, names[i].second, v2,
+          paired);
+      } else {
+        outputPseudoBam(index, u,
+          s1, names[i].first, quals[i].first, l1, names[i].second, v1,
+          nullptr, nullptr, nullptr, 0, 0, v2,
+          paired);
+      }
     }
 
     /*
@@ -468,11 +478,15 @@ SequenceReader::~SequenceReader() {
 
 
 // returns true if there is more left to read from the files
-bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs) {
+bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
+  std::vector<std::pair<const char *, int> > &names,
+  std::vector<std::pair<const char *, int> > &quals, bool full) {
   seqs.clear();
+  if (full) {
+    names.clear();
+    quals.clear();
+  }
   int bufpos = 0;
-  char * p1 = 0;
-  char * p2 = 0;
   int pad = (paired) ? 2 : 1;
   while (true) {
     if (!state) { // should we open a file
@@ -503,20 +517,46 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
     // the file is open and we have read into seq1 and seq2
 
     if (l1 > 0 && (!paired || l2 > 0)) {
-
+      int bufadd = l1 + l2 + pad;
       // fits into the buffer
-      if (bufpos+l1+l2+pad < limit) {
-        p1 = buf+bufpos;
+      if (full) {
+        nl1 = seq1->name.l;
+        if (paired) {
+          nl2 = seq2->name.l;
+        }
+        bufadd += (l1+l2) + pad + (nl1+nl2)+ pad;
+      }
+      if (bufpos+bufadd< limit) {
+        char *p1 = buf+bufpos;
         memcpy(p1, seq1->seq.s, l1+1);
         bufpos += l1+1;
+        seqs.emplace_back(p1,l1);
+        if (full) {
+          p1 = buf+bufpos;
+          memcpy(p1, seq1->qual.s,l1+1);
+          bufpos += l1+1;
+          quals.emplace_back(p1,l1);
+          p1 = buf+bufpos;
+          memcpy(p1, seq1->name.s,nl1+1);
+          bufpos += nl1+1;
+          names.emplace_back(p1,nl1);
+        }
+
         if (paired) {
-          p2 = buf+bufpos;
+          char *p2 = buf+bufpos;
           memcpy(p2, seq2->seq.s,l2+1);
           bufpos += l2+1;
-        }
-        seqs.emplace_back(p1,l1);
-        if (paired) {
           seqs.emplace_back(p2,l2);
+          if (full) {
+            p2 = buf+bufpos;
+            memcpy(p2,seq2->qual.s,l2+1);
+            bufpos += l2+1;
+            quals.emplace_back(p2,l2);
+            p2 = buf + bufpos;
+            memcpy(p2,seq2->name.s,nl2+1);
+            bufpos += nl2+1;
+            names.emplace_back(p2,nl2);
+          }
         }
       } else {
         return true; // read it next time
@@ -536,8 +576,4 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
 
 bool SequenceReader::empty() {
   return (!state && current_file >= files.size());
-}
-
-bool SequenceReader::fetchSequencesFull(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs, std::vector<std::pair<const char *, int> > &names, std::vector<std::pair<const char *, int> > &quals) {
-  return false;
 }

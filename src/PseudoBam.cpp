@@ -14,11 +14,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
 
   if (nlen1 > 2 && n1[nlen1-2] == '/') {
-    n1[nlen1-2] = 0;
+    ((char*)n1)[nlen1-2] = 0;
   }
 
   if (paired && nlen2 > 2 && n2[nlen2-2] == '/') {
-    n2[nlen2-2] = 0;
+    ((char*)n2)[nlen2-2] = 0;
   }
 
   if (u.empty()) {
@@ -67,7 +67,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
             p1 = x.second;
           }
         }
-        km1 = Kmer((seq1->seq.s+p1));
+        km1 = Kmer((s1+p1));
       }
 
       if (!v2.empty()) {
@@ -79,7 +79,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
             p2 = x.second;
           }
         }
-        km2 = Kmer((seq2->seq.s+p2));
+        km2 = Kmer((s2+p2));
       }
 
       bool revset = false;
@@ -154,8 +154,8 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           }
         }
 
-        int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l + 1) : x2.first;
-        int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l + 1) : x1.first;
+        int posread = (f2 & 0x10) ? (x2.first - slen2 + 1) : x2.first;
+        int posmate = (f2 & 0x20) ? (x1.first - slen1 + 1) : x1.first;
 
         getCIGARandSoftClip(cig, bool(f2 & 0x10), (f2 & 0x04) == 0, posread, posmate, slen2, index.target_lens_[tr]);
         int tlen = x1.first - x2.first;
@@ -196,7 +196,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
         int posread = (f1 & 0x10) ? (x1.first - slen1+1) : x1.first;
         int dummy=1;
-        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, sl, index.target_lens_[tr]);
+        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, slen1, index.target_lens_[tr]);
 
         printf("%s\t%d\t%s\t%d\t255\t%s\t*\t%d\t%d\t%s\t%s\tNH:i:%d\n", n1, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, 0, 0, (f1 & 0x10) ? &buf1[0] : s1, (f1 & 0x10) ? &buf2[0] : q1, nmap);
       }
