@@ -118,6 +118,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int strand_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
 
@@ -128,6 +129,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
+    {"strand-specific", no_argument, &strand_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
@@ -212,6 +214,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+  }
+
+  if (strand_flag) {
+    opt.strand_specific = true;
   }
 
   if (bias_flag) {
@@ -412,6 +418,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
           ret = false;
         }
       }
+    }
+
+    if (opt.strand_specific && !opt.single_end) {
+      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      ret = false;
     }
 
     if (!opt.single_end) {
@@ -655,16 +666,16 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "    --single                  Quantify single-end reads" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
+       << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
-       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
-       << "-t, --threads=INT             Number of threads to use for bootstraping (default: 1)" << endl
-       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
@@ -780,7 +791,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
@@ -882,7 +893,7 @@ int main(int argc, char *argv[]) {
 
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
