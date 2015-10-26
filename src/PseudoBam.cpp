@@ -85,6 +85,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       bool revset = false;
 
       // output pseudoalignments for read 1
+      bool firstTr = true;
       for (auto tr : u) {
         int f1 = flag1;
         std::pair<int, bool> x1 {-1,true};
@@ -102,6 +103,9 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
             }
           }
         }
+        if (!firstTr) {
+          f1 += 0x100; // secondary alignment
+        }
         if (p2 != -1) {
           x2 = index.findPosition(tr, km2 , val2, p2);
           if (p1 == -1) {
@@ -111,6 +115,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
             f1 += 0x20; // mate reverse
           }
         }
+        firstTr = false;
 
         int posread = (f1 & 0x10) ? (x1.first - slen1 + 1) : x1.first;
         int posmate = (f1 & 0x20) ? (x2.first - slen2 + 1) : x2.first;
@@ -126,6 +131,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
       revset = false;
       // output pseudoalignments for read 2
+      firstTr = true;
       for (auto tr : u) {
         int f2 = flag2;
         std::pair<int, bool> x1 {-1,true};
@@ -153,7 +159,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
           }
         }
+        if (!firstTr) {
+          f2 += 0x100; // secondary alignment
+        }
 
+        firstTr = false;
         int posread = (f2 & 0x10) ? (x2.first - slen2 + 1) : x2.first;
         int posmate = (f2 & 0x20) ? (x1.first - slen1 + 1) : x1.first;
 
@@ -181,7 +191,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       Kmer km1 = Kmer((s1+p1));
 
       bool revset = false;
-
+      bool firstTr = true;
       for (auto tr : u) {
         int f1 = 0;
         auto x1 = index.findPosition(tr, km1, val1, p1);
@@ -193,7 +203,10 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
             revset = true;
           }
         }
-
+        if (!firstTr) {
+          f1 += 0x100; // secondary alignment
+        }
+        firstTr = false;
         int posread = (f1 & 0x10) ? (x1.first - slen1+1) : x1.first;
         int dummy=1;
         getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, slen1, index.target_lens_[tr]);
