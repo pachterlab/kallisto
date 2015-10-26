@@ -808,6 +808,11 @@ int main(int argc, char *argv[]) {
           // }
         }
 
+        std::vector<int> preBias(4096,1);
+        if (opt.bias) {
+          preBias = collection.bias5; // copy
+        }
+
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
         /*for (int i = 0; i < collection.bias3.size(); i++) {
@@ -821,7 +826,7 @@ int main(int argc, char *argv[]) {
 
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
@@ -914,6 +919,12 @@ int main(int argc, char *argv[]) {
           // }
         }
 
+        std::vector<int> preBias(4096,1); // default
+        if (opt.bias) {
+          // fetch the observed bias
+          preBias = collection.bias5; // copy
+        }
+
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
         EMAlgorithm em(collection.counts, index, collection, fl_means);
@@ -924,7 +935,7 @@ int main(int argc, char *argv[]) {
 
         if (!opt.plaintext) {
           // setting num_processed to 0 because quant-only is for debugging/special ops
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
