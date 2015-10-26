@@ -16,11 +16,8 @@
 
 #include "ProcessReads.h"
 #include "kseq.h"
+#include "PseudoBam.h"
 
-
-void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired);
-void revseq(char *b1, char *b2, const kseq_t *seq);
-void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength);
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -95,14 +92,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
-  /*
-  int biasCount = 0;
-  const int maxBiasCount = 1000000;
 
   if (opt.pseudobam) {
-    //index.writePseudoBamHeader(std::cout);
+    index.writePseudoBamHeader(std::cout);
   }
-  */
 
   MasterProcessor MP(index, opt, tc);
   MP.processReads();
@@ -232,7 +225,7 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals,mp.opt.pseudobam);
       }
     } // release the reader lock
 
@@ -434,8 +427,19 @@ void ReadProcessor::processBuffer() {
 
     // pseudobam
     if (mp.opt.pseudobam) {
-      //outputPseudoBam(index, ec, seq1, v1, seq2, v2, paired);
+      if (paired) {
+        outputPseudoBam(index, u,
+          s1, names[i-1].first, quals[i-1].first, l1, names[i-1].second, v1,
+          s2, names[i].first, quals[i].first, l2, names[i].second, v2,
+          paired);
+      } else {
+        outputPseudoBam(index, u,
+          s1, names[i].first, quals[i].first, l1, names[i].second, v1,
+          nullptr, nullptr, nullptr, 0, 0, v2,
+          paired);
+      }
     }
+
     /*
     if (opt.verbose && numreads % 100000 == 0 ) {
       std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
@@ -474,11 +478,15 @@ SequenceReader::~SequenceReader() {
 
 
 // returns true if there is more left to read from the files
-bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs) {
+bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
+  std::vector<std::pair<const char *, int> > &names,
+  std::vector<std::pair<const char *, int> > &quals, bool full) {
   seqs.clear();
+  if (full) {
+    names.clear();
+    quals.clear();
+  }
   int bufpos = 0;
-  char * p1 = 0;
-  char * p2 = 0;
   int pad = (paired) ? 2 : 1;
   while (true) {
     if (!state) { // should we open a file
@@ -509,20 +517,46 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
     // the file is open and we have read into seq1 and seq2
 
     if (l1 > 0 && (!paired || l2 > 0)) {
-
+      int bufadd = l1 + l2 + pad;
       // fits into the buffer
-      if (bufpos+l1+l2+pad < limit) {
-        p1 = buf+bufpos;
+      if (full) {
+        nl1 = seq1->name.l;
+        if (paired) {
+          nl2 = seq2->name.l;
+        }
+        bufadd += (l1+l2) + pad + (nl1+nl2)+ pad;
+      }
+      if (bufpos+bufadd< limit) {
+        char *p1 = buf+bufpos;
         memcpy(p1, seq1->seq.s, l1+1);
         bufpos += l1+1;
+        seqs.emplace_back(p1,l1);
+        if (full) {
+          p1 = buf+bufpos;
+          memcpy(p1, seq1->qual.s,l1+1);
+          bufpos += l1+1;
+          quals.emplace_back(p1,l1);
+          p1 = buf+bufpos;
+          memcpy(p1, seq1->name.s,nl1+1);
+          bufpos += nl1+1;
+          names.emplace_back(p1,nl1);
+        }
+
         if (paired) {
-          p2 = buf+bufpos;
+          char *p2 = buf+bufpos;
           memcpy(p2, seq2->seq.s,l2+1);
           bufpos += l2+1;
-        }
-        seqs.emplace_back(p1,l1);
-        if (paired) {
           seqs.emplace_back(p2,l2);
+          if (full) {
+            p2 = buf+bufpos;
+            memcpy(p2,seq2->qual.s,l2+1);
+            bufpos += l2+1;
+            quals.emplace_back(p2,l2);
+            p2 = buf + bufpos;
+            memcpy(p2,seq2->name.s,nl2+1);
+            bufpos += nl2+1;
+            names.emplace_back(p2,nl2);
+          }
         }
       } else {
         return true; // read it next time
@@ -542,269 +576,4 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
 
 bool SequenceReader::empty() {
   return (!state && current_file >= files.size());
-}
-
-bool SequenceReader::fetchSequencesFull(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs, std::vector<std::pair<const char *, int> > &names, std::vector<std::pair<const char *, int> > &quals) {
-  return false;
-}
-
-
-
-
-/** --- pseudobam functions -- **/
-
-void outputPseudoBam(const KmerIndex &index, int ec, const kseq_t *seq1, const std::vector<std::pair<KmerEntry,int>>& v1, const kseq_t *seq2, const std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
-
-  static char buf1[32768];
-  static char buf2[32768];
-  static char cig_[1000];
-  char *cig = &cig_[0];
-
-
-  if (seq1->name.l > 2 && seq1->name.s[seq1->name.l-2] == '/') {
-    seq1->name.s[seq1->name.l-2] = 0;
-  }
-
-  if (paired && seq2->name.l > 2 && seq2->name.s[seq2->name.l-2] == '/') {
-    seq2->name.s[seq2->name.l-2] = 0;
-  }
-
-  if (ec == -1) {
-    // no mapping
-    if (paired) {
-      printf("%s\t77\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq1->name.s, seq1->seq.s, seq1->qual.s);
-      printf("%s\t141\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq2->name.s, seq2->seq.s, seq2->qual.s);
-      //o << seq1->name.s << "" << seq1->seq.s << "\t" << seq1->qual.s << "\n";
-      //o << seq2->name.s << "\t141\t*\t0\t0\t*\t*\t0\t0\t" << seq2->seq.s << "\t" << seq2->qual.s << "\n";
-    } else {
-      printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", seq1->name.s, seq1->seq.s, seq1->qual.s);
-    }
-  } else {
-    if (paired) {
-
-      int flag1 = 0x01 + 0x40;
-      int flag2 = 0x01 + 0x80;
-
-      if (v1.empty()) {
-        flag1 += 0x04; // read unmapped
-        flag2 += 0x08; // mate unmapped
-      }
-
-      if (v2.empty()) {
-        flag1 += 0x08; // mate unmapped
-        flag2 += 0x04; // read unmapped
-      }
-
-      if (!v1.empty() && !v2.empty()) {
-        flag1 += 0x02; // proper pair
-        flag2 += 0x02; // proper pair
-      }
-
-
-      int p1 = -1, p2 = -1;
-      KmerEntry val1, val2;
-      int nmap = index.ecmap[ec].size();
-      Kmer km1, km2;
-
-      if (!v1.empty()) {
-        val1 = v1[0].first;
-        p1 = v1[0].second;
-        for (auto &x : v1) {
-          if (x.second < p1) {
-            val1 = x.first;
-            p1 = x.second;
-          }
-        }
-        km1 = Kmer((seq1->seq.s+p1));
-      }
-
-      if (!v2.empty()) {
-        val2 = v2[0].first;
-        p2 = v2[0].second;
-        for (auto &x : v2) {
-          if (x.second < p2) {
-            val2 = x.first;
-            p2 = x.second;
-          }
-        }
-        km2 = Kmer((seq2->seq.s+p2));
-      }
-
-      bool revset = false;
-
-      // output pseudoalignments for read 1
-      for (auto tr : index.ecmap[ec]) {
-        int f1 = flag1;
-        std::pair<int, bool> x1 {-1,true};
-        std::pair<int, bool> x2 {-1,true};
-        if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
-          if (p2 == -1) {
-            x2 = {x1.first,!x1.second};
-          }
-          if (!x1.second) {
-            f1 += 0x10; // read reverse
-            if (!revset) {
-              revseq(&buf1[0], &buf2[0], seq1);
-              revset = true;
-            }
-          }
-        }
-        if (p2 != -1) {
-          x2 = index.findPosition(tr, km2 , val2, p2);
-          if (p1 == -1) {
-            x1 = {x2.first, !x2.second};
-          }
-          if (!x2.second) {
-            f1 += 0x20; // mate reverse
-          }
-        }
-
-        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l + 1) : x1.first;
-        int posmate = (f1 & 0x20) ? (x2.first - seq2->seq.l + 1) : x2.first;
-
-        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, posmate, seq1->seq.l, index.target_lens_[tr]);
-        int tlen = x2.first - x1.first;
-        if (tlen != 0) {
-          tlen += (tlen>0) ? 1 : -1;
-        }
-
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
-      }
-
-      revset = false;
-      // output pseudoalignments for read 2
-      for (auto tr : index.ecmap[ec]) {
-        int f2 = flag2;
-        std::pair<int, bool> x1 {-1,true};
-        std::pair<int, bool> x2 {-1,true};
-        if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
-          if (p2 == -1) {
-            x2 = {x1.first,!x1.second};
-          }
-          if (!x1.second) {
-            f2 += 0x20; // mate reverse
-          }
-        }
-        if (p2 != -1) {
-          x2 = index.findPosition(tr, km2, val2, p2);
-          if (p1 == -1) {
-            x1 = {x2.first, !x2.second};
-          }
-          if (!x2.second) {
-            f2 += 0x10; // read reverse
-            if (!revset) {
-              revseq(&buf1[0], &buf2[0], seq2);
-              revset = true;
-            }
-
-          }
-        }
-
-        int posread = (f2 & 0x10) ? (x2.first - seq2->seq.l + 1) : x2.first;
-        int posmate = (f2 & 0x20) ? (x1.first - seq1->seq.l + 1) : x1.first;
-
-        getCIGARandSoftClip(cig, bool(f2 & 0x10), (f2 & 0x04) == 0, posread, posmate, seq2->seq.l, index.target_lens_[tr]);
-        int tlen = x1.first - x2.first;
-        if (tlen != 0) {
-          tlen += (tlen > 0) ? 1 : -1;
-        }
-
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq2->name.s, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : seq2->seq.s,  (f2 & 0x10) ? &buf2[0] : seq2->qual.s, nmap);
-      }
-
-
-    } else {
-      // single end
-      int nmap = (int) index.ecmap[ec].size();
-      KmerEntry val1 = v1[0].first;
-      int p1 = v1[0].second;
-      for (auto &x : v1) {
-        if (x.second < p1) {
-          val1 = x.first;
-          p1 = x.second;
-        }
-      }
-      Kmer km1 = Kmer((seq1->seq.s+p1));
-
-      bool revset = false;
-
-      for (auto tr : index.ecmap[ec]) {
-        int f1 = 0;
-        auto x1 = index.findPosition(tr, km1, val1, p1);
-
-        if (!x1.second) {
-          f1 += 0x10;
-          if (!revset) {
-            revseq(&buf1[0], &buf2[0], seq1);
-            revset = true;
-          }
-        }
-
-        int posread = (f1 & 0x10) ? (x1.first - seq1->seq.l+1) : x1.first;
-        int dummy=1;
-        getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, dummy, seq1->seq.l, index.target_lens_[tr]);
-
-        printf("%s\t%d\t%s\t%d\t255\t%s\t*\t%d\t%d\t%s\t%s\tNH:i:%d\n", seq1->name.s, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, 0, 0, (f1 & 0x10) ? &buf1[0] : seq1->seq.s, (f1 & 0x10) ? &buf2[0] : seq1->qual.s, nmap);
-      }
-    }
-  }
-}
-
-
-void revseq(char *b1, char *b2, const kseq_t *seq) {
-  int n = seq->seq.l;
-  char* s = seq->seq.s;
-  b1[n] = 0;
-  for (int i = 0; i < n; i++) {
-    switch(s[i]) {
-    case 'A': b1[n-1-i] = 'T'; break;
-    case 'C': b1[n-1-i] = 'G'; break;
-    case 'G': b1[n-1-i] = 'C'; break;
-    case 'T': b1[n-1-i] = 'A'; break;
-    default:  b1[n-1-i] = 'N';
-    }
-  }
-
-  n = seq->qual.l;
-  s = seq->qual.s;
-  b2[n] = 0;
-  for (int i = 0; i < n; i++) {
-    b2[n-1-i] = s[i];
-  }
-
-
-}
-
-
-
-void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int &posmate, int length, int targetlength) {
-  int softclip = 1 - posread;
-  int overhang = (posread + length) - targetlength - 1;
-
-  if (posread <= 0) {
-    posread = 1;
-  }
-
-  if (mapped) {
-    if (softclip > 0) {
-      if (overhang > 0) {
-        sprintf(cig, "%dS%dM%dS",softclip, (length-overhang - softclip), overhang);
-      } else {
-        sprintf(cig, "%dS%dM",softclip,length-softclip);
-      }
-    } else if (overhang > 0) {
-      sprintf(cig, "%dM%dS", length-overhang, overhang);
-    } else {
-      sprintf(cig, "%dM",length);
-    }
-  } else {
-    sprintf(cig, "*");
-  }
-
-
-  if (posmate <= 0) {
-    posmate = 1;
-  }
 }
