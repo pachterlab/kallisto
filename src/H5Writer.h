@@ -11,9 +11,9 @@ class H5Writer {
     H5Writer() : primed_(false) {}
     ~H5Writer();
 
-    void init(const std::string& fname, int num_bootstrap, int num_processed, uint compression,
-        size_t index_version, const std::string& shell_call,
-        const std::string& start_time);
+    void init(const std::string& fname, int num_bootstrap, int num_processed,
+      const std::vector<int>& fld, uint compression, size_t index_version,
+      const std::string& shell_call, const std::string& start_time);
 
     void write_main(const EMAlgorithm& em,
         const std::vector<std::string>& targ_ids,

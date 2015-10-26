@@ -1,8 +1,8 @@
 #include "H5Writer.h"
 
-void H5Writer::init(const std::string& fname, int num_bootstrap, int num_processed, uint compression,
-    size_t index_version, const std::string& shell_call,
-    const std::string& start_time)
+void H5Writer::init(const std::string& fname, int num_bootstrap, int num_processed,
+  const std::vector<int>& fld, uint compression, size_t index_version, 
+  const std::string& shell_call, const std::string& start_time)
 {
   primed_ = true;
   num_bootstrap_ = num_bootstrap;
@@ -19,7 +19,8 @@ void H5Writer::init(const std::string& fname, int num_bootstrap, int num_process
   std::vector<int> n_proc {num_processed};
   vector_to_h5(n_proc, aux_, "num_processed", false, compression_);
 
-  
+  vector_to_h5(fld, aux_, "fld", false, compression_);
+
   // info about run
   std::vector<std::string> kal_version{ KALLISTO_VERSION };
   vector_to_h5(kal_version, aux_, "kallisto_version", true, compression_);
@@ -73,7 +74,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   // <aux info>
   // read target ids
   read_dataset(aux_, "ids", targ_ids_);
-  std::cerr << "[h5dump] number of targets: " << targ_ids_.size() << 
+  std::cerr << "[h5dump] number of targets: " << targ_ids_.size() <<
     std::endl;
 
   n_targs_ = targ_ids_.size();
@@ -94,7 +95,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   read_dataset(aux_, "num_processed", n_proc_vec);
   n_proc_ = n_proc_vec[0];
 
-  
+
   std::cerr << "[h5dump] number of bootstraps: " << n_bs_ << std::endl;
   // </aux info>
   if (n_bs_ > 0) {
