@@ -262,6 +262,7 @@ void ReadProcessor::processBuffer() {
       findFragmentLength = false;
       flengoal = 0;
     } else {
+      flens.clear();
       flens.resize(tc.flens.size(), 0);
     }
   }
@@ -276,6 +277,7 @@ void ReadProcessor::processBuffer() {
     if (biasgoal <= 0) {
       findBias = false;
     } else {
+      bias5.clear();
       bias5.resize(tc.bias5.size(),0);
     }
   }
