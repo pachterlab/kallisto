@@ -102,7 +102,8 @@ std::vector<double> update_eff_lens(
     const MinCollector& tc,
     const KmerIndex &index,
     const std::vector<double>& alpha,
-    const std::vector<double>& eff_lens
+    const std::vector<double>& eff_lens,
+    std::vector<double>& dbias5
     ) {
 
   double biasDataNorm = 0.0;
@@ -112,7 +113,8 @@ std::vector<double> update_eff_lens(
     biasDataNorm += tc.bias5[i];
   }
 
-  std::vector<double> dbias5(num6mers);
+  dbias5.clear();
+  dbias5.resize(num6mers, 0.0); // clear the bias
 
   index.loadTranscriptSequences();
 

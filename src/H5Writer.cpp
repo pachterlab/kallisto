@@ -1,7 +1,8 @@
 #include "H5Writer.h"
 
 void H5Writer::init(const std::string& fname, int num_bootstrap, int num_processed,
-  const std::vector<int>& fld,const std::vector<int>& preBias, uint compression, size_t index_version,
+  const std::vector<int>& fld,const std::vector<int>& preBias, const std::vector<double>& postBias,
+  uint compression, size_t index_version,
   const std::string& shell_call, const std::string& start_time)
 {
   primed_ = true;
@@ -22,6 +23,8 @@ void H5Writer::init(const std::string& fname, int num_bootstrap, int num_process
   vector_to_h5(fld, aux_, "fld", false, compression_);
 
   vector_to_h5(preBias, aux_, "bias_observed", false, compression_);
+
+  vector_to_h5(postBias, aux_, "bias_normalized", false, compression_);
 
   // info about run
   std::vector<std::string> kal_version{ KALLISTO_VERSION };
