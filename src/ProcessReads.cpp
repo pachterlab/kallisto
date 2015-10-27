@@ -365,38 +365,6 @@ void ReadProcessor::processBuffer() {
       }
     }
 
-    /*
-    // Deal with strand specific reads
-    if (opt.strand_specific && ec != -1 && !v1.empty()) {
-
-      Kmer km;
-      KmerEntry val = v1[0].first;
-      int p = v1[0].second;
-      for (auto &x : v1) {
-        if (x.second < p) {
-          val = x.first;
-          p = x.second;
-        }
-      }
-      km = Kmer((s1+p));
-
-      std::vector<int> u = index.ecmap[ec];
-      std::vector<int> v;
-      v.reserve(u.size());
-
-      for (auto tr : u)  {
-        bool strand = ((km == km.rep()) == val.isFw());
-        if (!strand) {
-          v.push_back(tr);
-        }
-      }
-      if (v.size() < u.size()) {
-        tc.decreaseCount(ec);
-        ec = tc.increaseCount(v);
-      }
-    }
-    */
-
     // count the pseudoalignment
     if (ec == -1 || ec >= counts.size()) {
       // something we haven't seen before

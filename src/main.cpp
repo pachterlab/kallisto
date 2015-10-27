@@ -129,7 +129,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
-    {"strand-specific", no_argument, &strand_flag, 1},
+    //{"strand-specific", no_argument, &strand_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
@@ -420,10 +420,11 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       }
     }
 
+    /*
     if (opt.strand_specific && !opt.single_end) {
       cerr << "Error: strand-specific mode requires single end mode" << endl;
       ret = false;
-    }
+    }*/
 
     if (!opt.single_end) {
       if (opt.files.size() % 2 != 0) {
