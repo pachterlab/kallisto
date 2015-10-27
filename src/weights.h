@@ -48,4 +48,8 @@ WeightMap calc_weights(
 std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
     double sd);
 
+std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+        double sd, int total_count);
+
+
 #endif // KALLISTO_WEIGHTS_H

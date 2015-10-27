@@ -802,7 +802,9 @@ int main(int argc, char *argv[]) {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          fld.resize(MAX_FRAG_LEN,0); // no obersvations
+          //fld.resize(MAX_FRAG_LEN,0); // no obersvations
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }
@@ -912,8 +914,9 @@ int main(int argc, char *argv[]) {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          cout << collection.mean_fl_trunc.size() << endl;
-          fld.resize(MAX_FRAG_LEN,0);
+          //cout << collection.mean_fl_trunc.size() << endl;
+          //fld.resize(MAX_FRAG_LEN,0);
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }

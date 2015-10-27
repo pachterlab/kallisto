@@ -253,3 +253,28 @@ std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
 
   return mean_fl;
 }
+
+std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+    double sd, int total_count) {
+  size_t n = stop - start;
+  std::vector<int> obs_fl(n, 0);
+
+  double total_mass = 0.0;
+
+
+  for (size_t i = 0; i < n; ++i) {
+    double x = static_cast<double>(start + i);
+    x = (x - mean) / sd;
+    double cur_density = std::exp( - 0.5 * x * x ) / sd;
+    total_mass += cur_density;
+  }
+
+  for (size_t i = 0; i < n; ++i) {
+    double x = static_cast<double>(start + i);
+    x = (x - mean) / sd;
+    double cur_density = std::exp( - 0.5 * x * x ) / sd;
+    obs_fl[i] = (int) std::round(cur_density * total_count / total_mass);
+  }
+
+  return obs_fl;
+}
