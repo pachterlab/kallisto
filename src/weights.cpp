@@ -102,7 +102,8 @@ std::vector<double> update_eff_lens(
     const MinCollector& tc,
     const KmerIndex &index,
     const std::vector<double>& alpha,
-    const std::vector<double>& eff_lens
+    const std::vector<double>& eff_lens,
+    std::vector<double>& dbias5
     ) {
 
   double biasDataNorm = 0.0;
@@ -112,7 +113,8 @@ std::vector<double> update_eff_lens(
     biasDataNorm += tc.bias5[i];
   }
 
-  std::vector<double> dbias5(num6mers);
+  dbias5.clear();
+  dbias5.resize(num6mers, 0.0); // clear the bias
 
   index.loadTranscriptSequences();
 
@@ -250,4 +252,29 @@ std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
   }
 
   return mean_fl;
+}
+
+std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+    double sd, int total_count) {
+  size_t n = stop - start;
+  std::vector<int> obs_fl(n, 0);
+
+  double total_mass = 0.0;
+
+
+  for (size_t i = 0; i < n; ++i) {
+    double x = static_cast<double>(start + i);
+    x = (x - mean) / sd;
+    double cur_density = std::exp( - 0.5 * x * x ) / sd;
+    total_mass += cur_density;
+  }
+
+  for (size_t i = 0; i < n; ++i) {
+    double x = static_cast<double>(start + i);
+    x = (x - mean) / sd;
+    double cur_density = std::exp( - 0.5 * x * x ) / sd;
+    obs_fl[i] = (int) std::round(cur_density * total_count / total_mass);
+  }
+
+  return obs_fl;
 }

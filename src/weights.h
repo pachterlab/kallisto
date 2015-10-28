@@ -29,7 +29,7 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
 std::vector<double> update_eff_lens(const std::vector<double>& means,
     const MinCollector& tc,
     const KmerIndex &index, const std::vector<double>& alpha,
-    const std::vector<double>& eff_lens );
+    const std::vector<double>& eff_lens, std::vector<double>& post_bias );
 
 
 WeightMap calc_weights(
@@ -47,5 +47,9 @@ WeightMap calc_weights(
 // let's pretend all the input is sane
 std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
     double sd);
+
+std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+        double sd, int total_count);
+
 
 #endif // KALLISTO_WEIGHTS_H
