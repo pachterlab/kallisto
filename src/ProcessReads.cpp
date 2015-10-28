@@ -256,13 +256,13 @@ void ReadProcessor::processBuffer() {
   bool findFragmentLength = (mp.opt.fld == 0) && (mp.tlencount < 10000);
 
   int flengoal = 0;
+  flens.clear();
   if (findFragmentLength) {
     flengoal = (10000 - mp.tlencount);
     if (flengoal <= 0) {
       findFragmentLength = false;
       flengoal = 0;
     } else {
-      flens.clear();
       flens.resize(tc.flens.size(), 0);
     }
   }
@@ -272,12 +272,12 @@ void ReadProcessor::processBuffer() {
 
 
   int biasgoal  = 0;
+  bias5.clear();
   if (findBias) {
     biasgoal = (mp.maxBiasCount - mp.biasCount);
     if (biasgoal <= 0) {
       findBias = false;
     } else {
-      bias5.clear();
       bias5.resize(tc.bias5.size(),0);
     }
   }

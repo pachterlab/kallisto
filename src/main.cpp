@@ -795,15 +795,25 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
+        std::vector<int> fld;
         if (opt.fld == 0.0) {
+          fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          //fld.resize(MAX_FRAG_LEN,0); // no obersvations
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }
+        }
+
+        std::vector<int> preBias(4096,1);
+        if (opt.bias) {
+          preBias = collection.bias5; // copy
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -819,7 +829,7 @@ int main(int argc, char *argv[]) {
 
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
@@ -896,17 +906,27 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
 
+        std::vector<int> fld;
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
           collection.compute_mean_frag_lens_trunc();
+          fld = collection.flens;
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          cout << collection.mean_fl_trunc.size() << endl;
+          //cout << collection.mean_fl_trunc.size() << endl;
+          //fld.resize(MAX_FRAG_LEN,0);
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }
+        }
+
+        std::vector<int> preBias(4096,1); // default
+        if (opt.bias) {
+          // fetch the observed bias
+          preBias = collection.bias5; // copy
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -919,7 +939,7 @@ int main(int argc, char *argv[]) {
 
         if (!opt.plaintext) {
           // setting num_processed to 0 because quant-only is for debugging/special ops
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
