@@ -33,20 +33,10 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
-
-  /*if (v1.empty()) {
-    return -1;
-  } else if (!nonpaired && v2.empty()) {
-    return -1;
-  }
-  */
-
+int MinCollector::intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
-
-  std::vector<int> u;
 
   if (u1.empty() && u2.empty()) {
     return -1;
@@ -72,13 +62,55 @@ int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
   if (u.empty()) {
     return -1;
   }
-  return increaseCount(u);
+  return 1;
 }
 
-int MinCollector::increaseCount(const std::vector<int>& u) {
+int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
+                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
+  std::vector<int> u;
+  int r = intersectKmers(v1, v2, nonpaired, u);
+  if (r != -1) {
+    return increaseCount(u);
+  } else {
+    return -1;
+  }
+}
+
+int MinCollector::findEC(const std::vector<int>& u) const {
   if (u.empty()) {
     return -1;
   }
+  if (u.size() == 1) {
+    return u[0];
+  }
+  auto search = index.ecmapinv.find(u);
+  if (search != index.ecmapinv.end()) {
+    return search ->second;
+  } else {
+    return -1;
+  }
+}
+
+int MinCollector::increaseCount(const std::vector<int>& u) {
+  int ec = findEC(u);
+
+  if (u.empty()) {
+    return -1;
+  } else {
+    if (ec != -1) {
+      ++counts[ec];
+      return ec;
+    } else {
+      auto necs = counts.size();
+      //index.ecmap.insert({necs,u});
+      index.ecmap.push_back(u);
+      index.ecmapinv.insert({u,necs});
+      counts.push_back(1);
+      return necs;
+    }
+  }
+
+  /* -- removable
   if (u.size() == 1) {
     int ec = u[0];
     ++counts[ec];
@@ -98,6 +130,7 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
     counts.push_back(1);
     return necs;
   }
+  */
 }
 
 int MinCollector::decreaseCount(const int ec) {
@@ -234,7 +267,9 @@ double MinCollector::get_mean_frag_len() const {
   return mean_fl;
 }
 
-void MinCollector::get_mean_frag_lens_trunc() const {
+
+
+void MinCollector::compute_mean_frag_lens_trunc()  {
 
   std::vector<int> counts(MAX_FRAG_LEN, 0);
   std::vector<double> mass(MAX_FRAG_LEN, 0.0);
@@ -246,12 +281,12 @@ void MinCollector::get_mean_frag_lens_trunc() const {
     mass[i] = static_cast<double>( flens[i] * i) + mass[i-1];
     counts[i] = flens[i] + counts[i-1];
     if (counts[i] > 0) {
-      const_cast<double&>(mean_fl_trunc[i]) = mass[i] / static_cast<double>(counts[i]);
+      mean_fl_trunc[i] = mass[i] / static_cast<double>(counts[i]);
     }
     // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
 
-  const_cast<bool&>(has_mean_fl_trunc) = true;
+  has_mean_fl_trunc = true;
 
   std::cerr << "[quant] estimated average fragment length: " <<
     mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;
@@ -285,6 +320,10 @@ int hexamerToInt(const char *s, bool revcomp) {
 }
 
 bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+  return countBias(s1,s2,v1,v2,paired,bias5);
+}
+
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const {
 
   const int pre = 2, post = 4;
 
@@ -356,7 +395,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
   */
 
   if (hex5 >=0) { // && (!paired || hex3 >= 0)) {
-    bias5[hex5]++;
+    biasOut[hex5]++;
     //bias3[hex3]++;
   } else {
     return false;
