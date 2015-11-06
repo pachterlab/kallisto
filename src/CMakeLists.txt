@@ -28,6 +28,7 @@ if(LINK MATCHES static)
 endif(LINK MATCHES static)
 
 find_package( HDF5 REQUIRED )
+find_package( MPI  REQUIRED )
 find_package( ZLIB REQUIRED )
 
 if ( ZLIB_FOUND )
@@ -42,6 +43,14 @@ if(HDF5_FOUND)
     target_link_libraries( kallisto ${HDF5_LIBRARIES} )
 else()
     message(FATAL_ERROR "HDF5 not found. Required to output files")
+endif()
+
+if(MPI_FOUND)
+    include_directories( ${MPI_CXX_INCLUDE_PATH} )
+    target_link_libraries( kallisto_core ${MPI_CXX_LIBRARIES} )
+    target_link_libraries( kallisto ${MPI_CXX_LIBRARIES} )
+else()
+    message(FATAL_ERROR "MPI not found. Required to output files")
 endif()
 
 
