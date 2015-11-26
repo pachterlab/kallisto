@@ -13,7 +13,7 @@ The __kallisto__ GitHub repository is [here](https://github.com/pachterlab/kalli
 
 Other dependencies are either included, or can be installed using package managers on the system.
 
-#### Requirements: 
+#### Requirements:
 
 - A 64-bit operating system
 - g++ version >= 4.8
@@ -25,7 +25,7 @@ Other dependencies are either included, or can be installed using package manage
     - Mac: Should be installed by default
     - Ubuntu: `sudo apt-get install zlib1g-dev`
     - CentOS: `sudo yum install zlib-devel`
-- __HDF5__ C library version >= 18.12
+- __HDF5__ C library version >= 1.8.12
     - Mac: first get homebrew/science with `brew tap homebrew/science` then run `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
     - CentOS: `sudo yum install hdf5-devel`
@@ -64,4 +64,3 @@ The __kallisto__ executable is now located in `build/src`. To install __kallisto
 #### Test
 
 The __kallisto__ source code package comes with a small test transcriptome and read files that can be used to test that the package was compiled and installed correctly. The [Getting started](starting.html) page provides a complete description of how to run __kallisto__ on these files.
-
