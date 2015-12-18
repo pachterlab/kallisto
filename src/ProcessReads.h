@@ -58,7 +58,7 @@ public:
     ,nummapped(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) {
       if (opt.fusion) {
         ofusion.open(opt.output + "/fusion.txt");
-        ofusion << "TYPE\tTRANSCRIPTS1\tTRANSCRIPTS2\tSEQ1\tSEQ2\tINFO\n";
+        ofusion << "TYPE\tSEQ1\tSEQ2\tINFO\tPOS1\tPOS2\n";
       }
  }
 

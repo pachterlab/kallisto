@@ -1,12 +1,38 @@
 #include <sstream>
 /** -- fusion functions -- **/
 
-void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::vector<int> u) {
+void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::string s,
+  const std::vector<std::pair<KmerEntry,int>>& v, const std::vector<int> u) {
+
+  Kmer km;
+  KmerEntry val;
+  int p;
+
+  if (!v.empty()) {
+    val = v[0].first;
+    p = v[0].second;
+    for (auto &x : v) {
+      if (x.second < p) {
+        val = x.first;
+        p = x.second;
+      }
+    }
+    km = Kmer(s.c_str()+p);
+  }
+
+
   for (int i = 0; i < u.size(); i++) {
+    int tr = u[i];
     if (i > 0) {
       o << ",";
     }
-    o << index.target_names_[u[i]];
+    std::pair<int, bool> xp = index.findPosition(tr, km, val, p);
+    o << "(" << index.target_names_[tr] << "," << xp.first << ",";
+    if (xp.second) {
+      o << "FW)";
+    } else {
+      o << "RE)";
+    }
   }
 }
 
@@ -45,14 +71,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   }
   std::stringstream o;
   // no mapping information
-  if (v1.empty() && v2.empty()) {
-    o << "UNMAPPED\t\t\t"<< s1 << "\t";
-    if (paired) {
-      o << s2 << "\t";
-    } else {
-      o << "\t";
-    }
-    mp.outputFusion(o);
+  if (v1.empty() || v2.empty()) {
     return;
   }
 
@@ -61,6 +80,16 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   auto u2 = simpleIntersect(index, v2);
   if (!u1.empty() && !u2.empty()) {
     // each pair maps to either end
+    // each pair maps to either end
+    o << "PAIR\t";
+    o << s1 << "\t";
+    if (paired) {
+     o << s2 << "\t";
+    } else {
+      o << "\t";
+    }
+    printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
+    mp.outputFusion(o);
     return;
   }
 
@@ -80,7 +109,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
 
   std::sort(v1.begin(), v1.end(), vsorter);
   std::sort(v2.begin(), v2.end(), vsorter);
-
+  bool split1 = true;
   if (!v1.empty() && !v2.empty()) {
     if (u1.empty()) {
       std::copy(v1.begin(), v1.end(), std::back_inserter(vsplit));
@@ -88,6 +117,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     } else {
       std::copy(v2.begin(), v2.end(), std::back_inserter(vsplit));
       std::copy(v1.begin(), v1.end(), std::back_inserter(vsafe));
+      split1 = false;
     }
   } else if (v1.empty()) {
     if (u2.empty()) {
@@ -118,8 +148,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
 
     if (!ut1.empty() && !ut2.empty()) {
       o << "SPLIT\t";
-      printTranscripts(index, o, ut1); o << "\t"; printTranscripts(index, o, ut2);
-      o << "\t"  << s1 << "\t";
+      o << s1 << "\t";
       // what to put as info?
       if (paired) {
         o << s2 << "\t";
@@ -132,7 +161,13 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
       } else {
         o << "(1,";
       }
-      o << vsafe.back().second << ")";
+      o << vsafe.back().second << ")\t";
+      // fix this
+      if (split1) {
+        printTranscripts(index, o, s1, vsplit, ut1); o << "\t"; printTranscripts(index, o, s2, vsafe, ut2);
+      } else {
+        printTranscripts(index, o, s1, vsafe, ut2); o << "\t"; printTranscripts(index, o, s2, vsplit, ut1);
+      }
       mp.outputFusion(o);
       return;
     } else {
