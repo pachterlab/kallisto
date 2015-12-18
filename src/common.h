@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.42.3"
+#define KALLISTO_VERSION "0.42.4"
 
 #include <string>
 #include <vector>
@@ -24,6 +24,7 @@ struct ProgramOptions {
   bool plaintext;
   bool write_index;
   bool single_end;
+  bool strand_specific;
   bool peek; // only used for H5Dump
   bool bias;
   bool pseudobam;
@@ -45,6 +46,7 @@ ProgramOptions() :
   plaintext(false),
   write_index(false),
   single_end(false),
+  strand_specific(false),
   peek(false),
   bias(false),
   pseudobam(false),

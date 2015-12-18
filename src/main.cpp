@@ -118,6 +118,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int strand_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
   int fusion_flag = 0;
@@ -129,6 +130,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
+    //{"strand-specific", no_argument, &strand_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"fusion", no_argument, &fusion_flag, 1},
@@ -214,6 +216,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+  }
+
+  if (strand_flag) {
+    opt.strand_specific = true;
   }
 
   if (bias_flag) {
@@ -420,6 +426,12 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
       }
     }
 
+    /*
+    if (opt.strand_specific && !opt.single_end) {
+      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      ret = false;
+    }*/
+
     if (!opt.single_end) {
       if (opt.files.size() % 2 != 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl
@@ -442,7 +454,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     // argument
     cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
   } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
-    cerr << "[quant] fragment length distribution is truncate gaussian with mean = " <<
+    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
       opt.fld << ", sd = " << opt.sd << endl;
   }
 
@@ -522,6 +534,10 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     if (n != 0 && n < opt.threads) {
       cerr << "Warning: you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
+    }
+    if (opt.threads > 1 && opt.pseudobam) {
+      cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
+      ret = false;
     }
   }
 
@@ -661,16 +677,17 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "    --single                  Quantify single-end reads" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
-       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
-       << "-t, --threads=INT             Number of threads to use for bootstraping (default: 1)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
-       << "    --plaintext               Output plaintext instead of HDF5" << endl 
-       << "    --fusion                  Search for fusions for Pizzly" << endl << endl;
+       << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --fusion                  Search for fusions for Pizzly" << endl
+       << "    --single                  Quantify single-end reads" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
+       << "                              (default: value is estimated from the input data)" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
@@ -785,15 +802,25 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
+        std::vector<int> fld;
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          fld = collection.flens; // copy
+          collection.compute_mean_frag_lens_trunc();
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          //fld.resize(MAX_FRAG_LEN,0); // no obersvations
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }
+        }
+
+        std::vector<int> preBias(4096,1);
+        if (opt.bias) {
+          preBias = collection.bias5; // copy
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -809,7 +836,7 @@ int main(int argc, char *argv[]) {
 
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
@@ -886,17 +913,27 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
 
+        std::vector<int> fld;
         // if mean FL not provided, estimate
         if (opt.fld == 0.0) {
-          collection.get_mean_frag_lens_trunc();
+          collection.compute_mean_frag_lens_trunc();
+          fld = collection.flens;
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          cout << collection.mean_fl_trunc.size() << endl;
+          //cout << collection.mean_fl_trunc.size() << endl;
+          //fld.resize(MAX_FRAG_LEN,0);
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
           // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
           //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
           // }
+        }
+
+        std::vector<int> preBias(4096,1); // default
+        if (opt.bias) {
+          // fetch the observed bias
+          preBias = collection.bias5; // copy
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -909,7 +946,7 @@ int main(int argc, char *argv[]) {
 
         if (!opt.plaintext) {
           // setting num_processed to 0 because quant-only is for debugging/special ops
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, 6,
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         } else {

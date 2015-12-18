@@ -33,6 +33,7 @@ struct EMAlgorithm {
     ecmap_(index.ecmap),
     counts_(counts),
     target_names_(index.target_names_),
+    post_bias_(4096,1.0),
     alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
     rho_set_(false),
@@ -72,7 +73,7 @@ struct EMAlgorithm {
     int i;
     for (i = 0; i < n_iter; ++i) {
       if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
-        eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_);
+        eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_, post_bias_);
         weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
       }
 
@@ -289,6 +290,7 @@ struct EMAlgorithm {
   const std::vector<std::string>& target_names_;
   const std::vector<double>& all_fl_means;
   std::vector<double> eff_lens_;
+  std::vector<double> post_bias_;
   WeightMap weight_map_;
   std::vector<double> alpha_;
   std::vector<double> alpha_before_zeroes_;

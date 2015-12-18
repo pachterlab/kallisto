@@ -49,6 +49,10 @@ struct MinCollector {
   int decreaseCount(const int ec);
 
   std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
+  int intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
+                    std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const;
+  int findEC(const std::vector<int>& u) const;
+
 
   void write(std::ostream& o) {
     for (int id = 0; id < counts.size(); id++) {
@@ -58,12 +62,13 @@ struct MinCollector {
   void loadCounts(ProgramOptions& opt);
 
   bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
+  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const;
 
   // DEPRECATED
   double get_mean_frag_len() const;
 
   // compute the conditional mean of each target given the FLD
-  void get_mean_frag_lens_trunc() const;
+  void compute_mean_frag_lens_trunc();
 
   // this function should only be used for SE data
   void init_mean_fl_trunc(double mean, double sd);
