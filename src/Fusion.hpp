@@ -1,6 +1,28 @@
 #include <sstream>
 /** -- fusion functions -- **/
 
+/**
+FUSION output is written to OUT_DIR/fusion.txt where 'OUT_DIR' is the specified
+output directory for kallisto. fusion.txt is a tab separated text file with 6 columns
+TYPE	SEQ1	SEQ2	INFO	POS1	POS2
+
+TYPE can be one of SPLIT or PAIR, SEQ1 and SEQ2 are the raw read sequences identified
+as overlapping the potential fusion.
+
+PAIRs are readpairs where fragment doesn't map, but each read
+maps independently, potentially the fusion breakpoint is within the fragment, but not sequenced.
+
+SPLITs are reads where the fusion breakpoint appears within one of the reads
+
+INFO is empty for PAIR but of the form splitat=(a,b)
+where a=0,1 indicating whether the first or the second pair is split and b is the 0-based position of the
+split within the read.
+
+POS1 and POS2 are comma separated lists of locations of SEQ1 and SEQ2 respectively. Each position is of
+the form (tx_name,pos,strand) where pos is 0-based from the start of the transcript tx_name and strand
+is either FW or RE depending on whether the read aligns to the forward or reverse of the transcript.
+**/
+
 void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::string s,
   const std::vector<std::pair<KmerEntry,int>>& v, const std::vector<int> u) {
 
