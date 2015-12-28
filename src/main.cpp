@@ -305,6 +305,86 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
+void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
+  int single_flag = 0;
+  int strand_flag = 0;
+  int pbam_flag = 0;
+
+  const char *opt_string = "t:i:l:s:o:";
+  static struct option long_options[] = {
+    // long args
+    {"verbose", no_argument, &verbose_flag, 1},
+    {"single", no_argument, &single_flag, 1},
+    //{"strand-specific", no_argument, &strand_flag, 1},
+    {"pseudobam", no_argument, &pbam_flag, 1},
+    // short args
+    {"threads", required_argument, 0, 't'},
+    {"index", required_argument, 0, 'i'},
+    {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
+    {"output-dir", required_argument, 0, 'o'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+
+  // all other arguments are fast[a/q] files to be read
+  for (int i = optind; i < argc; i++) {
+    opt.files.push_back(argv[i]);
+  }
+
+  if (verbose_flag) {
+    opt.verbose = true;
+  }
+
+  if (single_flag) {
+    opt.single_end = true;
+  }
+
+  if (strand_flag) {
+    opt.strand_specific = true;
+  }
+
+  if (pbam_flag) {
+    opt.pseudobam = true;
+  }
+}
+
+
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   int peek_flag = 0;
   const char *opt_string = "o:";
@@ -544,6 +624,126 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 
+
+bool CheckOptionsPseudo(ProgramOptions& opt) {
+
+  bool ret = true;
+
+  cerr << endl;
+  // check for index
+  if (opt.index.empty()) {
+    cerr << ERROR_STR << " kallisto index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  // check for read files
+  if (opt.files.size() == 0) {
+    cerr << ERROR_STR << " Missing read files" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    for (auto& fn : opt.files) {
+      auto intStat = stat(fn.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << ERROR_STR << " file not found " << fn << endl;
+        ret = false;
+      }
+    }
+  }
+
+  /*
+  if (opt.strand_specific && !opt.single_end) {
+    cerr << "Error: strand-specific mode requires single end mode" << endl;
+    ret = false;
+  }*/
+
+  if (!opt.single_end) {
+    if (opt.files.size() % 2 != 0) {
+      cerr << "Error: paired-end mode requires an even number of input files" << endl
+           << "       (use --single for processing single-end reads)" << endl;
+      ret = false;
+    }
+  }
+
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+
+  if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
+    cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
+    ret = false;
+  } else if (opt.fld == 0.0 && ret) {
+    // In the future, if we have single-end data we should require this
+    // argument
+    cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
+  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
+
+  if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
+    cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
+    cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
+  }
+
+  if (opt.fld < 0.0) {
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+
+  if (opt.sd < 0.0) {
+    cerr << "Error: invalid value for fragment length standard deviation " << opt.sd << endl;
+    ret = false;
+  }
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      }
+    } else {
+      // create directory
+      if (mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }
+    if (opt.threads > 1 && opt.pseudobam) {
+      cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
+      ret = false;
+    }
+  }
+
+  return ret;
+}
+
+
 bool CheckOptionsInspect(ProgramOptions& opt) {
 
   bool ret = true;
@@ -625,6 +825,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
+       << "    pseudo        Runs the pseudoalignment step " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
        << "    version       Prints version information"<< endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
@@ -675,6 +876,27 @@ void usageEM(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --single                  Quantify single-end reads" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
+       << "                              (default: value is estimated from the input data)" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+
+}
+
+void usagePseudo(bool valid_input = true) {
+  if (valid_input) {
+    cout << "kallisto " << KALLISTO_VERSION << endl
+         << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+  }
+
+  cout << "Usage: kallisto pseudo [arguments] FASTQ-files" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
+       << "                              pseudoalignment" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
+       << "Optional arguments:" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -995,6 +1217,41 @@ int main(int argc, char *argv[]) {
             }
           }
         }
+        cerr << endl;
+      }
+    } else if (cmd == "pseudo") {
+      if (argc==2) {
+        usagePseudo();
+        return 0;
+      }
+      ParseOptionsPseudo(argc-1,argv+1,opt);
+      if (!CheckOptionsPseudo(opt)) {
+        cerr << endl;
+        usagePseudo(false);
+        exit(1);
+      } else {
+        // pseudoalign the reads
+        KmerIndex index(opt);
+        index.load(opt);
+
+        MinCollector collection(index, opt);
+        int num_processed = 0;
+        num_processed = ProcessReads(index, opt, collection);
+
+        collection.write((opt.output + "/pseudoalignments"));
+
+        std::string call = argv_to_string(argc, argv);
+
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(index.num_trans)),
+            std::string(std::to_string(0)), // no bootstraps in pseudo
+            std::string(std::to_string(num_processed)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
         cerr << endl;
       }
     } else if (cmd == "h5dump") {
