@@ -51,20 +51,42 @@ int hamming(const char *a, const char *b) {
   return h;
 }
 
-std::string revcomp(const std::string s) {
-  std::string r(s);
-  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
-      switch(c) {
-      case 'A': return 'T';
-      case 'C': return 'G';
-      case 'G': return 'C';
-      case 'T': return 'A';
-      default: return 'N';
-      }
-      return 'N';
-    });
-  return r;
-}
+class revcomp_func
+{
+private:
+    char nuc2nuc['T' + 1] = {'N'};
+
+public:
+    revcomp_func()
+	{
+	    nuc2nuc['A'] = 'T';
+	    nuc2nuc['T'] = 'A';
+	    nuc2nuc['C'] = 'G';
+	    nuc2nuc['G'] = 'C';
+	}
+
+    std::string operator()(std::string s)
+	{
+	    auto first = s.begin(), last = s.end();
+
+	    while(true)
+	    {
+		if(first == last || first == --last)
+		{
+		    if(s.length() % 2)
+			*first = nuc2nuc[*first];
+		    return s;
+		}
+		else
+		{
+		    *first = nuc2nuc[*first];
+		    *last = nuc2nuc[*last];
+		    std::iter_swap(first, last);
+		    ++first;
+		}
+	    }
+	}
+};
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
@@ -288,6 +310,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
   std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
+  revcomp_func revcomp_worker;
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
   //std::cout << "Mapping target " << std::endl;
   for (int i = 0; i < seqs.size(); i++) {
@@ -458,7 +481,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
           //std::cout << contig.seq.substr(k-1) << std::endl;
         }
       } else {
-        std::string r = revcomp(contig.seq);
+        std::string r = revcomp_worker(contig.seq);
         if (info.pos == 0) {
           stmp.append(r);
           //std::cout << r << std::endl;
@@ -502,7 +525,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       if (info.sense) {
         r = c.seq;
       } else {
-        r = revcomp(c.seq);
+        r = revcomp_worker(c.seq);
       }
       assert(r == seqs[info.trid].substr(info.pos,r.size()));
     }
@@ -1358,7 +1381,7 @@ void KmerIndex::loadTranscriptSequences() const {
     return;
   }
 
-
+  revcomp_func revcomp_worker;
   
   std::vector<std::vector<std::pair<int, ContigToTranscript>>> trans_contigs(num_trans);
   for (auto &c : dbGraph.contigs) {
@@ -1385,7 +1408,7 @@ void KmerIndex::loadTranscriptSequences() const {
       if (ct.sense) {
         seq.append(contig.seq.substr(start));
       } else {
-        seq.append(revcomp(contig.seq).substr(start));
+        seq.append(revcomp_worker(contig.seq).substr(start));
       }
     }
     target_seqs.push_back(seq);
