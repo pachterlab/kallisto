@@ -311,13 +311,14 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int strand_flag = 0;
   int pbam_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:";
+  const char *opt_string = "t:i:l:s:o:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"batch", required_argument, 0, 'b'},
     // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
@@ -356,6 +357,11 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'o': {
       opt.output = optarg;
+      break;
+    }
+    case 'b': {
+      opt.batch_mode = true;
+      opt.batch_file_name = optarg;
       break;
     }
     default: break;
@@ -644,19 +650,74 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
   }
 
   // check for read files
-  if (opt.files.size() == 0) {
-    cerr << ERROR_STR << " Missing read files" << endl;
-    ret = false;
+  if (!opt.batch_mode) {
+    if (opt.files.size() == 0) {
+      cerr << ERROR_STR << " Missing read files" << endl;
+      ret = false;
+    } else {
+      struct stat stFileInfo;
+      for (auto& fn : opt.files) {
+        auto intStat = stat(fn.c_str(), &stFileInfo);
+        if (intStat != 0) {
+          cerr << ERROR_STR << " file not found " << fn << endl;
+          ret = false;
+        }
+      }
+    }
   } else {
-    struct stat stFileInfo;
-    for (auto& fn : opt.files) {
-      auto intStat = stat(fn.c_str(), &stFileInfo);
-      if (intStat != 0) {
-        cerr << ERROR_STR << " file not found " << fn << endl;
-        ret = false;
+    if (opt.files.size() != 0) {
+      cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
+      ret = false;
+    } else {
+      // check for batch files
+      if (opt.batch_mode) {
+        struct stat stFileInfo;
+        auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
+        if (intstat != 0) {
+          cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
+          ret = false;
+        }
+        // open the file, parse and fill the batch_files values
+        std::ifstream bfile(opt.batch_file_name);
+        std::string line;
+        std::string id,f1,f2;
+        while (std::getline(bfile,line)) {
+          if (line.size() == 0) {
+            continue;
+          }
+          std::stringstream ss(line);
+          ss >> id;
+          if (id[0] == '#') {
+            continue;
+          }
+          opt.batch_ids.push_back(id);
+          if (opt.single_end) {
+            ss >> f1;
+            opt.batch_files.push_back({f1});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+          } else {
+            ss >> f1 >> f2;
+            opt.batch_files.push_back({f1,f2});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+            intstat = stat(f2.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f2 << endl;
+              ret = false;
+            }
+          }
+        }
       }
     }
   }
+
 
   /*
   if (opt.strand_specific && !opt.single_end) {
@@ -897,6 +958,7 @@ void usagePseudo(bool valid_input = true) {
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
+       << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -1236,9 +1298,23 @@ int main(int argc, char *argv[]) {
 
         MinCollector collection(index, opt);
         int num_processed = 0;
-        num_processed = ProcessReads(index, opt, collection);
 
-        collection.write((opt.output + "/pseudoalignments"));
+        if (!opt.batch_mode) {
+          num_processed = ProcessReads(index, opt, collection);
+          collection.write((opt.output + "/pseudoalignments"));
+        } else {
+
+          std::vector<std::vector<int>> batchCounts;
+          for (int i = 0; i < opt.batch_ids.size(); i++) {
+            std::fill(collection.counts.begin(), collection.counts.end(),0);
+            opt.files = opt.batch_files[i];
+            num_processed += ProcessReads(index, opt, collection);
+            batchCounts.push_back(collection.counts);
+          }
+
+          writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
+
+        }
 
         std::string call = argv_to_string(argc, argv);
 

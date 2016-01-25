@@ -111,3 +111,64 @@ void plaintext_aux(
 
   of.close();
 }
+
+
+void writeBatchMatrix(
+  const std::string &prefix,
+  const KmerIndex &index,
+  const std::vector<std::string> &ids,
+  std::vector<std::vector<int>> &counts) {
+
+    std::string ecfilename = prefix + ".ec";
+    std::string countsfilename = prefix + ".tsv";
+
+    std::ofstream ecof, countsof;
+    ecof.open(ecfilename.c_str(), std::ios::out);
+    // output equivalence classes in the form "EC TXLIST";
+    for (int i = 0; i < index.ecmap.size(); i++) {
+      ecof << i << "\t";
+      // output the rest of the class
+      const auto &v = index.ecmap[i];
+      bool first = true;
+      for (auto x : v) {
+        if (!first) {
+          ecof << ",";
+        } else {
+          first = false;
+        }
+        ecof << x;
+      }
+      ecof << "\n";
+    }
+    ecof.close();
+
+    countsof.open(countsfilename.c_str(), std::ios::out);
+    for (int j = 0; j < ids.size(); j++) {
+      countsof << "\t" << ids[j];
+    }
+    countsof << "\n";
+    if (!counts.empty()) {
+      // write out the NxM matrix, N is # of ecs, M is number of samples
+      int M = counts.size();
+      int N = 0;
+      for (int j = 0; j < M; j++) {
+        if (N < counts[j].size()) {
+          N = counts[j].size();
+        }
+      }
+
+      for (int i = 0; i < N; i++) {
+        countsof << i;
+        for (int j = 0; j < M; j++) {
+          if (counts[j].size() <= i) {
+            countsof << "\t0";
+          } else {
+            countsof << "\t" << counts[j][i];
+          }
+        }
+        countsof << "\n";
+      }
+    }
+    countsof.close();
+
+}
