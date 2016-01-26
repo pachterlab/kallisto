@@ -208,10 +208,29 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
    clear();
 }
 
+ReadProcessor::ReadProcessor(ReadProcessor && o) :
+  paired(o.paired),
+  tc(o.tc),
+  index(o.index),
+  mp(o.mp),
+  bufsize(o.bufsize),
+  numreads(o.numreads),
+  seqs(std::move(o.seqs)),
+  names(std::move(o.names)),
+  quals(std::move(o.quals)),
+  newEcs(std::move(o.newEcs)),
+  flens(std::move(o.flens)),
+  bias5(std::move(o.bias5)),
+  counts(std::move(o.counts)) {
+    buffer = o.buffer;
+    o.buffer = nullptr;
+    o.bufsize = 0;
+}
+
 ReadProcessor::~ReadProcessor() {
-  if (buffer) {
-      /*delete[] buffer;
-    buffer = nullptr;*/
+  if (buffer != nullptr) {
+      delete[] buffer;
+      buffer = nullptr;
   }
 }
 
@@ -315,9 +334,9 @@ void ReadProcessor::processBuffer() {
 
     /* --  possibly modify the pseudoalignment  -- */
 
-    // If we have paired end reads where one end maps, check if some transcsripts
+    // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (paired && !u.empty() && (v1.empty() || v2.empty()) && tc.has_mean_fl) {
+    if (!u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
       vtmp.clear();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
