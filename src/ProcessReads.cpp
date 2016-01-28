@@ -380,39 +380,35 @@ void ReadProcessor::processBuffer() {
     }
 
     // find the ec
-    if (u.empty()) {
-      continue;
-    } else {
+    if (!u.empty()) {
       ec = tc.findEC(u);
-    }
 
-    // count the pseudoalignment
-    if (ec == -1 || ec >= counts.size()) {
-      // something we haven't seen before
-      newEcs.push_back(u);
-    } else {
-      // add to count vector
-      ++counts[ec];
-    }
-
-
-
-    /* -- collect extra information -- */
-    // collect bias info
-    if (findBias && !u.empty() && biasgoal > 0) {
-      // collect sequence specific bias info
-      if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
-        biasgoal--;
+      // count the pseudoalignment
+      if (ec == -1 || ec >= counts.size()) {
+        // something we haven't seen before
+        newEcs.push_back(u);
+      } else {
+        // add to count vector
+        ++counts[ec];
       }
-    }
 
-    // collect fragment length info
-    if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
-      // try to map the reads
-      int tl = index.mapPair(s1, l1, s2, l2, ec);
-      if (0 < tl && tl < flens.size()) {
-        flens[tl]++;
-        flengoal--;
+      /* -- collect extra information -- */
+      // collect bias info
+      if (findBias && !u.empty() && biasgoal > 0) {
+        // collect sequence specific bias info
+        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+          biasgoal--;
+        }
+      }
+
+      // collect fragment length info
+      if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+        // try to map the reads
+        int tl = index.mapPair(s1, l1, s2, l2, ec);
+        if (0 < tl && tl < flens.size()) {
+          flens[tl]++;
+          flengoal--;
+        }
       }
     }
 
