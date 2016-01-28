@@ -326,11 +326,6 @@ void ReadProcessor::processBuffer() {
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired,u);
-    if (u.empty()) {
-      continue;
-    } else {
-      ec = tc.findEC(u);
-    }
 
     /* --  possibly modify the pseudoalignment  -- */
 
@@ -382,6 +377,13 @@ void ReadProcessor::processBuffer() {
       if (vtmp.size() < u.size()) {
         u = vtmp; // copy
       }
+    }
+
+    // find the ec
+    if (u.empty()) {
+      continue;
+    } else {
+      ec = tc.findEC(u);
     }
 
     // count the pseudoalignment
