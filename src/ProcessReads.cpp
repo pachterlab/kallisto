@@ -53,7 +53,6 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
 
   int limit = 1048576;
-  char *buf = new char[limit];
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
 
