@@ -53,7 +53,6 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
 
   int limit = 1048576;
-  char *buf = new char[limit];
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
 
@@ -208,10 +207,29 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
    clear();
 }
 
+ReadProcessor::ReadProcessor(ReadProcessor && o) :
+  paired(o.paired),
+  tc(o.tc),
+  index(o.index),
+  mp(o.mp),
+  bufsize(o.bufsize),
+  numreads(o.numreads),
+  seqs(std::move(o.seqs)),
+  names(std::move(o.names)),
+  quals(std::move(o.quals)),
+  newEcs(std::move(o.newEcs)),
+  flens(std::move(o.flens)),
+  bias5(std::move(o.bias5)),
+  counts(std::move(o.counts)) {
+    buffer = o.buffer;
+    o.buffer = nullptr;
+    o.bufsize = 0;
+}
+
 ReadProcessor::~ReadProcessor() {
-  if (buffer) {
-      /*delete[] buffer;
-    buffer = nullptr;*/
+  if (buffer != nullptr) {
+      delete[] buffer;
+      buffer = nullptr;
   }
 }
 
@@ -307,17 +325,12 @@ void ReadProcessor::processBuffer() {
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired,u);
-    if (u.empty()) {
-      continue;
-    } else {
-      ec = tc.findEC(u);
-    }
 
     /* --  possibly modify the pseudoalignment  -- */
 
-    // If we have paired end reads where one end maps, check if some transcsripts
+    // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (paired && !u.empty() && (v1.empty() || v2.empty()) && tc.has_mean_fl) {
+    if (!u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
       vtmp.clear();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
@@ -365,33 +378,36 @@ void ReadProcessor::processBuffer() {
       }
     }
 
-    // count the pseudoalignment
-    if (ec == -1 || ec >= counts.size()) {
-      // something we haven't seen before
-      newEcs.push_back(u);
-    } else {
-      // add to count vector
-      ++counts[ec];
-    }
+    // find the ec
+    if (!u.empty()) {
+      ec = tc.findEC(u);
 
-
-
-    /* -- collect extra information -- */
-    // collect bias info
-    if (findBias && !u.empty() && biasgoal > 0) {
-      // collect sequence specific bias info
-      if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
-        biasgoal--;
+      // count the pseudoalignment
+      if (ec == -1 || ec >= counts.size()) {
+        // something we haven't seen before
+        newEcs.push_back(u);
+      } else {
+        // add to count vector
+        ++counts[ec];
       }
-    }
 
-    // collect fragment length info
-    if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
-      // try to map the reads
-      int tl = index.mapPair(s1, l1, s2, l2, ec);
-      if (0 < tl && tl < flens.size()) {
-        flens[tl]++;
-        flengoal--;
+      /* -- collect extra information -- */
+      // collect bias info
+      if (findBias && !u.empty() && biasgoal > 0) {
+        // collect sequence specific bias info
+        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+          biasgoal--;
+        }
+      }
+
+      // collect fragment length info
+      if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+        // try to map the reads
+        int tl = index.mapPair(s1, l1, s2, l2, ec);
+        if (0 < tl && tl < flens.size()) {
+          flens[tl]++;
+          flengoal--;
+        }
       }
     }
 

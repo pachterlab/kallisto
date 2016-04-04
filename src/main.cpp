@@ -305,6 +305,92 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
+void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
+  int single_flag = 0;
+  int strand_flag = 0;
+  int pbam_flag = 0;
+
+  const char *opt_string = "t:i:l:s:o:b:";
+  static struct option long_options[] = {
+    // long args
+    {"verbose", no_argument, &verbose_flag, 1},
+    {"single", no_argument, &single_flag, 1},
+    //{"strand-specific", no_argument, &strand_flag, 1},
+    {"pseudobam", no_argument, &pbam_flag, 1},
+    {"batch", required_argument, 0, 'b'},
+    // short args
+    {"threads", required_argument, 0, 't'},
+    {"index", required_argument, 0, 'i'},
+    {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
+    {"output-dir", required_argument, 0, 'o'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    case 'b': {
+      opt.batch_mode = true;
+      opt.batch_file_name = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+
+  // all other arguments are fast[a/q] files to be read
+  for (int i = optind; i < argc; i++) {
+    opt.files.push_back(argv[i]);
+  }
+
+  if (verbose_flag) {
+    opt.verbose = true;
+  }
+
+  if (single_flag) {
+    opt.single_end = true;
+  }
+
+  if (strand_flag) {
+    opt.strand_specific = true;
+  }
+
+  if (pbam_flag) {
+    opt.pseudobam = true;
+  }
+}
+
+
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   int peek_flag = 0;
   const char *opt_string = "o:";
@@ -544,6 +630,181 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 
+
+bool CheckOptionsPseudo(ProgramOptions& opt) {
+
+  bool ret = true;
+
+  cerr << endl;
+  // check for index
+  if (opt.index.empty()) {
+    cerr << ERROR_STR << " kallisto index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  // check for read files
+  if (!opt.batch_mode) {
+    if (opt.files.size() == 0) {
+      cerr << ERROR_STR << " Missing read files" << endl;
+      ret = false;
+    } else {
+      struct stat stFileInfo;
+      for (auto& fn : opt.files) {
+        auto intStat = stat(fn.c_str(), &stFileInfo);
+        if (intStat != 0) {
+          cerr << ERROR_STR << " file not found " << fn << endl;
+          ret = false;
+        }
+      }
+    }
+  } else {
+    if (opt.files.size() != 0) {
+      cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
+      ret = false;
+    } else {
+      // check for batch files
+      if (opt.batch_mode) {
+        struct stat stFileInfo;
+        auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
+        if (intstat != 0) {
+          cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
+          ret = false;
+        }
+        // open the file, parse and fill the batch_files values
+        std::ifstream bfile(opt.batch_file_name);
+        std::string line;
+        std::string id,f1,f2;
+        while (std::getline(bfile,line)) {
+          if (line.size() == 0) {
+            continue;
+          }
+          std::stringstream ss(line);
+          ss >> id;
+          if (id[0] == '#') {
+            continue;
+          }
+          opt.batch_ids.push_back(id);
+          if (opt.single_end) {
+            ss >> f1;
+            opt.batch_files.push_back({f1});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+          } else {
+            ss >> f1 >> f2;
+            opt.batch_files.push_back({f1,f2});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+            intstat = stat(f2.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f2 << endl;
+              ret = false;
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  /*
+  if (opt.strand_specific && !opt.single_end) {
+    cerr << "Error: strand-specific mode requires single end mode" << endl;
+    ret = false;
+  }*/
+
+  if (!opt.single_end) {
+    if (opt.files.size() % 2 != 0) {
+      cerr << "Error: paired-end mode requires an even number of input files" << endl
+           << "       (use --single for processing single-end reads)" << endl;
+      ret = false;
+    }
+  }
+
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+
+  if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
+    cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
+    ret = false;
+  } else if (opt.fld == 0.0 && ret) {
+    // In the future, if we have single-end data we should require this
+    // argument
+    cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
+  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
+
+  if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
+    cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
+    cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
+  }
+
+  if (opt.fld < 0.0) {
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+
+  if (opt.sd < 0.0) {
+    cerr << "Error: invalid value for fragment length standard deviation " << opt.sd << endl;
+    ret = false;
+  }
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      }
+    } else {
+      // create directory
+      if (mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }
+    if (opt.threads > 1 && opt.pseudobam) {
+      cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
+      ret = false;
+    }
+  }
+
+  return ret;
+}
+
+
 bool CheckOptionsInspect(ProgramOptions& opt) {
 
   bool ret = true;
@@ -611,8 +872,11 @@ bool CheckOptionsH5Dump(ProgramOptions& opt) {
 }
 
 void PrintCite() {
-  cout << "The paper describing this software has not been published." << endl;
-  //  cerr << "When using this program in your research, please cite" << endl << endl;
+  cout << "When using this program in your research, please cite" << endl << endl
+       << "  Bray, N. L., Pimentel, H., Melsted, P. & Pachter, L." << endl
+       << "  Near-optimal probabilistic RNA-seq quantification, "<< endl
+       << "  Nature Biotechnology (2016), doi:10.1038/nbt.3519" << endl
+       << endl;
 }
 
 void PrintVersion() {
@@ -625,8 +889,10 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
+       << "    pseudo        Runs the pseudoalignment step " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
-       << "    version       Prints version information"<< endl << endl
+       << "    version       Prints version information"<< endl
+       << "    cite          Prints citation information" << endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
 
@@ -675,6 +941,28 @@ void usageEM(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --single                  Quantify single-end reads" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
+       << "                              (default: value is estimated from the input data)" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+
+}
+
+void usagePseudo(bool valid_input = true) {
+  if (valid_input) {
+    cout << "kallisto " << KALLISTO_VERSION << endl
+         << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+  }
+
+  cout << "Usage: kallisto pseudo [arguments] FASTQ-files" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
+       << "                              pseudoalignment" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
+       << "Optional arguments:" << endl
+       << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -995,6 +1283,55 @@ int main(int argc, char *argv[]) {
             }
           }
         }
+        cerr << endl;
+      }
+    } else if (cmd == "pseudo") {
+      if (argc==2) {
+        usagePseudo();
+        return 0;
+      }
+      ParseOptionsPseudo(argc-1,argv+1,opt);
+      if (!CheckOptionsPseudo(opt)) {
+        cerr << endl;
+        usagePseudo(false);
+        exit(1);
+      } else {
+        // pseudoalign the reads
+        KmerIndex index(opt);
+        index.load(opt);
+
+        MinCollector collection(index, opt);
+        int num_processed = 0;
+
+        if (!opt.batch_mode) {
+          num_processed = ProcessReads(index, opt, collection);
+          collection.write((opt.output + "/pseudoalignments"));
+        } else {
+
+          std::vector<std::vector<int>> batchCounts;
+          for (int i = 0; i < opt.batch_ids.size(); i++) {
+            std::fill(collection.counts.begin(), collection.counts.end(),0);
+            opt.files = opt.batch_files[i];
+            num_processed += ProcessReads(index, opt, collection);
+            batchCounts.push_back(collection.counts);
+          }
+
+          writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
+
+        }
+
+        std::string call = argv_to_string(argc, argv);
+
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(index.num_trans)),
+            std::string(std::to_string(0)), // no bootstraps in pseudo
+            std::string(std::to_string(num_processed)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
         cerr << endl;
       }
     } else if (cmd == "h5dump") {

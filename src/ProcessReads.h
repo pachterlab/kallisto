@@ -78,6 +78,7 @@ public:
 class ReadProcessor {
 public:
   ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp);
+  ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
   size_t bufsize;

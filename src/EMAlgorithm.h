@@ -152,7 +152,7 @@ struct EMAlgorithm {
       }
 
       //std::cout << chcount << std::endl;
-      if (chcount == 0) {
+      if (chcount == 0 && i > min_rounds) {
 
         stopEM=true;
       }
@@ -275,7 +275,7 @@ struct EMAlgorithm {
       }
     }
 
-    std::cout << sum_big << " " << count_big << " " << n << std::endl;
+    //std::cout << sum_big << " " << count_big << " " << n << std::endl;
 
     std::copy(em_start.alpha_before_zeroes_.begin(), em_start.alpha_before_zeroes_.end(),
         alpha_.begin());

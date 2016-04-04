@@ -54,12 +54,16 @@ struct MinCollector {
   int findEC(const std::vector<int>& u) const;
 
 
+  // deprecated
   void write(std::ostream& o) {
     for (int id = 0; id < counts.size(); id++) {
       o << id << "\t" << counts[id] << "\n";
     }
   }
+  void write(const std::string& index_out) const;
+
   void loadCounts(ProgramOptions& opt);
+
 
   bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
   bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const;
