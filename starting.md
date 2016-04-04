@@ -21,14 +21,14 @@ to have kallisto universally executable.
 
 The example/test distributed with __kallisto__ is included with the binaries we distribute with the program:
 
-- For Mac download the __kallisto__ binary from [here](https://github.com/pachterlab/kallisto/releases/download/v0.42.3/kallisto_mac-v0.42.3.tar.gz)
+- For Mac download the __kallisto__ binary from [here](download.html)
 
 - For Linux, please [download the source code](https://github.com/pachterlab/kallisto/releases) and compile.
 
 #### Install
 
 **\*\*Note\*\*** For users who do not have 'root' access, please follow the [local build
-tutorial](local_build.html).
+tutorial](local_build.html) or [download](download.html) directly.
 
 If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to 
 
@@ -40,7 +40,7 @@ with `sudo`.
 You should be able to type `kallisto` and see:
 
 ~~~
-kallisto 0.42.1
+kallisto 0.42.4
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -82,7 +82,7 @@ The results of a __kallisto__ run are placed in the specified output directory (
 
     total 568
     -rw-r--r--  1 username  staff  282480 May  3 10:10 abundance.h5
-    -rw-r--r--  1 username  staff     589 May  3 10:10 abundance.txt
+    -rw-r--r--  1 username  staff     589 May  3 10:10 abundance.tsv
     -rw-r--r--  1 username  staff     227 May  3 10:10 run_info.json
 
 The results of the main quantification, i.e. the abundance estimate using __kallisto__ on the data is in the `abundance.txt` file. Abundances are reported in "estimated counts" (est_counts) and in [Transcripts Per Million](https://haroldpimentel.wordpress.com/2014/05/08/what-the-fpkm-a-review-rna-seq-expression-units/) (TPM). The abundance.txt file you get should look like this:
@@ -104,7 +104,7 @@ The results of the main quantification, i.e. the abundance estimate using __kall
     NM_173860       849     671.903 962     236182
     NR_003084       1640    1462.9  0.00787013      0.887453
 
-The file is tab delimited so that it can easily parsed. It can also be analyzed with the __sleuth__ tool.
+The file is tab delimited so that it can easily parsed. The output can also be analyzed with the __sleuth__ tool.
 
  The `run_info.json` file contains a summary of the run, including data on the number targets used for quantification, the number of bootstraps performed, the version of the program used and how it was called. You should see this:
 
