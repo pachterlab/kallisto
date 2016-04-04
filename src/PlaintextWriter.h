@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "KmerIndex.h"
+
 void plaintext_writer(
     const std::string& out_name,
     const std::vector<std::string>& targ_ids,
@@ -29,5 +31,11 @@ void plaintext_aux(
     const std::string& index_v,
     const std::string& start_time,
     const std::string& call);
+
+void writeBatchMatrix(
+  const std::string &prefix,
+  const KmerIndex &index,
+  const std::vector<std::string> &ids,
+  std::vector<std::vector<int>> &counts);
 
 #endif

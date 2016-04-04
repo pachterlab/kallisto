@@ -20,6 +20,10 @@ struct ProgramOptions {
   int min_range;
   int bootstrap;
   std::vector<std::string> transfasta;
+  bool batch_mode;
+  std::string batch_file_name;
+  std::vector<std::vector<std::string>> batch_files;
+  std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   bool plaintext;
   bool write_index;
@@ -42,6 +46,7 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  batch_mode(false),
   plaintext(false),
   write_index(false),
   single_end(false),
