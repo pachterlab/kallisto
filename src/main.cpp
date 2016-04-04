@@ -611,8 +611,11 @@ bool CheckOptionsH5Dump(ProgramOptions& opt) {
 }
 
 void PrintCite() {
-  cout << "The paper describing this software has not been published." << endl;
-  //  cerr << "When using this program in your research, please cite" << endl << endl;
+  cout << "When using this program in your research, please cite" << endl << endl
+       << "  Bray, N. L., Pimentel, H., Melsted, P. & Pachter, L." << endl
+       << "  Near-optimal probabilistic RNA-seq quantification, "<< endl
+       << "  Nature Biotechnology (2016), doi:10.1038/nbt.3519" << endl
+       << endl;
 }
 
 void PrintVersion() {
@@ -626,7 +629,8 @@ void usage() {
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
-       << "    version       Prints version information"<< endl << endl
+       << "    version       Prints version information"<< endl
+       << "    cite          Prints citation information" << endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
 
