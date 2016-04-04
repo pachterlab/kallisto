@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.42.2
+kallisto 0.42.4
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -30,7 +30,7 @@ The four usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.42.2
+kallisto 0.42.4
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -40,6 +40,7 @@ Required argument:
 
 Optional argument:
 -k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: 31)
+    --make-unique           Replace repeated target names with unique names
 ~~~
 
 The Fasta file supplied can be either in plaintext or gzipped format.
@@ -49,7 +50,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.42.2
+kallisto 0.42.4
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -60,15 +61,16 @@ Required arguments:
 -o, --output-dir=STRING       Directory to write output to
 
 Optional arguments:
-    --single                  Quantify single-end reads
     --bias                    Perform sequence based bias correction
--l, --fragment-length=DOUBLE  Estimated average fragment length
-                              (default: value is estimated from the input data)
-    --pseudobam               Output pseudoalignments in SAM format to stdout
 -b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
--t, --threads=INT             Number of threads to use for bootstraping (default: 1)
     --seed=INT                Seed for the bootstrap sampling (default: 42)
     --plaintext               Output plaintext instead of HDF5
+    --single                  Quantify single-end reads
+-l, --fragment-length=DOUBLE  Estimated average fragment length
+-s, --sd=DOUBLE               Estimated standard deviation of fragment length
+                              (default: value is estimated from the input data)
+-t, --threads=INT             Number of threads to use (default: 1)
+    --pseudobam               Output pseudoalignments in SAM format to stdout
 ~~~
 
 __kallisto__ can process either single-end or paired-end reads. The default running mode is paired-end and requires an even number of FASTQ files represented as pairs, e.g.
@@ -77,10 +79,10 @@ __kallisto__ can process either single-end or paired-end reads. The default runn
 kallisto quant -i index -o output pairA_1.fastq pairA_2.fastq pairB_1.fastq pairB_2.fastq
 ~~~
 
-For single-end mode you supply the `--single` flag and list any number of FASTQ files, e.g
+For single-end mode you supply the `--single` flag, as well as the `-l` and `-s` options, and list any number of FASTQ files, e.g
 
 ~~~
-kallisto quant -i index -o output --single -l 180 file1.fastq.gz file2.fastq.gz file3.fastq.gz
+kallisto quant -i index -o output --single -l 200 -s 20 file1.fastq.gz file2.fastq.gz file3.fastq.gz
 ~~~
 
 FASTQ files can be either plaintext or
@@ -111,7 +113,7 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 + `--bias` learns parameters for a model of sequences specific bias and corrects the abundances accordlingly.
 
-+ `-t, --threads` specifies the number of threads to be used while running bootstrap. The default value is 1 thread, specifying more than the number of bootstraps or the number of cores on your machine has no additional effect.
++ `-t, --threads` specifies the number of threads to be used both for pseudoalignment and running bootstrap. The default value is 1 thread, specifying more than the number of bootstraps or the number of cores on your machine has no additional effect.
 
 ##### Pseudobam
 
@@ -138,7 +140,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.42.2
+kallisto 0.42.4
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
