@@ -30,6 +30,7 @@ session, run the following from your terminal:
 
 ```
 export PATH=$HOME/bin:$PATH
+export LD_LIBRARY_PATH=$HOME/lib/:$LD_LIBRARY_PATH
 ```
 
 Afterwards, place the same code into your shell startup file (e.g. one of ~/.bashrc, ~/.zshrc, etc.).
@@ -118,3 +119,17 @@ Next, build and install:
 `make install`
 
 You will now have `kallisto` in `$HOME/bin/kallisto`.
+You might get an error:
+
+
+```
+./kallisto: error while loading shared libraries: libhdf5.so.7: cannot open shared object file: No such file or directory
+```
+
+If this is the case, make sure to add `$HOME/lib` to your `LD_LIBRARY_PATH`:
+
+```
+export LD_LIBRARY_PATH=$HOME/lib/:$LD_LIBRARY_PATH
+```
+
+You may want to add this to your `~/.bashrc` to ensure that it persists between sessions.
