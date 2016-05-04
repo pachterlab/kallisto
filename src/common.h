@@ -33,6 +33,8 @@ struct ProgramOptions {
   bool bias;
   bool pseudobam;
   bool make_unique;
+  enum class StrandType {None, FR, RF};
+  StrandType strand;
   std::string gfa; // used for inspect
 
 ProgramOptions() :
@@ -54,7 +56,8 @@ ProgramOptions() :
   peek(false),
   bias(false),
   pseudobam(false),
-  make_unique(false)
+  make_unique(false),
+  strand(StrandType::None)
   {}
 };
 
