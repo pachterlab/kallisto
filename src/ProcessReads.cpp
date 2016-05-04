@@ -382,52 +382,50 @@ void ReadProcessor::processBuffer() {
       Kmer km;
       KmerEntry val;
       if (!v1.empty()) {
+        vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
         p = findFirstMappingKmer(v1,val);
         km = Kmer((s1+p));
         bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
         // might need to optimize this
         const auto &c = index.dbGraph.contigs[val.contig];
-        int j = 0;
-        while (j < u.size()) {
-          int tr = u[j];
+        for (auto tr : u) {
           for (auto ctx : c.transcripts) {
             if (tr == ctx.trid) {
-              if ((strand == ctx.sense) != firstStrand) {
+              if ((strand == ctx.sense) == firstStrand) {
                 // swap out 
-                std::swap(u[j],u[u.size()-1]);
-                u.pop_back();
-                j--;                       
+                vtmp.push_back(tr);
               } 
               break;
             }
-          }
-          j++;          
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
         }
       }
       
       if (!v2.empty()) {
+        vtmp.clear();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
         p = findFirstMappingKmer(v2,val);
         km = Kmer((s2+p));
         bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
         // might need to optimize this
         const auto &c = index.dbGraph.contigs[val.contig];
-        int j = 0;
-        while (j < u.size()) {
-          int tr = u[j];
+        for (auto tr : u) {
           for (auto ctx : c.transcripts) {
             if (tr == ctx.trid) {
-              if ((strand == ctx.sense) != secondStrand) {
+              if ((strand == ctx.sense) == secondStrand) {
                 // swap out 
-                std::swap(u[j],u[u.size()-1]);
-                u.pop_back();
-                j--;                       
+                vtmp.push_back(tr);
               } 
               break;
             }
-          }
-          j++;          
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
         }
       }
     }
