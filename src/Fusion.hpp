@@ -1,4 +1,5 @@
 #include <sstream>
+#include <set>
 /** -- fusion functions -- **/
 
 /**
@@ -79,7 +80,44 @@ std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::
     }
   }
   return u;
+}
 
+// returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
+bool checkUnionIntersection(const KmerIndex& index, const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
+  if (v1.empty() || v2.empty()) {
+    return true;
+  }
+  
+  std::set<int> s1,s2;
+  
+  auto union_set = [&](const std::vector<std::pair<KmerEntry,int>>& v) {
+    std::set<int> s;
+    int ec = index.dbGraph.ecs[v[0].first.contig];
+    int lastEC = ec;
+    //const std::vector<int> &u = index.ecmap[ec];
+    s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+    for (int i = 1; i < v.size(); i++) {
+      if (v[i].first.contig != v[i-1].first.contig) {
+        ec = index.dbGraph.ecs[v[i].first.contig];
+        if (ec != lastEC) {
+          s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+        }
+      }
+    }
+    return s;
+  };
+
+  s1 = union_set(v1);
+  s2 = union_set(v2);
+  if (s2.size() < s1.size()) {
+    swap(s1,s2);
+  }
+  for (auto x : s1) {
+    if (s2.count(x) != 0) {
+      return false;
+    }
+  }
+  return true;
 }
 
 void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
@@ -101,18 +139,20 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   auto u1 = simpleIntersect(index, v1);
   auto u2 = simpleIntersect(index, v2);
   if (!u1.empty() && !u2.empty()) {
-    // each pair maps to either end
-    // each pair maps to either end
-    o << "PAIR\t";
-    o << s1 << "\t";
-    if (paired) {
-     o << s2 << "\t";
-    } else {
-      o << "\t";
+    if (checkUnionIntersection(index,v1,v2)) {
+      // each pair maps to either end
+      // each pair maps to either end
+      o << "PAIR\t";
+      o << s1 << "\t";
+      if (paired) {
+      o << s2 << "\t\t";
+      } else {
+        o << "\t\t";
+      }
+      printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
+      mp.outputFusion(o);
+      return;
     }
-    printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
-    mp.outputFusion(o);
-    return;
   }
 
   if ((v1.empty() && !u2.empty()) ||  (v2.empty() && !u1.empty())) {
@@ -169,29 +209,31 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     auto ut2 = simpleIntersect(index,vsafe);
 
     if (!ut1.empty() && !ut2.empty()) {
-      o << "SPLIT\t";
-      o << s1 << "\t";
-      // what to put as info?
-      if (paired) {
-        o << s2 << "\t";
-      } else {
-        o << "\t";
+      if (checkUnionIntersection(index, vsplit, vsafe)) {
+        o << "SPLIT\t";
+        o << s1 << "\t";
+        // what to put as info?
+        if (paired) {
+          o << s2 << "\t";
+        } else {
+          o << "\t";
+        }
+        o << "splitat=";
+        if (u1.empty()) {
+          o << "(0,";
+        } else {
+          o << "(1,";
+        }
+        o << vsafe.back().second << ")\t";
+        // fix this
+        if (split1) {
+          printTranscripts(index, o, s1, vsplit, ut1); o << "\t"; printTranscripts(index, o, s2, vsafe, ut2);
+        } else {
+          printTranscripts(index, o, s1, vsafe, ut2); o << "\t"; printTranscripts(index, o, s2, vsplit, ut1);
+        }
+        mp.outputFusion(o);
+        return;
       }
-      o << "splitat=";
-      if (u1.empty()) {
-        o << "(0,";
-      } else {
-        o << "(1,";
-      }
-      o << vsafe.back().second << ")\t";
-      // fix this
-      if (split1) {
-        printTranscripts(index, o, s1, vsplit, ut1); o << "\t"; printTranscripts(index, o, s2, vsafe, ut2);
-      } else {
-        printTranscripts(index, o, s1, vsafe, ut2); o << "\t"; printTranscripts(index, o, s2, vsplit, ut1);
-      }
-      mp.outputFusion(o);
-      return;
     } else {
       j--;
     }
