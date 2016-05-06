@@ -101,6 +101,7 @@ bool checkUnionIntersection(const KmerIndex& index, const std::vector<std::pair<
         ec = index.dbGraph.ecs[v[i].first.contig];
         if (ec != lastEC) {
           s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+          lastEC = ec;
         }
       }
     }
@@ -132,7 +133,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   std::stringstream o;
   // no mapping information
   if (v1.empty() || v2.empty()) {
-    return;
+    return; // consider splitting in case either is empty
   }
 
   // discordant pairs
