@@ -83,15 +83,30 @@ std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::
 }
 
 // returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
-bool checkUnionIntersection(const KmerIndex& index, const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
-  if (v1.empty() || v2.empty()) {
-    return true;
-  }
+bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2) { 
+//const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
   
-  std::set<int> s1,s2;
   
-  auto union_set = [&](const std::vector<std::pair<KmerEntry,int>>& v) {
-    std::set<int> s;
+  std::set<int> su1,su2;
+  
+  auto union_set = [&](const std::string &s) {
+    std::set<int> su;
+    
+    KmerIterator kit(s.c_str()), kit_end;
+    int lastEC = -1;
+    for (int i = 0; kit != kit_end; ++i,++kit) {
+      auto search = index.kmap.find(kit->first.rep());
+      if (search != index.kmap.end()) {
+        const KmerEntry &val = search->second;
+        int ec = index.dbGraph.ecs[val.contig];
+        if (ec != -1 && ec != lastEC) {
+          su.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+          lastEC = ec;
+        }
+      }
+    }
+    
+    /*
     int ec = index.dbGraph.ecs[v[0].first.contig];
     int lastEC = ec;
     //const std::vector<int> &u = index.ecmap[ec];
@@ -105,16 +120,22 @@ bool checkUnionIntersection(const KmerIndex& index, const std::vector<std::pair<
         }
       }
     }
-    return s;
+    */
+    return su;
   };
 
-  s1 = union_set(v1);
-  s2 = union_set(v2);
-  if (s2.size() < s1.size()) {
-    swap(s1,s2);
+  su1 = union_set(s1);
+  su2 = union_set(s2);
+  
+  if (su1.empty() || su2.empty()) {
+    return false; // TODO, decide on this
   }
-  for (auto x : s1) {
-    if (s2.count(x) != 0) {
+  
+  if (su2.size() < su1.size()) {
+    swap(su1,su2);
+  }
+  for (auto x : su1) {
+    if (su2.count(x) != 0) {
       return false;
     }
   }
@@ -131,28 +152,33 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     partialMap = true;
   }
   std::stringstream o;
+  
   // no mapping information
-  if (v1.empty() || v2.empty()) {
+  if (v1.empty() && v2.empty()) {
     return; // consider splitting in case either is empty
   }
 
-  // discordant pairs
+
   auto u1 = simpleIntersect(index, v1);
   auto u2 = simpleIntersect(index, v2);
-  if (!u1.empty() && !u2.empty()) {
-    if (checkUnionIntersection(index,v1,v2)) {
-      // each pair maps to either end
-      // each pair maps to either end
-      o << "PAIR\t";
-      o << s1 << "\t";
-      if (paired) {
-      o << s2 << "\t\t";
-      } else {
-        o << "\t\t";
+
+  // discordant pairs
+  if (!v1.empty() && !v2.empty()) {
+    if (!u1.empty() && !u2.empty()) {
+      if (checkUnionIntersection(index, s1, s2)) {
+        // each pair maps to either end
+        // each pair maps to either end
+        o << "PAIR\t";
+        o << s1 << "\t";
+        if (paired) {
+        o << s2 << "\t\t";
+        } else {
+          o << "\t\t";
+        }
+        printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
+        mp.outputFusion(o);
+        return;
       }
-      printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
-      mp.outputFusion(o);
-      return;
     }
   }
 
@@ -210,7 +236,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     auto ut2 = simpleIntersect(index,vsafe);
 
     if (!ut1.empty() && !ut2.empty()) {
-      if (checkUnionIntersection(index, vsplit, vsafe)) {
+      if (true || checkUnionIntersection(index, s1, s2)) {
         o << "SPLIT\t";
         o << s1 << "\t";
         // what to put as info?
