@@ -791,7 +791,10 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
-
+        if (opt.fusion) {
+          // need full transcript sequences
+          index.loadTranscriptSequences();
+        }
         MinCollector collection(index, opt);
         int num_processed = 0;
         num_processed = ProcessReads(index, opt, collection);

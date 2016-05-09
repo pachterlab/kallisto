@@ -1,5 +1,6 @@
 #include <sstream>
 #include <set>
+
 /** -- fusion functions -- **/
 
 /**
@@ -82,6 +83,92 @@ std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::
   return u;
 }
 
+
+bool checkMapability(const KmerIndex& index, const std::string &s, const std::vector<std::pair<KmerEntry,int>>& v, std::vector<int> &u) {
+  const int maxMismatch = 2;
+  const int maxSoftclip = 5;
+    
+  Kmer km;
+  KmerEntry val;
+  int p;
+
+  if (!v.empty()) {
+    val = v[0].first;
+    p = v[0].second;
+    for (auto &x : v) {
+      if (x.second < p) {
+        val = x.first;
+        p = x.second;
+      }
+    }
+    km = Kmer(s.c_str()+p);
+  } else {
+    return false;
+  }
+  
+  std::vector<int> vtmp; vtmp.reserve(u.size());
+  
+  for (auto tr : u) {
+    auto trpos = index.findPosition(tr, km, val, p);
+    int tpos = (int)trpos.first;
+    int sz = (int)s.size();
+    bool add = true; 
+    if (trpos.second) {
+      if (tpos < 1 || tpos + sz - 1 > index.target_seqs_[tr].size()) {
+        add = false;
+      } else {
+        //std::cout << index.target_seqs_[tr].substr(tpos,sz) << std::endl;
+        //std::cout << s << std::endl;
+        int mis = 0;
+        for (int i = 0; i < sz - maxSoftclip; i++) {
+          if (index.target_seqs_[tr][tpos-1 + i] != s[i]) {
+            ++mis;
+            if (mis > maxMismatch) {
+              break;
+            }
+          }
+        }
+        add = (mis <= maxMismatch);
+      }
+    }  else {
+      if (tpos > index.target_seqs_[tr].size() || tpos - sz < 1) {
+        add = false;
+      } else {      
+        std::string rs = revcomp(s);
+        //std::cout << index.target_seqs_[tr].substr(tpos - sz, sz) << std::endl;
+        //std::cout << rs << std::endl;
+        int mis = 0;
+        for (int i = sz-1; i >= maxSoftclip; i--) {
+          if (index.target_seqs_[tr][tpos-sz+i] != rs[sz]) {
+            ++mis;
+            if (mis > maxMismatch) {
+              break;
+            }
+          }
+        }
+        add = (mis <= maxMismatch);
+      }
+    }
+    
+    if (add) {
+      vtmp.push_back(tr);
+    }
+    
+  }
+ 
+  
+  if (vtmp.empty()) {
+    return false;
+  }
+  
+  if (vtmp.size() < u.size()) {
+    u = vtmp; // copy
+  }
+  
+  return true;
+  
+}
+
 // returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
 bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2) { 
 //const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
@@ -142,6 +229,7 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
   return true;
 }
 
+
 void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   const MinCollector& tc, MasterProcessor& mp, int ec,
   const std::string &s1, std::vector<std::pair<KmerEntry,int>> &v1,
@@ -165,7 +253,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   // discordant pairs
   if (!v1.empty() && !v2.empty()) {
     if (!u1.empty() && !u2.empty()) {
-      if (checkUnionIntersection(index, s1, s2)) {
+      if (checkUnionIntersection(index, s1, s2) && checkMapability(index, s1, v1, u1) && checkMapability(index, s2, v2, u2)) {
         // each pair maps to either end
         // each pair maps to either end
         o << "PAIR\t";

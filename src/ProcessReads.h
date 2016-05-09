@@ -60,7 +60,7 @@ public:
         ofusion.open(opt.output + "/fusion.txt");
         ofusion << "TYPE\tSEQ1\tSEQ2\tINFO\tPOS1\tPOS2\n";
       }
- }
+  }
 
   std::mutex reader_lock;
   std::mutex writer_lock;
