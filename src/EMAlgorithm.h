@@ -26,7 +26,8 @@ struct EMAlgorithm {
   EMAlgorithm(const std::vector<int>& counts,
               const KmerIndex& index,
               const MinCollector& tc,
-              const std::vector<double>& all_means) :
+              const std::vector<double>& all_means,
+              const ProgramOptions& opt) :
     index_(index),
     tc_(tc),
     num_trans_(index.target_names_.size()),
@@ -37,7 +38,8 @@ struct EMAlgorithm {
     alpha_(num_trans_, 1.0/num_trans_), // uniform distribution over targets
     rho_(num_trans_, 0.0),
     rho_set_(false),
-    all_fl_means(all_means)
+    all_fl_means(all_means),
+    opt(opt)
   {
     assert(all_fl_means.size() == index_.target_lens_.size());
     eff_lens_ = calc_eff_lens(index_.target_lens_, all_fl_means);
@@ -73,7 +75,7 @@ struct EMAlgorithm {
     int i;
     for (i = 0; i < n_iter; ++i) {
       if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
-        eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_, post_bias_);
+        eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_, post_bias_, opt);
         weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
       }
 
@@ -296,6 +298,7 @@ struct EMAlgorithm {
   std::vector<double> alpha_before_zeroes_;
   std::vector<double> rho_;
   bool rho_set_;
+  const ProgramOptions& opt;
 };
 
 

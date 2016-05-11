@@ -1121,7 +1121,7 @@ int main(int argc, char *argv[]) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1171,7 +1171,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -1230,7 +1230,7 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1281,7 +1281,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 

@@ -2,7 +2,7 @@
 
 EMAlgorithm Bootstrap::run_em() {
     auto counts = mult_.sample();
-    EMAlgorithm em(counts, index_, tc_, mean_fls_);
+    EMAlgorithm em(counts, index_, tc_, mean_fls_, opt);
 
     //em.set_start(em_start);
     em.run(10000, 50, false, false);
@@ -70,7 +70,7 @@ void BootstrapWorker::operator() (){
         pool_.tc_,
         pool_.eff_lens_,
         cur_seed,
-        pool_.mean_fls_);
+        pool_.mean_fls_, pool_.opt_);
 
     auto res = bs.run_em();
 

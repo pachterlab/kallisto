@@ -23,13 +23,15 @@ public:
             const MinCollector& tc,
             const std::vector<double>& eff_lens,
             size_t seed,
-            const std::vector<double>& mean_fls) :
+            const std::vector<double>& mean_fls,
+            const ProgramOptions& opt) :
     index_(index),
     tc_(tc),
     eff_lens_(eff_lens),
     seed_(seed),
     mult_(true_counts, seed_),
-    mean_fls_(mean_fls)
+    mean_fls_(mean_fls),
+    opt(opt)
     {}
 
   // EM Algorithm generates a sample from the Multinomial, then returns
@@ -44,6 +46,7 @@ private:
   size_t seed_;
   Multinomial mult_;
   const std::vector<double>& mean_fls_;
+  const ProgramOptions& opt;
 };
 
 class BootstrapThreadPool {
