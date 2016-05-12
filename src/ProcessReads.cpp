@@ -48,7 +48,60 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
   return (a==x.end());
 }
 
+int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts) {
+  int limit = 1048576; 
+  std::vector<std::pair<const char*, int>> seqs;
+  seqs.reserve(limit/50);
 
+  //SequenceReader SR(opt);
+
+  // need to receive an index map
+  std::ios_base::sync_with_stdio(false);
+
+  //int tlencount = (opt.fld == 0.0) ? 10000 : 0;
+  size_t numreads = 0;
+  size_t nummapped = 0;
+
+  bool paired = !opt.single_end;
+  
+  if (paired) {
+    std::cerr << "[quant] running in paired-end mode" << std::endl;
+  } else {
+    std::cerr << "[quant] running in single-end mode" << std::endl;
+  }
+
+  for (const auto& fs : opt.batch_files) { 
+    for (int i = 0; i < fs.size(); i += (paired) ? 2 : 1) {
+      if (paired) {
+        std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << fs[i] << std::endl
+                  << "                             " << fs[i+1] << std::endl;
+      } else {
+        std::cerr << "[quant] will process file " << i+1 << ": " << fs[i] << std::endl;
+      }
+    }
+  }
+  
+  std::cerr << "[quant] finding pseudoalignments for all files ..."; std::cerr.flush();
+  
+
+  MasterProcessor MP(index, opt, tc);
+  MP.processReads();
+  numreads = MP.numreads;
+  nummapped = MP.nummapped;
+  batchCounts = std::move(MP.batchCounts);
+
+  std::cerr << " done" << std::endl;
+
+  if (opt.bias) {
+    std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
+  }
+
+  std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
+    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
+
+  return numreads;
+  
+}
 
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
 
@@ -56,7 +109,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
 
-  SequenceReader SR(opt);
+  //SequenceReader SR(opt);
 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
@@ -134,42 +187,97 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
 void MasterProcessor::processReads() {
   // start worker threads
-  std::vector<std::thread> workers;
-  for (int i = 0; i < opt.threads; i++) {
-    workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
-  }
-  // let the workers do their thing
-
-  for (int i = 0; i < opt.threads; i++) {
-    workers[i].join(); //wait for them to finish
-  }
-
-  // now handle the modification of the mincollector
-  for (auto &t : newECcount) {
-    if (t.second <= 0) {
-      continue;
+  if (!opt.batch_mode) {
+    std::vector<std::thread> workers;
+    for (int i = 0; i < opt.threads; i++) {
+      workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
     }
-    int ec = tc.increaseCount(t.first); // modifies the ecmap
+    
+    // let the workers do their thing
+    for (int i = 0; i < opt.threads; i++) {
+      workers[i].join(); //wait for them to finish
+    }
 
-    if (ec != -1 && t.second > 1) {
-      tc.counts[ec] += (t.second-1);
+    // now handle the modification of the mincollector
+    for (auto &t : newECcount) {
+      if (t.second <= 0) {
+        continue;
+      }
+      int ec = tc.increaseCount(t.first); // modifies the ecmap
+
+      if (ec != -1 && t.second > 1) {
+        tc.counts[ec] += (t.second-1);
+      }
+    }
+  } else {
+    std::vector<std::thread> workers;
+    int num_ids = opt.batch_ids.size();
+    int id =0;
+    while (id < num_ids) {
+      // TODO: put in thread pool
+      workers.clear();
+      int nt = std::min(opt.threads, (num_ids - id));
+      for (int i = 0; i < nt; i++,id++) {
+        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id)));
+      }
+      
+      for (int i = 0; i < nt; i++) {
+        workers[i].join();
+      }
+    }
+    
+    int num_newEcs = 0;
+    for (int id = 0; id < num_ids; id++) {
+      for (auto &t : newBatchECcount[id]) {
+        if (t.second <= 0) {
+          continue;          
+        }
+        int ecsize = index.ecmap.size();
+        int ec = tc.increaseCount(t.first);
+        if (ec != -1 && ecsize < index.ecmap.size()) {          
+          num_newEcs++; 
+        }
+      }
+    }
+    for (int id = 0; id < num_ids; id++) {
+      auto& c = batchCounts[id];
+      c.resize(c.size() + num_newEcs,0);
+      for (auto &t : newBatchECcount[id]) {
+        if (t.second <= 0) {
+          continue;
+        }
+        int ec = tc.findEC(t.first);
+        assert(ec != -1);
+        ++c[ec];
+      }
     }
   }
-
 }
 
 void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs,
-                            int n, std::vector<int>& flens, std::vector<int>& bias) {
+                            int n, std::vector<int>& flens, std::vector<int>& bias, int id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
-  for (int i = 0; i < c.size(); i++) {
-    tc.counts[i] += c[i]; // add up ec counts
-    nummapped += c[i];
+  if (!opt.batch_mode) {
+    for (int i = 0; i < c.size(); i++) {
+      tc.counts[i] += c[i]; // add up ec counts
+      nummapped += c[i];
+    }
+  } else {
+    for (int i = 0; i < c.size(); i++) {
+      batchCounts[id][i] += c[i];
+    }
   }
 
-  for(auto &u : newEcs) {
-    ++newECcount[u];
+  if (!opt.batch_mode) {
+    for(auto &u : newEcs) {
+      ++newECcount[u];
+    }
+  } else {
+    for(auto &u : newEcs) {
+      ++newBatchECcount[id][u];
+    }
   }
   nummapped += newEcs.size();
 
@@ -195,11 +303,17 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
   // releases the lock
 }
 
-ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp) :
- paired(!opt.single_end), tc(tc), index(index), mp(mp) {
+ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id) :
+ paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id) {
    // initialize buffer
    bufsize = 1ULL<<23;
    buffer = new char[bufsize];
+
+   if (opt.batch_mode) {
+     assert(id != -1);
+     batchSR.files = opt.batch_files[id];
+     batchSR.paired = !opt.single_end;
+   }
 
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
@@ -212,6 +326,7 @@ ReadProcessor::ReadProcessor(ReadProcessor && o) :
   tc(o.tc),
   index(o.index),
   mp(o.mp),
+  id(o.id),
   bufsize(o.bufsize),
   numreads(o.numreads),
   seqs(std::move(o.seqs)),
@@ -220,6 +335,7 @@ ReadProcessor::ReadProcessor(ReadProcessor && o) :
   newEcs(std::move(o.newEcs)),
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
+  batchSR(std::move(o.batchSR)),
   counts(std::move(o.counts)) {
     buffer = o.buffer;
     o.buffer = nullptr;
@@ -236,7 +352,13 @@ ReadProcessor::~ReadProcessor() {
 void ReadProcessor::operator()() {
   while (true) {
     // grab the reader lock
-    {
+    if (mp.opt.batch_mode) {
+      if (batchSR.empty()) {
+        return;
+      } else {
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, false);
+      }
+    } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (mp.SR.empty()) {
         // nothing to do
@@ -245,13 +367,15 @@ void ReadProcessor::operator()() {
         // get new sequences
         mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals,mp.opt.pseudobam);
       }
-    } // release the reader lock
+      // release the reader lock
+    }
+    
 
     // process our sequences
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens, bias5);
+    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens, bias5, id);
     clear();
   }
 }

@@ -1303,18 +1303,23 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         int num_processed = 0;
 
+
+
         if (!opt.batch_mode) {
           num_processed = ProcessReads(index, opt, collection);
           collection.write((opt.output + "/pseudoalignments"));
         } else {
 
           std::vector<std::vector<int>> batchCounts;
+          num_processed = ProcessBatchReads(index, opt, collection, batchCounts);
+          /*
           for (int i = 0; i < opt.batch_ids.size(); i++) {
             std::fill(collection.counts.begin(), collection.counts.end(),0);
             opt.files = opt.batch_files[i];
             num_processed += ProcessReads(index, opt, collection);
             batchCounts.push_back(collection.counts);
           }
+          */
 
           writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
 
