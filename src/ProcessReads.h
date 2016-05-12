@@ -68,6 +68,7 @@ public:
         for (auto &t : batchCounts) {
           t.resize(tc.counts.size(),0);
         }
+        newBatchECcount.resize(opt.batch_ids.size());
       }
     }
 
