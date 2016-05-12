@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.42.4
+kallisto 0.42.5
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -17,20 +17,22 @@ Where <CMD> can be one of:
 
     index         Builds a kallisto index
     quant         Runs the quantification algorithm
+    pseudo        Runs the pseudoalignment step
     h5dump        Converts HDF5-formatted results to plaintext
     version       Prints version information
+    cite          Prints citation information
 
 Running kallisto <CMD> without arguments prints usage information for <CMD>
 
 ~~~
-The four usage commands are:
+The usage commands are:
 
 #### index
 
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.42.4
+kallisto 0.42.5
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -50,7 +52,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.42.4
+kallisto 0.42.5
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -133,6 +135,52 @@ kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq | samtools view -Sb
 
 A detailed description of the SAM output is [here](pseudobam.html).
 
+#### pseudo
+
+`kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
+
+~~~
+kallisto 0.42.5
+Computes equivalence classes for reads and quantifies abundances
+
+Usage: kallisto pseudo [arguments] FASTQ-files
+
+Required arguments:
+-i, --index=STRING            Filename for the kallisto index to be used for
+                              pseudoalignment
+-o, --output-dir=STRING       Directory to write output to
+
+Optional arguments:
+-b  --batch=FILE              Process files listed in FILE
+    --single                  Quantify single-end reads
+-l, --fragment-length=DOUBLE  Estimated average fragment length
+-s, --sd=DOUBLE               Estimated standard deviation of fragment length
+                              (default: value is estimated from the input data)
+-t, --threads=INT             Number of threads to use (default: 1)
+    --pseudobam               Output pseudoalignments in SAM format to stdout
+
+~~~
+
+The form of the command and the meaning of the parameters are identical to the quant command. However, pseudo does not run the EM-algorithm to quantify abundances. In addition the pseudo command has an option to specify many cells in a batch file, e.g.
+
+~~~
+kallisto pseudo -i index -o output -b batch.txt
+~~~
+
+which will read information about each cell in the `batch.txt` file and process all cells simultaneously.
+
+The format of the batch file is
+~~~
+#id file1 file 2
+cell1 cell1_1.fastq.gz cell1_1.fastq.gz
+cell2 cell2_1.fastq.gz cell2_1.fastq.gz
+cell3 cell3_1.fastq.gz cell3_1.fastq.gz
+...
+~~~
+
+where the first column is the id of the cell and the next two fields are the corresponding files containing the paired end reads. Any lines starting with `#` are ignored. In the case of single end reads, specified with `--single`, only one file should be specified per cell.
+
+
 #### h5dump
 
 `kallisto h5dump` converts
@@ -140,7 +188,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.42.4
+kallisto 0.42.5
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
@@ -153,3 +201,7 @@ Required argument:
 #### version
 
 `kallisto version` displays the current version of the software.
+
+#### cite
+
+`kallisto cite` displays the citation for the paper.
