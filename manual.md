@@ -170,6 +170,7 @@ kallisto pseudo -i index -o output -b batch.txt
 which will read information about each cell in the `batch.txt` file and process all cells simultaneously.
 
 The format of the batch file is
+
 ~~~
 #id file1 file 2
 cell1 cell1_1.fastq.gz cell1_1.fastq.gz
