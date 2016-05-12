@@ -20,7 +20,7 @@ for alignment. On benchmarks with standard RNA-Seq data, __kallisto__ can
     robust to errors in the reads, in many benchmarks __kallisto__
     significantly outperforms existing tools. __kallisto__ is described in detail in:
 
-Nicolas L Bray, Harold Pimentel, Páll Melsted and Lior Pachter, [Near-optimal probabilistic RNA-seq quantification](http://www.nature.com/nbt/journal/v34/n5/full/nbt.3519.html), Nature Biotechnology __34__, 525--527 (2016) | doi:10.1038/nbt.3519
+Nicolas L Bray, Harold Pimentel, Páll Melsted and Lior Pachter, [Near-optimal probabilistic RNA-seq quantification](http://www.nature.com/nbt/journal/v34/n5/full/nbt.3519.html), Nature Biotechnology __34__, 525--527 (2016), doi:10.1038/nbt.3519
 
 To use __kallisto__ [download the software](download.html) and visit the
 [Getting started](starting.html) page for a quick tutorial.
