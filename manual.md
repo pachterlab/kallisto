@@ -100,10 +100,10 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 `kallisto quant` produces three __output__ files by default:
 
-- __abundances.h5__ is a HDF5 binary file containing run info, abundance
+- __abundance.h5__ is a HDF5 binary file containing run info, abundance
   esimates, bootstrap estimates, and transcript length information length. This
   file can be read in by __sleuth__
-- __abundances.tsv__ is a plaintext file of the abundance estimates. It does
+- __abundance.tsv__ is a plaintext file of the abundance estimates. It does
   not contains bootstrap estimates. Please use the `--plaintext` mode to output
   plaintext abundance estimates. Alternatively, `kallisto h5dump` can be used
   to output an HDF5 file to plaintext. The first line contains a header for
