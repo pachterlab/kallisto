@@ -40,13 +40,16 @@ public:
   l1(0),l2(0),nl1(0),nl2(0),
   paired(false), 
   current_file(0), state(false) {}
+  SequenceReader(SequenceReader&& o);
   
   bool empty();
   ~SequenceReader();
 
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
-                      std::vector<std::pair<const char*, int>>& quals, bool full=false);
+                      std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<std::string>& umis, 
+                      bool full=false);
 
 public:
   gzFile fp1 = 0, fp2 = 0;
@@ -54,6 +57,8 @@ public:
   int l1,l2,nl1,nl2;
   bool paired;
   std::vector<std::string> files;
+  std::vector<std::string> umi_files;
+  std::ifstream f_umi;
   int current_file;
   bool state; // is the file open
 };
@@ -65,10 +70,13 @@ public:
     ,nummapped(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) { 
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
+        
         for (auto &t : batchCounts) {
           t.resize(tc.counts.size(),0);
         }
         newBatchECcount.resize(opt.batch_ids.size());
+        newBatchECumis.resize(opt.batch_ids.size());
+        batchUmis.resize(opt.batch_ids.size());
       }
     }
 
@@ -87,9 +95,11 @@ public:
   const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   std::vector<std::unordered_map<std::vector<int>, int, SortedVectorHasher>> newBatchECcount;
+  std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
+  std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
   void processReads();
 
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, int n, std::vector<int>& flens, std::vector<int> &bias, int id = -1);
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, int id = -1);
 };
 
 class ReadProcessor {
@@ -101,6 +111,8 @@ public:
   size_t bufsize;
   bool paired;
   const MinCollector& tc;
+  std::vector<std::pair<int, std::string>> ec_umi;
+  std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
   const KmerIndex& index;
   MasterProcessor& mp;
   SequenceReader batchSR;
@@ -110,6 +122,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<std::string> umis;
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;

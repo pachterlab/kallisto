@@ -310,6 +310,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int single_flag = 0;
   int strand_flag = 0;
   int pbam_flag = 0;
+  int umi_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:b:";
   static struct option long_options[] = {
@@ -318,6 +319,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -367,12 +369,17 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     default: break;
     }
   }
+  
+  if (umi_flag) {
+    opt.umi = true;
+    opt.single_end = true; // UMI implies single end reads
+  }
 
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
   }
-
+ 
   if (verbose_flag) {
     opt.verbose = true;
   }
@@ -388,6 +395,8 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   if (pbam_flag) {
     opt.pseudobam = true;
   }
+  
+  
 }
 
 
@@ -651,12 +660,17 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
 
   // check for read files
   if (!opt.batch_mode) {
+    if (opt.umi) {
+      cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
+      ret = false;      
+    }
+    
     if (opt.files.size() == 0) {
       cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
-      struct stat stFileInfo;
-      for (auto& fn : opt.files) {
+      struct stat stFileInfo;      
+      for (auto& fn : opt.files) {        
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
           cerr << ERROR_STR << " file not found " << fn << endl;
@@ -691,7 +705,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
             continue;
           }
           opt.batch_ids.push_back(id);
-          if (opt.single_end) {
+          if (opt.single_end && !opt.umi) {
             ss >> f1;
             opt.batch_files.push_back({f1});
             intstat = stat(f1.c_str(), &stFileInfo);
@@ -701,7 +715,12 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
             }
           } else {
             ss >> f1 >> f2;
-            opt.batch_files.push_back({f1,f2});
+            if (!opt.umi) {
+              opt.batch_files.push_back({f1,f2});
+            } else {
+              opt.umi_files.push_back(f1);
+              opt.batch_files.push_back({f2});
+            }
             intstat = stat(f1.c_str(), &stFileInfo);
             if (intstat != 0) {
               cerr << ERROR_STR << " file not found " << f1 << endl;
@@ -731,6 +750,10 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
            << "       (use --single for processing single-end reads)" << endl;
       ret = false;
     }
+  }
+  
+  if (opt.umi) {
+    opt.single_end = true;
   }
 
   if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
@@ -962,6 +985,7 @@ void usagePseudo(bool valid_input = true) {
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
+       << "-u  --umi                     First file in pair is a UMI file" << endl
        << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
@@ -1303,8 +1327,6 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         int num_processed = 0;
 
-
-
         if (!opt.batch_mode) {
           num_processed = ProcessReads(index, opt, collection);
           collection.write((opt.output + "/pseudoalignments"));
@@ -1322,7 +1344,6 @@ int main(int argc, char *argv[]) {
           */
 
           writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
-
         }
 
         std::string call = argv_to_string(argc, argv);

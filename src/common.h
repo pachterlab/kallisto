@@ -25,6 +25,7 @@ struct ProgramOptions {
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
+  std::vector<std::string> umi_files;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -33,6 +34,7 @@ struct ProgramOptions {
   bool bias;
   bool pseudobam;
   bool make_unique;
+  bool umi;
   std::string gfa; // used for inspect
 
 ProgramOptions() :
@@ -54,7 +56,8 @@ ProgramOptions() :
   peek(false),
   bias(false),
   pseudobam(false),
-  make_unique(false)
+  make_unique(false),
+  umi(false)
   {}
 };
 

@@ -53,7 +53,6 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
 
-  //SequenceReader SR(opt);
 
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
@@ -224,38 +223,93 @@ void MasterProcessor::processReads() {
       for (int i = 0; i < nt; i++) {
         workers[i].join();
       }
-    }
-    
-    int num_newEcs = 0;
-    for (int id = 0; id < num_ids; id++) {
-      for (auto &t : newBatchECcount[id]) {
-        if (t.second <= 0) {
-          continue;          
-        }
-        int ecsize = index.ecmap.size();
-        int ec = tc.increaseCount(t.first);
-        if (ec != -1 && ecsize < index.ecmap.size()) {          
-          num_newEcs++; 
+      
+      if (opt.umi) {
+        // process the regular EC umi now
+        for (int i = 0; i < nt; i++) {
+          int l_id = id - nt + i;
+          auto &umis = batchUmis[l_id];
+          std::sort(umis.begin(), umis.end());
+          size_t sz = umis.size();
+          if (sz > 0) {
+            ++batchCounts[id][umis[0].first];
+          }
+          for (int j = 1; j < sz; j++) {
+            if (umis[j-1] != umis[j]) {
+              ++batchCounts[l_id][umis[j].first];
+            }
+          }
+          umis.clear();
         }
       }
     }
-    for (int id = 0; id < num_ids; id++) {
-      auto& c = batchCounts[id];
-      c.resize(c.size() + num_newEcs,0);
-      for (auto &t : newBatchECcount[id]) {
-        if (t.second <= 0) {
-          continue;
+    
+    int num_newEcs = 0;
+    if (!opt.umi) {      
+      for (int id = 0; id < num_ids; id++) {
+        for (auto &t : newBatchECcount[id]) {
+          if (t.second <= 0) {
+            continue;          
+          }
+          int ecsize = index.ecmap.size();
+          int ec = tc.increaseCount(t.first);
+          if (ec != -1 && ecsize < index.ecmap.size()) {          
+            num_newEcs++; 
+          }
         }
-        int ec = tc.findEC(t.first);
-        assert(ec != -1);
-        ++c[ec];
+      }
+      for (int id = 0; id < num_ids; id++) {
+        auto& c = batchCounts[id];
+        c.resize(c.size() + num_newEcs,0);
+        for (auto &t : newBatchECcount[id]) {
+          if (t.second <= 0) {
+            continue;
+          }
+          int ec = tc.findEC(t.first);
+          assert(ec != -1);
+          ++c[ec];
+        }
+      }
+    } else {
+      for (int id = 0; id < num_ids; id++) {
+        for (auto &t : newBatchECumis[id]) {
+          int ecsize = index.ecmap.size();
+          int ec = tc.increaseCount(t.first);
+          if (ec != -1 && ecsize < index.ecmap.size()) {
+            num_newEcs++;  
+          }
+        }
+      }
+      for (int id = 0; id < num_ids; id++) {
+        auto& c = batchCounts[id];
+        c.resize(c.size() + num_newEcs,0);
+        std::vector<std::pair<int, std::string>> umis;
+        umis.reserve(newBatchECumis[id].size());
+        for (auto &t : newBatchECumis[id]) {          
+          int ec = tc.findEC(t.first);
+          umis.push_back({ec, std::move(t.second)});
+        }
+        std::sort(umis.begin(), umis.end());
+        size_t sz = umis.size();
+        if (sz > 0) {
+          ++batchCounts[id][umis[0].first];
+        }
+        for (int j = 1; j < sz; j++) {
+          if (umis[j-1] != umis[j]) {
+            ++batchCounts[id][umis[j].first];
+          }
+        }
+        for (auto x : c) {
+          nummapped += x;
+        }        
       }
     }
   }
 }
 
-void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::vector<int> > &newEcs,
-                            int n, std::vector<int>& flens, std::vector<int>& bias, int id) {
+void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
+                            std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
+                            int n, std::vector<int>& flens, std::vector<int> &bias, int id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -265,9 +319,15 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
       nummapped += c[i];
     }
   } else {
-    for (int i = 0; i < c.size(); i++) {
-      batchCounts[id][i] += c[i];
-    }
+    if (!opt.umi) {
+      for (int i = 0; i < c.size(); i++) {
+        batchCounts[id][i] += c[i];
+      }
+    } else {
+      for (auto &t : ec_umi) {
+        batchUmis[id].push_back(std::move(t));
+      }
+    }    
   }
 
   if (!opt.batch_mode) {
@@ -275,11 +335,18 @@ void MasterProcessor::update(const std::vector<int> &c, const std::vector<std::v
       ++newECcount[u];
     }
   } else {
-    for(auto &u : newEcs) {
-      ++newBatchECcount[id][u];
+    if (!opt.umi) {
+      for(auto &u : newEcs) {
+        ++newBatchECcount[id][u];
+      }
+    } else {
+      for (auto &u : new_ec_umi) {
+        newBatchECumis[id].push_back(std::move(u));
+      }
     }
   }
   nummapped += newEcs.size();
+  
 
   if (!flens.empty()) {
     int local_tlencount = 0;
@@ -312,10 +379,16 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
    if (opt.batch_mode) {
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
+     if (opt.umi) {
+       batchSR.umi_files = {opt.umi_files[id]};
+     }
      batchSR.paired = !opt.single_end;
    }
 
    seqs.reserve(bufsize/50);
+   if (opt.umi) {
+    umis.reserve(bufsize/50);
+   }
    newEcs.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
    clear();
@@ -332,6 +405,7 @@ ReadProcessor::ReadProcessor(ReadProcessor && o) :
   seqs(std::move(o.seqs)),
   names(std::move(o.names)),
   quals(std::move(o.quals)),
+  umis(std::move(o.umis)),
   newEcs(std::move(o.newEcs)),
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
@@ -356,7 +430,7 @@ void ReadProcessor::operator()() {
       if (batchSR.empty()) {
         return;
       } else {
-        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, false);
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, false);
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
@@ -365,17 +439,16 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals,mp.opt.pseudobam);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam);
       }
       // release the reader lock
     }
-    
 
     // process our sequences
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, paired ? seqs.size()/2 : seqs.size(), flens, bias5, id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, id);
     clear();
   }
 }
@@ -506,13 +579,21 @@ void ReadProcessor::processBuffer() {
     if (!u.empty()) {
       ec = tc.findEC(u);
 
-      // count the pseudoalignment
-      if (ec == -1 || ec >= counts.size()) {
-        // something we haven't seen before
-        newEcs.push_back(u);
-      } else {
-        // add to count vector
-        ++counts[ec];
+      if (!mp.opt.umi) {
+        // count the pseudoalignment
+        if (ec == -1 || ec >= counts.size()) {
+          // something we haven't seen before
+          newEcs.push_back(u);
+        } else {
+          // add to count vector
+          ++counts[ec];
+        }
+      } else {       
+        if (ec == -1 || ec >= counts.size()) {
+          new_ec_umi.emplace_back(u, std::move(umis[i]));          
+        } else {
+          ec_umi.emplace_back(ec, std::move(umis[i]));
+        }
       }
 
       /* -- collect extra information -- */
@@ -564,6 +645,8 @@ void ReadProcessor::clear() {
   newEcs.clear();
   counts.clear();
   counts.resize(tc.counts.size(),0);
+  ec_umi.clear();
+  new_ec_umi.clear();
 }
 
 
@@ -583,6 +666,8 @@ SequenceReader::~SequenceReader() {
   if (paired) {
     kseq_destroy(seq2);
   }
+  
+  // check if umi stream is open, then close
 }
 
 
@@ -590,12 +675,24 @@ SequenceReader::~SequenceReader() {
 // returns true if there is more left to read from the files
 bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
   std::vector<std::pair<const char *, int> > &names,
-  std::vector<std::pair<const char *, int> > &quals, bool full) {
+  std::vector<std::pair<const char *, int> > &quals,
+  std::vector<std::string> &umis, 
+  bool full) {
+    
+  std::string line;
+  std::string umi;
+  std::stringstream ss;
+    
   seqs.clear();
+  umis.clear();
   if (full) {
     names.clear();
     quals.clear();
   }
+   
+  bool usingUMIfiles = !umi_files.empty();
+  int umis_read = 0;
+  
   int bufpos = 0;
   int pad = (paired) ? 2 : 1;
   while (true) {
@@ -611,6 +708,12 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         if (paired && fp2) {
           gzclose(fp2);
         }
+        // close current umi file
+        if (usingUMIfiles) {
+          // read up the rest of the files          
+          f_umi.close();
+        }
+        
         // open the next one
         fp1 = gzopen(files[current_file].c_str(),"r");
         seq1 = kseq_init(fp1);
@@ -621,6 +724,10 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
           fp2 = gzopen(files[current_file].c_str(),"r");
           seq2 = kseq_init(fp2);
           l2 = kseq_read(seq2);
+        }
+        if (usingUMIfiles) {
+          // open new umi file
+          f_umi.open(umi_files[current_file]);          
         }
       }
     }
@@ -641,6 +748,13 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         memcpy(p1, seq1->seq.s, l1+1);
         bufpos += l1+1;
         seqs.emplace_back(p1,l1);
+        
+        if (usingUMIfiles) {
+          std::getline(f_umi, line);
+          ss.str(line);
+          ss >> umi;
+          umis.emplace_back(std::move(umi));
+        }
         if (full) {
           p1 = buf+bufpos;
           memcpy(p1, seq1->qual.s,l1+1);
@@ -686,4 +800,27 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
 
 bool SequenceReader::empty() {
   return (!state && current_file >= files.size());
+}
+
+SequenceReader::SequenceReader(SequenceReader&& o) :
+  fp1(o.fp1),
+  fp2(o.fp2),
+  seq1(o.seq1),
+  seq2(o.seq2),
+  l1(o.l1),
+  l2(o.l2),
+  nl1(o.nl1),
+  nl2(o.nl2),
+  paired(o.paired),
+  files(std::move(o.files)),
+  umi_files(std::move(o.umi_files)),
+  f_umi(std::move(o.f_umi)),
+  current_file(o.current_file),
+  state(o.state) {
+  o.fp1 = nullptr;
+  o.fp2 = nullptr;
+  o.seq1 = nullptr;
+  o.seq2 = nullptr;
+  o.state = false;
+  
 }
