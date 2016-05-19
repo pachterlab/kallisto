@@ -711,7 +711,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         // close current umi file
         if (usingUMIfiles) {
           // read up the rest of the files          
-          f_umi.close();
+          f_umi->close();
         }
         
         // open the next one
@@ -727,7 +727,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         }
         if (usingUMIfiles) {
           // open new umi file
-          f_umi.open(umi_files[current_file]);          
+          f_umi->open(umi_files[current_file]);          
         }
       }
     }
@@ -750,7 +750,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         seqs.emplace_back(p1,l1);
         
         if (usingUMIfiles) {
-          std::getline(f_umi, line);
+          std::getline(*f_umi, line);
           ss.str(line);
           ss >> umi;
           umis.emplace_back(std::move(umi));

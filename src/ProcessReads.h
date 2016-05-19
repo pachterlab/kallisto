@@ -34,11 +34,13 @@ public:
   fp1(0),fp2(0),seq1(0),seq2(0),
   l1(0),l2(0),nl1(0),nl2(0),
   paired(!opt.single_end), files(opt.files),
+  f_umi(new std::ifstream{}),
   current_file(0), state(false) {}
   SequenceReader() :
   fp1(0),fp2(0),seq1(0),seq2(0),
   l1(0),l2(0),nl1(0),nl2(0),
   paired(false), 
+  f_umi(new std::ifstream{}),
   current_file(0), state(false) {}
   SequenceReader(SequenceReader&& o);
   
@@ -58,7 +60,7 @@ public:
   bool paired;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;
-  std::ifstream f_umi;
+  std::unique_ptr<std::ifstream> f_umi;
   int current_file;
   bool state; // is the file open
 };
