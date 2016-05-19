@@ -232,7 +232,7 @@ void MasterProcessor::processReads() {
           std::sort(umis.begin(), umis.end());
           size_t sz = umis.size();
           if (sz > 0) {
-            ++batchCounts[id][umis[0].first];
+            ++batchCounts[l_id][umis[0].first];
           }
           for (int j = 1; j < sz; j++) {
             if (umis[j-1] != umis[j]) {
