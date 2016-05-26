@@ -96,7 +96,12 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
   }
 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
-    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
+    << pretty_num(nummapped) << " reads pseudoaligned";
+  if (!opt.umi) {
+    std::cerr << std::endl;
+  } else {
+    std::cerr << ", " << pretty_num(MP.num_umi) << " unique UMIs mapped" << std::endl;
+  }
 
   return numreads;
   
@@ -231,6 +236,7 @@ void MasterProcessor::processReads() {
           auto &umis = batchUmis[l_id];
           std::sort(umis.begin(), umis.end());
           size_t sz = umis.size();
+          nummapped += sz;
           if (sz > 0) {
             ++batchCounts[l_id][umis[0].first];
           }
@@ -246,8 +252,11 @@ void MasterProcessor::processReads() {
     
     int num_newEcs = 0;
     if (!opt.umi) {      
+      // for each cell
       for (int id = 0; id < num_ids; id++) {
+        // for each new ec
         for (auto &t : newBatchECcount[id]) {
+          // add the ec and count number of new ecs
           if (t.second <= 0) {
             continue;          
           }
@@ -258,10 +267,13 @@ void MasterProcessor::processReads() {
           }
         }
       }
+      // for each cell
       for (int id = 0; id < num_ids; id++) {
         auto& c = batchCounts[id];
         c.resize(c.size() + num_newEcs,0);
+        // for each new ec
         for (auto &t : newBatchECcount[id]) {
+          // count the ec
           if (t.second <= 0) {
             continue;
           }
@@ -271,8 +283,12 @@ void MasterProcessor::processReads() {
         }
       }
     } else {
+      // UMI case
+      // for each cell
       for (int id = 0; id < num_ids; id++) {
+        // for each new ec
         for (auto &t : newBatchECumis[id]) {
+          // add the new ec
           int ecsize = index.ecmap.size();
           int ec = tc.increaseCount(t.first);
           if (ec != -1 && ecsize < index.ecmap.size()) {
@@ -280,15 +296,19 @@ void MasterProcessor::processReads() {
           }
         }
       }
+      // for each cell
       for (int id = 0; id < num_ids; id++) {
         auto& c = batchCounts[id];
         c.resize(c.size() + num_newEcs,0);
         std::vector<std::pair<int, std::string>> umis;
         umis.reserve(newBatchECumis[id].size());
-        for (auto &t : newBatchECumis[id]) {          
+        // for each new ec
+        for (auto &t : newBatchECumis[id]) {
+          // record the ec,umi          
           int ec = tc.findEC(t.first);
           umis.push_back({ec, std::move(t.second)});
         }
+        // find unique umis per ec
         std::sort(umis.begin(), umis.end());
         size_t sz = umis.size();
         if (sz > 0) {
@@ -300,7 +320,7 @@ void MasterProcessor::processReads() {
           }
         }
         for (auto x : c) {
-          nummapped += x;
+          num_umi += x;
         }        
       }
     }
@@ -322,6 +342,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     if (!opt.umi) {
       for (int i = 0; i < c.size(); i++) {
         batchCounts[id][i] += c[i];
+        nummapped += c[i];
       }
     } else {
       for (auto &t : ec_umi) {
@@ -345,7 +366,12 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
       }
     }
   }
-  nummapped += newEcs.size();
+  if (!opt.umi) {
+    nummapped += newEcs.size();
+  } else {
+    nummapped += new_ec_umi.size();
+  }
+  
   
 
   if (!flens.empty()) {
@@ -527,7 +553,7 @@ void ReadProcessor::processBuffer() {
 
     // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (!u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
+    if (!mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
       vtmp.clear();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
@@ -564,9 +590,13 @@ void ReadProcessor::processBuffer() {
         // if the fragment is within bounds for this transcript, keep it
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
           vtmp.push_back(tr);
+        } else {
+          //pass
         }
         if (!x.second && x.first - fl >= 0) {
           vtmp.push_back(tr);
+        } else {
+          //pass
         }
       }
 

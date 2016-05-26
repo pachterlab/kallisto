@@ -69,7 +69,7 @@ class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc)
     : tc(tc), index(index), opt(opt), SR(opt), numreads(0)
-    ,nummapped(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) { 
+    ,nummapped(0), num_umi(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) { 
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
         
@@ -91,6 +91,7 @@ public:
   const ProgramOptions& opt;
   int numreads;
   int nummapped;
+  int num_umi;
   std::atomic<int> tlencount;
   std::atomic<int> biasCount;
   std::vector<std::vector<int>> batchCounts;
