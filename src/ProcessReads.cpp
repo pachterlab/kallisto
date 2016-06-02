@@ -711,7 +711,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
     
   std::string line;
   std::string umi;
-  std::stringstream ss;
+  
     
   seqs.clear();
   umis.clear();
@@ -780,6 +780,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         seqs.emplace_back(p1,l1);
         
         if (usingUMIfiles) {
+          std::stringstream ss;
           std::getline(*f_umi, line);
           ss.str(line);
           ss >> umi;
