@@ -132,22 +132,29 @@ std::vector<double> update_eff_lens(
     }
 
     double contrib = 0.5*alpha[i]/eff_lens[i];
+    if (opt.strand_specific) {
+      contrib = alpha[i]/eff_lens[i];
+    }
     int seqlen = index.target_seqs_[i].size();
     const char* cs = index.target_seqs_[i].c_str();
 
-    int hex = hexamerToInt(cs,false);
-    int fwlimit = (int) std::max(seqlen - means[i] - 6, 0.0);
-    for (int j = 0; j < fwlimit; j++) {
-      dbias5[hex] += contrib;
-      hex = update_hexamer(hex,*(cs+j+6),false);
+    if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::FR)) {
+      int hex = hexamerToInt(cs,false);
+      int fwlimit = (int) std::max(seqlen - means[i] - 6, 0.0);
+      for (int j = 0; j < fwlimit; j++) {
+        dbias5[hex] += contrib;
+        hex = update_hexamer(hex,*(cs+j+6),false);
+      } 
     }
 
-    int bwlimit = (int) std::max(means[i] - 6, 0.0);
-    hex = hexamerToInt(cs+bwlimit,true);
-    for (int j = bwlimit; j < seqlen - 6; j++) {
-      dbias5[hex] += contrib;
-      if (j < seqlen - 6) {
-        hex = update_hexamer(hex,*(cs+j+6),true);
+    if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::RF)) {
+      int bwlimit = (int) std::max(means[i] - 6, 0.0);
+      int hex = hexamerToInt(cs+bwlimit,true);
+      for (int j = bwlimit; j < seqlen - 6; j++) {
+        dbias5[hex] += contrib;
+        if (j < seqlen - 6) {
+          hex = update_hexamer(hex,*(cs+j+6),true);
+        }
       }
     }
   }
@@ -166,24 +173,33 @@ std::vector<double> update_eff_lens(
       const char* cs = index.target_seqs_[i].c_str();
 
       // forward direction
-      int hex = hexamerToInt(cs,false);
-      int fwlimit = (int) std::max(seqlen - means[i] - 6, 0.0);
-      for (int j = 0; j < fwlimit; j++) {
-        //int hex = hexamerToInt(cs+j,false);
-        //efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
-        efflen += tc.bias5[hex] / dbias5[hex];
-        hex = update_hexamer(hex,*(cs+j+6),false);
-      }
-      int bwlimit = (int) std::max(means[i] - 6 , 0.0);
-      hex = hexamerToInt(cs+bwlimit,true);
-      for (int j = bwlimit; j < seqlen - 6; j++) {
-        efflen += tc.bias5[hex] / dbias5[hex];
-        if (j < seqlen-6) {
-          hex = update_hexamer(hex,*(cs+j+6),true);
+      if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::FR)) {
+        int hex = hexamerToInt(cs,false);
+        int fwlimit = (int) std::max(seqlen - means[i] - 6, 0.0);
+        for (int j = 0; j < fwlimit; j++) {
+          //int hex = hexamerToInt(cs+j,false);
+          //efflen += 0.5*(tc.bias5[hex]/biasDataNorm) / (dbias5[hex]/biasAlphaNorm );
+          efflen += tc.bias5[hex] / dbias5[hex];
+          hex = update_hexamer(hex,*(cs+j+6),false);
         }
       }
-
-      efflen *= 0.5*biasAlphaNorm/biasDataNorm;
+      if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::RF)) {
+        int bwlimit = (int) std::max(means[i] - 6 , 0.0);
+        int hex = hexamerToInt(cs+bwlimit,true);
+        for (int j = bwlimit; j < seqlen - 6; j++) {
+          efflen += tc.bias5[hex] / dbias5[hex];
+          if (j < seqlen-6) {
+            hex = update_hexamer(hex,*(cs+j+6),true);
+          }
+        }
+      }
+      
+      
+      if (!opt.strand_specific) {
+        efflen *= 0.5*biasAlphaNorm/biasDataNorm;
+      } else {
+        efflen *= biasAlphaNorm/biasDataNorm;
+      }
     }
 
 
