@@ -12,9 +12,9 @@ The short tutorial below explains how to run __kallisto__ using a small example 
 
 `brew tap homebrew/science` and then
 
-`brew install kallisto` 
+`brew install kallisto`
 
-to have kallisto universally executable. 
+to have kallisto universally executable.
 
 
 #### Download
@@ -30,7 +30,7 @@ The example/test distributed with __kallisto__ is included with the binaries we 
 **\*\*Note\*\*** For users who do not have 'root' access, please follow the [local build
 tutorial](local_build.html) or [download](download.html) directly.
 
-If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to 
+If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to
 
 `cp kallisto /usr/local/bin/`
 
@@ -40,7 +40,7 @@ with `sudo`.
 You should be able to type `kallisto` and see:
 
 ~~~
-kallisto 0.42.4
+kallisto 0.43.0
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -48,8 +48,10 @@ Where <CMD> can be one of:
 
     index         Builds a kallisto index
     quant         Runs the quantification algorithm
+    pseudo        Runs the pseudoalignment step
     h5dump        Converts HDF5-formatted results to plaintext
     version       Prints version information
+    cite          Prints citation information
 
 Running kallisto <CMD> without arguments prints usage information for <CMD>
 ~~~
@@ -75,6 +77,14 @@ You can also call __kallisto__ with
 `kallisto quant -i transcripts.idx -o output -b 100 <(gzcat reads_1.fastq.gz) <(gzcat reads_2.fastq.gz)`
 
 or with linux, you replace `gzcat` with `zcat` or any other program that writes the FASTQ to stdout. This utilizes an additional core to uncompress the FASTQ files, and speeds up the program by 10--15%.
+
+#### Single end reads
+
+If your reads are single end only you can run kallisto by specifying the `--single` flag,
+
+`kallisto quant -i transcripts.idx -o output -b 100 --single -l 180 -s 20 reads_1.fastq.gz`
+
+however you must supply the length and standard deviation of the fragment length (not the read length).
 
 #### Results
 
@@ -109,17 +119,21 @@ The file is tab delimited so that it can easily parsed. The output can also be a
  The `run_info.json` file contains a summary of the run, including data on the number targets used for quantification, the number of bootstraps performed, the version of the program used and how it was called. You should see this:
 
 
-    {
-            "n_targets": 15,
-            "n_bootstraps": 100,
-            "kallisto_version": "0.42",
-            "index_version": 9,
-            "start_time": "Sat May  2 15:19:08 2015",
-            "call": "kallisto quant -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz"
-    }
+~~~
+{
+	"n_targets": 15,
+	"n_bootstraps": 0,
+	"n_processed": 10000,
+	"kallisto_version": "0.42.5",
+	"index_version": 10,
+	"start_time": "Thu Jun  2 17:45:42 2016",
+	"call": "kallisto quant -i transcripts.idx -o output -b 100 reads_1.fastq.gz reads_2.fastq.gz"
+}
+~~~
+
 
  The h5 file contains the main quantification together with the boostraps in [HDF5 format](https://www.hdfgroup.org/HDF5/whatishdf5.html). The reason for this binary format is to compress the large output of runs with many bootstraps. The __h5dump__ command in __kallisto__ can be used to convert the file to plain-text.
 
-That's it. 
+That's it.
 
 You can now run kallisto on your dataset of choice. For convenience, we have placed some transcriptome fasta files for human and model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/). Publicly available RNA-Seq data can be found on the [short read archive](http://www.ncbi.nlm.nih.gov/sra) (a convenient mirror and interface to the SRA is available [here](http://sra.dnanexus.com)). While __kallisto__ cannot process .sra files, such files can be converted to FASTQ with the [fastq-dump](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=toolkit_doc&f=fastq-dump) tool which is part of the [SRA Toolkit](http://www.ncbi.nlm.nih.gov/Traces/sra/sra.cgi?view=software).

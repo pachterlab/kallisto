@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.42.5
+kallisto 0.43.0
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -32,7 +32,7 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.42.5
+kallisto 0.43.0
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -52,7 +52,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.42.5
+kallisto 0.43.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -68,6 +68,8 @@ Optional arguments:
     --seed=INT                Seed for the bootstrap sampling (default: 42)
     --plaintext               Output plaintext instead of HDF5
     --single                  Quantify single-end reads
+    --fr-stranded             Strand specific reads, first read forward
+    --rf-stranded             Strand specific reads, first read reverse
 -l, --fragment-length=DOUBLE  Estimated average fragment length
 -s, --sd=DOUBLE               Estimated standard deviation of fragment length
                               (default: value is estimated from the input data)
@@ -117,6 +119,10 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 + `-t, --threads` specifies the number of threads to be used both for pseudoalignment and running bootstrap. The default value is 1 thread, specifying more than the number of bootstraps or the number of cores on your machine has no additional effect.
 
++ `--fr-stranded` runs kallisto in strand specific mode, only fragments where the **first** read in the pair pseudoaligns to the **forward** strand of a transcript are processed. If a fragment pseudoaligns to multiple transcripts, only the transcripts that are consistent with the first read are kept.
+
++ `--rf-stranded` same as `--fr-stranded` but the **first** read maps to the **reverse** strand of a transcript.
+
 ##### Pseudobam
 
 `--pseudobam` outputs all pseudoalignments in SAM format to the standard output. The stream can either be redirected into a file, or converted to bam using `samtools`.
@@ -140,7 +146,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 `kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
-kallisto 0.42.5
+kallisto 0.43.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto pseudo [arguments] FASTQ-files
@@ -151,6 +157,7 @@ Required arguments:
 -o, --output-dir=STRING       Directory to write output to
 
 Optional arguments:
+-u  --umi                     First file in pair is a UMI file
 -b  --batch=FILE              Process files listed in FILE
     --single                  Quantify single-end reads
 -l, --fragment-length=DOUBLE  Estimated average fragment length
@@ -158,7 +165,6 @@ Optional arguments:
                               (default: value is estimated from the input data)
 -t, --threads=INT             Number of threads to use (default: 1)
     --pseudobam               Output pseudoalignments in SAM format to stdout
-
 ~~~
 
 The form of the command and the meaning of the parameters are identical to the quant command. However, pseudo does not run the EM-algorithm to quantify abundances. In addition the pseudo command has an option to specify many cells in a batch file, e.g.
@@ -181,6 +187,28 @@ cell3 cell3_1.fastq.gz cell3_1.fastq.gz
 
 where the first column is the id of the cell and the next two fields are the corresponding files containing the paired end reads. Any lines starting with `#` are ignored. In the case of single end reads, specified with `--single`, only one file should be specified per cell.
 
+When the `--umi` option is specified the batch file is of the form
+
+~~~
+#id umi-file file-1
+cell1 cell_1.umi cell_1.fastq.gz
+cell2 cell_2.umi cell_2.fastq.gz
+cell3 cell_3.umi cell_3.fastq.gz
+...
+~~~
+
+where the umi-file is a text file of the form
+
+~~~
+TTACACTGAC
+CCACTCTATG
+CAGGAAATCG
+...
+~~~
+
+listing the Unique Molecular Identifier (UMI) for each read. The order of UMIs and reads in the fastq file must match. Even though the UMI data is single end we do not require or make use of the fragment length.
+
+When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign and find an equivalence class, but rather than count the number of reads for each equivalence class, kallisto counts the number of distinct UMIs that pseudoalign to each equivalence class.
 
 #### h5dump
 
@@ -189,7 +217,7 @@ where the first column is the id of the cell and the next two fields are the cor
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.42.5
+kallisto 0.43.0
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
