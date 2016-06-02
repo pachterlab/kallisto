@@ -362,7 +362,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     return false;
   }
 
-
+  
 
   auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
     if (s==0) {

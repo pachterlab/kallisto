@@ -48,7 +48,20 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
   return (a==x.end());
 }
 
-
+int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val) {
+  int p = -1;
+  if (!v.empty()) {
+    val = v[0].first;
+    p = v[0].second;
+    for (auto &x : v) {
+      if (x.second < p) {
+        val = x.first;
+        p = x.second;
+      }
+    }
+  }
+  return p;
+}
 
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
 
@@ -324,7 +337,7 @@ void ReadProcessor::processBuffer() {
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v1, v2, !paired,u);
+    int r = tc.intersectKmers(v1, v2, !paired, u);
 
     /* --  possibly modify the pseudoalignment  -- */
 
@@ -339,25 +352,11 @@ void ReadProcessor::processBuffer() {
       Kmer km;
 
       if (!v1.empty()) {
-        val = v1[0].first;
-        p = v1[0].second;
-        for (auto &x : v1) {
-          if (x.second < p) {
-            val = x.first;
-            p = x.second;
-          }
-        }
+        p = findFirstMappingKmer(v1,val);
         km = Kmer((s1+p));
       }
       if (!v2.empty()) {
-        val = v2[0].first;
-        p = v2[0].second;
-        for (auto &x : v2) {
-          if (x.second < p) {
-            val = x.first;
-            p = x.second;
-          }
-        }
+        p = findFirstMappingKmer(v2,val);
         km = Kmer((s2+p));
       }
 
@@ -375,6 +374,59 @@ void ReadProcessor::processBuffer() {
 
       if (vtmp.size() < u.size()) {
         u = vtmp; // copy
+      }
+    }
+    
+    if (mp.opt.strand_specific && !u.empty()) {
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      if (!v1.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+        p = findFirstMappingKmer(v1,val);
+        km = Kmer((s1+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      
+      if (!v2.empty()) {
+        vtmp.clear();
+        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
+        p = findFirstMappingKmer(v2,val);
+        km = Kmer((s2+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == secondStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
       }
     }
 

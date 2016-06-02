@@ -118,7 +118,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
-  int strand_flag = 0;
+  int strand_FR_flag = 0;
+  int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
 
@@ -129,7 +130,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
-    //{"strand-specific", no_argument, &strand_flag, 1},
+    {"fr-stranded", no_argument, &strand_FR_flag, 1},
+    {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
@@ -216,8 +218,14 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = true;
   }
 
-  if (strand_flag) {
+  if (strand_FR_flag) {
     opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::FR;
+  }
+  
+  if (strand_RF_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::RF;
   }
 
   if (bias_flag) {
@@ -562,6 +570,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     cerr << "Error: invalid value for minimum range " << opt.min_range << endl;
     ret = false;
   }
+  
 
   if (opt.output.empty()) {
     cerr << "Error: need to specify output directory " << opt.output << endl;
@@ -942,6 +951,8 @@ void usageEM(bool valid_input = true) {
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "    --fr-stranded             Strand specific reads, first read forward" << endl
+       << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
@@ -1110,7 +1121,7 @@ int main(int argc, char *argv[]) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1160,7 +1171,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -1219,7 +1230,7 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1270,7 +1281,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
