@@ -910,7 +910,7 @@ void PrintCite() {
   cout << "When using this program in your research, please cite" << endl << endl
        << "  Bray, N. L., Pimentel, H., Melsted, P. & Pachter, L." << endl
        << "  Near-optimal probabilistic RNA-seq quantification, "<< endl
-       << "  Nature Biotechnology (2016), doi:10.1038/nbt.3519" << endl
+       << "  Nature Biotechnology 34, 525-527(2016), doi:10.1038/nbt.3519" << endl
        << endl;
 }
 
