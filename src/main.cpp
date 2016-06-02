@@ -118,7 +118,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
-  int strand_flag = 0;
+  int strand_FR_flag = 0;
+  int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
 
@@ -129,7 +130,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
-    //{"strand-specific", no_argument, &strand_flag, 1},
+    {"fr-stranded", no_argument, &strand_FR_flag, 1},
+    {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"seed", required_argument, 0, 'd'},
@@ -216,8 +218,14 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = true;
   }
 
-  if (strand_flag) {
+  if (strand_FR_flag) {
     opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::FR;
+  }
+  
+  if (strand_RF_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::RF;
   }
 
   if (bias_flag) {
@@ -310,6 +318,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int single_flag = 0;
   int strand_flag = 0;
   int pbam_flag = 0;
+  int umi_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:b:";
   static struct option long_options[] = {
@@ -318,6 +327,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -367,12 +377,17 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     default: break;
     }
   }
+  
+  if (umi_flag) {
+    opt.umi = true;
+    opt.single_end = true; // UMI implies single end reads
+  }
 
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
   }
-
+ 
   if (verbose_flag) {
     opt.verbose = true;
   }
@@ -388,6 +403,8 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   if (pbam_flag) {
     opt.pseudobam = true;
   }
+  
+  
 }
 
 
@@ -562,6 +579,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     cerr << "Error: invalid value for minimum range " << opt.min_range << endl;
     ret = false;
   }
+  
 
   if (opt.output.empty()) {
     cerr << "Error: need to specify output directory " << opt.output << endl;
@@ -651,12 +669,17 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
 
   // check for read files
   if (!opt.batch_mode) {
+    if (opt.umi) {
+      cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
+      ret = false;      
+    }
+    
     if (opt.files.size() == 0) {
       cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
-      struct stat stFileInfo;
-      for (auto& fn : opt.files) {
+      struct stat stFileInfo;      
+      for (auto& fn : opt.files) {        
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
           cerr << ERROR_STR << " file not found " << fn << endl;
@@ -691,7 +714,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
             continue;
           }
           opt.batch_ids.push_back(id);
-          if (opt.single_end) {
+          if (opt.single_end && !opt.umi) {
             ss >> f1;
             opt.batch_files.push_back({f1});
             intstat = stat(f1.c_str(), &stFileInfo);
@@ -701,7 +724,12 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
             }
           } else {
             ss >> f1 >> f2;
-            opt.batch_files.push_back({f1,f2});
+            if (!opt.umi) {
+              opt.batch_files.push_back({f1,f2});
+            } else {
+              opt.umi_files.push_back(f1);
+              opt.batch_files.push_back({f2});
+            }
             intstat = stat(f1.c_str(), &stFileInfo);
             if (intstat != 0) {
               cerr << ERROR_STR << " file not found " << f1 << endl;
@@ -732,27 +760,34 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
+  
+  if (opt.umi) {
+    opt.single_end = true;
+    if (opt.fld != 0.0 || opt.sd != 0.0) {
+      cerr << "[~warn] you supplied fragment length information for UMI data which will be ignored" << endl;
+    }
+  } else {
+    if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+      cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+      ret = false;
+    }
 
-  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
-    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
-    ret = false;
-  }
+    if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
+      cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
+      ret = false;
+    } else if (opt.fld == 0.0 && ret) {
+      // In the future, if we have single-end data we should require this
+      // argument
+      cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
+    } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+      cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
+        opt.fld << ", sd = " << opt.sd << endl;
+    }
 
-  if (opt.single_end && (opt.fld == 0.0 || opt.sd == 0.0)) {
-    cerr << "Error: fragment length mean and sd must be supplied for single-end reads using -l and -s" << endl;
-    ret = false;
-  } else if (opt.fld == 0.0 && ret) {
-    // In the future, if we have single-end data we should require this
-    // argument
-    cerr << "[quant] fragment length distribution will be estimated from the data" << endl;
-  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
-    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
-      opt.fld << ", sd = " << opt.sd << endl;
-  }
-
-  if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
-    cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
-    cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
+    if (!opt.single_end && (opt.fld > 0.0 && opt.sd > 0.0)) {
+      cerr << "[~warn] you specified using a gaussian but have paired end data" << endl;
+      cerr << "[~warn] we suggest omitting these parameters and let us estimate the distribution from data" << endl;
+    }
   }
 
   if (opt.fld < 0.0) {
@@ -875,7 +910,7 @@ void PrintCite() {
   cout << "When using this program in your research, please cite" << endl << endl
        << "  Bray, N. L., Pimentel, H., Melsted, P. & Pachter, L." << endl
        << "  Near-optimal probabilistic RNA-seq quantification, "<< endl
-       << "  Nature Biotechnology (2016), doi:10.1038/nbt.3519" << endl
+       << "  Nature Biotechnology 34, 525-527(2016), doi:10.1038/nbt.3519" << endl
        << endl;
 }
 
@@ -942,6 +977,8 @@ void usageEM(bool valid_input = true) {
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "    --fr-stranded             Strand specific reads, first read forward" << endl
+       << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: value is estimated from the input data)" << endl
@@ -962,6 +999,7 @@ void usagePseudo(bool valid_input = true) {
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
+       << "-u  --umi                     First file in pair is a UMI file" << endl
        << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
@@ -1110,7 +1148,7 @@ int main(int argc, char *argv[]) {
           std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
           }*/
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1160,7 +1198,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -1219,7 +1257,7 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-        EMAlgorithm em(collection.counts, index, collection, fl_means);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -1270,7 +1308,7 @@ int main(int argc, char *argv[]) {
                 collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means);
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
               cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
               auto res = bs.run_em();
 
@@ -1309,15 +1347,17 @@ int main(int argc, char *argv[]) {
         } else {
 
           std::vector<std::vector<int>> batchCounts;
+          num_processed = ProcessBatchReads(index, opt, collection, batchCounts);
+          /*
           for (int i = 0; i < opt.batch_ids.size(); i++) {
             std::fill(collection.counts.begin(), collection.counts.end(),0);
             opt.files = opt.batch_files[i];
             num_processed += ProcessReads(index, opt, collection);
             batchCounts.push_back(collection.counts);
           }
+          */
 
           writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
-
         }
 
         std::string call = argv_to_string(argc, argv);
