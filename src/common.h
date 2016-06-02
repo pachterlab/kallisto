@@ -25,6 +25,7 @@ struct ProgramOptions {
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
+  std::vector<std::string> umi_files;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -35,6 +36,7 @@ struct ProgramOptions {
   bool make_unique;
   enum class StrandType {None, FR, RF};
   StrandType strand;
+  bool umi;
   std::string gfa; // used for inspect
 
 ProgramOptions() :
@@ -57,7 +59,8 @@ ProgramOptions() :
   bias(false),
   pseudobam(false),
   make_unique(false),
-  strand(StrandType::None)
+  strand(StrandType::None),
+  umi(false)
   {}
 };
 
