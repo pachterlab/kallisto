@@ -12,6 +12,7 @@ char* vec_to_ptr(const std::vector<std::string>& v) {
   max_len += 1;
   // allocate a contiguous block of memory
   char *pool = new char[max_len * v.size()];
+  memset(pool,0,max_len * v.size());
   char *ptr = pool;
 
   for (size_t i = 0; i < v.size(); ++i, ptr += max_len) {

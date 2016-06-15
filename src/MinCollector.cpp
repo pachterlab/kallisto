@@ -241,6 +241,37 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
 }
 
+void MinCollector::write(const std::string& pseudoprefix) const {
+  std::string ecfilename = pseudoprefix + ".ec";
+  std::string countsfilename = pseudoprefix + ".tsv";
+
+  std::ofstream ecof, countsof;
+  ecof.open(ecfilename.c_str(), std::ios::out);
+  // output equivalence classes in the form "EC TXLIST";
+  for (int i = 0; i < index.ecmap.size(); i++) {
+    ecof << i << "\t";
+    // output the rest of the class
+    const auto &v = index.ecmap[i];
+    bool first = true;
+    for (auto x : v) {
+      if (!first) {
+        ecof << ",";
+      } else {
+        first = false;
+      }
+      ecof << x;
+    }
+    ecof << "\n";
+  }
+  ecof.close();
+
+  countsof.open(countsfilename.c_str(), std::ios::out);
+  for (int i = 0; i < counts.size(); i++) {
+    countsof << i << "\t" << counts[i] << "\n";
+  }
+  countsof.close();
+}
+
 double MinCollector::get_mean_frag_len() const {
   if (has_mean_fl) {
     return mean_fl;
@@ -331,7 +362,7 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     return false;
   }
 
-
+  
 
   auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
     if (s==0) {

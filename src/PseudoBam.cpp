@@ -29,7 +29,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       //o << seq1->name.s << "" << seq1->seq.s << "\t" << seq1->qual.s << "\n";
       //o << seq2->name.s << "\t141\t*\t0\t0\t*\t*\t0\t0\t" << seq2->seq.s << "\t" << seq2->qual.s << "\n";
     } else {
-      printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n1,s2,q1);
+      printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n1,s1,q1);
     }
   } else {
     if (paired) {
