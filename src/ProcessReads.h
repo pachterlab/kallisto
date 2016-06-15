@@ -26,6 +26,7 @@ KSEQ_INIT(gzFile, gzread)
 
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc);
 int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts);
+int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
 public:

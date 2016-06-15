@@ -32,18 +32,12 @@ void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::s
   KmerEntry val;
   int p;
 
+  // find first mapping k-mer
   if (!v.empty()) {
-    val = v[0].first;
-    p = v[0].second;
-    for (auto &x : v) {
-      if (x.second < p) {
-        val = x.first;
-        p = x.second;
-      }
-    }
-    km = Kmer(s.c_str()+p);
+    p = findFirstMappingKmer(v,val);
+    km = Kmer((s.c_str()+p));
   }
-
+  
 
   for (int i = 0; i < u.size(); i++) {
     int tr = u[i];
@@ -93,14 +87,7 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
   int p;
 
   if (!v.empty()) {
-    val = v[0].first;
-    p = v[0].second;
-    for (auto &x : v) {
-      if (x.second < p) {
-        val = x.first;
-        p = x.second;
-      }
-    }
+    p = findFirstMappingKmer(v,val);
     km = Kmer(s.c_str()+p);
   } else {
     return false;
@@ -253,7 +240,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   // discordant pairs
   if (!v1.empty() && !v2.empty()) {
     if (!u1.empty() && !u2.empty()) {
-      if (checkUnionIntersection(index, s1, s2) && checkMapability(index, s1, v1, u1) && checkMapability(index, s2, v2, u2)) {
+      if (checkUnionIntersection(index, s1, s2)) {
         // each pair maps to either end
         // each pair maps to either end
         o << "PAIR\t";
@@ -324,7 +311,7 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     auto ut2 = simpleIntersect(index,vsafe);
 
     if (!ut1.empty() && !ut2.empty()) {
-      if (true || checkUnionIntersection(index, s1, s2)) {
+      if (checkUnionIntersection(index, s1, s2)) {
         o << "SPLIT\t";
         o << s1 << "\t";
         // what to put as info?
