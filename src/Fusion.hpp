@@ -157,13 +157,13 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
 }
 
 // returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
-bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2) { 
+bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2, std::pair<int,int> &p1, std::pair<int,int> &p2) { 
 //const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
-  
   
   std::set<int> su1,su2;
   
-  auto union_set = [&](const std::string &s) {
+  auto union_set = [&](const std::string &s, std::pair<int,int> &p) {
+    p = {-1,-1};
     std::set<int> su;
     
     KmerIterator kit(s.c_str()), kit_end;
@@ -171,6 +171,14 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
     for (int i = 0; kit != kit_end; ++i,++kit) {
       auto search = index.kmap.find(kit->first.rep());
       if (search != index.kmap.end()) {
+        if (p.first == -1) {
+          p.first = kit->second;
+          p.second = p.first +1;
+        } else {
+          if (p.second + 1 == kit->second) {
+            p.second++;
+          }
+        }
         const KmerEntry &val = search->second;
         int ec = index.dbGraph.ecs[val.contig];
         if (ec != -1 && ec != lastEC) {
@@ -198,8 +206,8 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
     return su;
   };
 
-  su1 = union_set(s1);
-  su2 = union_set(s2);
+  su1 = union_set(s1,p1);
+  su2 = union_set(s2,p2);
   
   if (su1.empty() || su2.empty()) {
     return false; // TODO, decide on this
@@ -219,8 +227,8 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
 
 void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   const MinCollector& tc, MasterProcessor& mp, int ec,
-  const std::string &s1, std::vector<std::pair<KmerEntry,int>> &v1,
-  const std::string &s2, std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
+  const std::string &n1, const std::string &s1, std::vector<std::pair<KmerEntry,int>> &v1,
+  const std::string &n2, const std::string &s2, std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
 
   bool partialMap = false;
   if (ec != -1) {
@@ -240,15 +248,20 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   // discordant pairs
   if (!v1.empty() && !v2.empty()) {
     if (!u1.empty() && !u2.empty()) {
-      if (checkUnionIntersection(index, s1, s2)) {
+      std::pair<int,int> p1,p2;
+      if (checkUnionIntersection(index, s1, s2, p1, p2)) {
         // each pair maps to either end
         // each pair maps to either end
         o << "PAIR\t";
+        o << n1 << "\t";
         o << s1 << "\t";
+        o << p1.first << "," << p1.second << "\t"; 
         if (paired) {
-        o << s2 << "\t\t";
+          o << n2 << "\t";
+          o << s2 << "\t";
+          o << p2.first << "," << p2.second << "\t\tNA\t";
         } else {
-          o << "\t\t";
+          o << "\t\t\tNA\t";
         }
         printTranscripts(index, o, s1, v1, u1); o << "\t"; printTranscripts(index, o, s2, v2, u2);
         mp.outputFusion(o);
@@ -311,14 +324,23 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
     auto ut2 = simpleIntersect(index,vsafe);
 
     if (!ut1.empty() && !ut2.empty()) {
-      if (checkUnionIntersection(index, s1, s2)) {
+      std::pair<int,int> p1,p2;
+      std::string st1,st2;
+      if (u1.empty()) {
+        st1 = s1.substr(0,vsafe.back().second);
+        st2 = s2;
+      } else {
+        st1 = s1;
+        st2 = s2.substr(0,vsafe.back().second);
+      }
+      if (checkUnionIntersection(index, st1, st2, p1, p2)) { // need to check this more carefully
         o << "SPLIT\t";
-        o << s1 << "\t";
+        o << n1 << "\t" << s1 << "\t" << p1.first << "," << p1.second << "\t";
         // what to put as info?
         if (paired) {
-          o << s2 << "\t";
+          o << n2 << "\t" << s2 << "\t" << p2.first << "," << p2.second << "\t";
         } else {
-          o << "\t";
+          o << "\t\t\t";
         }
         o << "splitat=";
         if (u1.empty()) {

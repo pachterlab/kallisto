@@ -498,7 +498,7 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
@@ -583,7 +583,7 @@ void ReadProcessor::processBuffer() {
     int r = tc.intersectKmers(v1, v2, !paired,u);
     if (u.empty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
-        searchFusion(index,mp.opt,tc,mp, ec,s1,v1,s2,v2,paired);
+        searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
     } else {
       ec = tc.findEC(u);
