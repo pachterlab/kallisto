@@ -327,7 +327,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
-    {"umi", no_argument, &umi_flag, 'u'},
+    {"umi", no_argument, &umi_flag, '1'},
     {"batch", required_argument, 0, 'b'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -999,7 +999,7 @@ void usagePseudo(bool valid_input = true) {
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "-u  --umi                     First file in pair is a UMI file" << endl
+       << "    --umi                     First file in pair is a UMI file" << endl
        << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
