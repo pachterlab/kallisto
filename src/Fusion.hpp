@@ -42,14 +42,14 @@ void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::s
   for (int i = 0; i < u.size(); i++) {
     int tr = u[i];
     if (i > 0) {
-      o << ",";
+      o << ";";
     }
     std::pair<int, bool> xp = index.findPosition(tr, km, val, p);
     o << "(" << index.target_names_[tr] << "," << xp.first << ",";
     if (xp.second) {
       o << "FW)";
     } else {
-      o << "RE)";
+      o << "RC)";
     }
   }
 }
