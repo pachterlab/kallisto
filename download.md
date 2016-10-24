@@ -30,6 +30,7 @@ The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallis
 
         <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_mac-{{ post.version }}.tar.gz">Mac</a></td>
         <td>{% if post.version != 'v0.42.2' %} <a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_linux-{{ post.version }}.tar.gz">Linux</a> {% endif %} </td>
+        <td>{% if post.version >= 'v0.43.0' %} <a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_windows-{{ post.version }}.zip">Windows</a> {% endif %} </td>
         <td><a href="https://github.com/pachterlab/kallisto/archive/{{ post.version }}.tar.gz">Source</a></td>
     </tr>
 {% endfor %}
@@ -44,7 +45,7 @@ Commonly used transcriptome FASTA files are available [here](http://bio.math.ber
 Kallisto is distributed under a non-commercial license reproduced below. For commercial use, please contact Terri Sale at the Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-4219, terri.sale@berkeley.edu.
 
 
-~~~ 
+~~~
 Copyright ©2015. The Regents of the University of California (Regents). All Rights Reserved. Permission to use, copy, modify, and distribute this software and its documentation for educational and research not-for-profit purposes, without fee and without a signed licensing agreement, is hereby granted, provided that the above copyright notice, this paragraph and the following two paragraphs appear in all copies, modifications, and distributions. Contact The Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-7201, for commercial licensing opportunities.
 
 Created by Nicolas Bray, Harold Pimentel, Pall Melsted and Lior Pachter, University of California, Berkeley
