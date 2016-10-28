@@ -22,6 +22,7 @@
 #include "Inspect.h"
 #include "Bootstrap.h"
 #include "H5Writer.h"
+#include "PseudoQuant.h"
 
 
 //#define ERROR_STR "\033[1mError:\033[0m"
@@ -234,6 +235,61 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+}
+
+void ParseOptionsPseudoQuant(int argc, char **argv, ProgramOptions& opt) {
+
+  const char *opt_string = "t:i:l:s:o:d:";
+  static struct option long_options[] = {
+    // long args
+    // short args
+    {"threads", required_argument, 0, 't'},
+    {"index", required_argument, 0, 'i'},
+    {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
+    {"output-dir", required_argument, 0, 'o'},
+    {"input-dir", required_argument, 0, 'd'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    case 'd': {
+      opt.input_directory = optarg;
+      break;
+    }
+    default: break;
+    }
   }
 }
 
@@ -648,6 +704,126 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 
+bool CheckOptionsPseudoQuant(ProgramOptions& opt, bool emonly = false) {
+
+  bool ret = true;
+
+  cerr << endl;
+  // check for index
+  if (!emonly) {
+    if (opt.index.empty()) {
+      cerr << ERROR_STR << " kallisto index file missing" << endl;
+      ret = false;
+    } else {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.index.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+        ret = false;
+      }
+    }
+  }
+
+
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+
+  if (opt.fld == 0.0 || opt.sd == 0.0) {
+    cerr << "Error: fragment length mean and sd must be supplied for pseudoquant using -l and -s" << endl;
+    ret = false;
+  } else if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[quant] fragment length distribution is truncated gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
+
+
+  if (opt.fld < 0.0) {
+    cerr << "Error: invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+
+  if (opt.sd < 0.0) {
+    cerr << "Error: invalid value for fragment length standard deviation " << opt.sd << endl;
+    ret = false;
+  }
+
+  
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      } 
+    } else {    
+      // create directory
+      if (mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }      
+    }
+  }
+
+  if (opt.input_directory.empty()) {
+    cerr << "Error: need to specify input directory containing pseudo files" << endl;
+    ret = false;    
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.input_directory.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exists
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      } else {
+        // check for necessary files
+        struct stat stCellInfo, stEcInfo, stTSVInfo;
+        auto intCellStat = stat((opt.input_directory + "/matrix.cells").c_str(), &stCellInfo);
+        if (intCellStat != 0) {
+          cerr << "Error: could not find file " << opt.input_directory << "/matrix.cells" << endl;
+          ret = false;
+        }
+        auto intEcStat = stat((opt.input_directory + "/matrix.ec").c_str(), &stEcInfo);
+        if (intEcStat != 0) {
+          cerr << "Error: could not find file " << opt.input_directory << "/matrix.ec" << endl;
+          ret = false;
+        }
+        auto intTSVStat = stat((opt.input_directory + "/matrix.tsv").c_str(), &stTSVInfo);
+        if (intTSVStat != 0) {
+          cerr << "Error: could not find file " << opt.input_directory << "/matrix.tsv" << endl;
+          ret = false;
+        }
+      }
+    } else {
+      cerr << "ERROR: the input directory " << opt.input_directory << " does not exist" << endl;
+      ret = false;
+    }
+  }
+
+
+
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }    
+  }
+
+  return ret;
+}
+
+
 
 bool CheckOptionsPseudo(ProgramOptions& opt) {
 
@@ -924,7 +1100,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    pseudo        Runs the pseudoalignment step " << endl
+       << "    pseudo        Runs the pseudoalignment step " << endl 
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
        << "    version       Prints version information"<< endl
        << "    cite          Prints citation information" << endl << endl
@@ -1021,6 +1197,21 @@ void usageEMOnly() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+}
+
+void usagePseudoQuant() {
+  cout << "kallisto " << KALLISTO_VERSION << endl
+       << "Quantifies abundance from pseudoaligne data in batch mode" << endl << endl
+       << "Usage: kallisto pseudoquant [arguments]" << endl << endl
+       << "Required argument:" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl 
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
+       << "                              pseudoalignment" << endl
+       << "-d, --directory=STRING        Directory containing original results" << endl << endl
+       << "Optional arguments:" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated fragment length (default: value is estimated from the input data)" << endl 
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl << endl;      
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -1215,6 +1406,21 @@ int main(int argc, char *argv[]) {
         }
 
         cerr << endl;
+      }
+    } else if (cmd == "pseudoquant") {
+      if (argc==2) {
+        usagePseudoQuant();
+        return 0;
+      }
+      ParseOptionsPseudoQuant(argc-1, argv+1, opt);
+      if (!CheckOptionsPseudoQuant(opt)) {
+        usagePseudoQuant();
+        exit(1);
+      } else {
+        std::string call = argv_to_string(argc, argv);
+        KmerIndex index(opt);
+        index.load(opt, false); // skip the k-mer map;
+        PseudoQuant(index, opt, call, start_time);         
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {

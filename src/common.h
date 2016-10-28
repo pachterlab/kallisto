@@ -13,6 +13,7 @@ struct ProgramOptions {
   int k;
   int iterations;
   std::string output;
+  std::string input_directory;
   int skip;
   size_t seed;
   double fld;

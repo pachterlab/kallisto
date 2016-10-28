@@ -15,3 +15,4 @@ src/*.a
 CTestTestfile.cmake
 *~
 *.orig
+.vscode
