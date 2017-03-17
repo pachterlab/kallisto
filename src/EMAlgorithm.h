@@ -43,15 +43,7 @@ struct EMAlgorithm {
   {
     assert(all_fl_means.size() == index_.target_lens_.size());
     eff_lens_ = calc_eff_lens(index_.target_lens_, all_fl_means);
-    weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
-    for (size_t i = 0; i < alpha_.size(); i++) {
-      if (counts_[i] > 0) {
-        alpha_[i] = counts_[i];
-      } else {
-        alpha_[i] = eff_lens_[i] / 1000.0;
-      }
-
-    }
+    weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);    
     assert(target_names_.size() == eff_lens_.size());
   }
 
