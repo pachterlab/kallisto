@@ -833,7 +833,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
   } else {
     unsigned int n = std::thread::hardware_concurrency();
     if (n != 0 && n < opt.threads) {
-      cerr << "Warning: you asked for " << opt.threads
+      cerr << "[~warn]  you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
     }
     if (opt.threads > 1 && opt.pseudobam) {
@@ -972,6 +972,7 @@ void usageEM(bool valid_input = true) {
   cout << "kallisto " << KALLISTO_VERSION << endl
        << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
   }
+  //      "----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|"
   cout << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
@@ -988,7 +989,8 @@ void usageEM(bool valid_input = true) {
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
+       << "                              (default: -l, -s values are estimated from paired" << endl
+       << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 

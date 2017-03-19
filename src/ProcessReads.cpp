@@ -115,6 +115,9 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned";
+  if (nummapped == 0) {
+    std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
+  }
   if (!opt.umi) {
     std::cerr << std::endl;
   } else {
@@ -140,7 +143,6 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   //int tlencount = (opt.fld == 0.0) ? 10000 : 0;
   size_t numreads = 0;
   size_t nummapped = 0;
-  size_t testFusion = 0;
   bool paired = !opt.single_end;
 
   /*
@@ -187,10 +189,11 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
-
-  if (opt.fusion) {
-    std::cerr << "[quant] classified " << testFusion << " reads for fusion breakpoints" << std::endl;
+  if (nummapped == 0) {
+    std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
+
+  
 
   /*
   for (int i = 0; i < 4096; i++) {

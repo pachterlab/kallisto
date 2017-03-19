@@ -15,3 +15,5 @@ src/*.a
 CTestTestfile.cmake
 *~
 *.orig
+debug/
+release/
