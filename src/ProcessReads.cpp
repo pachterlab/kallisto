@@ -14,10 +14,12 @@
 #include "common.h"
 */
 
+#include <fstream>
+
 #include "ProcessReads.h"
 #include "kseq.h"
 #include "PseudoBam.h"
-
+#include "Fusion.hpp"
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -138,7 +140,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   //int tlencount = (opt.fld == 0.0) ? 10000 : 0;
   size_t numreads = 0;
   size_t nummapped = 0;
-
+  size_t testFusion = 0;
   bool paired = !opt.single_end;
 
   /*
@@ -146,6 +148,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   v1.reserve(1000);
   v2.reserve(1000);
   */
+
 
 
   if (paired) {
@@ -174,7 +177,6 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
-
   std::cerr << " done" << std::endl;
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
@@ -185,6 +187,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
+
+  if (opt.fusion) {
+    std::cerr << "[quant] classified " << testFusion << " reads for fusion breakpoints" << std::endl;
+  }
 
   /*
   for (int i = 0; i < 4096; i++) {
@@ -202,6 +208,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 
   return numreads;
 }
+
 
 
 /** -- read processors -- **/
@@ -413,6 +420,15 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   // releases the lock
 }
 
+void MasterProcessor::outputFusion(const std::stringstream &o) {
+  std::string os = o.str();
+  if (!os.empty()) {
+    std::lock_guard<std::mutex> lock(this->writer_lock);
+    ofusion << os << "\n";
+  }
+}
+
+
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id) {
    // initialize buffer
@@ -482,7 +498,7 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
@@ -564,7 +580,15 @@ void ReadProcessor::processBuffer() {
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v1, v2, !paired, u);
+    int r = tc.intersectKmers(v1, v2, !paired,u);
+    if (u.empty()) {
+      if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
+        searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
+      }
+    } else {
+      ec = tc.findEC(u);
+    }
+
 
     /* --  possibly modify the pseudoalignment  -- */
 
@@ -716,6 +740,8 @@ void ReadProcessor::processBuffer() {
           paired);
       }
     }
+
+
 
     /*
     if (opt.verbose && numreads % 100000 == 0 ) {

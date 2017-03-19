@@ -122,6 +122,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
+  int fusion_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -134,6 +135,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -234,6 +236,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+
+  if (fusion_flag) {
+    opt.fusion = true;
   }
 }
 
@@ -976,6 +982,7 @@ void usageEM(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
@@ -1110,7 +1117,10 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
-
+        if (opt.fusion) {
+          // need full transcript sequences
+          index.loadTranscriptSequences();
+        }
         MinCollector collection(index, opt);
         int num_processed = 0;
         num_processed = ProcessReads(index, opt, collection);
