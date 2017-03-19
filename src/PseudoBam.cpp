@@ -119,6 +119,12 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
         int posread = (f1 & 0x10) ? (x1.first - slen1 + 1) : x1.first;
         int posmate = (f1 & 0x20) ? (x2.first - slen2 + 1) : x2.first;
+        if (v1.empty()) {
+          posread = posmate;
+        }
+        if (v2.empty()) {
+          posmate = posread;
+        }
 
         getCIGARandSoftClip(cig, bool(f1 & 0x10), (f1 & 0x04) == 0, posread, posmate, slen1, index.target_lens_[tr]);
         int tlen = x2.first - x1.first;
@@ -126,7 +132,10 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           tlen += (tlen>0) ? 1 : -1;
         }
 
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n1, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : s1, (f1 & 0x10) ? &buf2[0] : q1, nmap);
+        printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n1, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v1.empty()) ? 255 : 0 , cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : s1, (f1 & 0x10) ? &buf2[0] : q1, nmap);
+        if (v1.empty()) {
+          break; // only report primary alignment
+        }
       }
 
       revset = false;
@@ -166,6 +175,12 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
         firstTr = false;
         int posread = (f2 & 0x10) ? (x2.first - slen2 + 1) : x2.first;
         int posmate = (f2 & 0x20) ? (x1.first - slen1 + 1) : x1.first;
+        if (v1.empty()) {
+          posmate = posread;
+        }
+        if (v2.empty()) {
+          posread = posmate;
+        }
 
         getCIGARandSoftClip(cig, bool(f2 & 0x10), (f2 & 0x04) == 0, posread, posmate, slen2, index.target_lens_[tr]);
         int tlen = x1.first - x2.first;
@@ -173,10 +188,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           tlen += (tlen > 0) ? 1 : -1;
         }
 
-        printf("%s\t%d\t%s\t%d\t255\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n2, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : s2,  (f2 & 0x10) ? &buf2[0] : q2, nmap);
+        printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n2, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v2.empty()) ? 255 : 0, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : s2,  (f2 & 0x10) ? &buf2[0] : q2, nmap);
+        if(v2.empty()) {
+          break; // only print primary alignment
+        }
       }
-
-
     } else {
       // single end
       int nmap = (int) u.size();
