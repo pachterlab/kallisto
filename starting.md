@@ -40,7 +40,7 @@ with `sudo`.
 You should be able to type `kallisto` and see:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 
 Usage: kallisto <CMD> [arguments] ..
 

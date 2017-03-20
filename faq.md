@@ -34,7 +34,7 @@ group: navigation
     reliability of abundance estimates via the bootstrap samples it produces.
     But it is not a tool for performing differential analysis. However the
     companion tool __sleuth__ is designed to for that purpose, and __sleuth__
-    uses the boostrapped samples produced by __kallisto__.
+    uses the bootstrapped samples produced by __kallisto__.
 
 - Is __kallisto__ usable with both single-end and paired-end reads?
   - Yes.
@@ -53,7 +53,7 @@ group: navigation
   - No. Building indices with __kallisto index__ will be faster in practice than downloading index files. For example, the __kallisto__ index for the human transcriptome takes between 5--10 minutes to build on a standard desktop or laptop. We are distributing transcriptome fasta files for model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
 
 - My RNA-Seq was prepared with a stranded library. Is there a special option I need to use with kallisto?
-  - No.
+  - Yes, you can specify the strandedness.
 
 - Is there a reason you picked the name kallisto for your program?
   - Yes.

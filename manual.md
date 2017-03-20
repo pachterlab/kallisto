@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -32,7 +32,7 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -52,7 +52,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -67,14 +67,17 @@ Optional arguments:
 -b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
     --seed=INT                Seed for the bootstrap sampling (default: 42)
     --plaintext               Output plaintext instead of HDF5
+    --fusion                  Search for fusions for Pizzly
     --single                  Quantify single-end reads
     --fr-stranded             Strand specific reads, first read forward
     --rf-stranded             Strand specific reads, first read reverse
 -l, --fragment-length=DOUBLE  Estimated average fragment length
 -s, --sd=DOUBLE               Estimated standard deviation of fragment length
-                              (default: value is estimated from the input data)
+                              (default: -l, -s values are estimated from paired
+                               end data, but are required when using --single)
 -t, --threads=INT             Number of threads to use (default: 1)
     --pseudobam               Output pseudoalignments in SAM format to stdout
+
 ~~~
 
 __kallisto__ can process either single-end or paired-end reads. The default running mode is paired-end and requires an even number of FASTQ files represented as pairs, e.g.
@@ -123,6 +126,8 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 + `--rf-stranded` same as `--fr-stranded` but the **first** read maps to the **reverse** strand of a transcript.
 
++ `--fusion` does normal quantification, but additionally looks for reads that do not pseudoalign because they are potentially from fusion genes. All output is written to the file `fusion.txt` in the output folder.
+
 ##### Pseudobam
 
 `--pseudobam` outputs all pseudoalignments in SAM format to the standard output. The stream can either be redirected into a file, or converted to bam using `samtools`.
@@ -146,7 +151,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 `kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto pseudo [arguments] FASTQ-files
@@ -162,9 +167,11 @@ Optional arguments:
     --single                  Quantify single-end reads
 -l, --fragment-length=DOUBLE  Estimated average fragment length
 -s, --sd=DOUBLE               Estimated standard deviation of fragment length
-                              (default: value is estimated from the input data)
+                              (default: -l, -s values are estimated from paired
+                               end data, but are required when using --single)
 -t, --threads=INT             Number of threads to use (default: 1)
     --pseudobam               Output pseudoalignments in SAM format to stdout
+
 ~~~
 
 The form of the command and the meaning of the parameters are identical to the quant command. However, pseudo does not run the EM-algorithm to quantify abundances. In addition the pseudo command has an option to specify many cells in a batch file, e.g.
@@ -217,7 +224,7 @@ When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign an
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.43.0
+kallisto 0.43.1
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
