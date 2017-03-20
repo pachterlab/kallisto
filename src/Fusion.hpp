@@ -5,18 +5,19 @@
 
 /**
 FUSION output is written to OUT_DIR/fusion.txt where 'OUT_DIR' is the specified
-output directory for kallisto. fusion.txt is a tab separated text file with 6 columns
-TYPE	SEQ1	SEQ2	INFO	POS1	POS2
+output directory for kallisto. fusion.txt is a tab separated text file with 10 columns
+TYPE  NAME1  SEQ1  KPOS1  NAME2  SEQ2  KPOS2  INFO  POS1  POS2
 
-TYPE can be one of SPLIT or PAIR, SEQ1 and SEQ2 are the raw read sequences identified
-as overlapping the potential fusion.
+TYPE can be one of SPLIT or PAIR, NAME1 and NAME2 are the sequence identifiers. 
+SEQ1 and SEQ2 are the raw read sequences identifie as overlapping the potential fusion.
+KPOS1 and KPOS2 are the positions within the reads where the k-mers match.
 
 PAIRs are readpairs where fragment doesn't map, but each read
 maps independently, potentially the fusion breakpoint is within the fragment, but not sequenced.
 
 SPLITs are reads where the fusion breakpoint appears within one of the reads
 
-INFO is empty for PAIR but of the form splitat=(a,b)
+INFO is NA for PAIR but of the form splitat=(a,b)
 where a=0,1 indicating whether the first or the second pair is split and b is the 0-based position of the
 split within the read.
 

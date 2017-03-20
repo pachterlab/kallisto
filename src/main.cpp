@@ -1013,7 +1013,8 @@ void usagePseudo(bool valid_input = true) {
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
+       << "                              (default: -l, -s values are estimated from paired" << endl
+       << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 

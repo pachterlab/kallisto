@@ -83,7 +83,7 @@ public:
       }
       if (opt.fusion) {
         ofusion.open(opt.output + "/fusion.txt");
-        ofusion << "TYPE\tSEQ1\tSEQ2\tINFO\tPOS1\tPOS2\n";
+        ofusion << "TYPE\tNAME1\tSEQ1\tKPOS1\tNAME2\tSEQ2\tKPOS2\tINFO\tPOS1\tPOS2\n";
       }
 
     }

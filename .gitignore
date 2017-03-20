@@ -17,3 +17,4 @@ CTestTestfile.cmake
 *.orig
 debug/
 release/
+.vscode/
