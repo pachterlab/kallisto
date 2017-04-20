@@ -6,38 +6,14 @@ group: navigation
 ---
 {% include JB/setup %}
 
-The short tutorial below explains how to run __kallisto__ using a small example distributed with the program. If you already know how to use __kallisto__ but just want to get it quickly installed on your Mac, the easiest way to do so is using brew. Type:
-
-`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` to install brew, followed by
-
-`brew tap homebrew/science` and then
-
-`brew install kallisto`
-
-to have kallisto universally executable.
+The short tutorial below explains how to run __kallisto__ using a small example distributed with the program. 
 
 
 #### Download
 
-The example/test distributed with __kallisto__ is included with the binaries we distribute with the program:
+Begin by downloading and installing the program by following instructions on the [download page](https://pachterlab.github.io/kallisto/download). The files needed to confirm that __kallisto__ is working are included with the binaries downloadable from the [download page](https://pachterlab.github.io/kallisto/download).
 
-- For Mac download the __kallisto__ binary from [here](download.html)
-
-- For Linux, please [download the source code](https://github.com/pachterlab/kallisto/releases) and compile.
-
-#### Install
-
-**\*\*Note\*\*** For users who do not have 'root' access, please follow the [local build
-tutorial](local_build.html) or [download](download.html) directly.
-
-If you do not already have __kallisto__ universally executable on your machine, Begin by copying the __kallisto__ executable from the downloaded binary to
-
-`cp kallisto /usr/local/bin/`
-
-Depending on your system configuration, you might need to prepend the command
-with `sudo`.
-
-You should be able to type `kallisto` and see:
+After downloading and installing __kallisto__ You should be able to type `kallisto` and see:
 
 ~~~
 kallisto 0.43.1
