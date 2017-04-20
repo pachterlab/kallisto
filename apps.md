@@ -16,6 +16,6 @@ The following applications build on __kallisto__:
 
 - [Differential analysis of RNA-Seq with __sleuth__](http://pachterlab.github.io/sleuth)
 
-- [__arkas__: rapid and reproducible RNA-Seq analysis for end users](https://github.com/RamsinghLab/arkas)
+- [__arkas__: rapid and reproducible RNA-Seq analysis for end users](https://github.com/Al3n70rn/arkas)
 
 - [__metaR__: utilizing the Language Workbench Technology to facilitate data analysis in R](http://campagnelab.org/metar-1-8-0-released/)
