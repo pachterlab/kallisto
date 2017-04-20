@@ -6,12 +6,13 @@ group: navigation
 
 {% include JB/setup %}
 
-The easiest way to download and install __kallisto__ is on a Mac by typing
+The easiest way to download and install __kallisto__ is on a Mac by installing brew via:
 
-`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` to install brew, followed by
+`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
-`brew tap homebrew/science` and then
+followed by:
 
+`brew tap homebrew/science`
 `brew install kallisto`
 
 to have kallisto universally executable.
