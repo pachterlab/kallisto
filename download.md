@@ -13,6 +13,7 @@ The easiest way to download and install __kallisto__ is on a Mac by installing b
 followed by:
 
 `brew tap homebrew/science`
+
 `brew install kallisto`
 
 to have kallisto universally executable.
