@@ -9,11 +9,11 @@ group: navigation
 The short tutorial below explains how to run __kallisto__ using a small example distributed with the program. 
 
 
-#### Download
+#### Download and installation
 
 Begin by downloading and installing the program by following instructions on the [download page](https://pachterlab.github.io/kallisto/download). The files needed to confirm that __kallisto__ is working are included with the binaries downloadable from the [download page](https://pachterlab.github.io/kallisto/download).
 
-After downloading and installing __kallisto__ You should be able to type `kallisto` and see:
+After downloading and installing __kallisto__ you should be able to type `kallisto` and see:
 
 ~~~
 kallisto 0.43.1
