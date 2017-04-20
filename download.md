@@ -6,11 +6,19 @@ group: navigation
 
 {% include JB/setup %}
 
-#### Repository
+The easiest way to download and install __kallisto__ is on a Mac by typing
 
-The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallisto).
+`ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"` to install brew, followed by
+
+`brew tap homebrew/science` and then
+
+`brew install kallisto`
+
+to have kallisto universally executable.
 
 #### Releases
+
+The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallisto).
 
 <table class="table">
   <thead>
