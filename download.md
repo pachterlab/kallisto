@@ -6,7 +6,7 @@ group: navigation
 
 {% include JB/setup %}
 
-If using a Mac the easiest way to download and install __kallisto__ is via brew using the commands:
+If using a Mac the easiest way to download and install __kallisto__ is via brew with the commands:
 
 ```
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
