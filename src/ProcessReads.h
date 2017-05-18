@@ -18,6 +18,7 @@
 #include "MinCollector.h"
 
 #include "common.h"
+#include "PseudoBam.h"
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -69,7 +70,7 @@ public:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc)
-    : tc(tc), index(index), opt(opt), SR(opt), numreads(0)
+    : tc(tc), index(index), bamfp(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
     ,nummapped(0), num_umi(0), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0) { 
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
@@ -88,12 +89,26 @@ public:
 
     }
 
+  ~MasterProcessor() {
+    if (bamfp) {
+      hts_close(bamfp);
+      bamfp = nullptr;
+    }
+    if (bamh) {
+      bam_hdr_destroy(bamh);
+      bamh = nullptr;
+    }
+    
+  }
+
   std::mutex reader_lock;
   std::mutex writer_lock;
 
   SequenceReader SR;
   MinCollector& tc;
   KmerIndex& index;
+  samFile *bamfp;
+  bam_hdr_t *bamh;
   const ProgramOptions& opt;
   int numreads;
   int nummapped;
@@ -119,6 +134,7 @@ public:
   ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
+  
   size_t bufsize;
   bool paired;
   const MinCollector& tc;

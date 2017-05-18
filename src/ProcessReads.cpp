@@ -171,9 +171,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
 
-  if (opt.pseudobam) {
+  /*if (opt.pseudobam) {
+    bam_hdr_t *t = createPseudoBamHeader(index);
     index.writePseudoBamHeader(std::cout);
-  }
+  }*/
 
   MasterProcessor MP(index, opt, tc);
   MP.processReads();
@@ -217,6 +218,14 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
 /** -- read processors -- **/
 
 void MasterProcessor::processReads() {
+  // open bamfile and fetch header
+  if (opt.pseudobam) {
+    std::string bamfn = opt.output + "/pseudoalignments.bam";
+    bamh = createPseudoBamHeader(index);
+    bamfp = sam_open(bamfn.c_str(), "wb");
+    sam_hdr_write(bamfp, bamh);
+  }
+
   // start worker threads
   if (!opt.batch_mode) {
     std::vector<std::thread> workers;
@@ -730,19 +739,21 @@ void ReadProcessor::processBuffer() {
     }
 
     // pseudobam
+    
     if (mp.opt.pseudobam) {
       if (paired) {
         outputPseudoBam(index, u,
           s1, names[i-1].first, quals[i-1].first, l1, names[i-1].second, v1,
           s2, names[i].first, quals[i].first, l2, names[i].second, v2,
-          paired);
+          paired, mp.bamh, mp.bamfp);
       } else {
         outputPseudoBam(index, u,
           s1, names[i].first, quals[i].first, l1, names[i].second, v1,
           nullptr, nullptr, nullptr, 0, 0, v2,
-          paired);
+          paired, mp.bamh, mp.bamfp);
       }
     }
+    
 
 
 
