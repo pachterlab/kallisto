@@ -26,6 +26,7 @@ KSEQ_INIT(gzFile, gzread)
 
 int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc);
 int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts);
+int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
 public:
@@ -80,6 +81,11 @@ public:
         newBatchECumis.resize(opt.batch_ids.size());
         batchUmis.resize(opt.batch_ids.size());
       }
+      if (opt.fusion) {
+        ofusion.open(opt.output + "/fusion.txt");
+        ofusion << "TYPE\tNAME1\tSEQ1\tKPOS1\tNAME2\tSEQ2\tKPOS2\tINFO\tPOS1\tPOS2\n";
+      }
+
     }
 
   std::mutex reader_lock;
@@ -97,6 +103,8 @@ public:
   std::vector<std::vector<int>> batchCounts;
   const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
+  std::ofstream ofusion;
+  void outputFusion(const std::stringstream &o);
   std::vector<std::unordered_map<std::vector<int>, int, SortedVectorHasher>> newBatchECcount;
   std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;

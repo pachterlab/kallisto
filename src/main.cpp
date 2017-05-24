@@ -123,6 +123,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
+  int fusion_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -135,6 +136,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
     {"threads", required_argument, 0, 't'},
@@ -235,6 +237,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+
+  if (fusion_flag) {
+    opt.fusion = true;
   }
 }
 
@@ -1003,7 +1009,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
   } else {
     unsigned int n = std::thread::hardware_concurrency();
     if (n != 0 && n < opt.threads) {
-      cerr << "Warning: you asked for " << opt.threads
+      cerr << "[~warn]  you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
     }
     if (opt.threads > 1 && opt.pseudobam) {
@@ -1142,6 +1148,7 @@ void usageEM(bool valid_input = true) {
   cout << "kallisto " << KALLISTO_VERSION << endl
        << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
   }
+  //      "----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|----|"
   cout << "Usage: kallisto quant [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
@@ -1152,12 +1159,14 @@ void usageEM(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
+       << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
+       << "                              (default: -l, -s values are estimated from paired" << endl
+       << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
@@ -1180,7 +1189,8 @@ void usagePseudo(bool valid_input = true) {
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
-       << "                              (default: value is estimated from the input data)" << endl
+       << "                              (default: -l, -s values are estimated from paired" << endl
+       << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
@@ -1301,7 +1311,10 @@ int main(int argc, char *argv[]) {
         // run the em algorithm
         KmerIndex index(opt);
         index.load(opt);
-
+        if (opt.fusion) {
+          // need full transcript sequences
+          index.loadTranscriptSequences();
+        }
         MinCollector collection(index, opt);
         int num_processed = 0;
         num_processed = ProcessReads(index, opt, collection);

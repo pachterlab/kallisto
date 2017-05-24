@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.43.0"
+#define KALLISTO_VERSION "0.43.1"
 
 #include <string>
 #include <vector>
@@ -35,6 +35,7 @@ struct ProgramOptions {
   bool bias;
   bool pseudobam;
   bool make_unique;
+  bool fusion;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   bool umi;
@@ -60,6 +61,7 @@ ProgramOptions() :
   bias(false),
   pseudobam(false),
   make_unique(false),
+  fusion(false),
   strand(StrandType::None),
   umi(false)
   {}
