@@ -44,10 +44,6 @@ The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallis
 {% endfor %}
 </table>
 
-#### Transcriptomes
-
-Commonly used transcriptome FASTA files are available [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
-
 #### Licence
 
 Kallisto is distributed under a non-commercial license reproduced below. For commercial use, please contact Terri Sale at the Office of Technology Licensing, UC Berkeley, 2150 Shattuck Avenue, Suite 510, Berkeley, CA 94720-1620, (510) 643-4219, terri.sale@berkeley.edu.
