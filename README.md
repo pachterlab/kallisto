@@ -16,7 +16,7 @@ significantly outperforms existing tools. The __kallisto__ algorithms are descri
 
 NL Bray, H Pimentel, P Melsted and L Pachter, [Near optimal probabilistic RNA-seq quantification](http://www.nature.com/nbt/journal/v34/n5/abs/nbt.3519.html), Nature Biotechnology __34__, p 525--527 (2016).
 
-Scripts reproducing all the results of the paper are available [here](https://github.com/pachterlab/kallisto_paper_analysis)
+Scripts reproducing all the results of the paper are available [here](https://github.com/pachterlab/kallisto_paper_analysis).
 
 __kallisto__ quantified RNA-Seq can be analyzed with [__sleuth__](https://github.com/pachterlab/sleuth/).
 
