@@ -67,7 +67,7 @@ cmake --version
 
 Download 'configure' version of [HDF5](https://www.hdfgroup.org/HDF5/release/obtainsrc.html#conf):
 
-`wget https://www.hdfgroup.org/package/gzi\p/?wpdmdl=4301`
+`wget https://www.hdfgroup.org/package/gzip/?wpdmdl=4301`
 
 Extract the tarball and move to the directory:
 
