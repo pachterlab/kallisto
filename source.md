@@ -11,7 +11,7 @@ The __kallisto__ GitHub repository is [here](https://github.com/pachterlab/kalli
 `ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 
 
-Other dependencies are either included, or can be installed using package managers on the system.
+Other dependencies are included, or can be installed using package managers on the system. Instructions for building kallisto from source without a package manager are [here](http://pachterlab.github.io/kallisto/local_build.html).
 
 #### Requirements:
 
