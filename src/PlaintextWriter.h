@@ -11,12 +11,16 @@
 
 #include "KmerIndex.h"
 
+std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
+				  const std::vector<double>& eff_lens);
+
 void plaintext_writer(
     const std::string& out_name,
     const std::vector<std::string>& targ_ids,
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens,
-    const std::vector<int>& lens
+    const std::vector<int>& lens,
+    const std::vector<double>& tpm
     );
 
 std::string to_json(const std::string& id, const std::string& val, bool quote,

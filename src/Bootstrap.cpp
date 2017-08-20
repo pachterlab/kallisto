@@ -82,10 +82,13 @@ void BootstrapWorker::operator() (){
       // release write lock
     } else {
       // can write out plaintext in parallel
+      
+      std::vector<double> tpm = counts_to_tpm(res.alpha_, pool_.eff_lens_);
+      
       plaintext_writer(pool_.opt_.output + "/bs_abundance_" +
           std::to_string(cur_id) + ".tsv",
           pool_.index_.target_names_, res.alpha_,
-          pool_.eff_lens_, pool_.index_.target_lens_);
+		       pool_.eff_lens_, pool_.index_.target_lens_, tpm);
     }
   }
 }

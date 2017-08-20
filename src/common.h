@@ -9,7 +9,11 @@
 struct ProgramOptions {
   bool verbose;
   int threads;
+  // new arguments
   std::string index;
+  std::string diff_index;
+  bool constructed_diff_index;
+  bool analyzing_diff;
   int k;
   int iterations;
   std::string output;
@@ -51,6 +55,10 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  //new program options
+  constructed_diff_index(false),
+  analyzing_diff(false),
+   
   batch_mode(false),
   plaintext(false),
   write_index(false),
