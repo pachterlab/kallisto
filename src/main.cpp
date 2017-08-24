@@ -33,7 +33,7 @@ using namespace std;
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
-  const char *opt_string = "i:k:";
+  const char *opt_string = "i:k:d:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -41,6 +41,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
+    {"diff", required_argument, 0, 'd'},
     {0,0,0,0}
   };
   int c;
@@ -63,6 +64,12 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.k;
       break;
     }
+    case 'd': {
+      opt.diff_index = optarg;
+      opt.constructed_diff_index = true;
+      opt.make_unique = true;
+      break;
+    }
     default: break;
     }
   }
@@ -77,6 +84,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   for (int i = optind; i < argc; i++) {
     opt.transfasta.push_back(argv[i]);
   }
+
+  if (opt.constructed_diff_index) {
+    opt.transfasta.push_back(opt.diff_index);
+  }  
 }
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
@@ -123,6 +134,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int bias_flag = 0;
   int pbam_flag = 0;
   int fusion_flag = 0;
+  int diff_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:n:m:d:b:";
   static struct option long_options[] = {
@@ -137,6 +149,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
+    {"different", no_argument, &diff_flag, 1},
     // short args
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
@@ -202,6 +215,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
+  }
+
+  if (diff_flag) {
+    opt.analyzing_diff = true;
   }
 
   if (verbose_flag) {
@@ -488,6 +505,19 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
     ret = false;
+  }
+  if(opt.constructed_diff_index) {
+    if(opt.diff_index.empty()) {
+      cerr << "Error: diff file missing" << endl;
+      ret = false;
+    } else {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.diff_index.c_str(), &stFileInfo);
+      if(intStat != 0) {
+	cerr << "Error: diff file not found" << opt.diff_index << endl;
+	ret = false;
+      }
+    }
   }
 
   return ret;
@@ -946,6 +976,7 @@ void usageIndex() {
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl
+       << "-d, --diff=STRING           File of the different database " << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << endl;
 
@@ -992,7 +1023,8 @@ void usageEM(bool valid_input = true) {
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl
+       << "    --different               Perform synthetic depletion on different file" << endl;
 
 }
 
@@ -1184,6 +1216,29 @@ int main(int argc, char *argv[]) {
             call);
 
 	std::vector<double> tpm = counts_to_tpm(em.alpha_, em.eff_lens_);
+
+	if (opt.analyzing_diff) {
+	  std::vector<std::string> name2;
+	  std::vector<double> alpha2;
+	  std::vector<double> eff_lens2;
+	  std::vector<int> target_lens2;
+	  std::vector<double> tpm2;
+	  int position;
+
+	  for (int i = 0; i < em.target_names_.size(); i++) {
+	    if(em.target_names_[i].find("rrDK961j") != std::string::npos) {
+	      position = i;
+	    }
+	  }
+	  for (int j = position; j < em.target_names_.size(); j++) {
+	    name2.push_back(em.target_names_[j]);
+	    alpha2.push_back(em.alpha_[j]);
+	    eff_lens2.push_back(em.eff_lens_[j]);
+	    target_lens2.push_back(index.target_lens_[j]);
+	    tpm2.push_back(tpm[j]);
+	  }
+	  plaintext_writer(opt.output + "/abundance2.tsv", name2, alpha2, eff_lens2, target_lens2, tpm2);
+	}
 
         plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
 			 em.alpha_, em.eff_lens_, index.target_lens_, tpm);

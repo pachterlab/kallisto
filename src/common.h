@@ -58,7 +58,7 @@ ProgramOptions() :
   //new program options
   constructed_diff_index(false),
   analyzing_diff(false),
-   
+  //new program options   
   batch_mode(false),
   plaintext(false),
   write_index(false),
