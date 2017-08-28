@@ -210,6 +210,11 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
     of.close();
   }
 
+
+  if (opt.pseudobam) {
+    MP.processAln();
+  }
+
   return numreads;
 }
 
@@ -361,11 +366,38 @@ void MasterProcessor::processReads() {
       }
     }
   }
+
+  if (opt.pseudobam) {
+    pseudobatchf_out.close();
+  }
+}
+
+void MasterProcessor::processAln() {
+  assert(opt.pseudobam);
+  pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
+  SR.reset();
+  if (!opt.batch_mode) {
+    std::vector<std::thread> workers;
+    for (int i = 0; i < opt.threads; i++) {
+      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this)));
+    }
+    
+    // let the workers do their thing
+    for (int i = 0; i < opt.threads; i++) {
+      workers[i].join(); //wait for them to finish
+    }
+
+  } else {
+    assert(false); // not implemented yet
+  }
+
+
+  pseudobatchf_in.close();
 }
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, int id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -428,6 +460,29 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     biasCount += local_biasCount;
   }
 
+  if (opt.pseudobam) {
+    // copy the pseudo alignment information, either write to disk or queue up
+    pseudobatch_stragglers.push_back(std::move(pseudobatch));
+    while (true) {
+      if (pseudobatch_stragglers.empty()) {
+        break;
+      }
+      // find the smallest batch id
+      auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(), 
+      [](const PseudoAlignmentBatch &p1, const PseudoAlignmentBatch &p2) -> bool {
+        return p1.batch_id < p2.batch_id;
+      });      
+      if ((last_pseudobatch_id + 1) != min_it->batch_id) {
+        break;
+      }
+      // if it is in sequence, write it out
+      writePseudoAlignmentBatch(pseudobatchf_out, *min_it);
+      // remove from processing
+      pseudobatch_stragglers.erase(min_it); 
+      last_pseudobatch_id += 1;
+    }
+  }
+
   numreads += n;
   // releases the lock
 }
@@ -444,7 +499,7 @@ void MasterProcessor::outputFusion(const std::stringstream &o) {
 ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id) {
    // initialize buffer
-   bufsize = 1ULL<<23;
+   bufsize = mp.bufsize;
    buffer = new char[bufsize];
 
    if (opt.batch_mode) {
@@ -496,12 +551,13 @@ ReadProcessor::~ReadProcessor() {
 
 void ReadProcessor::operator()() {
   while (true) {
+    int readbatch_id;
     // grab the reader lock
     if (mp.opt.batch_mode) {
       if (batchSR.empty()) {
         return;
       } else {
-        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, false);
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, false );
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
@@ -510,22 +566,23 @@ void ReadProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, mp.opt.pseudobam || mp.opt.fusion);
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
-
+    pseudobatch.aln.clear();
+    pseudobatch.batch_id = readbatch_id;
     // process our sequences
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, id);
     clear();
   }
 }
 
 void ReadProcessor::processBuffer() {
-  // set up thread variables
+  // set up thread variables  
   std::vector<std::pair<KmerEntry,int>> v1, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
@@ -741,6 +798,19 @@ void ReadProcessor::processBuffer() {
     // pseudobam
     
     if (mp.opt.pseudobam) {
+      PseudoAlignmentInfo info;
+      info.id = i; // read id
+      info.paired = paired;
+      info.r1empty = v1.empty();
+      info.r2empty = v2.empty();
+      if (ec != -1) {
+        info.ec_id = ec;
+      } else {
+        info.ec_id = -1;
+        info.u = u; // copy
+      }
+      pseudobatch.aln.push_back(std::move(info));
+      /*
       if (paired) {
         outputPseudoBam(index, u,
           s1, names[i-1].first, quals[i-1].first, l1, names[i-1].second, v1,
@@ -752,6 +822,7 @@ void ReadProcessor::processBuffer() {
           nullptr, nullptr, nullptr, 0, 0, v2,
           paired, mp.bamh, mp.bamfp);
       }
+      */
     }
     
 
@@ -776,10 +847,106 @@ void ReadProcessor::clear() {
 }
 
 
+AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, int _id) :
+ paired(!opt.single_end), index(index), mp(mp), id(_id) {
+   // initialize buffer
+   bufsize = mp.bufsize;
+   buffer = new char[bufsize];
+
+   if (opt.batch_mode) {
+     /* need to check this later */
+     assert(id != -1);
+     batchSR.files = opt.batch_files[id];
+     if (opt.umi) {
+       batchSR.umi_files = {opt.umi_files[id]};
+     }
+     batchSR.paired = !opt.single_end;
+   }
+
+   seqs.reserve(bufsize/50);
+   if (opt.umi) {
+    umis.reserve(bufsize/50);
+   }
+   clear();
+}
 
 
+AlnProcessor::AlnProcessor(AlnProcessor && o) :
+  paired(o.paired),
+  index(o.index),
+  mp(o.mp),
+  id(o.id),
+  bufsize(o.bufsize),
+  numreads(o.numreads),
+  seqs(std::move(o.seqs)),
+  names(std::move(o.names)),
+  quals(std::move(o.quals)),
+  umis(std::move(o.umis)),
+  batchSR(std::move(o.batchSR)) {
+    buffer = o.buffer;
+    o.buffer = nullptr;
+    o.bufsize = 0;
+}
+
+AlnProcessor::~AlnProcessor() {
+  if (buffer != nullptr) {
+      delete[] buffer;
+      buffer = nullptr;
+  }
+}
+
+void AlnProcessor::clear() {
+  numreads=0;
+  memset(buffer,0,bufsize);
+  pseudobatch.aln.clear();
+  pseudobatch.batch_id = -1;
+}
+
+
+void AlnProcessor::operator()() {
+  while (true) {
+    clear();
+    int readbatch_id;
+    // grab the reader lock
+    if (mp.opt.batch_mode) {
+      if (batchSR.empty()) {
+        return;
+      } else {
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true );
+      }
+    } else {
+      std::lock_guard<std::mutex> lock(mp.reader_lock);
+      if (mp.SR.empty()) {
+        // nothing to do
+        return;
+      } else {
+        // get new sequences
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true);
+        readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
+        assert(pseudobatch.batch_id == readbatch_id);
+        assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
+      }
+      // release the reader lock
+    }
+    // process our sequences
+    processBuffer();
+
+
+  }
+}
+
+
+void AlnProcessor::processBuffer() {
+
+  int n = pseudobatch.aln.size();
+  for (int i = 0; i < n; i++) {
+    const auto &x = pseudobatch.aln[i];
+    std::cout << names[2*i].first << "\t" << x.id << "\t" << x.ec_id << "\n";
+  }
+}
 
 /** -- sequence reader -- **/
+
 SequenceReader::~SequenceReader() {
   if (fp1) {
     gzclose(fp1);
@@ -794,21 +961,55 @@ SequenceReader::~SequenceReader() {
   }
   
   // check if umi stream is open, then close
+  if (f_umi && f_umi->is_open()) {
+    f_umi->close();
+  }
 }
 
+
+void SequenceReader::reset() {
+  if (fp1) {
+    gzclose(fp1);
+  }
+  if (paired && fp2) {
+    gzclose(fp2);
+  }
+  kseq_destroy(seq1);
+  if (paired) {
+    kseq_destroy(seq2);
+  }
+
+  if (f_umi && f_umi->is_open()) {
+    f_umi->close();    
+  }
+
+  f_umi->clear();
+
+  fp1 = 0;
+  fp2 = 0;
+  seq1 = 0;
+  seq2 = 0;
+  l1 = 0; 
+  l2 = 0;
+  nl1 = 0;
+  nl2 = 0;
+  current_file = 0;
+  state = false;
+  readbatch_id = -1;
+}
 
 
 // returns true if there is more left to read from the files
 bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
   std::vector<std::pair<const char *, int> > &names,
   std::vector<std::pair<const char *, int> > &quals,
-  std::vector<std::string> &umis, 
+  std::vector<std::string> &umis, int& read_id,
   bool full) {
     
   std::string line;
   std::string umi;
-  
-    
+  readbatch_id += 1; // increase the batch id
+  read_id = readbatch_id; // copy now because we are inside a lock
   seqs.clear();
   umis.clear();
   if (full) {

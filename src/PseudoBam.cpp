@@ -240,7 +240,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           tlen += (tlen>0) ? 1 : -1;
         }
 
-        printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n1, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v1.empty()) ? 255 : 0 , cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : s1, (f1 & 0x10) ? &buf2[0] : q1, nmap);
+        //printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n1, f1 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v1.empty()) ? 255 : 0 , cig, posmate, tlen, (f1 & 0x10) ? &buf1[0] : s1, (f1 & 0x10) ? &buf2[0] : q1, nmap);
         if (v1.empty()) {
           break; // only report primary alignment
         }
@@ -296,11 +296,13 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           tlen += (tlen > 0) ? 1 : -1;
         }
 
-        printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n2, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v2.empty()) ? 255 : 0, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : s2,  (f2 & 0x10) ? &buf2[0] : q2, nmap);
+        //printf("%s\t%d\t%s\t%d\t%d\t%s\t=\t%d\t%d\t%s\t%s\tNH:i:%d\n", n2, f2 & 0xFFFF, index.target_names_[tr].c_str(), posread, (!v2.empty()) ? 255 : 0, cig, posmate, tlen, (f2 & 0x10) ? &buf1[0] : s2,  (f2 & 0x10) ? &buf2[0] : q2, nmap);
         if(v2.empty()) {
           break; // only print primary alignment
         }
       }
+
+
     } else {
       // single end
       int nmap = (int) u.size();
@@ -390,3 +392,72 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
     posmate = 1;
   }
 }
+
+
+/** -- pseudoalignment info methods -- **/
+
+
+
+void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& batch) {
+  of.write("BATCH=",6);
+  of.write((char*)&(batch.batch_id), sizeof(int32_t));
+  uint32_t bsz = batch.aln.size();
+  of.write((char*)&(bsz), sizeof(uint32_t));
+  for(const auto &x : batch.aln) {
+    of.write((char*)&x.id, sizeof(x.id));
+    uint8_t flag = 0;
+    flag |= (x.paired) ? 1 : 0;
+    flag |= (x.r1empty) ? 2 : 0;
+    flag |= (x.r2empty) ? 4 : 0;
+    of.write((char*)&flag,1);
+    of.write((char*)&x.ec_id,sizeof(int32_t));
+    if (x.ec_id == -1) {
+      // exceptional case, no ec_id, yet, but need to write the v vector
+      uint32_t sz = x.u.size();
+      of.write((char*)&sz, sizeof(uint32_t));
+      for (int i = 0; i < sz; i++) {
+        of.write((char*)&x.u[i], sizeof(int32_t));
+      }
+    }
+    of.put(0); // mark the end of record
+  }
+}
+
+
+void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
+  batch.aln.clear();
+  char bb[7];
+  char mark0;
+  in.read(&bb[0], 6);
+  bb[6] = 0;
+  assert(strcmp(bb,"BATCH=")==0);
+  in.read((char*)&(batch.batch_id), sizeof(int32_t));
+  uint32_t bsz;
+  in.read((char*)&bsz, sizeof(uint32_t));
+  batch.aln.reserve(bsz);
+  for (int i = 0; i < bsz; i++) {
+    PseudoAlignmentInfo info;
+    in.read((char*)&info.id, sizeof(info.id));
+    uint8_t flag;
+    in.read((char*)&flag, 1);
+    info.paired  = (flag & 1) != 0;
+    info.r1empty = (flag & 2) != 0;
+    info.r2empty = (flag & 4) != 0;
+    in.read((char*)&info.ec_id, sizeof(int32_t));
+    if (info.ec_id == -1) {
+      uint32_t sz;
+      in.read((char*)&sz, sizeof(uint32_t));
+      info.u.reserve(sz);
+      int32_t tmp;
+      for (int i = 0; i < sz; i++) {
+        in.read((char*)&tmp, sizeof(tmp));
+        info.u.push_back(tmp);
+      }
+    }
+    mark0 = in.get();
+    assert(mark0 == '\0');
+    batch.aln.push_back(std::move(info));
+  }
+  
+}
+
