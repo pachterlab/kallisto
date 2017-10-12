@@ -1124,9 +1124,12 @@ int main(int argc, char *argv[]) {
           // need full transcript sequences
           index.loadTranscriptSequences();
         }
-        MinCollector collection(index, opt);
+
         int num_processed = 0;
-        num_processed = ProcessReads(index, opt, collection);
+
+        MinCollector collection(index, opt);        
+        MasterProcessor MP(index, opt, collection);
+        num_processed = ProcessReads(MP, opt);
 
         // save modified index for future use
         if (opt.write_index) {
@@ -1225,6 +1228,10 @@ int main(int argc, char *argv[]) {
           }
 
           cerr << endl;
+        }
+
+        if (opt.pseudobam) {
+          MP.processAln(); // add EM into the mix
         }
 
         cerr << endl;
@@ -1353,9 +1360,10 @@ int main(int argc, char *argv[]) {
 
         MinCollector collection(index, opt);
         int num_processed = 0;
+        MasterProcessor MP(index, opt, collection);
 
         if (!opt.batch_mode) {
-          num_processed = ProcessReads(index, opt, collection);
+          num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
         } else {
 

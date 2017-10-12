@@ -22,10 +22,12 @@ struct PseudoAlignmentInfo {
   int32_t id; // id local to batch
   bool paired;  // 1
   bool r1empty; // 2
-  bool r2empty; // 4  
+  bool r2empty; // 4
+  int k1pos; // -1 for not present, 0-based position of first mapping k-mer in read 1
+  int k2pos;
   int32_t ec_id;
   std::vector<int32_t> u;
-  PseudoAlignmentInfo() : id(-1), r1empty (true), r2empty(true), paired(true), ec_id(-1) {}
+  PseudoAlignmentInfo() : id(-1), r1empty (true), r2empty(true), paired(true), k1pos(-1), k2pos(-1), ec_id(-1) {}
 };
 
 

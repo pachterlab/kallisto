@@ -1190,6 +1190,15 @@ donejumping:
   }
 }
 
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+  auto it = kmap.find(km.rep());
+  if (it != kmap.end()) {
+    KmerEntry val = it->second;
+    return findPosition(tr, km, val, p);
+  } else {
+    return {-1,true};
+  }
+}
 
 //use:  (pos,sense) = index.findPosition(tr,km,val,p)
 //pre:  index.kmap[km] == val,

@@ -66,6 +66,11 @@ int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntr
   return p;
 }
 
+// constants
+const int auxlen = 7;
+
+//methods
+
 int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts) {
   int limit = 1048576; 
   std::vector<std::pair<const char*, int>> seqs;
@@ -129,7 +134,7 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
 
 }
 
-int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) {
+int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 
   int limit = 1048576;
   std::vector<std::pair<const char*, int>> seqs;
@@ -144,13 +149,6 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
   size_t numreads = 0;
   size_t nummapped = 0;
   bool paired = !opt.single_end;
-
-  /*
-  std::vector<std::pair<KmerEntry,int>> v1, v2;
-  v1.reserve(1000);
-  v2.reserve(1000);
-  */
-
 
 
   if (paired) {
@@ -176,7 +174,7 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
     index.writePseudoBamHeader(std::cout);
   }*/
 
-  MasterProcessor MP(index, opt, tc);
+  
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -206,14 +204,10 @@ int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc) 
     std::string outfile = opt.output + "/counts.txt";
     std::ofstream of;
     of.open(outfile.c_str(), std::ios::out);
-    tc.write(of);
+    MP.tc.write(of);
     of.close();
   }
 
-
-  if (opt.pseudobam) {
-    MP.processAln();
-  }
 
   return numreads;
 }
@@ -228,7 +222,7 @@ void MasterProcessor::processReads() {
     std::string bamfn = opt.output + "/pseudoalignments.bam";
     bamh = createPseudoBamHeader(index);
     bamfp = sam_open(bamfn.c_str(), "wb");
-    sam_hdr_write(bamfp, bamh);
+    int r = sam_hdr_write(bamfp, bamh);
   }
 
   // start worker threads
@@ -485,6 +479,14 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
 
   numreads += n;
   // releases the lock
+}
+
+void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
+  std::lock_guard<std::mutex> lock(this->writer_lock);
+
+  for (const auto &b : bv) {
+    int r = sam_write1(bamfp, bamh, &b);    
+  }
 }
 
 void MasterProcessor::outputFusion(const std::stringstream &o) {
@@ -799,10 +801,14 @@ void ReadProcessor::processBuffer() {
     
     if (mp.opt.pseudobam) {
       PseudoAlignmentInfo info;
-      info.id = i; // read id
+      info.id = (paired) ? (i/2) : i; // read id
       info.paired = paired;
       info.r1empty = v1.empty();
       info.r2empty = v2.empty();
+      KmerEntry val;
+      info.k1pos = (!info.r1empty) ? findFirstMappingKmer(v1,val) : -1;
+      info.k2pos = (!info.r2empty) ? findFirstMappingKmer(v2,val) : -1;
+      
       if (ec != -1) {
         info.ec_id = ec;
       } else {
@@ -852,6 +858,9 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
+   bambufsize = 1<<20;
+   bambuffer = new char[bambufsize]; // refactor this?
+
 
    if (opt.batch_mode) {
      /* need to check this later */
@@ -867,7 +876,9 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
    if (opt.umi) {
     umis.reserve(bufsize/50);
    }
+   
    clear();
+   
 }
 
 
@@ -877,6 +888,7 @@ AlnProcessor::AlnProcessor(AlnProcessor && o) :
   mp(o.mp),
   id(o.id),
   bufsize(o.bufsize),
+  bambufsize(o.bambufsize),
   numreads(o.numreads),
   seqs(std::move(o.seqs)),
   names(std::move(o.names)),
@@ -886,18 +898,26 @@ AlnProcessor::AlnProcessor(AlnProcessor && o) :
     buffer = o.buffer;
     o.buffer = nullptr;
     o.bufsize = 0;
+    bambuffer = o.bambuffer;
+    o.bambuffer = nullptr;
+    o.bambufsize = 0;
 }
 
 AlnProcessor::~AlnProcessor() {
   if (buffer != nullptr) {
-      delete[] buffer;
-      buffer = nullptr;
+    delete[] buffer;
+    buffer = nullptr;
+  }
+  if (bambuffer != nullptr) {
+    delete[] bambuffer;
+    bambuffer = nullptr;
   }
 }
 
 void AlnProcessor::clear() {
   numreads=0;
   memset(buffer,0,bufsize);
+  memset(bambuffer, 0, bambufsize);
   pseudobatch.aln.clear();
   pseudobatch.batch_id = -1;
 }
@@ -938,12 +958,369 @@ void AlnProcessor::operator()() {
 
 void AlnProcessor::processBuffer() {
 
-  int n = pseudobatch.aln.size();
+  /* something simple where we can construct the bam records */
+  std::vector<bam1_t> bv;
+
+  /*
+  int num_pairs = pseudobatch.aln.size();
+  int num_aln = 0;
+  int bbsize = 0;
   for (int i = 0; i < n; i++) {
+    int naln = 1, bsz = 0;
     const auto &x = pseudobatch.aln[i];
-    std::cout << names[2*i].first << "\t" << x.id << "\t" << x.ec_id << "\n";
+    if (x.ec_id != -1) {
+      naln = index.ecmap[x.ec_id].size();
+    } else if (!x.r1empty || !x.r2empty ) {
+      naln = x.u.size();
+    } 
+    if (naln == 0) {
+      naln = 1;
+    }
+
+    bsz = names[2*i].size() + names[2*i+1].size() + 8 + (seqs[2*i].size() + seqs[2*i+1].size() )/2 + 10;
+    bbsize += bsz * naln;
+  }
+
+  std::cout << names[2*i].first << "\t" << x.id << "\t" << x.ec_id <<  "\t" << x.k1pos << "\t" << x.k2pos << "\n";
+
+  bv.reserve(num_aln);
+  if (bbsize * 2 < bambufsize) {
+    char* t = new char[2*bbsize];
+    memcpy(t, bambuffer, bambufsize);
+    delete[] bambuffer;
+    bambuffer = t;
+    bambufsize = bbsize;
+  } // let's hope this is enough for now
+  
+  char* buf = bambuffer;
+  */
+  int n = pseudobatch.aln.size();
+  std::vector<int> u;
+  
+
+  Kmer km1,km2;
+  KmerEntry val1, val2;
+
+  for (int i = 0; i < n; i++) {
+    bam1_t b1,b2, b1c, b2c;
+    int si1 = (paired) ? 2*i : i;
+    int si2 = (paired) ? 2*i +1 : -1;
+    int rlen1 = seqs[si1].second;
+    int rlen2;
+    if (paired) {
+      rlen2 = seqs[si2].second;
+    }
+    // for each txp alignment
+    
+    // fill in the bam core info
+    b1.core.tid = -1;
+    b1.core.pos = -1;
+    b1.core.bin = 4680; // magic bin for unmapped reads
+    b1.core.qual = 0;
+    b1.core.flag = BAM_FUNMAP;
+    b1.core.mtid = -1;
+    b1.core.mpos = -1;
+    b1.core.isize = 0;
+
+    if (paired) {
+      // fix this flag for b1
+      b1.core.flag = BAM_FPAIRED | BAM_FREAD1 | BAM_FUNMAP | BAM_FMUNMAP;
+      // set for b2
+      b2.core.tid = -1;
+      b2.core.pos = -1;
+      b2.core.bin = 4680; // magic bin for unmapped reads
+      b2.core.qual = 0;
+      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b2.core.mtid = -1;
+      b2.core.mpos = -1;
+      b2.core.isize = 0;
+    }
+
+    // fill in the data info
+    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second);
+    if (paired) {
+      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second);
+    }
+
+    // for each alignment
+    PseudoAlignmentInfo &pi = pseudobatch.aln[i];
+    if (pi.r1empty && pi.r2empty) {
+      bv.push_back(b1);
+      if (paired) {
+        bv.push_back(b2);
+      }
+    } else {
+      u.clear();
+      int ec = pi.ec_id;
+      if (ec != -1) {
+        u = index.ecmap[ec]; // copy, but meh
+      } else {
+        u = pi.u;
+      }
+      if (u.empty()) {
+        // shouldn't happen
+        bv.push_back(b1);
+        if (paired) {
+          bv.push_back(b2);
+        }        
+      } else {
+        // set flags
+        if (!pi.r1empty) {
+          b1.core.flag &= ~BAM_FUNMAP;
+          b2.core.flag &= ~BAM_FMUNMAP;
+        }
+        if (!pi.r2empty) {
+          b1.core.flag &= ~BAM_FMUNMAP;
+          b2.core.flag &= ~BAM_FUNMAP;
+        }
+        if (!pi.r1empty && !pi.r2empty) {
+          b1.core.flag |= BAM_FPROPER_PAIR;
+          b2.core.flag |= BAM_FPROPER_PAIR;
+        }
+        
+        int32_t nmap = u.size();
+        
+        // set aux
+        assert(b1.l_data + auxlen <= b1.m_data);
+        assert(b2.l_data + auxlen <= b2.m_data);
+
+        b1.data[b1.l_data] = 'N';
+        b1.data[b1.l_data+1] = 'H';
+        b1.data[b1.l_data+2] = 'i';
+        memcpy(b1.data + b1.l_data + 3, &nmap, 4);
+        b1.l_data += auxlen;
+
+        b2.data[b2.l_data] = 'N';
+        b2.data[b2.l_data+1] = 'H';
+        b2.data[b2.l_data+2] = 'i';
+        memcpy(b2.data + b2.l_data + 3, &nmap, 4);
+        b2.l_data += auxlen;
+
+        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<int> &u) -> std::pair<bool,bool> {
+          bool reptrue = (km == km.rep());
+          auto search = index.kmap.find(km.rep());
+          if (search == index.kmap.end()) {
+            return {false,reptrue};
+          } else {
+            val = search->second;
+            if (val.contig == -1) {
+              return {false,reptrue};
+            } else {
+              const Contig &c = index.dbGraph.contigs[val.contig];
+              if (c.transcripts.empty()) {
+                return {false,reptrue};
+              }
+              bool trsense = c.transcripts[0].sense;
+              for (const auto & x : c.transcripts) {
+                if (x.sense != trsense) {
+                  if (std::find(u.begin(), u.end(), x.trid) != u.end()) {
+                    return {false,reptrue};
+                  }
+                }
+              }
+              return {true, trsense == (reptrue == val.isFw())};
+            }
+          }
+        };
+
+        km1 = Kmer(seqs[si1].first + pi.k1pos);
+        if (paired) {
+          km2 = Kmer(seqs[si2].first + pi.k2pos);
+        }
+        std::pair<bool,bool> strInfo1 = strandednessInfo(km1, val1, u);
+        std::pair<bool,bool> strInfo2;
+        if (paired) {
+          strInfo2 = strandednessInfo(km2, val2, u);
+        }
+        
+        // first read is all on reverse strand
+        if (strInfo1.first && !strInfo1.second) {
+          // reverse complement
+          reverseComplementSeqInData(b1);
+        }
+        
+        // we have second read and it is all on reverse strand
+        if (paired && strInfo2.first && !strInfo2.second) {
+          reverseComplementSeqInData(b2);
+        }
+
+
+        bool firstTr = true;
+        for (auto t : u) {
+          std::pair<int,bool> pos1 = index.findPosition(t, km1, val1, pi.k1pos);
+          std::pair<int,bool> pos2;
+
+          if (paired) {
+            pos2 = index.findPosition(t, km2, val2, pi.k2pos);
+          }
+          // need to check the p value
+          // check probabilities, discard 0.0
+
+          // move data part of bamcore.
+          b1c = b1;
+          b1c.data = new uint8_t[b1c.m_data];
+          memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));
+          if (!strInfo1.first && !pos1.second) {
+            reverseComplementSeqInData(b1c);
+          }
+          if (paired) {
+            b2c = b2;    
+            b2c.data = new uint8_t[b2c.m_data];
+            memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
+            if (!strInfo2.first && !pos2.second) {
+              reverseComplementSeqInData(b2c);
+            }
+          }
+          
+          
+          // set strandedness
+          if (paired) {
+            // todo handle non mapping reads
+            if (!pos1.second) {
+              b1c.core.flag |= BAM_FREVERSE;
+              b2c.core.flag |= BAM_FMREVERSE;
+            }
+            if (!pos2.second) {
+              b1c.core.flag |= BAM_FMREVERSE;
+              b2c.core.flag |= BAM_FREVERSE;
+            }            
+          } else {
+            if (!pos1.second) {
+              b1c.core.flag |= BAM_FREVERSE;
+            }
+          }
+
+          if (!firstTr) { // replace with highest prob
+            b1c.core.flag |= BAM_FSECONDARY;
+            b2c.core.flag |= BAM_FSECONDARY;
+          }
+          firstTr = false;
+
+          // maybe modify cigar string, but probably not
+          
+          // set core info
+          b1c.core.tid = t;
+          b1c.core.pos = (pos1.second) ? pos1.first-1 : pos1.first - rlen1;;
+          b1c.core.bin = hts_reg2bin(b1.core.pos, b1.core.pos + seqs[si1].second-1, 14, 5);
+          b1c.core.qual = (!pi.r1empty) ? 255 : 0;
+
+
+          
+          if (paired) {
+            b2c.core.tid = t;
+            b2c.core.pos = (pos2.second) ? pos2.first-1 : pos2.first - rlen2;
+            b2c.core.bin = hts_reg2bin(b2.core.pos, b2.core.pos + seqs[si2].second, 14, 5);
+            b2c.core.qual = (!pi.r2empty) ? 255 : 0;
+
+            // fill in mate info
+            b1c.core.mtid = t;
+            b1c.core.mpos = b2c.core.pos;
+            b2c.core.mtid = t;
+            b2c.core.mpos = b1c.core.pos;
+
+            if (!pi.r1empty && !pi.r2empty) {
+              int tlen = pos2.first - pos1.first;
+              if (tlen != 0) {
+                tlen += (tlen>0) ? 1 : -1;
+              }
+              b1c.core.isize = tlen;
+              b2c.core.isize = -tlen;
+            }
+          }
+
+          bv.push_back(b1c);
+          bv.push_back(b2c);
+        }        
+      }
+    }
+    
+    // ch
+
+
+    // do stuff
+    
+  }
+
+  mp.writePseudoBam(bv);
+
+  // clean up our mess
+  for (auto &b : bv) {
+    delete[] b.data;
+  }
+  bv.clear();
+}
+
+void reverseComplementSeqInData(bam1_t &b) {
+
+  const int bitrev[] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
+  int slen = b.core.l_qseq;
+  int lseq = (b.core.l_qseq+1)>>1;  
+  uint8_t *s = b.data + (b.core.n_cigar << 2) + b.core.l_qname;
+  
+  for (int i = 0; i < (slen>>1); ++i) {
+    int i1 = i>>1, i2=((slen-i-1)>>1);
+    // let's just do the obvious thing and optimize later if needed
+    int ca = s[i1] >> ((~i&1)<<2) & 0xf;
+    int cb = s[i2] >> ((~(slen-1-i)&1)<<2) & 0xf;
+    
+    s[i1] &= 0xF << ((i&1)<<2);
+    s[i1] |= bitrev[cb] << ((~i&1)<<2);
+    s[i2] &= 0xF << (((slen-i-1)&1)<<2);
+    s[i2] |= bitrev[ca] << ((~(slen-1-i)&1)<<2);
+  }
+  
+  if ((slen & 1) == 1) {
+    int ca = s[lseq>>1] >> 4 & 0xf;
+    s[lseq>>1] &= 0xF;
+    s[lseq>>1] |= bitrev[ca] << 4;
   }
 }
+
+int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen) {
+ 
+  b.core.l_extranul =  (3 - (nlen % 4));  
+  b.core.l_qname = nlen + b.core.l_extranul + 1;
+  b.core.l_qseq = slen;
+
+  if (buf == nullptr) {
+    // allocate memory for buffer
+    int blen = b.core.l_qname + 16 + ((b.core.l_qseq+2)>>1) + b.core.l_qseq + auxlen; // 16 for cigar, auxlen for NI:i:int
+    b.data = new uint8_t[blen];
+    b.m_data = blen;
+    b.l_data = 0;
+    buf = b.data;
+  }
+
+  memcpy(buf, name, nlen);
+  int p = b.core.l_qname;
+  for (int i = nlen; i < p; i++) {
+    buf[i] = '\0';
+  }
+
+  // 99% of the time we just report a *, match. 1% there is some softclipping
+  b.core.n_cigar = 1;
+  uint32_t* cig = (uint32_t*) (buf+p);
+  *cig = BAM_CMATCH | (((uint32_t) slen) << BAM_CIGAR_SHIFT);
+  p += sizeof(uint32_t);
+  
+  // copy the sequence
+  int lseq = (slen+1)>>1;
+  uint8_t *seqp = (uint8_t *) (buf+p);
+  memset(seqp,0,lseq);
+  for (int i = 0; i < slen; ++i) {
+    seqp[i>>1] |= seq_nt16_table[(int)seq[i]] << ((~i&1)<<2);
+  }
+  p += lseq;
+  // copy qual
+  for (int i = 0; i < slen; i++) {
+    buf[p+i] = qual[i] - 33;
+  }
+  p += slen;
+
+  b.l_data = p;
+  return p;
+}
+
 
 /** -- sequence reader -- **/
 

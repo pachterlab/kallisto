@@ -124,6 +124,7 @@ struct KmerIndex {
 
   // positional information
   std::pair<int,bool> findPosition(int tr, Kmer km, KmerEntry val, int p = 0) const;
+  std::pair<int,bool> findPosition(int tr, Kmer km, int p) const;
 
   int k; // k-mer size used
   int num_trans; // number of targets

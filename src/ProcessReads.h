@@ -25,7 +25,9 @@
 KSEQ_INIT(gzFile, gzread)
 #endif
 
-int ProcessReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc);
+class MasterProcessor;
+
+int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
 int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts);
 int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
@@ -135,6 +137,7 @@ public:
   std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
   void processReads();
   void processAln();
+  void writePseudoBam(const std::vector<bam1_t> &bv);
 
   void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1);
 
@@ -182,8 +185,9 @@ public:
   AlnProcessor(AlnProcessor && o);
   ~AlnProcessor();
   char *buffer;
-  
+  char *bambuffer;
   size_t bufsize;
+  size_t bambufsize;
   bool paired;
   std::vector<std::pair<int, std::string>> ec_umi;
   const KmerIndex& index;
@@ -205,5 +209,7 @@ public:
 };
 
 
+int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen);
+void reverseComplementSeqInData(bam1_t &b);
 
 #endif // KALLISTO_PROCESSREADS_H

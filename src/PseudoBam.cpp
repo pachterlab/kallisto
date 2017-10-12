@@ -28,40 +28,7 @@ void createBamRecord(const KmerIndex, const KmerIndex &index, const std::vector<
     const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<KmerEntry,int>>& v2,
     bool paired );*/
 
-int fillBamRecord(bam1_t &b, char* buf, const char *seq, const char *name, const char *qual, int slen, int nlen) {
-  b.core.l_extranul = (nlen % 4 != 0)? (4 - nlen % 4) : 0;  
-  b.core.l_qname = nlen + b.core.l_extranul;
-  
-  memcpy(buf, name, nlen);
-  for (int i = 0; i < nlen; i++) {
-    buf[i] = name[i];
-  }
-  int p = b.core.l_qname;
-  for (int i = nlen; i < p; i++) {
-    buf[i] = '\0';
-  }
-  // 99% of the time we just report a match
-  b.core.n_cigar = 1;
-  uint32_t* cigar = (uint32_t *) (buf+p);
-  *cigar =  BAM_CMATCH | ((slen) << BAM_CIGAR_SHIFT);
-  p += 4;
-  // copy the sequence
-  b.core.l_qseq = slen;
-  int lseq = (slen+1)>>1;
-  uint8_t *seqp = (uint8_t *) (buf+p);
-  memset(seqp,0,slen);
-  for (int i = 0; i < slen; ++i) {
-    seqp[i>>1] |= seq_nt16_table[(int)seq[i]] << ((~i&1)<<2);
-  }
-  p += lseq;
-  // copy qual
-  for (int i = 0; i < slen; i++) {
-    buf[p+i] = qual[i] - 33;
-  }
-  p += slen;
 
-  return p;
-}
 
 void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
     const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<KmerEntry,int>>& v1,
@@ -85,7 +52,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
     nlen2 -= 2;
   }
 
-  
+  /*
   b1.l_data = fillBamRecord(b1, &buf1[0], s1,n1,q1,slen1,nlen1);
   b1.data = (uint8_t*)buf1;
   
@@ -93,6 +60,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
     b2.l_data = fillBamRecord(b2, &buf2[0], s2,n2,q2,slen2,nlen2);
     b2.data = (uint8_t*) buf2;
   }
+  */
   if (u.empty()) {
     // no mapping
     if (paired) {
@@ -410,6 +378,10 @@ void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& ba
     flag |= (x.r1empty) ? 2 : 0;
     flag |= (x.r2empty) ? 4 : 0;
     of.write((char*)&flag,1);
+    uint8_t k1 = (0 <= x.k1pos && x.k1pos < 255) ? x.k1pos : 255;
+    uint8_t k2 = (0 <= x.k2pos && x.k2pos < 255) ? x.k2pos : 255;
+    of.write((char*)&k1, 1);
+    of.write((char*)&k2, 1);
     of.write((char*)&x.ec_id,sizeof(int32_t));
     if (x.ec_id == -1) {
       // exceptional case, no ec_id, yet, but need to write the v vector
@@ -443,6 +415,11 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     info.paired  = (flag & 1) != 0;
     info.r1empty = (flag & 2) != 0;
     info.r2empty = (flag & 4) != 0;
+    uint8_t k1,k2;
+    in.read((char*)&k1,1);
+    in.read((char*)&k2,1);
+    info.k1pos = (k1 == 255) ? -1 : k1;
+    info.k2pos = (k2 == 255) ? -1 : k2;
     in.read((char*)&info.ec_id, sizeof(int32_t));
     if (info.ec_id == -1) {
       uint32_t sz;
