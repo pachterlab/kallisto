@@ -1014,7 +1014,6 @@ void AlnProcessor::processBuffer() {
     if (paired) {
       rlen2 = seqs[si2].second;
     }
-    // for each txp alignment
     
     // fill in the bam core info
     b1.core.tid = -1;
@@ -1214,12 +1213,17 @@ void AlnProcessor::processBuffer() {
           }
           
 
-          // maybe modify cigar string, but probably not
-          
+          int softclip1, softclip2, overhang1, overhang2;
+          int targetlength = index.target_lens_[t];
           // set core info
           b1c.core.tid = t;
           if (!pi.r1empty) {
-            b1c.core.pos = (pos1.second) ? pos1.first-1 : pos1.first - rlen1;;
+            b1c.core.pos = (pos1.second) ? pos1.first-1 : pos1.first - rlen1;
+            softclip1 = -b1c.core.pos;
+            overhang1 = b1c.core.pos + rlen1 - targetlength;
+            if (b1c.core.pos < 0) {
+              b1c.core.pos = 0;
+            }
             b1c.core.bin = hts_reg2bin(b1.core.pos, b1.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
           }
@@ -1228,8 +1232,15 @@ void AlnProcessor::processBuffer() {
             b2c.core.tid = t;
             if (!pi.r2empty) {
               b2c.core.pos = (pos2.second) ? pos2.first-1 : pos2.first - rlen2;
+              softclip2 = -b2c.core.pos;
+              overhang2 = b2c.core.pos + rlen2 - targetlength;
+              if (b2c.core.pos < 0) {
+                b2c.core.pos = 0;
+              }
+
               b2c.core.bin = hts_reg2bin(b2.core.pos, b2.core.pos + seqs[si2].second, 14, 5);
               b2c.core.qual = 255;
+
               if (pi.r1empty) {
                 b1c.core.pos = b2c.core.pos;
                 b1c.core.bin = b2c.core.bin;
@@ -1257,6 +1268,17 @@ void AlnProcessor::processBuffer() {
             }
           }
 
+          if (!pi.r1empty) {
+            if (softclip1 > 0 || overhang1 > 0) {
+              fixCigarString(b1c, rlen1, softclip1, overhang1);
+            }
+          }
+          if (!pi.r2empty) {
+            if (softclip2 > 0 || overhang2 > 0) {
+              fixCigarString(b2c, rlen2, softclip2, overhang2);
+            }
+          }
+
           if (!pi.r1empty || firstTr) {
             bv.push_back(b1c);
           }
@@ -1267,13 +1289,7 @@ void AlnProcessor::processBuffer() {
           firstTr = false;
         }        
       }
-    }
-    
-    // ch
-
-
-    // do stuff
-    
+    }    
   }
 
   mp.writePseudoBam(bv);
@@ -1283,6 +1299,48 @@ void AlnProcessor::processBuffer() {
     delete[] b.data;
   }
   bv.clear();
+}
+
+void fixCigarString(bam1_t &b, int rlen, int softclip, int overhang) {
+  int ncig = 1;
+  if (softclip > 0) {
+    if (overhang > 0) {
+      ncig = 3;
+    } else {
+      ncig = 2;
+    }
+  } else {
+    ncig = 2;
+  }
+  if (ncig == 1) {
+    return; // no-op
+  }
+  
+  uint8_t *cigafter = b.data + b.core.l_qname + b.core.n_cigar * sizeof(uint32_t);
+  int copylen = b.l_data - (b.core.l_qname + b.core.n_cigar * sizeof(uint32_t));
+  uint8_t *dst = cigafter+(ncig-b.core.n_cigar)*sizeof(uint32_t);
+  memmove(dst, cigafter, copylen);
+  uint32_t *cig = (uint32_t*) (b.data + b.core.l_qname);
+  b.l_data += (ncig - b.core.n_cigar)*sizeof(uint32_t);
+  b.core.n_cigar = ncig;
+
+  if (softclip > 0) {  
+    if (overhang > 0) {       
+      *cig = BAM_CSOFT_CLIP | (((uint32_t) softclip) << BAM_CIGAR_SHIFT);
+      ++cig;
+      *cig = BAM_CMATCH | (((uint32_t) (rlen - overhang - softclip)) << BAM_CIGAR_SHIFT);
+      ++cig;
+      *cig = BAM_CSOFT_CLIP | (((uint32_t) overhang) << BAM_CIGAR_SHIFT);      
+    } else {
+      *cig = BAM_CSOFT_CLIP | (((uint32_t) softclip) << BAM_CIGAR_SHIFT);
+      ++cig;
+      *cig = BAM_CMATCH | (((uint32_t) (rlen-softclip)) << BAM_CIGAR_SHIFT);
+    }
+  } else {
+    *cig = BAM_CMATCH | (((uint32_t) (rlen-overhang)) << BAM_CIGAR_SHIFT);
+    ++cig;
+    *cig = BAM_CSOFT_CLIP | (((uint32_t) overhang) << BAM_CIGAR_SHIFT);
+  }
 }
 
 void reverseComplementSeqInData(bam1_t &b) {
@@ -1308,6 +1366,13 @@ void reverseComplementSeqInData(bam1_t &b) {
     int ca = s[lseq>>1] >> 4 & 0xf;
     s[lseq>>1] &= 0xF;
     s[lseq>>1] |= bitrev[ca] << 4;
+  }
+
+  uint8_t *q = b.data + (b.core.n_cigar << 2) + b.core.l_qname + ((b.core.l_qseq+1)>>1);  
+  for (int i = 0; i < (slen>>1); ++i) {
+    uint8_t t = q[i];
+    q[i] = q[slen-1-i];
+    q[slen-1-i] = t;
   }
 }
 
