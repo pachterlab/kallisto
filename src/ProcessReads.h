@@ -209,7 +209,7 @@ public:
 };
 
 
-int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen);
+int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped);
 void reverseComplementSeqInData(bam1_t &b);
 
 #endif // KALLISTO_PROCESSREADS_H
