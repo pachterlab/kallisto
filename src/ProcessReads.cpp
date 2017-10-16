@@ -21,7 +21,7 @@
 #include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
-#include "EMAlgorithm.h"
+
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -69,7 +69,7 @@ int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntr
 }
 
 // constants
-const int auxlen = 7;
+const int auxlen = 14;
 
 //methods
 
@@ -1003,6 +1003,9 @@ void AlnProcessor::processBuffer() {
   */
   int n = pseudobatch.aln.size();
   std::vector<int> u;
+  std::vector<std::pair<int,double>> ua;
+  u.reserve(1000);
+  ua.reserve(1000);
   
 
   Kmer km1,km2;
@@ -1057,13 +1060,56 @@ void AlnProcessor::processBuffer() {
       }
     } else {
       u.clear();
+      ua.clear();
       int ec = pi.ec_id;
       if (ec != -1) {
         u = index.ecmap[ec]; // copy, but meh
       } else {
         u = pi.u;
+        auto it = index.ecmapinv.find(u);
+        if (it != index.ecmapinv.end()) {
+          ec = it->second;
+        }
+
+        if (ec == -1) {
+          assert(false && "Problem with ecmapinv");
+        }
       }
-      if (u.empty()) {
+
+      
+      // modify u and compute norm
+      int32_t nmap = u.size();
+      int bestProbTr = -1;
+      double bestProb = 0.0;
+      {
+        double denom = 0.0;
+        const auto& wv = em.weight_map_[ec];
+        
+        for (int i = 0; i < nmap; ++i) {
+          denom += em.alpha_[u[i]] * wv[i];
+        }
+        
+        if (denom < TOLERANCE) {
+          u.clear();
+          ua.clear();
+        } else {
+           // compute the update step
+          for (int i = 0; i < nmap; ++i) {
+            if (em.alpha_[u[i]] > 0.0) {
+              double prob = em.alpha_[u[i]] * wv[i] / denom;
+              ua.push_back({u[i],prob});
+              if (bestProb < prob) {
+                bestProb = prob;
+                bestProbTr = u[i];
+              }
+            }
+          }
+        }
+      }
+
+      nmap = ua.size();
+
+      if (ua.empty()) {
         // shouldn't happen
         bv.push_back(b1);
         if (paired) {
@@ -1082,11 +1128,10 @@ void AlnProcessor::processBuffer() {
         if (!pi.r1empty && !pi.r2empty) {
           b1.core.flag |= BAM_FPROPER_PAIR;
           b2.core.flag |= BAM_FPROPER_PAIR;
-        }
-        
-        int32_t nmap = u.size();
+        }              
         
         // set aux
+        float zero = 0.0;
         assert(b1.l_data + auxlen <= b1.m_data);
         assert(b2.l_data + auxlen <= b2.m_data);
 
@@ -1094,15 +1139,27 @@ void AlnProcessor::processBuffer() {
         b1.data[b1.l_data+1] = 'H';
         b1.data[b1.l_data+2] = 'i';
         memcpy(b1.data + b1.l_data + 3, &nmap, 4);
-        b1.l_data += auxlen;
+        b1.l_data += 7;
+
+        b1.data[b1.l_data] = 'Z';
+        b1.data[b1.l_data+1] = 'W';
+        b1.data[b1.l_data+2] = 'f';
+        memcpy(b1.data + b1.l_data + 3, &zero, 4);
+        b1.l_data += 7;
 
         b2.data[b2.l_data] = 'N';
         b2.data[b2.l_data+1] = 'H';
         b2.data[b2.l_data+2] = 'i';
         memcpy(b2.data + b2.l_data + 3, &nmap, 4);
-        b2.l_data += auxlen;
+        b2.l_data += 7;
 
-        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<int> &u) -> std::pair<bool,bool> {
+        b2.data[b2.l_data] = 'Z';
+        b2.data[b2.l_data+1] = 'W';
+        b2.data[b2.l_data+2] = 'f';
+        memcpy(b2.data + b2.l_data + 3, &zero, 4);
+        b2.l_data += 7;
+
+        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
           bool reptrue = (km == km.rep());
           auto search = index.kmap.find(km.rep());
           if (search == index.kmap.end()) {
@@ -1119,8 +1176,10 @@ void AlnProcessor::processBuffer() {
               bool trsense = c.transcripts[0].sense;
               for (const auto & x : c.transcripts) {
                 if (x.sense != trsense) {
-                  if (std::find(u.begin(), u.end(), x.trid) != u.end()) {
-                    return {false,reptrue};
+                  for (const auto &y : ua) {
+                    if (y.first == x.trid) {
+                      return {false,reptrue}; 
+                    }
                   }
                 }
               }
@@ -1132,12 +1191,12 @@ void AlnProcessor::processBuffer() {
         
         if (!pi.r1empty) {
           km1 = Kmer(seqs[si1].first + pi.k1pos);
-          strInfo1 = strandednessInfo(km1, val1, u);
+          strInfo1 = strandednessInfo(km1, val1, ua);
 
         }
         if (paired && !pi.r2empty) {
           km2 = Kmer(seqs[si2].first + pi.k2pos);
-          strInfo2 = strandednessInfo(km2, val2, u);
+          strInfo2 = strandednessInfo(km2, val2, ua);
         }
         
         
@@ -1153,8 +1212,11 @@ void AlnProcessor::processBuffer() {
         }
 
 
-        bool firstTr = true;
-        for (auto t : u) {
+        bool bestTr = false;
+        for (auto tp : ua) {        
+          auto t = tp.first;
+          float prob = (float) tp.second; // explicit cast
+          bestTr = (t == bestProbTr);
           std::pair<int,bool> pos1, pos2;
           
           if (!pi.r1empty) {
@@ -1171,10 +1233,6 @@ void AlnProcessor::processBuffer() {
               pos2 = {std::numeric_limits<int>::min(), true}; // use true so we don't reverse complement it
             }
           }
-
-
-          // need to check the p value
-          // check probabilities, discard 0.0
 
           // move data part of bamcore.
           b1c = b1;
@@ -1210,7 +1268,7 @@ void AlnProcessor::processBuffer() {
             }
           }
 
-          if (!firstTr) { // replace with highest prob
+          if (!bestTr) {
             b1c.core.flag |= BAM_FSECONDARY;
             b2c.core.flag |= BAM_FSECONDARY;
           }
@@ -1229,6 +1287,7 @@ void AlnProcessor::processBuffer() {
             }
             b1c.core.bin = hts_reg2bin(b1.core.pos, b1.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
+            memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag           
           }
 
           if (paired) {
@@ -1243,6 +1302,7 @@ void AlnProcessor::processBuffer() {
 
               b2c.core.bin = hts_reg2bin(b2.core.pos, b2.core.pos + seqs[si2].second, 14, 5);
               b2c.core.qual = 255;
+              memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
 
               if (pi.r1empty) {
                 b1c.core.pos = b2c.core.pos;
@@ -1282,14 +1342,12 @@ void AlnProcessor::processBuffer() {
             }
           }
 
-          if (!pi.r1empty || firstTr) {
+          if (!pi.r1empty || bestTr) {
             bv.push_back(b1c);
           }
-          if (!pi.r2empty || firstTr) {
+          if (!pi.r2empty || bestTr) {
             bv.push_back(b2c);
           }
-
-          firstTr = false;
         }        
       }
     }    
@@ -1389,7 +1447,7 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 
   if (buf == nullptr) {
     // allocate memory for buffer
-    int blen = b.core.l_qname + 16 + ((b.core.l_qseq+2)>>1) + b.core.l_qseq + auxlen; // 16 for cigar, auxlen for NI:i:int
+    int blen = b.core.l_qname + 16 + ((b.core.l_qseq+2)>>1) + b.core.l_qseq + auxlen; // 16 for cigar, auxlen for NI:i:int and ZW:f:0.0
     b.data = new uint8_t[blen];
     b.m_data = blen;
     b.l_data = 0;
