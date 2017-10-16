@@ -6,7 +6,7 @@ bam_hdr_t* createPseudoBamHeader(const KmerIndex& index)  {
   bam_hdr_t *h = bam_hdr_init();
   h->n_targets = index.num_trans;
   //todo include program parameters in string
-  std::string text = "@PG\tID:kallisto\tPN:kallisto\tVN:";
+  std::string text = "@HD\tVN:1.0\n@PG\tID:kallisto\tPN:kallisto\tVN:";
   text += KALLISTO_VERSION;
   text += "\n";
   h->text = strdup(text.c_str());

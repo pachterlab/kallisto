@@ -21,6 +21,7 @@
 #include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
+#include "EMAlgorithm.h"
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -367,14 +368,14 @@ void MasterProcessor::processReads() {
   }
 }
 
-void MasterProcessor::processAln() {
+void MasterProcessor::processAln(const EMAlgorithm& em) {
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
   SR.reset();
   if (!opt.batch_mode) {
     std::vector<std::thread> workers;
     for (int i = 0; i < opt.threads; i++) {
-      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this)));
+      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em)));
     }
     
     // let the workers do their thing
@@ -388,6 +389,7 @@ void MasterProcessor::processAln() {
 
 
   pseudobatchf_in.close();
+  // TODO: remove file
 }
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
@@ -857,8 +859,8 @@ void ReadProcessor::clear() {
 }
 
 
-AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, int _id) :
- paired(!opt.single_end), index(index), mp(mp), id(_id) {
+AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, int _id) :
+ paired(!opt.single_end), index(index), em(em), mp(mp), id(_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
@@ -889,6 +891,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
 AlnProcessor::AlnProcessor(AlnProcessor && o) :
   paired(o.paired),
   index(o.index),
+  em(o.em),
   mp(o.mp),
   id(o.id),
   bufsize(o.bufsize),

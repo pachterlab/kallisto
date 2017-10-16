@@ -1231,7 +1231,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.pseudobam) {
-          MP.processAln(); // add EM into the mix
+          MP.processAln(em); // add EM into the mix
         }
 
         cerr << endl;

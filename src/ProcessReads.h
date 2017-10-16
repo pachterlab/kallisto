@@ -19,6 +19,7 @@
 
 #include "common.h"
 #include "PseudoBam.h"
+#include "EMAlgorithm.h"
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -136,7 +137,7 @@ public:
   std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
   void processReads();
-  void processAln();
+  void processAln(const EMAlgorithm& em);
   void writePseudoBam(const std::vector<bam1_t> &bv);
 
   void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1);
@@ -181,7 +182,7 @@ public:
 
 class AlnProcessor {
 public:
-  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, int id = -1);
+  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, int id = -1);
   AlnProcessor(AlnProcessor && o);
   ~AlnProcessor();
   char *buffer;
@@ -191,6 +192,7 @@ public:
   bool paired;
   std::vector<std::pair<int, std::string>> ec_umi;
   const KmerIndex& index;
+  const EMAlgorithm& em;
   MasterProcessor& mp;
   SequenceReader batchSR;
   int numreads;
