@@ -1363,9 +1363,11 @@ void reverseComplementSeqInData(bam1_t &b) {
   }
   
   if ((slen & 1) == 1) {
-    int ca = s[lseq>>1] >> 4 & 0xf;
-    s[lseq>>1] &= 0xF;
-    s[lseq>>1] |= bitrev[ca] << 4;
+    int i = slen >> 1;
+    int i1 = i >> 1;
+    int ca = s[i1] >> ((~(i)&1)<<2) & 0xf;
+    s[i1] &= 0xF << ((i&1)<<2);
+    s[i1] |= bitrev[ca] << ((~i&1)<<2);
   }
 
   uint8_t *q = b.data + (b.core.n_cigar << 2) + b.core.l_qname + ((b.core.l_qseq+1)>>1);  
