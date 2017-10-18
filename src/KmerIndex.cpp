@@ -845,7 +845,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   kmap.clear();
   if (loadKmerTable) {
-    kmap.reserve(kmap_size);
+    kmap.reserve(kmap_size,true);
   }
 
   // 6. read kmer->ec values

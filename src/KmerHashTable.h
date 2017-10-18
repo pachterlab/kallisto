@@ -181,7 +181,7 @@ struct KmerHashTable {
     //cerr << "inserting " << val.first.toString() << " = " << val.second << endl;
     if ((pop + (pop>>4))> size_) { // if more than 80% full
       //cerr << "-- triggered resize--" << endl;
-      reserve(2*size_);
+      reserve(2*size_, false);
     }
 
     size_t h = hasher(val.first) & (size_-1);
@@ -203,8 +203,10 @@ struct KmerHashTable {
 
   }
 
-  void reserve(size_t sz) {
-
+  void reserve(size_t sz, bool expand = true) {
+    if (expand) {
+      sz = sz + (sz>>4); // what we actually need for insert
+    }
     if (sz <= size_) {
       return;
     }

@@ -640,8 +640,8 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
            << ", but only " << n << " cores on the machine" << endl;
     }
     if (opt.threads > 1 && opt.pseudobam) {
-      cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
-      ret = false;
+      //cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
+      //ret = false;
     }
   }
 
