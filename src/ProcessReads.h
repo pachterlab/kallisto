@@ -20,6 +20,8 @@
 #include "common.h"
 #include "PseudoBam.h"
 #include "EMAlgorithm.h"
+#include "GeneModel.h"
+
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -74,8 +76,8 @@ public:
 
 class MasterProcessor {
 public:
-  MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc)
-    : tc(tc), index(index), bamfp(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
+  MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
+    : tc(tc), index(index), model(model), bamfp(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
@@ -115,6 +117,7 @@ public:
   SequenceReader SR;
   MinCollector& tc;
   KmerIndex& index;
+  const Transcriptome& model;
   samFile *bamfp;
   bam_hdr_t *bamh;
   const ProgramOptions& opt;
@@ -182,7 +185,7 @@ public:
 
 class AlnProcessor {
 public:
-  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, int id = -1);
+  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, int id = -1);
   AlnProcessor(AlnProcessor && o);
   ~AlnProcessor();
   char *buffer;
@@ -198,6 +201,7 @@ public:
   int numreads;
   int id;
   PseudoAlignmentBatch pseudobatch;
+  const Transcriptome& model;
   
 
   std::vector<std::pair<const char*, int>> seqs;
@@ -206,13 +210,15 @@ public:
   std::vector<std::string> umis;
 
   void operator()();
-  void processBuffer();
+  void processBufferTrans();
+  void processBufferGenome();
   void clear();
 };
 
 
-int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped);
-void fixCigarString(bam1_t &b, int rlen, int softclip, int overhang);
+int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped, int auxlen);
+void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang);
+void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra);
 void reverseComplementSeqInData(bam1_t &b);
 
 #endif // KALLISTO_PROCESSREADS_H

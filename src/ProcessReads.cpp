@@ -69,7 +69,8 @@ int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntr
 }
 
 // constants
-const int auxlen = 14;
+const int trans_auxlen = 14; // for NI:i:int and ZW:f:0.0
+const int genome_auxlen = 7; // for ZW:f:0.0
 
 //methods
 
@@ -107,8 +108,8 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
   
   std::cerr << "[quant] finding pseudoalignments for all files ..."; std::cerr.flush();
   
-
-  MasterProcessor MP(index, opt, tc);
+  Transcriptome model;
+  MasterProcessor MP(index, opt, tc, model);
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -222,7 +223,11 @@ void MasterProcessor::processReads() {
   // open bamfile and fetch header
   if (opt.pseudobam) {
     std::string bamfn = opt.output + "/pseudoalignments.bam";
-    bamh = createPseudoBamHeader(index);
+    if (opt.genomebam) {
+      bamh = createPseudoBamHeaderGenome(model);
+    } else {
+      bamh = createPseudoBamHeaderTrans(index);
+    }
     bamfp = sam_open(bamfn.c_str(), "wb");
     int r = sam_hdr_write(bamfp, bamh);
   }
@@ -375,7 +380,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
   if (!opt.batch_mode) {
     std::vector<std::thread> workers;
     for (int i = 0; i < opt.threads; i++) {
-      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em)));
+      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em, model)));
     }
     
     // let the workers do their thing
@@ -859,8 +864,8 @@ void ReadProcessor::clear() {
 }
 
 
-AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, int _id) :
- paired(!opt.single_end), index(index), em(em), mp(mp), id(_id) {
+AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome &model, int _id) :
+ paired(!opt.single_end), index(index), mp(mp), em(em), model(model), id(_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
@@ -893,6 +898,7 @@ AlnProcessor::AlnProcessor(AlnProcessor && o) :
   index(o.index),
   em(o.em),
   mp(o.mp),
+  model(o.model),
   id(o.id),
   bufsize(o.bufsize),
   bambufsize(o.bambufsize),
@@ -956,51 +962,23 @@ void AlnProcessor::operator()() {
       // release the reader lock
     }
     // process our sequences
-    processBuffer();
+    if (mp.opt.genomebam) {
+      processBufferGenome();
+    } else {
+      processBufferTrans();
+    }
 
 
   }
 }
 
 
-void AlnProcessor::processBuffer() {
+void AlnProcessor::processBufferTrans() {
 
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
 
-  /*
-  int num_pairs = pseudobatch.aln.size();
-  int num_aln = 0;
-  int bbsize = 0;
-  for (int i = 0; i < n; i++) {
-    int naln = 1, bsz = 0;
-    const auto &x = pseudobatch.aln[i];
-    if (x.ec_id != -1) {
-      naln = index.ecmap[x.ec_id].size();
-    } else if (!x.r1empty || !x.r2empty ) {
-      naln = x.u.size();
-    } 
-    if (naln == 0) {
-      naln = 1;
-    }
 
-    bsz = names[2*i].size() + names[2*i+1].size() + 8 + (seqs[2*i].size() + seqs[2*i+1].size() )/2 + 10;
-    bbsize += bsz * naln;
-  }
-
-  std::cout << names[2*i].first << "\t" << x.id << "\t" << x.ec_id <<  "\t" << x.k1pos << "\t" << x.k2pos << "\n";
-
-  bv.reserve(num_aln);
-  if (bbsize * 2 < bambufsize) {
-    char* t = new char[2*bbsize];
-    memcpy(t, bambuffer, bambufsize);
-    delete[] bambuffer;
-    bambuffer = t;
-    bambufsize = bbsize;
-  } // let's hope this is enough for now
-  
-  char* buf = bambuffer;
-  */
   int n = pseudobatch.aln.size();
   std::vector<int> u;
   std::vector<std::pair<int,double>> ua;
@@ -1048,9 +1026,9 @@ void AlnProcessor::processBuffer() {
     PseudoAlignmentInfo &pi = pseudobatch.aln[i];
 
     // fill in the data info
-    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty);
+    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, trans_auxlen);
     if (paired) {
-      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty);
+      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, trans_auxlen);
     }
 
     if (pi.r1empty && pi.r2empty) {
@@ -1132,8 +1110,8 @@ void AlnProcessor::processBuffer() {
         
         // set aux
         float zero = 0.0;
-        assert(b1.l_data + auxlen <= b1.m_data);
-        assert(b2.l_data + auxlen <= b2.m_data);
+        assert(b1.l_data + trans_auxlen <= b1.m_data);
+        assert(b2.l_data + trans_auxlen <= b2.m_data);
 
         b1.data[b1.l_data] = 'N';
         b1.data[b1.l_data+1] = 'H';
@@ -1285,7 +1263,7 @@ void AlnProcessor::processBuffer() {
             if (b1c.core.pos < 0) {
               b1c.core.pos = 0;
             }
-            b1c.core.bin = hts_reg2bin(b1.core.pos, b1.core.pos + seqs[si1].second-1, 14, 5);
+            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
             memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag           
           }
@@ -1300,7 +1278,7 @@ void AlnProcessor::processBuffer() {
                 b2c.core.pos = 0;
               }
 
-              b2c.core.bin = hts_reg2bin(b2.core.pos, b2.core.pos + seqs[si2].second, 14, 5);
+              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
               b2c.core.qual = 255;
               memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
 
@@ -1333,12 +1311,12 @@ void AlnProcessor::processBuffer() {
 
           if (!pi.r1empty) {
             if (softclip1 > 0 || overhang1 > 0) {
-              fixCigarString(b1c, rlen1, softclip1, overhang1);
+              fixCigarStringTrans(b1c, rlen1, softclip1, overhang1);
             }
           }
           if (!pi.r2empty) {
             if (softclip2 > 0 || overhang2 > 0) {
-              fixCigarString(b2c, rlen2, softclip2, overhang2);
+              fixCigarStringTrans(b2c, rlen2, softclip2, overhang2);
             }
           }
 
@@ -1362,7 +1340,404 @@ void AlnProcessor::processBuffer() {
   bv.clear();
 }
 
-void fixCigarString(bam1_t &b, int rlen, int softclip, int overhang) {
+
+void AlnProcessor::processBufferGenome() {
+
+  /* something simple where we can construct the bam records */
+  std::vector<bam1_t> bv;
+
+
+  int n = pseudobatch.aln.size();
+  std::vector<int> u;
+  std::vector<std::pair<int,double>> ua;
+  u.reserve(1000);
+  ua.reserve(1000);
+  
+
+  Kmer km1,km2;
+  KmerEntry val1, val2;
+
+  for (int i = 0; i < n; i++) {
+    bam1_t b1,b2, b1c, b2c;
+    int si1 = (paired) ? 2*i : i;
+    int si2 = (paired) ? 2*i +1 : -1;
+    int rlen1 = seqs[si1].second;
+    int rlen2;
+    if (paired) {
+      rlen2 = seqs[si2].second;
+    }
+    
+    // fill in the bam core info
+    b1.core.tid = -1;
+    b1.core.pos = -1;
+    b1.core.bin = 4680; // magic bin for unmapped reads
+    b1.core.qual = 0;
+    b1.core.flag = BAM_FUNMAP;
+    b1.core.mtid = -1;
+    b1.core.mpos = -1;
+    b1.core.isize = 0;
+
+    if (paired) {
+      // fix this flag for b1
+      b1.core.flag = BAM_FPAIRED | BAM_FREAD1 | BAM_FUNMAP | BAM_FMUNMAP;
+      // set for b2
+      b2.core.tid = -1;
+      b2.core.pos = -1;
+      b2.core.bin = 4680; // magic bin for unmapped reads
+      b2.core.qual = 0;
+      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b2.core.mtid = -1;
+      b2.core.mpos = -1;
+      b2.core.isize = 0;
+    }
+
+    PseudoAlignmentInfo &pi = pseudobatch.aln[i];
+
+    // fill in the data info
+    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+    if (paired) {
+      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+    }
+
+    if (pi.r1empty && pi.r2empty) {
+      bv.push_back(b1);
+      if (paired) {
+        bv.push_back(b2);
+      }
+    } else {
+      u.clear();
+      ua.clear();
+      int ec = pi.ec_id;
+      if (ec != -1) {
+        u = index.ecmap[ec]; // copy, but meh
+      } else {
+        u = pi.u;
+        auto it = index.ecmapinv.find(u);
+        if (it != index.ecmapinv.end()) {
+          ec = it->second;
+        }
+
+        if (ec == -1) {
+          assert(false && "Problem with ecmapinv");
+        }
+      }
+
+      
+      // modify u and compute norm
+      int32_t nmap = u.size();
+      {
+        double denom = 0.0;
+        const auto& wv = em.weight_map_[ec];
+        
+        for (int i = 0; i < nmap; ++i) {
+          denom += em.alpha_[u[i]] * wv[i];
+        }
+        
+        if (denom < TOLERANCE) {
+          u.clear();
+          ua.clear();
+        } else {
+           // compute the update step
+          for (int i = 0; i < nmap; ++i) {
+            if (em.alpha_[u[i]] > 0.0) {
+              double prob = em.alpha_[u[i]] * wv[i] / denom;
+              ua.push_back({u[i],prob});
+            }
+          }
+        }
+      }
+
+      nmap = ua.size();
+
+      if (ua.empty()) {
+        // shouldn't happen
+        bv.push_back(b1);
+        if (paired) {
+          bv.push_back(b2);
+        }        
+      } else {
+        // set flags
+        if (!pi.r1empty) {
+          b1.core.flag &= ~BAM_FUNMAP;
+          b2.core.flag &= ~BAM_FMUNMAP;
+        }
+        if (!pi.r2empty) {
+          b1.core.flag &= ~BAM_FMUNMAP;
+          b2.core.flag &= ~BAM_FUNMAP;
+        }
+        if (!pi.r1empty && !pi.r2empty) {
+          b1.core.flag |= BAM_FPROPER_PAIR;
+          b2.core.flag |= BAM_FPROPER_PAIR;
+        }              
+        
+        // set aux
+        float zero = 0.0;
+        assert(b1.l_data + genome_auxlen <= b1.m_data);
+        assert(b2.l_data + genome_auxlen <= b2.m_data);
+
+        b1.data[b1.l_data] = 'Z';
+        b1.data[b1.l_data+1] = 'W';
+        b1.data[b1.l_data+2] = 'f';
+        memcpy(b1.data + b1.l_data + 3, &zero, 4);
+        b1.l_data += 7;
+
+        b2.data[b2.l_data] = 'Z';
+        b2.data[b2.l_data+1] = 'W';
+        b2.data[b2.l_data+2] = 'f';
+        memcpy(b2.data + b2.l_data + 3, &zero, 4);
+        b2.l_data += 7;
+
+
+        // everything maps to the same strand on all transcriptomes
+        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {          
+          bool reptrue = (km == km.rep());
+          auto search = index.kmap.find(km.rep());
+          if (search == index.kmap.end()) {
+            return {false,reptrue};
+          } else {
+            val = search->second;
+            if (val.contig == -1) {
+              return {false,reptrue};
+            } else {
+              const Contig &c = index.dbGraph.contigs[val.contig];
+              if (c.transcripts.empty()) {
+                return {false,reptrue};
+              }
+              bool trsense = c.transcripts[0].sense;
+              for (const auto & x : c.transcripts) {
+                if (x.sense != trsense) {
+                  for (const auto &y : ua) {
+                    if (y.first == x.trid) {
+                      return {false,reptrue}; 
+                    }
+                  }
+                }
+              }
+              return {true, trsense == (reptrue == val.isFw())};
+            }
+          }
+        };
+        std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
+        
+        if (!pi.r1empty) {
+          km1 = Kmer(seqs[si1].first + pi.k1pos);
+          strInfo1 = strandednessInfo(km1, val1, ua);
+
+        }
+        if (paired && !pi.r2empty) {
+          km2 = Kmer(seqs[si2].first + pi.k2pos);
+          strInfo2 = strandednessInfo(km2, val2, ua);
+        }
+        
+        
+        // first read is all on reverse strand
+        if (strInfo1.first) {
+          // check strand of transcript
+          int tr = ua[0].first;
+          if (model.transcripts[tr].strand != strInfo1.second) {
+            // opposite strand, reverse complement
+            reverseComplementSeqInData(b1);
+          }
+        }
+        
+        // we have second read and it is all on reverse strand
+        if (paired && strInfo2.first) {
+          int tr = ua[0].first;
+          if (model.transcripts[tr].strand != strInfo2.second) {
+            reverseComplementSeqInData(b2);
+          }
+        }
+
+        std::unordered_map<std::pair<TranscriptAlignment, TranscriptAlignment>, double> alnmap;
+        TranscriptAlignment tra1, tra2;
+        for (auto tp : ua) {
+          auto t = tp.first;
+          double prob = tp.second;
+          std::pair<int,bool> pos1, pos2;
+
+          if (!pi.r1empty) {
+            pos1 = index.findPosition(t, km1, val1, pi.k1pos);
+            int trpos = (pos1.second) ? pos1.first-1 : pos1.first - rlen1;
+            model.translateTrPosition(t, trpos, rlen1, pos1.second, tra1);            
+          }
+          
+          if (paired) {
+            if (!pi.r2empty) {
+              pos2 = index.findPosition(t, km2, val2, pi.k2pos);
+              int trpos = (pos2.second) ? pos2.first-1 : pos2.first - rlen2;
+              model.translateTrPosition(t, trpos, rlen2, pos2.second, tra2);              
+            }
+          }
+
+          alnmap[{tra1,tra2}] += prob;
+
+        }
+    
+        double bestprob = 0.0;
+        std::pair<TranscriptAlignment, TranscriptAlignment> bestTra;
+        if (alnmap.size() == 1) {
+          // common case
+          bestTra.first = std::move(tra1);
+          bestTra.second = std::move(tra2);
+          bestprob = 1.0;
+        } else {
+          for (auto &x : alnmap) {
+            if (x.second > bestprob) {
+              bestprob = x.second;
+              bestTra = x.first; // copy
+            }
+          }
+        }
+
+
+        for (auto &x : alnmap) {
+          auto &tra = x.first;
+          float prob = (float) x.second; // explicit cast
+
+          bool bestTr = (bestprob == 1.0) || (tra == bestTra);
+
+          b1c = b1;
+          b1c.data = new uint8_t[b1c.m_data];
+          memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));          
+          if (!strInfo1.first && !tra.first.strand) {
+            reverseComplementSeqInData(b1c);
+          }
+
+          if (paired) {
+            b2c = b2;
+            b2c.data = new uint8_t[b2c.m_data];
+            memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
+            if (!strInfo2.first && !tra.second.strand) {
+              reverseComplementSeqInData(b2c);
+            }
+          }
+
+          if (paired) {
+            // todo handle non mapping reads
+            if (!pi.r1empty && !tra.first.strand) {
+              b1c.core.flag |= BAM_FREVERSE;
+              b2c.core.flag |= BAM_FMREVERSE;
+            }
+            if (!pi.r2empty && !tra.second.strand) {
+              b1c.core.flag |= BAM_FMREVERSE; // 
+              b2c.core.flag |= BAM_FREVERSE;
+            }            
+          } else {
+            if (!pi.r1empty && !tra.first.strand) {
+              b1c.core.flag |= BAM_FREVERSE;
+            }
+          }
+
+          if (!bestTr) {
+            b1c.core.flag |= BAM_FSECONDARY;
+            b2c.core.flag |= BAM_FSECONDARY;
+          }
+        
+          b1c.core.tid = tra.first.chr;
+          if (!pi.r1empty) {
+            b1c.core.pos = tra.first.chrpos;
+            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
+            b1c.core.qual = 255;
+            memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
+          }
+
+          if (paired) {
+            b2c.core.tid = tra.second.chr;
+            if (!pi.r2empty) {
+              b2c.core.pos = tra.second.chrpos;
+              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
+              b2c.core.qual = 255;
+              memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
+
+              if (pi.r1empty) {
+                b1c.core.tid = b2c.core.tid;
+                b1c.core.pos = b2c.core.pos;
+                b1c.core.bin = b2c.core.bin;
+                b1c.core.qual = 0;
+              }
+            } else {
+              b2c.core.tid = b1c.core.tid;
+              b2c.core.pos = b1c.core.pos;
+              b2c.core.bin = b2c.core.bin;
+              b2c.core.qual = 0;
+            }
+          }
+
+          b1c.core.mtid = b2c.core.tid;
+          b1c.core.mpos = b2c.core.pos;
+          b2c.core.mtid = b1c.core.tid;
+          b2c.core.mpos = b1c.core.pos;
+
+          if (!pi.r1empty && !pi.r2empty) {
+            int tlen = b2c.core.pos - b1c.core.pos;
+            b1c.core.isize = tlen;
+            b2c.core.isize = -tlen;
+          }          
+        
+
+          if (!pi.r1empty && tra.first.cigar.size() > 1) {
+            fixCigarStringGenome(b1c, tra.first);
+          }
+          if (paired && !pi.r2empty && tra.second.cigar.size() > 1) {
+            fixCigarStringGenome(b2c, tra.second);
+          }
+
+        
+          if (!pi.r1empty || bestTr) {
+            bv.push_back(b1c);
+          }
+          if (!pi.r2empty || bestTr) {
+            bv.push_back(b2c);
+          }
+        }                
+      }
+    }    
+  }
+
+  mp.writePseudoBam(bv);
+
+  // clean up our mess
+  for (auto &b : bv) {
+    delete[] b.data;
+  }
+  bv.clear();
+}
+
+void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
+  int ncig = tra.cigar.size();
+  if (ncig == 1) {
+    return;
+  }
+
+  int extraspace = b.m_data - b.l_data;
+  extraspace -= ((int) (ncig - b.core.n_cigar)*sizeof(uint32_t));
+
+  if (extraspace < 0) {
+    //allocate more space
+    int n = b.m_data - extraspace;
+    uint8_t* bf = new uint8_t[n];
+    memcpy(bf, b.data, b.m_data);
+    delete[] b.data;
+    b.data = bf;
+    b.m_data = n;
+  }
+
+
+  uint8_t *cigafter = b.data + b.core.l_qname + b.core.n_cigar * sizeof(uint32_t);
+  int copylen = b.l_data - (b.core.l_qname + b.core.n_cigar * sizeof(uint32_t));
+  uint8_t *dst = cigafter+((int) (ncig-b.core.n_cigar))*sizeof(uint32_t);
+  memmove(dst, cigafter, copylen);
+  uint32_t *cig = (uint32_t*) (b.data + b.core.l_qname);
+  b.l_data += (ncig - b.core.n_cigar)*sizeof(uint32_t);
+  b.core.n_cigar = ncig;
+
+  for (int i = 0; i < ncig; i++) {
+    *cig = tra.cigar[i];
+    ++cig;
+  }
+}
+
+void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   int ncig = 1;
   if (softclip > 0) {
     if (overhang > 0) {
@@ -1439,7 +1814,7 @@ void reverseComplementSeqInData(bam1_t &b) {
   }
 }
 
-int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped) {
+int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped, int auxlen) {
  
   b.core.l_extranul =  (3 - (nlen % 4));  
   b.core.l_qname = nlen + b.core.l_extranul + 1;
@@ -1447,7 +1822,7 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 
   if (buf == nullptr) {
     // allocate memory for buffer
-    int blen = b.core.l_qname + 16 + ((b.core.l_qseq+2)>>1) + b.core.l_qseq + auxlen; // 16 for cigar, auxlen for NI:i:int and ZW:f:0.0
+    int blen = b.core.l_qname + 16 + ((b.core.l_qseq+2)>>1) + b.core.l_qseq + auxlen; // 16 for cigar, auxlen for auxiliary fields
     b.data = new uint8_t[blen];
     b.m_data = blen;
     b.l_data = 0;

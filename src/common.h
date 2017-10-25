@@ -33,12 +33,14 @@ struct ProgramOptions {
   bool peek; // only used for H5Dump
   bool bias;
   bool pseudobam;
+  bool genomebam;
   bool make_unique;
   bool fusion;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   bool umi;
   std::string gfa; // used for inspect
+  std::string cache;
 
 ProgramOptions() :
   verbose(false),

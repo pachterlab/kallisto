@@ -22,6 +22,7 @@
 #include "Inspect.h"
 #include "Bootstrap.h"
 #include "H5Writer.h"
+#include "GeneModel.h"
 
 
 //#define ERROR_STR "\033[1mError:\033[0m"
@@ -122,9 +123,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
+  int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -135,6 +137,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"genomebam", no_argument, &gbam_flag, 1},
     {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
@@ -146,6 +149,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
     {"bootstrap-samples", required_argument, 0, 'b'},
+    {"genome", required_argument, 0, 'g'},
     {0,0,0,0}
   };
   int c;
@@ -189,6 +193,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'b': {
       stringstream(optarg) >> opt.bootstrap;
+      break;
+    }
+    case 'g': {
+      stringstream(optarg) >> opt.cache;
       break;
     }
     case 'd': {
@@ -236,6 +244,11 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+
+  if (gbam_flag) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
   }
 
   if (fusion_flag) {
@@ -586,6 +599,22 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     ret = false;
   }
   
+  if (opt.genomebam) {
+    if (!opt.cache.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.cache.c_str(), &stFileInfo);
+      if (intStat == 0) {
+        // we find the cache file
+      } else {
+        cerr << "Error: file " << opt.cache << " does not exist" << endl;
+        ret = false;
+      }
+    } else {
+      cerr << "Error: need transcriptome file for genome alignment" << endl;
+      ret = false;
+    }
+  }
+
 
   if (opt.output.empty()) {
     cerr << "Error: need to specify output directory " << opt.output << endl;
@@ -1125,10 +1154,17 @@ int main(int argc, char *argv[]) {
           index.loadTranscriptSequences();
         }
 
+        Transcriptome model;
+        if (opt.genomebam) {
+          ifstream in(opt.cache);
+          model.loadTranscriptome(index, in, opt);
+        }
+
+
         int num_processed = 0;
 
         MinCollector collection(index, opt);        
-        MasterProcessor MP(index, opt, collection);
+        MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessReads(MP, opt);
 
         // save modified index for future use
@@ -1231,7 +1267,8 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.pseudobam) {
-          MP.processAln(em); // add EM into the mix
+         
+          MP.processAln(em);
         }
 
         cerr << endl;
@@ -1360,7 +1397,8 @@ int main(int argc, char *argv[]) {
 
         MinCollector collection(index, opt);
         int num_processed = 0;
-        MasterProcessor MP(index, opt, collection);
+        Transcriptome model; // empty model
+        MasterProcessor MP(index, opt, collection, model);
 
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);

@@ -2,7 +2,8 @@
 #include <htslib/sam.h>
 #include "PseudoBam.h"
 
-bam_hdr_t* createPseudoBamHeader(const KmerIndex& index)  {
+
+bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
   bam_hdr_t *h = bam_hdr_init();
   h->n_targets = index.num_trans;
   //todo include program parameters in string
@@ -19,6 +20,26 @@ bam_hdr_t* createPseudoBamHeader(const KmerIndex& index)  {
   }
   return h;
 }
+
+bam_hdr_t* createPseudoBamHeaderGenome(const Transcriptome& model)  {
+  bam_hdr_t *h = bam_hdr_init();
+  
+  std::string text = "@HD\tVN:1.0\n@PG\tID:kallisto\tPN:kallisto\tVN:";
+  text += KALLISTO_VERSION;
+  text += "\n";
+  h->text = strdup(text.c_str());
+  h->l_text = (uint32_t) strlen(h->text);
+  int num_chr = model.chr.size();
+  h->n_targets = num_chr;
+  h->target_len = (uint32_t *) calloc(num_chr, sizeof(uint32_t));
+  h->target_name = (char**) calloc(num_chr, sizeof(char*));
+  for (int i = 0; i < num_chr; i++) {
+    h->target_len[i] = (uint32_t) model.chr[i].len;
+    h->target_name[i] = strdup(model.chr[i].name.c_str());
+  }
+  return h;
+}
+
 
 
 /** --- pseudobam functions -- **/
