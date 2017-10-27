@@ -1536,21 +1536,13 @@ void AlnProcessor::processBufferGenome() {
         
         
         // first read is all on reverse strand
-        if (strInfo1.first) {
-          // check strand of transcript
-          int tr = ua[0].first;
-          if (model.transcripts[tr].strand != strInfo1.second) {
-            // opposite strand, reverse complement
-            reverseComplementSeqInData(b1);
-          }
+        if (strInfo1.first && !strInfo1.second) {
+          reverseComplementSeqInData(b1);          
         }
         
         // we have second read and it is all on reverse strand
-        if (paired && strInfo2.first) {
-          int tr = ua[0].first;
-          if (model.transcripts[tr].strand != strInfo2.second) {
-            reverseComplementSeqInData(b2);
-          }
+        if (paired && strInfo2.first && !strInfo2.second) {
+          reverseComplementSeqInData(b2);
         }
 
         std::unordered_map<std::pair<TranscriptAlignment, TranscriptAlignment>, double> alnmap;
@@ -1604,7 +1596,7 @@ void AlnProcessor::processBufferGenome() {
           b1c = b1;
           b1c.data = new uint8_t[b1c.m_data];
           memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));          
-          if (!tra.first.strand) {
+          if (!strInfo1.first && !tra.first.strand) {
             reverseComplementSeqInData(b1c);
           }
 
@@ -1612,7 +1604,7 @@ void AlnProcessor::processBufferGenome() {
             b2c = b2;
             b2c.data = new uint8_t[b2c.m_data];
             memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
-            if (!tra.second.strand) {
+            if (!strInfo2.first && !tra.second.strand) {
               reverseComplementSeqInData(b2c);
             }
           }
