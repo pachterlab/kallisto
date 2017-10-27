@@ -230,6 +230,10 @@ void MasterProcessor::processReads() {
     }
     bamfp = sam_open(bamfn.c_str(), "wb");
     int r = sam_hdr_write(bamfp, bamh);
+    
+    if (opt.threads > 1) {
+      hts_set_threads(bamfp, opt.threads);
+    }
   }
 
   // start worker threads
@@ -491,7 +495,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
 
 void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   std::lock_guard<std::mutex> lock(this->writer_lock);
-
+  // locking is handled by htslib
   for (const auto &b : bv) {
     int r = sam_write1(bamfp, bamh, &b);    
   }
@@ -1503,9 +1507,10 @@ void AlnProcessor::processBufferGenome() {
               if (c.transcripts.empty()) {
                 return {false,reptrue};
               }
-              bool trsense = c.transcripts[0].sense;
+              //TODO fix this
+              bool chrsense = model.transcripts[c.transcripts[0].trid].strand == c.transcripts[0].sense;
               for (const auto & x : c.transcripts) {
-                if (x.sense != trsense) {
+                if ((model.transcripts[x.trid].strand == x.sense) != chrsense) {
                   for (const auto &y : ua) {
                     if (y.first == x.trid) {
                       return {false,reptrue}; 
@@ -1513,7 +1518,7 @@ void AlnProcessor::processBufferGenome() {
                   }
                 }
               }
-              return {true, trsense == (reptrue == val.isFw())};
+              return {true, chrsense == (reptrue == val.isFw())};
             }
           }
         };
@@ -1599,7 +1604,7 @@ void AlnProcessor::processBufferGenome() {
           b1c = b1;
           b1c.data = new uint8_t[b1c.m_data];
           memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));          
-          if (!strInfo1.first && !tra.first.strand) {
+          if (!tra.first.strand) {
             reverseComplementSeqInData(b1c);
           }
 
@@ -1607,7 +1612,7 @@ void AlnProcessor::processBufferGenome() {
             b2c = b2;
             b2c.data = new uint8_t[b2c.m_data];
             memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
-            if (!strInfo2.first && !tra.second.strand) {
+            if (!tra.second.strand) {
               reverseComplementSeqInData(b2c);
             }
           }

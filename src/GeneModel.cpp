@@ -38,7 +38,6 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
     if (trpos < 0) { 
       // read starts a bit before the transcript, softclip to fit
       int softclip = -trpos;
-      trpos = 0;
       aln.cigar.push_back((softclip << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP);
       rpos += softclip;
       aln.chrpos = model.start;
@@ -55,16 +54,22 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
           rpos = rlen;
           break; // end of the read
         } else {
-          aln.cigar.push_back(((len-trpos) << BAM_CIGAR_SHIFT) | BAM_CMATCH);
+          int mlen = 0;
+          if (trpos < 0) { // match begins before this exon, extends over it
+            mlen = len;            
+          } else {     
+            mlen = len - trpos;     
+          }
+          aln.cigar.push_back((mlen << BAM_CIGAR_SHIFT) | BAM_CMATCH);
           if (i +1 < n_exons) {
             aln.cigar.push_back(((model.exons[i+1].start-exon.stop) << BAM_CIGAR_SHIFT) | BAM_CREF_SKIP); // insert a bunch of N's
           }
-          rpos += (len-trpos);
+          rpos += mlen;
         }
       }
       trpos -= len;
     }
-    if (rpos < rlen && trpos > 0) {
+    if (rpos < rlen) {
       aln.cigar.push_back(((rlen-rpos) << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP);
     }
   } else {
@@ -72,7 +77,6 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
     if (trpos < 0) {
       int softclip = -trpos;      
       aln.cigar.push_back((softclip << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP); // soft clip
-      trpos = 0; //
       rpos += softclip;
       aln.chrpos = model.start;
     }
@@ -88,16 +92,22 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
           rpos = rlen;
           break;
         } else {
-          aln.cigar.push_back(((len-trpos) << BAM_CIGAR_SHIFT) | BAM_CMATCH); 
+          int mlen = 0;
+          if (trpos < 0) { // match begins before this exon, extends over it
+            mlen = len;            
+          } else {     
+            mlen = len - trpos;     
+          }
+          aln.cigar.push_back((mlen << BAM_CIGAR_SHIFT) | BAM_CMATCH);
           if (i > 0) {
             aln.cigar.push_back(((model.exons[i-1].start - exon.stop) << BAM_CIGAR_SHIFT) | BAM_CREF_SKIP);
           }
-          rpos += (len-trpos);          
+          rpos += mlen;
         }
       }
       trpos -= len;
     }
-    if (rpos < rlen && trpos > 0) {
+    if (rpos < rlen) {
       aln.cigar.push_back(((rlen-rpos) << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP);
     }
   }
@@ -269,8 +279,10 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       if (it != trNameToId.end()) {
         model.id = it->second;        
       } else {
-        std::cerr << "Error: transcript " << tr_id << " not defined" << std::endl;
-        assert(false);
+        std::cerr << "Warning: transcript " << tr_id << " is defined in GTF but not in FASTA" << std::endl;
+        std::getline(in,line);
+        continue;
+        
       }
 
 
