@@ -500,8 +500,7 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
     int r = sam_write1(bamfp, bamh, &b);    
   }
   for (const auto &b : bv) {
-    delete[] b.data;
-    
+    delete[] b.data;    
   }
 }
 
@@ -1511,7 +1510,6 @@ void AlnProcessor::processBufferGenome() {
               if (c.transcripts.empty()) {
                 return {false,reptrue};
               }
-              //TODO fix this
               bool chrsense = model.transcripts[c.transcripts[0].trid].strand == c.transcripts[0].sense;
               for (const auto & x : c.transcripts) {
                 if ((model.transcripts[x.trid].strand == x.sense) != chrsense) {
@@ -1559,19 +1557,29 @@ void AlnProcessor::processBufferGenome() {
           if (!pi.r1empty) {
             pos1 = index.findPosition(t, km1, val1, pi.k1pos);
             int trpos = (pos1.second) ? pos1.first-1 : pos1.first - rlen1;
-            model.translateTrPosition(t, trpos, rlen1, pos1.second, tra1);            
+            if (!model.translateTrPosition(t, trpos, rlen1, pos1.second, tra1)) {
+              continue;
+            }
           }
           
           if (paired) {
             if (!pi.r2empty) {
               pos2 = index.findPosition(t, km2, val2, pi.k2pos);
               int trpos = (pos2.second) ? pos2.first-1 : pos2.first - rlen2;
-              model.translateTrPosition(t, trpos, rlen2, pos2.second, tra2);              
+              if (!model.translateTrPosition(t, trpos, rlen2, pos2.second, tra2)) {
+                continue;
+              }
             }
           }
 
           alnmap[{tra1,tra2}] += prob;
 
+        }
+
+        if (alnmap.size() == 0) {
+          bv.push_back(b1);
+          bv.push_back(b2);
+          continue;
         }
     
         double bestprob = 0.0;
@@ -1690,6 +1698,8 @@ void AlnProcessor::processBufferGenome() {
           if (!pi.r2empty || bestTr) {
             bv.push_back(b2c);
           }
+          delete[] b1.data;
+          delete[] b2.data;
         }                
       }
     }    

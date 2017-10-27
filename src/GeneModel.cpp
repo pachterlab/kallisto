@@ -23,6 +23,9 @@ bool charToStrand(char c) {
 
 bool Transcriptome::translateTrPosition(const int tr, const int pos, const int rlen, bool strand, TranscriptAlignment &aln) const {
   const TranscriptModel& model = transcripts[tr];
+  if (model.chr == -1) {
+    return false;
+  }
   aln.chr = model.chr;
   aln.cigar.clear();
   aln.chrpos = -1;
@@ -333,13 +336,19 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
     std::cerr << "Warning: " << tr_extras << " transcript defined in GTF but not found in FASTA" << std::endl;
   }
 
+  int tr_bad = 0;
   for (int i = 0; i < index.num_trans; i++) {
     const auto& tr = transcripts[i];
     if (tr.chr == -1) {
-      std::cerr << "Error: GTF file does not contain information about transcript " << index.target_names_[i] << std::endl;
-      assert(false);
+      tr_bad++;
     }
   }
+  if (tr_bad > 0) {
+    std::cerr << "Warning: there were " << tr_bad << " transcripts out of " 
+              << index.num_trans << " that are missing in the GTF file " << std::endl;
+    assert(false);
+  }
+
 }
 
 
