@@ -499,6 +499,10 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   for (const auto &b : bv) {
     int r = sam_write1(bamfp, bamh, &b);    
   }
+  for (const auto &b : bv) {
+    delete[] b.data;
+    
+  }
 }
 
 void MasterProcessor::outputFusion(const std::stringstream &o) {

@@ -231,9 +231,11 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
   
   for (int i = 0; i < index.num_trans; i++) {
     TranscriptModel tr;
-    tr.id = 1;
+    tr.id = i;
     tr.chr = -1;
     tr.gene_id = -1;
+    tr.length = -1;
+    tr.strand = true;
     transcripts.push_back(std::move(tr));
     trNameToId.insert({index.target_names_[i], i});
   }
@@ -251,7 +253,7 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
     }  
   };
 
-
+  int tr_extras = 0;
   //std::unordered_map<std::string,int>
   while (in.good()) {
     in >> type;
@@ -261,7 +263,7 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       in >> model.name >> model.commonName >> chr_id >> gtype >> strand >> model.start >> model.stop;
       model.chr = chrLookup(chr_id);
       if (model.chr == -1) {
-        std::cerr << "Error: chromosome " << chr_id << " not definede before reference" << std::endl;
+        std::cerr << "Error: chromosome " << chr_id << " not defined before reference" << std::endl;
         assert(false);
       }      
       model.id = transcripts.size();      
@@ -279,12 +281,11 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       if (it != trNameToId.end()) {
         model.id = it->second;        
       } else {
-        std::cerr << "Warning: transcript " << tr_id << " is defined in GTF but not in FASTA" << std::endl;
+        tr_extras++;
+        //std::cerr << "Warning: transcript " << tr_id << " is defined in GTF but not in FASTA" << std::endl;
         std::getline(in,line);
-        continue;
-        
+        continue;        
       }
-
 
       model.chr = chrLookup(chr_id);
       if (model.chr == -1) {
@@ -325,6 +326,18 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       std::getline(in,line);
     } else {
       std::getline(in, line); // read until end of line
+    }
+  }
+
+  if (tr_extras >= 0) {
+    std::cerr << "Warning: " << tr_extras << " transcript defined in GTF but not found in FASTA" << std::endl;
+  }
+
+  for (int i = 0; i < index.num_trans; i++) {
+    const auto& tr = transcripts[i];
+    if (tr.chr == -1) {
+      std::cerr << "Error: GTF file does not contain information about transcript " << index.target_names_[i] << std::endl;
+      assert(false);
     }
   }
 }
