@@ -498,10 +498,7 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   // locking is handled by htslib
   for (const auto &b : bv) {
     int r = sam_write1(bamfp, bamh, &b);    
-  }
-  for (const auto &b : bv) {
-    delete[] b.data;    
-  }
+  } 
 }
 
 void MasterProcessor::outputFusion(const std::stringstream &o) {
@@ -1038,9 +1035,9 @@ void AlnProcessor::processBufferTrans() {
       fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, trans_auxlen);
     }
 
-    if (pi.r1empty && pi.r2empty) {
+    if (pi.r1empty && pi.r2empty) {      
       bv.push_back(b1);
-      if (paired) {
+      if (paired) {      
         bv.push_back(b2);
       }
     } else {
@@ -1104,21 +1101,24 @@ void AlnProcessor::processBufferTrans() {
         // set flags
         if (!pi.r1empty) {
           b1.core.flag &= ~BAM_FUNMAP;
-          b2.core.flag &= ~BAM_FMUNMAP;
+          if (paired) {
+            b2.core.flag &= ~BAM_FMUNMAP;
+          }
         }
-        if (!pi.r2empty) {
-          b1.core.flag &= ~BAM_FMUNMAP;
-          b2.core.flag &= ~BAM_FUNMAP;
+        if (paired) {
+          if (!pi.r2empty) {
+            b1.core.flag &= ~BAM_FMUNMAP;
+            b2.core.flag &= ~BAM_FUNMAP;
+          }
+          if (!pi.r1empty && !pi.r2empty) {
+            b1.core.flag |= BAM_FPROPER_PAIR;
+            b2.core.flag |= BAM_FPROPER_PAIR;
+          }              
         }
-        if (!pi.r1empty && !pi.r2empty) {
-          b1.core.flag |= BAM_FPROPER_PAIR;
-          b2.core.flag |= BAM_FPROPER_PAIR;
-        }              
         
         // set aux
         float zero = 0.0;
-        assert(b1.l_data + trans_auxlen <= b1.m_data);
-        assert(b2.l_data + trans_auxlen <= b2.m_data);
+        assert(b1.l_data + trans_auxlen <= b1.m_data);      
 
         b1.data[b1.l_data] = 'N';
         b1.data[b1.l_data+1] = 'H';
@@ -1132,17 +1132,21 @@ void AlnProcessor::processBufferTrans() {
         memcpy(b1.data + b1.l_data + 3, &zero, 4);
         b1.l_data += 7;
 
-        b2.data[b2.l_data] = 'N';
-        b2.data[b2.l_data+1] = 'H';
-        b2.data[b2.l_data+2] = 'i';
-        memcpy(b2.data + b2.l_data + 3, &nmap, 4);
-        b2.l_data += 7;
+        if (paired) {
+          assert(b2.l_data + trans_auxlen <= b2.m_data);
+          
+          b2.data[b2.l_data] = 'N';
+          b2.data[b2.l_data+1] = 'H';
+          b2.data[b2.l_data+2] = 'i';
+          memcpy(b2.data + b2.l_data + 3, &nmap, 4);
+          b2.l_data += 7;
 
-        b2.data[b2.l_data] = 'Z';
-        b2.data[b2.l_data+1] = 'W';
-        b2.data[b2.l_data+2] = 'f';
-        memcpy(b2.data + b2.l_data + 3, &zero, 4);
-        b2.l_data += 7;
+          b2.data[b2.l_data] = 'Z';
+          b2.data[b2.l_data+1] = 'W';
+          b2.data[b2.l_data+2] = 'f';
+          memcpy(b2.data + b2.l_data + 3, &zero, 4);
+          b2.l_data += 7;
+        }
 
         auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
           bool reptrue = (km == km.rep());
@@ -1352,7 +1356,7 @@ void AlnProcessor::processBufferGenome() {
 
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
-
+  int idnum = 0;
 
   int n = pseudobatch.aln.size();
   std::vector<int> u;
@@ -1402,8 +1406,10 @@ void AlnProcessor::processBufferGenome() {
 
     // fill in the data info
     fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+    //b1.id = idnum++;
     if (paired) {
       fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+      // b2.id = idnum++;
     }
 
     if (pi.r1empty && pi.r2empty) {
@@ -1466,33 +1472,39 @@ void AlnProcessor::processBufferGenome() {
         // set flags
         if (!pi.r1empty) {
           b1.core.flag &= ~BAM_FUNMAP;
-          b2.core.flag &= ~BAM_FMUNMAP;
+          if (paired) {
+            b2.core.flag &= ~BAM_FMUNMAP;
+          }
         }
-        if (!pi.r2empty) {
-          b1.core.flag &= ~BAM_FMUNMAP;
-          b2.core.flag &= ~BAM_FUNMAP;
+        if (paired) {
+          if (!pi.r2empty) {
+            b1.core.flag &= ~BAM_FMUNMAP;
+            b2.core.flag &= ~BAM_FUNMAP;
+          }
+          if (!pi.r1empty && !pi.r2empty) {
+            b1.core.flag |= BAM_FPROPER_PAIR;
+            b2.core.flag |= BAM_FPROPER_PAIR;
+          }              
         }
-        if (!pi.r1empty && !pi.r2empty) {
-          b1.core.flag |= BAM_FPROPER_PAIR;
-          b2.core.flag |= BAM_FPROPER_PAIR;
-        }              
-        
+          
         // set aux
         float zero = 0.0;
         assert(b1.l_data + genome_auxlen <= b1.m_data);
-        assert(b2.l_data + genome_auxlen <= b2.m_data);
-
+        
         b1.data[b1.l_data] = 'Z';
         b1.data[b1.l_data+1] = 'W';
         b1.data[b1.l_data+2] = 'f';
         memcpy(b1.data + b1.l_data + 3, &zero, 4);
         b1.l_data += 7;
 
-        b2.data[b2.l_data] = 'Z';
-        b2.data[b2.l_data+1] = 'W';
-        b2.data[b2.l_data+2] = 'f';
-        memcpy(b2.data + b2.l_data + 3, &zero, 4);
-        b2.l_data += 7;
+        if (paired) {
+          assert(b2.l_data + genome_auxlen <= b2.m_data);
+          b2.data[b2.l_data] = 'Z';
+          b2.data[b2.l_data+1] = 'W';
+          b2.data[b2.l_data+2] = 'f';
+          memcpy(b2.data + b2.l_data + 3, &zero, 4);
+          b2.l_data += 7;
+        }
 
 
         // everything maps to the same strand on all transcriptomes
@@ -1578,7 +1590,9 @@ void AlnProcessor::processBufferGenome() {
 
         if (alnmap.size() == 0) {
           bv.push_back(b1);
-          bv.push_back(b2);
+          if (paired) {
+            bv.push_back(b2);
+          }
           continue;
         }
     
@@ -1606,6 +1620,7 @@ void AlnProcessor::processBufferGenome() {
           bool bestTr = (bestprob == 1.0) || (tra == bestTra);
 
           b1c = b1;
+          // b1c.id = idnum++;
           b1c.data = new uint8_t[b1c.m_data];
           memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));          
           if (!strInfo1.first && !tra.first.strand) {
@@ -1614,6 +1629,7 @@ void AlnProcessor::processBufferGenome() {
 
           if (paired) {
             b2c = b2;
+            // b2c.id = idnum++;
             b2c.data = new uint8_t[b2c.m_data];
             memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
             if (!strInfo2.first && !tra.second.strand) {
@@ -1695,12 +1711,17 @@ void AlnProcessor::processBufferGenome() {
           if (!pi.r1empty || bestTr) {
             bv.push_back(b1c);
           }
-          if (!pi.r2empty || bestTr) {
+          if (paired && (!pi.r2empty || bestTr)) {
             bv.push_back(b2c);
           }
-          delete[] b1.data;
+        }  
+      
+        delete[] b1.data;
+        // std::cerr << "deleting" << b1.id << std::endl;
+        if (paired) {
           delete[] b2.data;
-        }                
+          // std::cerr << "deleting" << b2.id << std::endl;
+        }
       }
     }    
   }
@@ -1710,6 +1731,7 @@ void AlnProcessor::processBufferGenome() {
   // clean up our mess
   for (auto &b : bv) {
     delete[] b.data;
+    // std::cerr << "deleting" << b.id  << std::endl;
   }
   bv.clear();
 }
@@ -1729,6 +1751,7 @@ void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
     uint8_t* bf = new uint8_t[n];
     memcpy(bf, b.data, b.m_data);
     delete[] b.data;
+    // std::cerr << "temporarily deleting " << b.id  << std::endl;
     b.data = bf;
     b.m_data = n;
   }
@@ -1739,7 +1762,7 @@ void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
   uint8_t *dst = cigafter+((int) (ncig-b.core.n_cigar))*sizeof(uint32_t);
   memmove(dst, cigafter, copylen);
   uint32_t *cig = (uint32_t*) (b.data + b.core.l_qname);
-  b.l_data += (ncig - b.core.n_cigar)*sizeof(uint32_t);
+  b.l_data += ((int)(ncig - b.core.n_cigar))*sizeof(uint32_t);
   b.core.n_cigar = ncig;
 
   for (int i = 0; i < ncig; i++) {

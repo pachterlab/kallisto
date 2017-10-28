@@ -346,7 +346,6 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
   if (tr_bad > 0) {
     std::cerr << "Warning: there were " << tr_bad << " transcripts out of " 
               << index.num_trans << " that are missing in the GTF file " << std::endl;
-    assert(false);
   }
 
 }
