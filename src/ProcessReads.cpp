@@ -17,10 +17,13 @@
 #include <fstream>
 #include <limits>
 
+#include <iomanip>
+
 #include "ProcessReads.h"
 #include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
+#include <htslib/kstring.h>
 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
@@ -496,7 +499,22 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
 void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   std::lock_guard<std::mutex> lock(this->writer_lock);
   // locking is handled by htslib
+  //kstring_t str = { 0, 0, NULL };
   for (const auto &b : bv) {
+    /*
+    std::cout << "name: " <<  b.data << ", ldata:" << (int)b.l_data << " ,mdata: " << (int) b.m_data  
+      <<  ", lqname " << (int) b.core.l_qname <<", lqseq " <<  (int) b.core.l_qseq << ", enull " << (int) b.core.l_extranul << std::endl;
+    for (int i = 0; i < b.l_data; ++i) {      
+      std::cout << (int) b.data[i] << " ";
+    }
+    std::cout << std::endl;    
+    std::cout << "tid: " << b.core.tid << ", pos: " << (int) b.core.pos
+              << ", flag: " << b.core.flag << ", ncigar: " << b.core.n_cigar << ", mtid: " <<(int) b.core.mtid << ", mpos: " << (int) b.core.mpos << ", isize" << (int) b.core.isize <<  std::endl;
+    kstring_t str = { 0, 0, NULL };
+    sam_format1(bamh, &b, &str);
+    kputc('\n', &str);
+    std::cout << str.s << std::endl;
+    */
     int r = sam_write1(bamfp, bamh, &b);    
   } 
 }
@@ -1346,7 +1364,7 @@ void AlnProcessor::processBufferTrans() {
 
   // clean up our mess
   for (auto &b : bv) {
-    delete[] b.data;
+     delete[] b.data;
   }
   bv.clear();
 }
@@ -1686,13 +1704,14 @@ void AlnProcessor::processBufferGenome() {
               b2c.core.bin = b2c.core.bin;
               b2c.core.qual = 0;
             }
+            b1c.core.mtid = b2c.core.tid;
+            b1c.core.mpos = b2c.core.pos;
+            b2c.core.mtid = b1c.core.tid;
+            b2c.core.mpos = b1c.core.pos;
+  
           }
 
-          b1c.core.mtid = b2c.core.tid;
-          b1c.core.mpos = b2c.core.pos;
-          b2c.core.mtid = b1c.core.tid;
-          b2c.core.mpos = b1c.core.pos;
-
+          
           if (!pi.r1empty && !pi.r2empty) {
             int tlen = b2c.core.pos - b1c.core.pos;
             b1c.core.isize = tlen;
