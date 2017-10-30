@@ -426,7 +426,7 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
               int tchr = model.transcripts[t].chr;
               if (tchr != -1) {
                 if ( tchr != chr) {
-                  out << "%20(" << model.chr[chr].name << ")";
+                  out << "%20(" << model.chr[tchr].name << ")";
                 } else {
                   out << "%20(*)";
                 }
