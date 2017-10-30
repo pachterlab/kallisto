@@ -332,7 +332,7 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
     }
   }
 
-  if (tr_extras >= 0) {
+  if (tr_extras > 0) {
     std::cerr << "Warning: " << tr_extras << " transcript defined in GTF but not found in FASTA" << std::endl;
   }
 

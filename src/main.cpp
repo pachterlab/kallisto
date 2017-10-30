@@ -83,10 +83,14 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
 
-  const char *opt_string = "";
+  const char *opt_string = "G:g:";
+
+  int gbam_flag = 0;
   static struct option long_options[] = {
     // long args
-    {"gfa", required_argument, 0, 'g'},
+    {"gfa", required_argument, 0, 'G'},
+    {"genomebam", no_argument, &gbam_flag, 1},
+    {"genome", required_argument, 0, 'g'},
     {0,0,0,0}
   };
 
@@ -102,14 +106,23 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     switch (c) {
     case 0:
       break;
-    case 'g': {
+    case 'G': {
       opt.gfa = optarg;
+      break;
+    }
+    case 'g': {
+      stringstream(optarg) >> opt.cache;
       break;
     }
     default: break;
     }
   }
   opt.index = argv[optind];
+
+  if (gbam_flag) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
+  }
 }
 
 
@@ -1132,7 +1145,7 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt);
-        InspectIndex(index,opt.gfa);
+        InspectIndex(index,opt);
       }
 
     } else if (cmd == "quant") {
