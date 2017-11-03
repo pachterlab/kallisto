@@ -61,6 +61,7 @@ ProgramOptions() :
   peek(false),
   bias(false),
   pseudobam(false),
+  genomebam(false),
   make_unique(false),
   fusion(false),
   strand(StrandType::None),

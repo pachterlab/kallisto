@@ -1277,7 +1277,9 @@ void AlnProcessor::processBufferTrans() {
 
           if (!bestTr) {
             b1c.core.flag |= BAM_FSECONDARY;
-            b2c.core.flag |= BAM_FSECONDARY;
+            if (paired) {
+              b2c.core.flag |= BAM_FSECONDARY;
+            }
           }
           
 
@@ -1343,7 +1345,7 @@ void AlnProcessor::processBufferTrans() {
               fixCigarStringTrans(b1c, rlen1, softclip1, overhang1);
             }
           }
-          if (!pi.r2empty) {
+          if (paired && !pi.r2empty) {
             if (softclip2 > 0 || overhang2 > 0) {
               fixCigarStringTrans(b2c, rlen2, softclip2, overhang2);
             }
@@ -1352,10 +1354,15 @@ void AlnProcessor::processBufferTrans() {
           if (!pi.r1empty || bestTr) {
             bv.push_back(b1c);
           }
-          if (!pi.r2empty || bestTr) {
+          if (paired && !pi.r2empty || bestTr) {
             bv.push_back(b2c);
           }
-        }        
+        } 
+
+        delete[] b1.data;
+        if (paired) {
+          delete[] b2.data;
+        }
       }
     }    
   }
@@ -1673,7 +1680,9 @@ void AlnProcessor::processBufferGenome() {
 
           if (!bestTr) {
             b1c.core.flag |= BAM_FSECONDARY;
-            b2c.core.flag |= BAM_FSECONDARY;
+            if (paired) {
+              b2c.core.flag |= BAM_FSECONDARY;
+            }
           }
         
           b1c.core.tid = tra.first.chr;
@@ -1713,6 +1722,7 @@ void AlnProcessor::processBufferGenome() {
 
           
           if (!pi.r1empty && !pi.r2empty) {
+            //TODO fix this
             int tlen = b2c.core.pos - b1c.core.pos;
             b1c.core.isize = tlen;
             b2c.core.isize = -tlen;
@@ -1792,6 +1802,7 @@ void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
 
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   int ncig = 1;
+  
   if (softclip > 0) {
     if (overhang > 0) {
       ncig = 3;
@@ -1807,10 +1818,10 @@ void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   
   uint8_t *cigafter = b.data + b.core.l_qname + b.core.n_cigar * sizeof(uint32_t);
   int copylen = b.l_data - (b.core.l_qname + b.core.n_cigar * sizeof(uint32_t));
-  uint8_t *dst = cigafter+(ncig-b.core.n_cigar)*sizeof(uint32_t);
+  uint8_t *dst = cigafter+((int) (ncig-b.core.n_cigar))*sizeof(uint32_t);
   memmove(dst, cigafter, copylen);
   uint32_t *cig = (uint32_t*) (b.data + b.core.l_qname);
-  b.l_data += (ncig - b.core.n_cigar)*sizeof(uint32_t);
+  b.l_data += ((int) (ncig - b.core.n_cigar))*sizeof(uint32_t);
   b.core.n_cigar = ncig;
 
   if (softclip > 0) {  
