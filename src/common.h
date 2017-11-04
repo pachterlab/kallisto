@@ -40,7 +40,8 @@ struct ProgramOptions {
   StrandType strand;
   bool umi;
   std::string gfa; // used for inspect
-  std::string cache;
+  std::string gtfFile;
+  std::string chromFile;
 
 ProgramOptions() :
   verbose(false),

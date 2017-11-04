@@ -1354,7 +1354,7 @@ void AlnProcessor::processBufferTrans() {
           if (!pi.r1empty || bestTr) {
             bv.push_back(b1c);
           }
-          if (paired && !pi.r2empty || bestTr) {
+          if (paired && (!pi.r2empty || bestTr)) {
             bv.push_back(b2c);
           }
         } 

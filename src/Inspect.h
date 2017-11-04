@@ -342,9 +342,9 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
     Transcriptome model;
     
     {
-      std::ifstream in(opt.cache);
-      model.loadTranscriptome(index, in, opt);
-      in.close();
+      model.parseGTF(opt.gtfFile, index, opt);
+      //model.loadTranscriptome(index, in, opt);
+
     }
 
     std::ofstream out;

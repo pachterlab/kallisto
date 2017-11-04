@@ -111,7 +111,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'g': {
-      stringstream(optarg) >> opt.cache;
+      stringstream(optarg) >> opt.gtfFile;
       break;
     }
     default: break;
@@ -139,7 +139,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -162,7 +162,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
     {"bootstrap-samples", required_argument, 0, 'b'},
-    {"genome", required_argument, 0, 'g'},
+    {"gtf", required_argument, 0, 'g'},
+    {"chromosomes", required_argument, 0, 'c'},
     {0,0,0,0}
   };
   int c;
@@ -209,8 +210,11 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'g': {
-      stringstream(optarg) >> opt.cache;
+      stringstream(optarg) >> opt.gtfFile;
       break;
+    }
+    case 'c': {
+      stringstream(optarg) >> opt.chromFile;
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
@@ -613,13 +617,13 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   }
   
   if (opt.genomebam) {
-    if (!opt.cache.empty()) {
+    if (!opt.gtfFile.empty()) {
       struct stat stFileInfo;
-      auto intStat = stat(opt.cache.c_str(), &stFileInfo);
+      auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
       if (intStat == 0) {
         // we find the cache file
       } else {
-        cerr << "Error: file " << opt.cache << " does not exist" << endl;
+        cerr << "Error: file " << opt.gtfFile << " does not exist" << endl;
         ret = false;
       }
     } else {
@@ -1168,9 +1172,10 @@ int main(int argc, char *argv[]) {
         }
 
         Transcriptome model;
-        if (opt.genomebam) {
-          ifstream in(opt.cache);
-          model.loadTranscriptome(index, in, opt);
+        if (opt.genomebam) {          
+          model.loadChromosomes(opt.chromFile);
+          model.parseGTF(opt.gtfFile, index, opt);
+          //model.loadTranscriptome(index, in, opt);
         }
 
 
