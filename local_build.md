@@ -65,17 +65,7 @@ cmake --version
 
 ### Building and installing HDF5
 
-Download 'configure' version of [HDF5](https://www.hdfgroup.org/HDF5/release/obtainsrc.html#conf):
-
-`wget https://www.hdfgroup.org/package/gzip/?wpdmdl=4301`
-
-Extract the tarball and move to the directory:
-
-`tar -xf hdf5-1.8.*`
-
-`cd hdf5-1.8.*`
-
-Now, run `configure` with the following options:
+Download the latest 'configure' version of [HDF5](https://www.hdfgroup.org/HDF5/release/obtainsrc.html#conf). After extacting the tarball run `configure` with the following options:
 
 `./configure --disable-parallel --without-szlib --without-pthread --prefix=$HOME`
 

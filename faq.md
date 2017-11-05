@@ -50,7 +50,7 @@ group: navigation
 
 
 - Are you distributing pre-built indices?
-  - No. Building indices with __kallisto index__ will be faster in practice than downloading index files. For example, the __kallisto__ index for the human transcriptome takes between 5--10 minutes to build on a standard desktop or laptop. We are distributing transcriptome fasta files for model organisms [here](http://bio.math.berkeley.edu/kallisto/transcriptomes/).
+  - No. Building indices with __kallisto index__ will be faster in practice than downloading index files. For example, the __kallisto__ index for the human transcriptome takes between 5--10 minutes to build on a standard desktop or laptop. Transcriptome fasta files for model organisms can be downloaded from the [Ensembl database](https://www.ensembl.org/info/data/ftp/index.html). We recommend using cDNA fasta, specifically the *.cdna.all.fa.gz files. __kallisto__ can build indices directly from gzipped files.
 
 - My RNA-Seq was prepared with a stranded library. Is there a special option I need to use with kallisto?
   - Yes, you can specify the strandedness.
