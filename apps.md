@@ -12,6 +12,10 @@ The following applications build on __kallisto__:
 
 - [__Toil__](https://github.com/BD2KGenomics/toil) based __kallisto__ quantifications of [GTEx](https://genome-cancer.soe.ucsc.edu/proj/site/xena/datapages/?dataset=gtex_Kallisto_est_counts&host=https://toil.xenahubs.net) and [TCGA PANCAN](https://genome-cancer.soe.ucsc.edu/proj/site/xena/datapages/?dataset=tcga_Kallisto_est_counts&host=https://toil.xenahubs.net) RNA-Seq
 
+- [Google Cloud Pilot RNA Sequencing for CCLE and TCGA](https://osf.io/gqrz9/)
+
+- [__ARCHS4__: Massive Mining of Publicly Available RNA-seq Data from Human and Mouse](http://amp.pharm.mssm.edu/archs4/) using __kallisto__
+  
 - [__The Lair__: interactive (re)analysis of published RNA-Seq data with __kallisto__ and __sleuth__](http://pachterlab.github.io/lair)
 
 - [Differential analysis of RNA-Seq with __sleuth__](http://pachterlab.github.io/sleuth)
