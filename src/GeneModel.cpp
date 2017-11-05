@@ -314,8 +314,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index) {
 
   int ichr = chrLookup(*this, schr);
   if (ichr == -1) {
-    std::cerr << "Error: chromosome " << schr << " not defined before reference" << std::endl;
-    assert(false);
+    return 1; // couldn't find chrom
   }
 
   if (type == Type::GENE) {
@@ -437,7 +436,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index) {
       tmodel.length = index.target_lens_[tmodel.id];
     } else {
       // do nothing
-      return 0;
+      return 2;
     }
 
     int id = tmodel.id;
@@ -476,7 +475,7 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
   }
 
 
-  int numex=0,numtr=0,numgen=0;
+  int num_chrom_missing = 0, num_trans_missing = 0;
   int buf_size = 1<<22; // line is < 4M
   char* buf = new char[buf_size+1];
   buf[buf_size] = 0;
@@ -515,13 +514,11 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
       line.assign(buf+pos, pos_end - (buf+pos));
       int r = addGTFLine(line, index);
       if (r == 1) {
-        numgen++;
+        num_chrom_missing++;
       } else if (r==2) {
-        numtr++;
-      } else if (r==3) {
-        numex++;
+        num_trans_missing++;
       }
-      
+
       pos = pos_end - buf + 1;
       if (pos >= buf_end) {
         break;
@@ -549,5 +546,10 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
   delete[] buf;
   gzclose(file);
 
-  std::cout << "number of genes, transcripts, exons " << numgen << ", " << numtr << ", " << numex << std::endl;
+  if (num_chrom_missing > 0) {
+    std::cout << "Warning: could not find chromosomes for " << num_chrom_missing << " transcripts" << std::endl;
+  } 
+  if (num_trans_missing > 0) {
+    std::cout << "Warning: " << num_trans_missing << " transcripts were defined in GTF file, but not in the index" << std::endl;
+  }
 }
