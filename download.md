@@ -14,13 +14,13 @@ brew tap homebrew/science
 brew install kallisto
 ```
 
-Alternatively, With [conda](https://conda.io/docs/index.html) installed and the [bioconda](https://bioconda.github.io/index.html#set-up-channels) channel activated, __kallisto__ can be installed with:
+Alternatively, with [conda](https://conda.io/docs/index.html) installed and the [bioconda](https://bioconda.github.io/index.html#set-up-channels) channel activated, __kallisto__ can be installed with:
 
 ```
 conda install kallisto
 ```
 
-The __kallisto__ bioconda installation will work on 64 bit linux or Mac OS. More details are available at the [__kallisto__ bioconda page](https://bioconda.github.io/recipes/kallisto/README.html).
+The __kallisto__ bioconda installation will work with 64 bit linux or Mac OS. More details are available at the [__kallisto__ bioconda page](https://bioconda.github.io/recipes/kallisto/README.html).
 
 For other operating systems download executables or source from the links below and follow the provided instructions.
 
