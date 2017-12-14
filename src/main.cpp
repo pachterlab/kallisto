@@ -1223,13 +1223,16 @@ int main(int argc, char *argv[]) {
 	  std::vector<double> eff_lens2;
 	  std::vector<int> target_lens2;
 	  std::vector<double> tpm2;
-	  int position;
 
+	  int position = -1;
 	  for (int i = 0; i < em.target_names_.size(); i++) {
 	    if(em.target_names_[i].find("rrDK961j") != std::string::npos) {
 	      position = i;
 	    }
 	  }
+	  assert(position >= 0);
+	  std::cout << "Position: " << position << std::endl;
+
 	  for (int j = position; j < em.target_names_.size(); j++) {
 	    name2.push_back(em.target_names_[j]);
 	    alpha2.push_back(em.alpha_[j]);
