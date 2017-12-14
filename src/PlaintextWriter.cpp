@@ -29,7 +29,8 @@ void plaintext_writer(
     const std::vector<std::string>& targ_ids,
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens,
-    const std::vector<int>& lens
+    const std::vector<int>& lens,
+    const std::vector<double>& tpm
     ){
 
   std::ofstream of;
@@ -40,8 +41,6 @@ void plaintext_writer(
 
     exit(1);
   }
-
-  auto tpm = counts_to_tpm(alpha, eff_lens);
 
   of << "target_id" << "\t"
     /* << "kallisto_id" << "\t" */

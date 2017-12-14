@@ -10,6 +10,7 @@
 #include "EMAlgorithm.h"
 #include "Multinomial.hpp"
 #include "H5Writer.h"
+#include "PlaintextWriter.h"
 
 class Bootstrap {
     // needs:
