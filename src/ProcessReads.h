@@ -77,7 +77,7 @@ public:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
+    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
@@ -104,21 +104,33 @@ public:
       hts_close(bamfp);
       bamfp = nullptr;
     }
+    if (bamfps) {
+      for (int i = 0; i < numSortFiles; i++) {
+        if (bamfps[i]) {
+          hts_close(bamfps[i]);
+          bamfps[i] = nullptr;
+        }
+      } 
+      bamfps = nullptr;
+    }
     if (bamh) {
       bam_hdr_destroy(bamh);
       bamh = nullptr;
-    }
-    
+    }    
   }
 
   std::mutex reader_lock;
   std::mutex writer_lock;
 
+
   SequenceReader SR;
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
-  samFile *bamfp;
+  htsFile *bamfp;
+  const int numSortFiles = 32;
+  htsFile **bamfps;
+
   bam_hdr_t *bamh;
   const ProgramOptions& opt;
   int numreads;
@@ -142,8 +154,11 @@ public:
   void processReads();
   void processAln(const EMAlgorithm& em);
   void writePseudoBam(const std::vector<bam1_t> &bv);
-
+  void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
+  std::vector<uint64_t> breakpoints;
   void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1);
+
+
 
 };
 
@@ -203,6 +218,7 @@ public:
   PseudoAlignmentBatch pseudobatch;
   const Transcriptome& model;
   
+
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;

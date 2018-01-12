@@ -547,9 +547,9 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
   gzclose(file);
 
   if (num_chrom_missing > 0) {
-    std::cout << "Warning: could not find chromosomes for " << num_chrom_missing << " transcripts" << std::endl;
+    std::cerr << "Warning: could not find chromosomes for " << num_chrom_missing << " transcripts" << std::endl;
   } 
   if (num_trans_missing > 0) {
-    std::cout << "Warning: " << num_trans_missing << " transcripts were defined in GTF file, but not in the index" << std::endl;
+    std::cerr << "Warning: " << num_trans_missing << " transcripts were defined in GTF file, but not in the index" << std::endl;
   }
 }

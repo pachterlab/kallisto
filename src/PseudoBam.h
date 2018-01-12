@@ -6,6 +6,8 @@
 #include <iostream>
 #include <utility>
 #include <htslib/sam.h>
+#include <htslib/hts.h>
+#include <htslib/bgzf.h>
 
 #include "KmerIndex.h"
 #include "GeneModel.h"

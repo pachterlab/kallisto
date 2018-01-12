@@ -223,21 +223,7 @@ int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 /** -- read processors -- **/
 
 void MasterProcessor::processReads() {
-  // open bamfile and fetch header
-  if (opt.pseudobam) {
-    std::string bamfn = opt.output + "/pseudoalignments.bam";
-    if (opt.genomebam) {
-      bamh = createPseudoBamHeaderGenome(model);
-    } else {
-      bamh = createPseudoBamHeaderTrans(index);
-    }
-    bamfp = sam_open(bamfn.c_str(), "wb");
-    int r = sam_hdr_write(bamfp, bamh);
-    
-    if (opt.threads > 1) {
-      hts_set_threads(bamfp, opt.threads);
-    }
-  }
+  
 
   // start worker threads
   if (!opt.batch_mode) {
@@ -381,6 +367,93 @@ void MasterProcessor::processReads() {
 }
 
 void MasterProcessor::processAln(const EMAlgorithm& em) {
+  // open bamfile and fetch header
+  std::string bamfn = opt.output + "/pseudoalignments.bam";
+  if (opt.pseudobam) {
+    if (opt.genomebam) {
+      bamh = createPseudoBamHeaderGenome(model);
+
+      bamfps = new htsFile*[numSortFiles];
+      for (int i = 0; i < numSortFiles; i++) {
+        bamfps[i] = sam_open((opt.output + "/tmp." + std::to_string(i) + ".bam").c_str(), "wb1");
+        int r = sam_hdr_write(bamfps[i], bamh);
+      }
+
+    } else {
+      bamh = createPseudoBamHeaderTrans(index);
+      bamfp = sam_open(bamfn.c_str(), "wb");
+      int r = sam_hdr_write(bamfp, bamh);    
+    }
+    
+    if (opt.threads > 1 && !opt.genomebam) {
+      // makes no sens to use threads on unsorted bams
+      hts_set_threads(bamfp, opt.threads);
+    }
+  }
+  std::cerr << "[  bam] writing pseudoalignments to BAM format .. "; std::cerr.flush();
+
+  // figure out where to place breakpoints!
+  breakpoints.clear();
+  breakpoints.assign(numSortFiles -1 , (((uint64_t)-1)<<32));  
+  std::vector<std::vector<std::pair<uint32_t, uint32_t>>> chrWeights(model.chr.size());
+  for (const auto& t : model.transcripts) {
+    if (t.id >= 0 && t.id < index.num_trans) {
+      // valid id
+      if (t.chr != -1 && t.stop > 0) {
+        chrWeights[t.chr].push_back({t.stop, ((int32_t) (em.alpha_[t.id]+1))});
+      }
+    }
+  }
+
+  double sum = 0;
+  for (const auto &chrw : chrWeights) {
+    for (const auto &p : chrw) {
+      sum += p.second;
+    }
+  }
+  
+  double bpLimit = sum / (numSortFiles-1);
+
+  // place breakpoints on evenly spaced   
+  for (auto& chrw : chrWeights) {
+    // sort each by stop point
+    std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t> a, std::pair<uint32_t, uint32_t> b) { return a.first < b.first;});
+  }
+
+  double bp = 0.0;
+  int ifile = 0;
+  for (int i = 0; i < chrWeights.size(); i++) {
+    const auto &chrw = chrWeights[i];
+    for (const auto &x : chrw) {
+      bp += x.second;
+      if (bp > bpLimit) {
+        uint64_t pos = ((uint64_t) i) << 32 | ((uint64_t) x.first+1) << 1;
+        breakpoints[ifile] = pos;
+        ifile++;
+        while (bp > bpLimit) {
+          bp -= bpLimit;
+        }
+      }
+    }
+  }
+
+  // debug and show breakpoints
+  /*
+  std::cout << "bplimit = " << bpLimit << ", sum = " << sum << std::endl;
+  std::cout << "breakpoints (" << breakpoints.size() << ") = {" << std::endl;
+  for (auto &x : breakpoints) {
+    int32_t tid = (int32_t) (x >> 32);
+    int32_t pos = (int32_t) ((x >> 1) & (0xFFFF)) - 1;
+    std::string chr = "*";
+    if (tid != -1) {
+      chr = model.chr[tid].name;
+    }
+    std::cout << "  " << chr << " (" << model.chr[tid].len << ") : " << pos << std::endl;
+  }
+
+  std::cout << "}" << std::endl;
+  */
+
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
   SR.reset();
@@ -398,10 +471,115 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
   } else {
     assert(false); // not implemented yet
   }
-
-
   pseudobatchf_in.close();
-  // TODO: remove file
+  remove((opt.output + "/pseudoaln.bin").c_str());
+  std::cerr << "done" << std::endl;
+
+  if (opt.genomebam) {
+    std::cerr << "[  bam] sorting BAM files .. "; std::cerr.flush();
+    for (int i = 0; i < numSortFiles; i++) {
+      sam_close(bamfps[i]);
+      bamfps[i] = nullptr;
+    }
+
+    bamfp = sam_open(bamfn.c_str(), "wb9");
+    int r = sam_hdr_write(bamfp, bamh);
+    hts_idx_t *idx = hts_idx_init(bamh->n_targets, HTS_FMT_BAI, 0, 14, 5);
+    if (opt.threads > 1) {
+      // makes no sens to use threads on unsorted bams
+      hts_set_threads(bamfp, opt.threads);
+    }
+
+    int ret;
+    std::vector<bam1_t> bv;
+    std::vector<std::pair<uint64_t, uint64_t>> bb;
+    bam1_t b;  
+    int tid;
+    BGZF* ofp = bamfp->fp.bgzf;
+    for (int i = 0; i < numSortFiles; i++) {
+      bv.clear();
+      bb.clear();
+      std::string tmpFileName = opt.output + "/tmp." + std::to_string(i) + ".bam";
+      bamfps[i] =  sam_open(tmpFileName.c_str(), "rb");
+
+      bam_hdr_t *tmp_hdr = sam_hdr_read(bamfps[i]); // unused results
+
+      // init
+      memset(&b, 0, sizeof(b));
+      
+      while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
+        bv.push_back(b);  
+        memset(&b, 0, sizeof(b));        
+      }
+
+      sam_close(bamfps[i]);
+      bamfps[i] = nullptr;
+      remove(tmpFileName.c_str());
+
+      if (i < numSortFiles-1) {
+        // sort the vector
+       
+        uint64_t n = bv.size();
+        for (uint64_t j = 0; j < n; j++) {
+          b = bv[j];          
+          uint64_t pos = ((uint64_t) b.core.tid) << 32 | ((uint64_t) b.core.pos+1) << 1 | (b.core.flag & BAM_FREVERSE) >>4;
+          bb.push_back({pos,j});
+        }
+        
+        std::sort(bb.begin(), bb.end(), [](std::pair<uint64_t, uint64_t> a, std::pair<uint64_t, uint64_t> b) {return a.first < b.first;});
+
+        for (auto &x : bb) {
+          b = bv[x.second];           
+          ret = bam_write1(ofp, &b);     
+          if (opt.threads == 1) {
+            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
+          }
+        }
+      } else {
+        for (auto &x : bv) {      
+          ret = bam_write1(ofp, &x);
+          if (opt.threads == 1) {
+            ret = hts_idx_push(idx, x.core.tid, x.core.pos, bam_endpos(&x), bgzf_tell(ofp), !(x.core.flag&BAM_FUNMAP));
+          }
+        }    
+      }
+
+      // save the index
+      
+      
+    }
+
+    if (opt.threads == 1) {
+      hts_idx_finish(idx, bgzf_tell(ofp));
+      ret = hts_idx_save(idx, bamfn.c_str(), HTS_FMT_BAI);
+      hts_idx_destroy(idx);
+    }
+    sam_close(bamfp);
+    bamfp = nullptr;    
+    std::cerr << "done" << std::endl;
+    // if we are multithreaded we need to construct the index last
+    if (opt.threads > 1) {
+      bamfp =  sam_open(bamfn.c_str(), "rb");
+      hts_set_threads(bamfp, opt.threads);
+      ofp = bamfp->fp.bgzf;
+      bam_hdr_t *tmp_hdr = sam_hdr_read(bamfp); // unused results
+
+      // init
+      memset(&b, 0, sizeof(b));
+      
+      while ((ret = bam_read1(bamfp->fp.bgzf, &b)) >= 0) {        
+        hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
+        memset(&b, 0, sizeof(b));        
+      }
+      
+      hts_idx_finish(idx, bgzf_tell(ofp));
+      ret = hts_idx_save(idx, bamfn.c_str(), HTS_FMT_BAI);
+      hts_idx_destroy(idx);
+      sam_close(bamfp);
+      bamfp = nullptr;
+    }
+
+  }
 }
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
@@ -517,6 +695,18 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
     */
     int r = sam_write1(bamfp, bamh, &b);    
   } 
+}
+
+// bvv needs to be sorted according to MasterProcessor::bucketSplits. 
+void MasterProcessor::writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv) { 
+  assert(bvv.size() == numSortFiles);
+  
+  for (int i = 0; i < numSortFiles; i++) {
+    std::lock_guard<std::mutex> lock(this->writer_lock);
+    for (const auto &b : bvv[i]) {
+      int r = sam_write1(bamfps[i], bamh, &b);
+    }
+  }
 }
 
 void MasterProcessor::outputFusion(const std::stringstream &o) {
@@ -986,6 +1176,8 @@ void AlnProcessor::operator()() {
     // process our sequences
     if (mp.opt.genomebam) {
       processBufferGenome();
+
+      // append files in order. clean up temporary stuff
     } else {
       processBufferTrans();
     }
@@ -1755,14 +1947,52 @@ void AlnProcessor::processBufferGenome() {
     }    
   }
 
-  mp.writePseudoBam(bv);
+
+  // partition the vectors. 
+  int k = mp.numSortFiles;
+  int logk = 1;
+  while (k > (1<<logk)) {
+    logk++;
+  }
+  const auto& bp = mp.breakpoints;
+  std::vector<std::vector<bam1_t>> bvv(k);
+  
+  for (auto &b : bv) {
+    uint64_t pos = ((uint64_t) b.core.tid) << 32 | ((uint64_t) b.core.pos+1) << 1 | (b.core.flag & BAM_FREVERSE) >>4;
+    int i=0,j=k;
+    
+    if (b.core.tid == -1) {
+      i = k-1;
+    } else {
+      // invariant bp[i-1].pos <= b.pos < bp[j].pos
+      for (int r = 0; r <= logk; r++) {
+        int m = (i+j)/2;
+        /*assert(i <= j);
+        assert(i == 0 || bp[i-1] <= pos);
+        assert(j == k || bp[j] > pos);         
+        assert(i <= m);
+        assert(m <= j);*/
+        if (pos < bp[m]) {
+          j = m;
+        } else {
+          i = m+1;
+        }
+      }
+      //assert(i==j);
+    }
+    bvv[i].push_back(b);
+  }
+
+
+  // output to disk
+  mp.writeSortedPseudobam(bvv);
 
   // clean up our mess
   for (auto &b : bv) {
     delete[] b.data;
     // std::cerr << "deleting" << b.id  << std::endl;
-  }
-  bv.clear();
+  }  
+  bv.clear();  
 }
 
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {

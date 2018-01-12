@@ -27,8 +27,6 @@ bam_hdr_t* createPseudoBamHeaderGenome(const Transcriptome& model)  {
   std::string text = "@HD\tVN:1.0\n@PG\tID:kallisto\tPN:kallisto\tVN:";
   text += KALLISTO_VERSION;
   text += "\n";
-  h->text = strdup(text.c_str());
-  h->l_text = (uint32_t) strlen(h->text);
   int num_chr = model.chr.size();
   h->n_targets = num_chr;
   h->target_len = (uint32_t *) calloc(num_chr, sizeof(uint32_t));
@@ -36,7 +34,12 @@ bam_hdr_t* createPseudoBamHeaderGenome(const Transcriptome& model)  {
   for (int i = 0; i < num_chr; i++) {
     h->target_len[i] = (uint32_t) model.chr[i].len;
     h->target_name[i] = strdup(model.chr[i].name.c_str());
+    text += "@SQ\tSN:" + model.chr[i].name + "\tLN:" + std::to_string(model.chr[i].len) + "\n";
   }
+  h->text = strdup(text.c_str());
+  h->l_text = (uint32_t) strlen(h->text);
+  
+
   return h;
 }
 
