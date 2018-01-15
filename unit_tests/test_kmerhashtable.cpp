@@ -31,7 +31,7 @@ TEST_CASE("Build table", "[build_table]")
 
 		std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<double> dis(1, 100);
+    std::uniform_int_distribution<int> dis(1, 100);
 		
     // TODO: figure out a better way to deal with initialization
     Kmer::set_k(global_opts.k);

@@ -57,4 +57,4 @@ endif(LINK MATCHES static)
 
 
 
-install(TARGETS kallisto DESTINATION bin)
+install(TARGETS kallisto DESTINATION "${CMAKE_INSTALL_BINDIR}")
