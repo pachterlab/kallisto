@@ -87,11 +87,14 @@ std::string to_json(const std::string& id, const std::string& val, bool quote,
   return out;
 }
 
+
 void plaintext_aux(
     const std::string& out_name,
     const std::string& n_targs,
     const std::string& n_bootstrap,
     const std::string& n_processed,
+    const std::string& n_pseudoaligned,
+    const std::string& n_unique,
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,
@@ -103,6 +106,8 @@ void plaintext_aux(
     to_json("n_targets", n_targs, false) << std::endl <<
     to_json("n_bootstraps", n_bootstrap, false) << std::endl <<
     to_json("n_processed", n_processed, false) << std::endl <<
+    to_json("n_pseudoaligned", n_pseudoaligned, false) << std::endl <<
+    to_json("n_unique", n_unique, false) << std::endl << 
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
     to_json("start_time", start_time, true) << std::endl <<

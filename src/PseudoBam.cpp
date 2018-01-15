@@ -106,8 +106,8 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       b2.core.mpos = -1;
       b2.core.isize = 0;
 
-      sam_write1(fp, h, &b1);
-      sam_write1(fp, h, &b2);
+      //(fp, h, &b1);
+      //sam_write1(fp, h, &b2);
       //printf("%s\t77\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n1,s1,q1);
       //printf("%s\t141\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n2,s2,q2);
       //o << seq1->name.s << "" << seq1->seq.s << "\t" << seq1->qual.s << "\n";
@@ -121,7 +121,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       b1.core.mtid = -1;
       b1.core.mpos = -1;
       //printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n1,s1,q1);
-      sam_write1(fp, h, &b1);
+      //sam_write1(fp, h, &b1);
     }
   } else {
     if (paired) {

@@ -1241,6 +1241,8 @@ int main(int argc, char *argv[]) {
 
 
         int num_processed = 0;
+        int num_pseudoaligned = 0;
+        int num_unique = 0;
 
         MinCollector collection(index, opt);        
         MasterProcessor MP(index, opt, collection, model);
@@ -1291,11 +1293,20 @@ int main(int argc, char *argv[]) {
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
 
+        for (int i = 0; i < index.num_trans; i++) {
+          num_unique += collection.counts[i];          
+        }
+        for (int i = 0; i < collection.counts.size(); i++) {
+          num_pseudoaligned += collection.counts[i];
+        }
+
         plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(opt.bootstrap)),
             std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
@@ -1410,6 +1421,8 @@ int main(int argc, char *argv[]) {
               std::string(std::to_string(index.num_trans)),
               std::string(std::to_string(opt.bootstrap)),
               std::string(std::to_string(0)),
+              std::string(std::to_string(0)),
+              std::string(std::to_string(0)),
               KALLISTO_VERSION,
               std::string(std::to_string(index.INDEX_VERSION)),
               start_time,
@@ -1476,35 +1489,41 @@ int main(int argc, char *argv[]) {
 
         MinCollector collection(index, opt);
         int num_processed = 0;
+        int num_pseudoaligned = 0;
+        int num_unique = 0;
+
         Transcriptome model; // empty model
         MasterProcessor MP(index, opt, collection, model);
-
+        std::vector<std::vector<int>> batchCounts;
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
-        } else {
-
-          std::vector<std::vector<int>> batchCounts;
+        } else {          
           num_processed = ProcessBatchReads(index, opt, collection, batchCounts);
-          /*
-          for (int i = 0; i < opt.batch_ids.size(); i++) {
-            std::fill(collection.counts.begin(), collection.counts.end(),0);
-            opt.files = opt.batch_files[i];
-            num_processed += ProcessReads(index, opt, collection);
-            batchCounts.push_back(collection.counts);
-          }
-          */
-
           writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
         }
 
         std::string call = argv_to_string(argc, argv);
+
+
+        for (int id = 0; id < batchCounts.size(); id++) {
+          const auto &cc = batchCounts[id];
+          for (int i = 0; i < index.num_trans; i++) {            
+            num_unique += cc[i];          
+          }
+          for (int i = 0; i < cc.size(); i++) {
+            num_pseudoaligned += cc[i];
+          }
+        }
+        
 
         plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(0)), // no bootstraps in pseudo
             std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
