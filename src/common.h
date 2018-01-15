@@ -40,8 +40,10 @@ struct ProgramOptions {
   StrandType strand;
   bool umi;
   std::string gfa; // used for inspect
+  bool inspect_thorough;
   std::string gtfFile;
   std::string chromFile;
+  std::string bedFile;
 
 ProgramOptions() :
   verbose(false),
@@ -66,7 +68,8 @@ ProgramOptions() :
   make_unique(false),
   fusion(false),
   strand(StrandType::None),
-  umi(false)
+  umi(false),
+  inspect_thorough(false)
   {}
 };
 

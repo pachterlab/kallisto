@@ -30,6 +30,14 @@
 
 using namespace std;
 
+int my_mkdir(const char *path, mode_t mode) {
+  #ifdef _WIN32
+  return _mkdir(path);
+  #else
+  return mkdir(path,mode);
+  #endif
+}
+
 
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
@@ -83,14 +91,15 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
 
-  const char *opt_string = "G:g:";
+  const char *opt_string = "G:g:b:";
 
-  int gbam_flag = 0;
+  int para_flag = 0;
   static struct option long_options[] = {
     // long args
     {"gfa", required_argument, 0, 'G'},
-    {"genomebam", no_argument, &gbam_flag, 1},
-    {"genome", required_argument, 0, 'g'},
+    {"gtf", required_argument, 0, 'g'},
+    {"bed", required_argument, 0, 'b'},
+    {"paranoid", no_argument, &para_flag, 1},
     {0,0,0,0}
   };
 
@@ -110,6 +119,10 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
       opt.gfa = optarg;
       break;
     }
+    case 'b': {
+      stringstream(optarg) >> opt.bedFile;
+      break;
+    }
     case 'g': {
       stringstream(optarg) >> opt.gtfFile;
       break;
@@ -119,9 +132,8 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
   }
   opt.index = argv[optind];
 
-  if (gbam_flag) {
-    opt.pseudobam = true;
-    opt.genomebam = true;    
+  if (para_flag) {
+    opt.inspect_thorough = true;
   }
 }
 
@@ -356,7 +368,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int pbam_flag = 0;
   int umi_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:b:";
+  const char *opt_string = "t:i:l:s:o:b:u:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -620,16 +632,24 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     if (!opt.gtfFile.empty()) {
       struct stat stFileInfo;
       auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
-      if (intStat == 0) {
-        // we find the cache file
-      } else {
-        cerr << "Error: file " << opt.gtfFile << " does not exist" << endl;
+      if (intStat != 0) {
+        cerr << "Error: GTF file " << opt.gtfFile << " does not exist" << endl;
         ret = false;
       }
     } else {
-      cerr << "Error: need transcriptome file for genome alignment" << endl;
+      cerr << "Error: need GTF file for genome alignment" << endl;
       ret = false;
     }
+
+    if (!opt.chromFile.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.chromFile.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: Chromosome file not found: " << opt.chromFile << endl;
+        ret = false;
+      }
+    }
+    
   }
 
 
@@ -668,7 +688,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
         ret = false;
       } else {
         // create directory
-        if (mkdir(opt.output.c_str(), 0777) == -1) {
+        if (my_mkdir(opt.output.c_str(), 0777) == -1) {
           cerr << "Error: could not create directory " << opt.output << endl;
           ret = false;
         }
@@ -908,6 +928,33 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
     }
   }
 
+  if (!opt.bedFile.empty() || !opt.gtfFile.empty()) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
+  }
+
+  if (opt.genomebam) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << "Error: GTF file not found " << opt.gtfFile << endl;
+      ret = false;
+    }
+
+    if (!opt.chromFile.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.chromFile.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: Chromosome file not found " << opt.chromFile << endl;
+        ret = false;
+      }
+    }
+
+    if (opt.bedFile.empty()) {
+      opt.bedFile = opt.index + ".bed";
+    }
+  }
+
   return ret;
 }
 
@@ -978,7 +1025,8 @@ void usage() {
        << "    quant         Runs the quantification algorithm " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
-       << "    version       Prints version information"<< endl
+       << "    inspect       Inspects and gives information about an index" << endl 
+       << "    version       Prints version information" << endl
        << "    cite          Prints citation information" << endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
@@ -1009,7 +1057,10 @@ void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
        << "Usage: kallisto inspect INDEX-file" << endl << endl
        << "Optional arguments:" << endl
-       << "    --gfa=STRING              Filename for GFA output of T-DBG" << endl << endl;
+       << "-G, --gfa=STRING        Filename for GFA output of T-DBG" << endl
+       << "-g, --gtf=STRING        Filename for GTF file" << endl
+       << "-b, --bed=STRING        Filename for BED output (default: index + \".bed\")" << endl << endl;
+ 
 }
 
 void usageEM(bool valid_input = true) {
@@ -1038,7 +1089,12 @@ void usageEM(bool valid_input = true) {
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+       << "    --pseudobam               Save pseudoalignments to transcriptome to BAM file" << endl
+       << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
+       << "-g, --gtf                     GTF file for transcriptome information" << endl
+       << "                              (required for --genomebam)" << endl
+       << "-c, --chromosomes             Tab separated file with chrosome names and lengths" << endl
+       << "                              (optional for --genomebam, but recommended)" << endl;
 
 }
 
@@ -1171,10 +1227,15 @@ int main(int argc, char *argv[]) {
           index.loadTranscriptSequences();
         }
 
+        bool guessChromosomes = false;
         Transcriptome model;
         if (opt.genomebam) {          
-          model.loadChromosomes(opt.chromFile);
-          model.parseGTF(opt.gtfFile, index, opt);
+          if (!opt.chromFile.empty()) {
+            model.loadChromosomes(opt.chromFile);
+          } else {
+            guessChromosomes = true;
+          }          
+          model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
           //model.loadTranscriptome(index, in, opt);
         }
 

@@ -134,21 +134,16 @@ void Transcriptome::loadChromosomes(const std::string &chrom_fn) {
   std::ifstream in(chrom_fn);
   std::string type;
   while (in.good()) {
-    in >> type;
-    if (type == "CHROMOSOME") {
-      int id = chr.size();
-      Chromosome c;      
-      in >> c.name >> c.len;
-      chr.push_back(c);
-      chrNameToId.insert({c.name,id});
-      std::getline(in,type);
-    } else {
-      getline(in,type); // garbage
-    }
+    int id = chr.size();
+    Chromosome c;      
+    in >> c.name >> c.len;
+    chr.push_back(c);
+    chrNameToId.insert({c.name,id});
+    std::getline(in,type); // clear end of line   
   }
 }
 
-
+/*
 void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, const ProgramOptions& options) {
   std::string line;
   std::string segment;
@@ -264,9 +259,10 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
   }
 
 }
+*/
 
 
-int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index) {
+int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, bool guessChromosomes) {
 
   if(line.empty() || line[0] == '#') {
     return 0;
@@ -314,7 +310,17 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index) {
 
   int ichr = chrLookup(*this, schr);
   if (ichr == -1) {
-    return 1; // couldn't find chrom
+    if (guessChromosomes) {
+      // just add a new chr on the fly
+      int i = chr.size();
+      Chromosome c;
+      c.name = schr;
+      c.len = 536870911; // maximum that bai can index :(
+      chr.push_back(c);
+      chrNameToId.insert({schr, i});
+    } else {
+      return 1; // couldn't find chrom
+    }
   }
 
   if (type == Type::GENE) {
@@ -462,7 +468,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index) {
   return 0;
 }
 
-void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, const ProgramOptions& options) {
+void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, const ProgramOptions& options, bool guessChromosomes) {
 
   for (int i = 0; i < index.num_trans; i++) {
     TranscriptModel tr;
@@ -512,7 +518,7 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
 
       // line goes from buf[pos:pos_end]
       line.assign(buf+pos, pos_end - (buf+pos));
-      int r = addGTFLine(line, index);
+      int r = addGTFLine(line, index, guessChromosomes);
       if (r == 1) {
         num_chrom_missing++;
       } else if (r==2) {

@@ -98,8 +98,8 @@ struct Transcriptome {
   //bool translateTrPosition(const std::string &tr, const int _trpos, std::string &chr, int& chrpos, std::string &gene_id);
   void loadChromosomes(const std::string &chrom_fn);
   bool translateTrPosition(const int tr, const int pos, const int length,  bool strand, TranscriptAlignment &aln) const;
-  void parseGTF(const std::string &gtf_fn, const KmerIndex& index, const ProgramOptions& options);
-  int addGTFLine(const std::string& line, const KmerIndex& index);
+  void parseGTF(const std::string &gtf_fn, const KmerIndex& index, const ProgramOptions& options, bool guessChromosomes);
+  int addGTFLine(const std::string& line, const KmerIndex& index, bool guessChromosome);
   void loadTranscriptome(const KmerIndex& index, std::istream &in, const ProgramOptions& options);
 
 };
