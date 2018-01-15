@@ -37,7 +37,7 @@ else()
 endif( ZLIB_FOUND )
 
 if(HDF5_FOUND)
-    include_directories( ${HDF5_INCLUDE_DIR} )
+    include_directories( ${HDF5_INCLUDE_DIRS} )
     target_link_libraries( kallisto_core ${HDF5_LIBRARIES} )
     target_link_libraries( kallisto ${HDF5_LIBRARIES} )
 else()
