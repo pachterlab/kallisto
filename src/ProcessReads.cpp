@@ -72,8 +72,8 @@ int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntr
 }
 
 // constants
-const int trans_auxlen = 14; // for NI:i:int and ZW:f:0.0
-const int genome_auxlen = 7; // for ZW:f:0.0
+const int default_trans_auxlen = 14; // for NI:i:int and ZW:f:0.0
+const int default_genome_auxlen = 7; // for ZW:f:0.0
 
 //methods
 
@@ -366,7 +366,7 @@ void MasterProcessor::processReads() {
   }
 }
 
-void MasterProcessor::processAln(const EMAlgorithm& em) {
+void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   // open bamfile and fetch header
   std::string bamfn = opt.output + "/pseudoalignments.bam";
   if (opt.pseudobam) {
@@ -457,20 +457,17 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
   SR.reset();
-  if (!opt.batch_mode) {
-    std::vector<std::thread> workers;
-    for (int i = 0; i < opt.threads; i++) {
-      workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em, model)));
-    }
-    
-    // let the workers do their thing
-    for (int i = 0; i < opt.threads; i++) {
-      workers[i].join(); //wait for them to finish
-    }
 
-  } else {
-    assert(false); // not implemented yet
+  std::vector<std::thread> workers;
+  for (int i = 0; i < opt.threads; i++) {
+    workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em, model, useEM)));
   }
+  
+  // let the workers do their thing
+  for (int i = 0; i < opt.threads; i++) {
+    workers[i].join(); //wait for them to finish
+  }
+
   pseudobatchf_in.close();
   remove((opt.output + "/pseudoaln.bin").c_str());
   std::cerr << "done" << std::endl;
@@ -482,11 +479,13 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
       bamfps[i] = nullptr;
     }
 
+    // at this point we don't need the index
+    index.clear();
     bamfp = sam_open(bamfn.c_str(), "wb9");
     int r = sam_hdr_write(bamfp, bamh);
     hts_idx_t *idx = hts_idx_init(bamh->n_targets, HTS_FMT_BAI, 0, 14, 5);
     if (opt.threads > 1) {
-      // makes no sens to use threads on unsorted bams
+      // makes no sense to use threads on unsorted bams
       hts_set_threads(bamfp, opt.threads);
     }
 
@@ -507,18 +506,17 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
       // init
       memset(&b, 0, sizeof(b));
       
-      while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
-        bv.push_back(b);  
-        memset(&b, 0, sizeof(b));        
-      }
-
-      sam_close(bamfps[i]);
-      bamfps[i] = nullptr;
-      remove(tmpFileName.c_str());
-
       if (i < numSortFiles-1) {
         // sort the vector
-       
+        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
+          bv.push_back(b);  
+          memset(&b, 0, sizeof(b));        
+        }
+
+        sam_close(bamfps[i]);
+        bamfps[i] = nullptr;
+        remove(tmpFileName.c_str());
+
         uint64_t n = bv.size();
         for (uint64_t j = 0; j < n; j++) {
           b = bv[j];          
@@ -532,23 +530,32 @@ void MasterProcessor::processAln(const EMAlgorithm& em) {
           b = bv[x.second];           
           ret = bam_write1(ofp, &b);     
           if (opt.threads == 1) {
-            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
+            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));          
           }
+          free(bv[x.second].data);
+          bv[x.second].l_data = 0;
+          bv[x.second].m_data = 0;
+          
         }
       } else {
-        for (auto &x : bv) {      
-          ret = bam_write1(ofp, &x);
+        memset(&b, 0, sizeof(b));
+        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
+          ret = bam_write1(ofp, &b);
           if (opt.threads == 1) {
-            ret = hts_idx_push(idx, x.core.tid, x.core.pos, bam_endpos(&x), bgzf_tell(ofp), !(x.core.flag&BAM_FUNMAP));
+            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
           }
-        }    
+          /*free(b.data);
+          b.data = nullptr;
+          b.l_data = 0;
+          b.m_data = 0;*/
+        }  
+        sam_close(bamfps[i]);
+        bamfps[i] = nullptr;
+        remove(tmpFileName.c_str());
       }
-
-      // save the index
-      
-      
     }
 
+    
     if (opt.threads == 1) {
       hts_idx_finish(idx, bgzf_tell(ofp));
       ret = hts_idx_save(idx, bamfn.c_str(), HTS_FMT_BAI);
@@ -779,7 +786,7 @@ void ReadProcessor::operator()() {
       if (batchSR.empty()) {
         return;
       } else {
-        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, false );
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, mp.opt.pseudobam );
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
@@ -885,7 +892,7 @@ void ReadProcessor::processBuffer() {
 
     // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (!mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
+    if (!mp.opt.single_overhang && !mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
       vtmp.clear();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
@@ -1076,8 +1083,8 @@ void ReadProcessor::clear() {
 }
 
 
-AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome &model, int _id) :
- paired(!opt.single_end), index(index), mp(mp), em(em), model(model), id(_id) {
+AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome &model, bool useEM, int _id) :
+ paired(!opt.single_end), index(index), mp(mp), em(em), model(model), useEM(useEM), id(_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
@@ -1112,6 +1119,7 @@ AlnProcessor::AlnProcessor(AlnProcessor && o) :
   mp(o.mp),
   model(o.model),
   id(o.id),
+  useEM(o.useEM),
   bufsize(o.bufsize),
   bambufsize(o.bambufsize),
   numreads(o.numreads),
@@ -1154,10 +1162,14 @@ void AlnProcessor::operator()() {
     int readbatch_id;
     // grab the reader lock
     if (mp.opt.batch_mode) {
+      std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (batchSR.empty()) {
         return;
       } else {
         batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true );
+        readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
+        assert(pseudobatch.batch_id == readbatch_id);
+        assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
@@ -1198,6 +1210,11 @@ void AlnProcessor::processBufferTrans() {
   std::vector<std::pair<int,double>> ua;
   u.reserve(1000);
   ua.reserve(1000);
+
+  int trans_auxlen = default_trans_auxlen;
+  if (!useEM) {
+    trans_auxlen -= 7;
+  }
   
 
   Kmer km1,km2;
@@ -1273,7 +1290,9 @@ void AlnProcessor::processBufferTrans() {
       int32_t nmap = u.size();
       int bestProbTr = -1;
       double bestProb = 0.0;
-      {
+
+      if (useEM) {
+
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
         
@@ -1285,7 +1304,7 @@ void AlnProcessor::processBufferTrans() {
           u.clear();
           ua.clear();
         } else {
-           // compute the update step
+          // compute the update step
           for (int i = 0; i < nmap; ++i) {
             if (em.alpha_[u[i]] > 0.0) {
               double prob = em.alpha_[u[i]] * wv[i] / denom;
@@ -1297,6 +1316,11 @@ void AlnProcessor::processBufferTrans() {
             }
           }
         }
+      } else {
+        for (int i = 0; i < nmap; i++) {
+          ua.push_back({u[i], 0.0}); // probability is never used
+        }
+        bestProbTr = u[0];
       }
 
       nmap = ua.size();
@@ -1336,11 +1360,13 @@ void AlnProcessor::processBufferTrans() {
         memcpy(b1.data + b1.l_data + 3, &nmap, 4);
         b1.l_data += 7;
 
-        b1.data[b1.l_data] = 'Z';
-        b1.data[b1.l_data+1] = 'W';
-        b1.data[b1.l_data+2] = 'f';
-        memcpy(b1.data + b1.l_data + 3, &zero, 4);
-        b1.l_data += 7;
+        if (useEM) {
+          b1.data[b1.l_data] = 'Z';
+          b1.data[b1.l_data+1] = 'W';
+          b1.data[b1.l_data+2] = 'f';
+          memcpy(b1.data + b1.l_data + 3, &zero, 4);
+          b1.l_data += 7;
+        }
 
         if (paired) {
           assert(b2.l_data + trans_auxlen <= b2.m_data);
@@ -1351,11 +1377,13 @@ void AlnProcessor::processBufferTrans() {
           memcpy(b2.data + b2.l_data + 3, &nmap, 4);
           b2.l_data += 7;
 
-          b2.data[b2.l_data] = 'Z';
-          b2.data[b2.l_data+1] = 'W';
-          b2.data[b2.l_data+2] = 'f';
-          memcpy(b2.data + b2.l_data + 3, &zero, 4);
-          b2.l_data += 7;
+          if (useEM) {
+            b2.data[b2.l_data] = 'Z';
+            b2.data[b2.l_data+1] = 'W';
+            b2.data[b2.l_data+2] = 'f';
+            memcpy(b2.data + b2.l_data + 3, &zero, 4);
+            b2.l_data += 7;
+          }
         }
 
         auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
@@ -1488,7 +1516,9 @@ void AlnProcessor::processBufferTrans() {
             }
             b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
-            memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag           
+            if (useEM) {
+              memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag           
+            }
           }
 
           if (paired) {
@@ -1503,7 +1533,9 @@ void AlnProcessor::processBufferTrans() {
 
               b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
               b2c.core.qual = 255;
-              memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
+              if (useEM) {
+                memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
+              }
 
               if (pi.r1empty) {
                 b1c.core.pos = b2c.core.pos;
@@ -1581,6 +1613,11 @@ void AlnProcessor::processBufferGenome() {
   u.reserve(1000);
   ua.reserve(1000);
   
+  int genome_auxlen = default_genome_auxlen;
+  if (!useEM) {
+    genome_auxlen -= 7;
+  }
+  
 
   Kmer km1,km2;
   KmerEntry val1, val2;
@@ -1655,7 +1692,7 @@ void AlnProcessor::processBufferGenome() {
       
       // modify u and compute norm
       int32_t nmap = u.size();
-      {
+      if (useEM) {
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
         
@@ -1674,6 +1711,10 @@ void AlnProcessor::processBufferGenome() {
               ua.push_back({u[i],prob});
             }
           }
+        }
+      } else {
+        for (int i = 0; i < nmap; i++) {
+          ua.push_back({u[i], 0.0}); // never used
         }
       }
 
@@ -1708,19 +1749,21 @@ void AlnProcessor::processBufferGenome() {
         float zero = 0.0;
         assert(b1.l_data + genome_auxlen <= b1.m_data);
         
-        b1.data[b1.l_data] = 'Z';
-        b1.data[b1.l_data+1] = 'W';
-        b1.data[b1.l_data+2] = 'f';
-        memcpy(b1.data + b1.l_data + 3, &zero, 4);
-        b1.l_data += 7;
+        if (useEM) {
+          b1.data[b1.l_data] = 'Z';
+          b1.data[b1.l_data+1] = 'W';
+          b1.data[b1.l_data+2] = 'f';
+          memcpy(b1.data + b1.l_data + 3, &zero, 4);
+          b1.l_data += 7;
 
-        if (paired) {
-          assert(b2.l_data + genome_auxlen <= b2.m_data);
-          b2.data[b2.l_data] = 'Z';
-          b2.data[b2.l_data+1] = 'W';
-          b2.data[b2.l_data+2] = 'f';
-          memcpy(b2.data + b2.l_data + 3, &zero, 4);
-          b2.l_data += 7;
+          if (paired) {
+            assert(b2.l_data + genome_auxlen <= b2.m_data);
+            b2.data[b2.l_data] = 'Z';
+            b2.data[b2.l_data+1] = 'W';
+            b2.data[b2.l_data+2] = 'f';
+            memcpy(b2.data + b2.l_data + 3, &zero, 4);
+            b2.l_data += 7;
+          }
         }
 
 
@@ -1827,13 +1870,15 @@ void AlnProcessor::processBufferGenome() {
               bestTra = x.first; // copy
             }
           }
+          if (useEM) {
+            bestTra = alnmap.begin()->first; // arbitrary
+          }
         }
-
 
         for (auto &x : alnmap) {
           auto &tra = x.first;
           float prob = (float) x.second; // explicit cast
-
+          
           bool bestTr = (bestprob == 1.0) || (tra == bestTra);
 
           b1c = b1;
@@ -1882,7 +1927,9 @@ void AlnProcessor::processBufferGenome() {
             b1c.core.pos = tra.first.chrpos;
             b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
-            memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
+            if (useEM) {
+              memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
+            }
           }
 
           if (paired) {
@@ -1891,7 +1938,9 @@ void AlnProcessor::processBufferGenome() {
               b2c.core.pos = tra.second.chrpos;
               b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
               b2c.core.qual = 255;
-              memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
+              if (useEM) {
+                memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
+              }
 
               if (pi.r1empty) {
                 b1c.core.tid = b2c.core.tid;
@@ -1914,8 +1963,7 @@ void AlnProcessor::processBufferGenome() {
 
           
           if (!pi.r1empty && !pi.r2empty) {
-            //TODO fix this
-            int tlen = b2c.core.pos - b1c.core.pos;
+            int tlen = bam_endpos(&b2c) - b1c.core.pos;
             b1c.core.isize = tlen;
             b2c.core.isize = -tlen;
           }          

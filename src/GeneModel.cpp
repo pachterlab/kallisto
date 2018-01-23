@@ -541,12 +541,13 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
     if (leftover > 0) {
       std::memmove(buf, buf+pos,leftover);
     }
-    std::memset(buf+leftover, 0, buf_size-(bufread-pos));
+    size_t toset = (buf_size - leftover);
+    std::memset(buf+leftover, 0, toset);
     pos_end = buf + leftover;
     pos = 0;
 
   }
-  std::cout.flush();
+  
 
   
   delete[] buf;

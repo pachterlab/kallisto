@@ -144,6 +144,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int single_overhang_flag = 0;
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int bias_flag = 0;
@@ -158,6 +159,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
+    {"single-overhang", no_argument, &single_overhang_flag, 1},
     {"fr-stranded", no_argument, &strand_FR_flag, 1},
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
@@ -255,6 +257,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+  }
+
+  if (single_overhang_flag) {
+    opt.single_overhang = true;
   }
 
   if (strand_FR_flag) {
@@ -366,6 +372,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int single_flag = 0;
   int strand_flag = 0;
   int pbam_flag = 0;
+  int gbam_flag = 0;
   int umi_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:b:u:";
@@ -442,7 +449,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+    opt.single_overhang = true;
   }
+
+
 
   if (strand_flag) {
     opt.strand_specific = true;
@@ -908,6 +918,11 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     }
   }
 
+  if (opt.pseudobam) {
+    cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
+    ret = false;
+  }
+
   return ret;
 }
 
@@ -1082,6 +1097,8 @@ void usageEM(bool valid_input = true) {
        << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "    --single-overhang         Include reads where unobserved rest of fragment is" << endl
+       << "                              predicted to lie outside a transcript"
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
@@ -1117,8 +1134,8 @@ void usagePseudo(bool valid_input = true) {
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+//       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
@@ -1358,7 +1375,7 @@ int main(int argc, char *argv[]) {
 
         if (opt.pseudobam) {
          
-          MP.processAln(em);
+          MP.processAln(em, true);
         }
 
         cerr << endl;
@@ -1530,7 +1547,15 @@ int main(int argc, char *argv[]) {
             call);
 
         cerr << endl;
+
+        if (opt.pseudobam) {       
+          std::vector<double> fl_means(index.target_lens_.size(),0.0);
+          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          MP.processAln(em, false);
+        }
       }
+
+      
     } else if (cmd == "h5dump") {
 
       if (argc == 2) {

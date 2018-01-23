@@ -41,6 +41,7 @@ struct ProgramOptions {
   bool umi;
   std::string gfa; // used for inspect
   bool inspect_thorough;
+  bool single_overhang;
   std::string gtfFile;
   std::string chromFile;
   std::string bedFile;
@@ -69,7 +70,8 @@ ProgramOptions() :
   fusion(false),
   strand(StrandType::None),
   umi(false),
-  inspect_thorough(false)
+  inspect_thorough(false),
+  single_overhang(false)
   {}
 };
 

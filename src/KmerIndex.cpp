@@ -1405,7 +1405,20 @@ void KmerIndex::loadTranscriptSequences() const {
   return;
 }
 
-
+void KmerIndex::clear() {
+  kmap.clear_table();
+  ecmap.resize(0);
+  dbGraph.ecs.resize(0);
+  dbGraph.contigs.resize(0);
+  {
+    std::unordered_map<std::vector<int>, int, SortedVectorHasher> empty;
+    std::swap(ecmapinv, empty);
+  }
+  
+  target_lens_.resize(0);
+  target_names_.resize(0);
+  target_seqs_.resize(0);
+}
 
 void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
   // write out header

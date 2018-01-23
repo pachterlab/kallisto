@@ -152,7 +152,7 @@ public:
   std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
   void processReads();
-  void processAln(const EMAlgorithm& em);
+  void processAln(const EMAlgorithm& em, bool useEM);
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
@@ -200,7 +200,7 @@ public:
 
 class AlnProcessor {
 public:
-  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, int id = -1);
+  AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, bool useEM, int id = -1);
   AlnProcessor(AlnProcessor && o);
   ~AlnProcessor();
   char *buffer;
@@ -217,6 +217,7 @@ public:
   int id;
   PseudoAlignmentBatch pseudobatch;
   const Transcriptome& model;
+  bool useEM;
   
 
 
