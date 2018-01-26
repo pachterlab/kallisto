@@ -420,29 +420,40 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
     geneNameToId.insert({gmodel.name, gmodel.id});
     genes.push_back(std::move(gmodel));
   } else if (type == Type::TRANSCRIPT) {
-    tmodel.name = std::move(transcript_name);
+    tmodel.name = transcript_name;
     assert(!tmodel.name.empty());
+    
+    // canonical name includes version number
     if (!tversion.empty() && tmodel.name.find('.') == std::string::npos) {
       tmodel.name += "." + tversion;
     }
-
-    if (!gversion.empty() && gmodel.name.find('.') == std::string::npos) {
-      gene_name += "." + gversion;
-    }
-
-    auto it = geneNameToId.find(gene_name);
-    if (it != geneNameToId.end()) {
-      tmodel.gene_id = it->second;
-    }        
-    
-
     auto it2 = trNameToId.find(tmodel.name); 
+    if (it2 == trNameToId.end()) {
+      tmodel.name = transcript_name; // try without version number
+      it2 = trNameToId.find(tmodel.name);
+    }
+    
+    
     if (it2 != trNameToId.end()) {
       tmodel.id = it2->second;
       tmodel.length = index.target_lens_[tmodel.id];
     } else {
-      // do nothing
+      // transcript not found, do nothing
       return 2;
+    }
+
+    std::string tmp_genename = gene_name; // copy
+    if (!gversion.empty() && gmodel.name.find('.') == std::string::npos) {
+      gene_name += "." + gversion;
+    }
+    auto it = geneNameToId.find(gene_name);
+    if (it == geneNameToId.end()) {
+      gene_name = tmp_genename;
+      it = geneNameToId.find(gene_name);
+    }
+
+    if (it != geneNameToId.end()) {
+      tmodel.gene_id = it->second;
     }
 
     int id = tmodel.id;
@@ -450,11 +461,17 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       transcripts[id] = std::move(tmodel);
     }
   } else if (type == Type::EXON) {
+    std::string tmp_transcript_name = transcript_name;
     if (!tversion.empty() && transcript_name.find('.') == std::string::npos) {
       transcript_name += "." + tversion;
     }
 
     auto it = trNameToId.find(transcript_name);
+    if (it == trNameToId.end()) {
+      transcript_name = tmp_transcript_name;
+      it = trNameToId.find(transcript_name);
+    }
+
     if (it != trNameToId.end()) {
       auto& tm = transcripts[it->second];
       if (tm.chr != -1) {

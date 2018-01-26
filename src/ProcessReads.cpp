@@ -483,7 +483,6 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     index.clear();
     bamfp = sam_open(bamfn.c_str(), "wb9");
     int r = sam_hdr_write(bamfp, bamh);
-    hts_idx_t *idx = hts_idx_init(bamh->n_targets, HTS_FMT_BAI, 0, 14, 5);
     if (opt.threads > 1) {
       // makes no sense to use threads on unsorted bams
       hts_set_threads(bamfp, opt.threads);
@@ -528,26 +527,17 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
         for (auto &x : bb) {
           b = bv[x.second];           
-          ret = bam_write1(ofp, &b);     
-          if (opt.threads == 1) {
-            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));          
-          }
+          ret = bam_write1(ofp, &b);               
           free(bv[x.second].data);
           bv[x.second].l_data = 0;
           bv[x.second].m_data = 0;
           
         }
       } else {
+        // for unsorted files, just copy directly
         memset(&b, 0, sizeof(b));
         while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
           ret = bam_write1(ofp, &b);
-          if (opt.threads == 1) {
-            ret = hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
-          }
-          /*free(b.data);
-          b.data = nullptr;
-          b.l_data = 0;
-          b.m_data = 0;*/
         }  
         sam_close(bamfps[i]);
         bamfps[i] = nullptr;
@@ -555,37 +545,19 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
       }
     }
 
-    
-    if (opt.threads == 1) {
-      hts_idx_finish(idx, bgzf_tell(ofp));
-      ret = hts_idx_save(idx, bamfn.c_str(), HTS_FMT_BAI);
-      hts_idx_destroy(idx);
-    }
     sam_close(bamfp);
     bamfp = nullptr;    
     std::cerr << "done" << std::endl;
     // if we are multithreaded we need to construct the index last
-    if (opt.threads > 1) {
-      bamfp =  sam_open(bamfn.c_str(), "rb");
-      hts_set_threads(bamfp, opt.threads);
-      ofp = bamfp->fp.bgzf;
-      bam_hdr_t *tmp_hdr = sam_hdr_read(bamfp); // unused results
+    
+    std::cerr << "[  bam] indexing BAM file .. "; std::cerr.flush();
 
-      // init
-      memset(&b, 0, sizeof(b));
-      
-      while ((ret = bam_read1(bamfp->fp.bgzf, &b)) >= 0) {        
-        hts_idx_push(idx, b.core.tid, b.core.pos, bam_endpos(&b), bgzf_tell(ofp), !(b.core.flag&BAM_FUNMAP));
-        memset(&b, 0, sizeof(b));        
-      }
-      
-      hts_idx_finish(idx, bgzf_tell(ofp));
-      ret = hts_idx_save(idx, bamfn.c_str(), HTS_FMT_BAI);
-      hts_idx_destroy(idx);
-      sam_close(bamfp);
-      bamfp = nullptr;
+    ret = sam_index_build3(bamfn.c_str(), (bamfn+".bai").c_str(), 0, opt.threads);
+    if (ret != 0) {
+      std::cerr << " invalid return code when indexing file " << ret << " .. ";
     }
-
+    std::cerr << "done" << std::endl;
+    
   }
 }
 
