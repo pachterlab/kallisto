@@ -12,7 +12,11 @@ preserves the key information needed for quantification, and __kallisto__
 is therefore not only fast, but also as accurate than existing
 quantification tools. In fact, because the pseudoalignment procedure is
 robust to errors in the reads, in many benchmarks __kallisto__
-significantly outperforms existing tools.
+significantly outperforms existing tools. The __kallisto__ algorithms are described in more detail in:
+
+NL Bray, H Pimentel, P Melsted and L Pachter, [Near optimal probabilistic RNA-seq quantification](http://www.nature.com/nbt/journal/v34/n5/abs/nbt.3519.html), Nature Biotechnology __34__, p 525--527 (2016).
+
+Scripts reproducing all the results of the paper are available [here](https://github.com/pachterlab/kallisto_paper_analysis).
 
 __kallisto__ quantified RNA-Seq can be analyzed with [__sleuth__](https://github.com/pachterlab/sleuth/).
 

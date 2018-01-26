@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.43.1"
+#define KALLISTO_VERSION "0.44.0"
 
 #include <string>
 #include <vector>
@@ -33,12 +33,18 @@ struct ProgramOptions {
   bool peek; // only used for H5Dump
   bool bias;
   bool pseudobam;
+  bool genomebam;
   bool make_unique;
   bool fusion;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   bool umi;
   std::string gfa; // used for inspect
+  bool inspect_thorough;
+  bool single_overhang;
+  std::string gtfFile;
+  std::string chromFile;
+  std::string bedFile;
 
 ProgramOptions() :
   verbose(false),
@@ -59,10 +65,13 @@ ProgramOptions() :
   peek(false),
   bias(false),
   pseudobam(false),
+  genomebam(false),
   make_unique(false),
   fusion(false),
   strand(StrandType::None),
-  umi(false)
+  umi(false),
+  inspect_thorough(false),
+  single_overhang(false)
   {}
 };
 

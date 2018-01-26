@@ -76,6 +76,7 @@ H5Converter::H5Converter(const std::string& h5_fname, const std::string& out_dir
   root_ = H5Gopen(file_id_, "/", H5P_DEFAULT);
   aux_ = H5Gopen(file_id_, "/aux", H5P_DEFAULT);
 
+
   // <aux info>
   // read target ids
   read_dataset(aux_, "ids", targ_ids_);
@@ -147,11 +148,21 @@ H5Converter::~H5Converter() {
 void H5Converter::write_aux() {
   std::string out_name(out_dir_ + "/run_info.json");
 
+  std::vector<double> alpha;
+  read_dataset(root_, "est_counts", alpha);
+  double s = 0.0;
+  for (auto &x : alpha) {
+    s += x;
+  }
+  n_paln_ = (int) std::round(s);
+
   plaintext_aux(
       out_name,
       std::string(std::to_string(n_targs_)),
       std::string(std::to_string(n_bs_)),
       std::string(std::to_string(n_proc_)),
+      std::string(std::to_string(n_paln_)),
+      std::string(std::to_string(-1)),
       kal_version_,
       std::string(std::to_string(idx_version_)),
       start_time_,
@@ -188,5 +199,5 @@ void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, 
   std::vector<double> alpha;
   read_dataset(group_id, count_name.c_str(), alpha);
 
-  plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);
+  plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);  
 }

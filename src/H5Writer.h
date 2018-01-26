@@ -71,6 +71,7 @@ class H5Converter {
 
     int n_bs_;
     int n_proc_;
+    int n_paln_;
     size_t n_targs_;
 };
 
