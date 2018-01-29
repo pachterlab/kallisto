@@ -136,9 +136,12 @@ void Transcriptome::loadChromosomes(const std::string &chrom_fn) {
   while (in.good()) {
     int id = chr.size();
     Chromosome c;      
+    c.len = -1;
     in >> c.name >> c.len;
-    chr.push_back(c);
-    chrNameToId.insert({c.name,id});
+    if (!c.name.empty() && c.len >= 0) {
+      chr.push_back(c);
+      chrNameToId.insert({c.name,id});
+    }
     std::getline(in,type); // clear end of line   
   }
 }
