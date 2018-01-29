@@ -6,6 +6,12 @@
 #include <string>
 #include <vector>
 
+
+#ifdef _WIN64
+typedef unsigned int uint;
+#endif
+
+
 struct ProgramOptions {
   bool verbose;
   int threads;

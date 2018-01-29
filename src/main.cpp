@@ -5,7 +5,7 @@
 #include <vector>
 #include <sys/stat.h>
 #include <getopt.h>
- #include <thread>
+#include <thread>
 #include <time.h>
 
 #include <cstdio>
@@ -30,9 +30,10 @@
 
 using namespace std;
 
+
 int my_mkdir(const char *path, mode_t mode) {
-  #ifdef _WIN32
-  return _mkdir(path);
+  #ifdef _WIN64
+  return mkdir(path);
   #else
   return mkdir(path,mode);
   #endif
@@ -896,7 +897,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       }
     } else {
       // create directory
-      if (mkdir(opt.output.c_str(), 0777) == -1) {
+      if (my_mkdir(opt.output.c_str(), 0777) == -1) {
         cerr << "Error: could not create directory " << opt.output << endl;
         ret = false;
       }
@@ -988,7 +989,7 @@ bool CheckOptionsH5Dump(ProgramOptions& opt) {
           cerr << "Error: tried to open " << opt.output << " but another file already exists there" << endl;
           ret = false;
         }
-      } else if (mkdir(opt.output.c_str(), 0777) == -1) {
+      } else if (my_mkdir(opt.output.c_str(), 0777) == -1) {
         cerr << "Error: could not create directory " << opt.output << endl;
         ret = false;
       }
