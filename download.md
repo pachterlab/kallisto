@@ -36,6 +36,7 @@ The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallis
       <th></th>
       <th></th>
       <th></th>
+      <th></th>
     </tr>
   </thead>
 
@@ -47,6 +48,7 @@ The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallis
         <td><a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_mac-{{ post.version }}.tar.gz">Mac</a></td>
         <td>{% if post.version != 'v0.42.2' %} <a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_linux-{{ post.version }}.tar.gz">Linux</a> {% endif %} </td>
         <td>{% if post.version >= 'v0.43.0' %} <a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_windows-{{ post.version }}.zip">Windows</a> {% endif %} </td>
+        <td>{% if post.version >= 'v0.44.0' %} <a href="https://github.com/pachterlab/kallisto/releases/download/{{ post.version }}/kallisto_rock64-{{ post.version }}.tar.gz">Rock64</a> {% endif %} </td>
         <td><a href="https://github.com/pachterlab/kallisto/archive/{{ post.version }}.tar.gz">Source</a></td>
     </tr>
 {% endfor %}
