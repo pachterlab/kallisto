@@ -29,5 +29,5 @@ rule kallisto_quant:
         "-b 30 "
         "-o {output[0]} "
         "--genomebam --gtf {GTF} "
-        "--chromosomes hg38.chrom.sizes "
+        "--chromosomes chrom.txt "
         "{input[0]} {input[1]}"
