@@ -1099,7 +1099,7 @@ void usageEM(bool valid_input = true) {
        << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "    --single-overhang         Include reads where unobserved rest of fragment is" << endl
-       << "                              predicted to lie outside a transcript"
+       << "                              predicted to lie outside a transcript" << endl
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
