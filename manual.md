@@ -9,21 +9,21 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.43.1
+kallisto 0.44.0
 
 Usage: kallisto <CMD> [arguments] ..
 
 Where <CMD> can be one of:
 
-    index         Builds a kallisto index
-    quant         Runs the quantification algorithm
-    pseudo        Runs the pseudoalignment step
+    index         Builds a kallisto index 
+    quant         Runs the quantification algorithm 
+    pseudo        Runs the pseudoalignment step 
     h5dump        Converts HDF5-formatted results to plaintext
+    inspect       Inspects and gives information about an index
     version       Prints version information
     cite          Prints citation information
 
 Running kallisto <CMD> without arguments prints usage information for <CMD>
-
 ~~~
 The usage commands are:
 
@@ -32,13 +32,13 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.43.1
+kallisto 0.44.0
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
 
 Required argument:
--i, --index=STRING          Filename for the kallisto index to be constructed
+-i, --index=STRING          Filename for the kallisto index to be constructed 
 
 Optional argument:
 -k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: 31)
@@ -52,7 +52,7 @@ The Fasta file supplied can be either in plaintext or gzipped format.
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.43.1
+kallisto 0.44.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -69,6 +69,8 @@ Optional arguments:
     --plaintext               Output plaintext instead of HDF5
     --fusion                  Search for fusions for Pizzly
     --single                  Quantify single-end reads
+    --single-overhang         Include reads where unobserved rest of fragment is
+                              predicted to lie outside a transcript
     --fr-stranded             Strand specific reads, first read forward
     --rf-stranded             Strand specific reads, first read reverse
 -l, --fragment-length=DOUBLE  Estimated average fragment length
@@ -76,8 +78,12 @@ Optional arguments:
                               (default: -l, -s values are estimated from paired
                                end data, but are required when using --single)
 -t, --threads=INT             Number of threads to use (default: 1)
-    --pseudobam               Output pseudoalignments in SAM format to stdout
-
+    --pseudobam               Save pseudoalignments to transcriptome to BAM file
+    --genomebam               Project pseudoalignments to genome sorted BAM file
+-g, --gtf                     GTF file for transcriptome information
+                              (required for --genomebam)
+-c, --chromosomes             Tab separated file with chrosome names and lengths
+                              (optional for --genomebam, but recommended)
 ~~~
 
 __kallisto__ can process either single-end or paired-end reads. The default running mode is paired-end and requires an even number of FASTQ files represented as pairs, e.g.
@@ -99,7 +105,7 @@ gzipped.
 multiple FASTQ (pair) option is for users who have samples that span multiple
 FASTQ files.
 
-In the case of single-end reads, the -l option must be used to specify the average fragment length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode).
+In the case of single-end reads, the -l option must be used to specify the average fragment length. Typical Illumina libraries produce fragment lengths ranging from 180--200 bp but it's best to determine this from a library quantification with an instrument such as an Agilent Bioanalyzer. For paired-end reads, the average fragment length can be directly estimated from the reads and the program will do so if -l is not used (this is the preferred run mode). For reads that are produced by 3'-end sequencing, the `--single-overhang` option does not discard reads where the expected fragment size goes beyond the transcript start.
 
 The number of bootstrap samples is specified using -b. Note that because of the large amount of data that may be produced when the number of bootstrap samples is high, __kallisto__ outputs bootstrap results in HDF5 format. The `h5dump` command can be used afterwards to convert this output to plaintext, however most convenient is to analyze bootstrap results with __sleuth__.
 
@@ -130,28 +136,22 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 ##### Pseudobam
 
-`--pseudobam` outputs all pseudoalignments in SAM format to the standard output. The stream can either be redirected into a file, or converted to bam using `samtools`.
+`--pseudobam` outputs all pseudoalignments to a file `pseudoalignments.bam` in the output directory. This BAM file contains the pseudoalignments in BAM format, ordered by reads so that each pseudoalignment of a read is adjacent in the BAM file.
 
-For example
-
-~~~
-kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq > out.sam
-~~~
-
-or by piping directly into `samtools`
-
-~~~
-kallisto quant -i index -o out --pseudobam r1.fastq r2.fastq | samtools view -Sb - > out.bam
-~~~
 
 A detailed description of the SAM output is [here](pseudobam.html).
+
+##### GenomeBam
+
+`--genomebam` constructs the pseudoalignments to the transcriptome, but projects the transcript alignments to genome coordinates, resulting in split-read alignments. When the `--genomebam` option is supplied at GTF file must be given with the `--gtf` option. The GTF file, which can be plain text or gzipped, translates transcripts into genomic coordinates. We recommend downloading a the cdna FASTA files and GTF files from the same data source. The `--chromosomes` option can provide a length of the genomic chromosomes, this option is not neccessary, but gives a more consistent BAM header, some programs may require this for downstream analysis. __kallisto__ does not require the genome sequence to do pseudoalignment, but downstream tools such as genome browsers will probably need it.
+
 
 #### pseudo
 
 `kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
-kallisto 0.43.1
+kallisto 0.44.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto pseudo [arguments] FASTQ-files
@@ -170,7 +170,6 @@ Optional arguments:
                               (default: -l, -s values are estimated from paired
                                end data, but are required when using --single)
 -t, --threads=INT             Number of threads to use (default: 1)
-    --pseudobam               Output pseudoalignments in SAM format to stdout
 
 ~~~
 
@@ -224,7 +223,7 @@ When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign an
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.43.1
+kallisto 0.44.0
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
@@ -233,6 +232,7 @@ Required argument:
 -o, --output-dir=STRING       Directory to write output to
 
 ~~~
+
 
 #### version
 
