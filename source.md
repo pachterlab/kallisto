@@ -53,6 +53,20 @@ Run cmake:
 
 `cmake ..`
 
+Run autotools toolchain on `ext/htslib`:
+
+`cd ../ext/htslib`
+
+`aclocal`
+
+`autoconf`
+
+`autoheader`
+
+`automake --add-missing`
+
+`cd ../../build`
+
 Build the code:
 
 `make`
