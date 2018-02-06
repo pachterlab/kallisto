@@ -25,6 +25,10 @@ Other dependencies are included, or can be installed using package managers on t
     - Mac: Should be installed by default
     - Ubuntu: `sudo apt-get install zlib1g-dev`
     - CentOS: `sudo yum install zlib-devel`
+- __autoconf__ 
+    - Mac: `brew install autoconf`
+    - Ubuntu: `sudo apt-get install autoconf`
+    - CentOS: `sudo yum install autoconf`
 - __HDF5__ C library version >= 1.8.12
     - Mac: first get homebrew/science with `brew tap homebrew/science` then run `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
@@ -43,6 +47,16 @@ Begin by moving to the source directory:
 
 `cd kallisto`
 
+Run autoconf on `ext/htslib`: (note, this only needs to be done once, not when you recompile)
+
+`cd ext/htslib`
+
+`autoheader`
+
+`autoconf`
+
+`cd ../..`
+
 Make a build directory and move there:
 
 `mkdir build`
@@ -52,20 +66,6 @@ Make a build directory and move there:
 Run cmake:
 
 `cmake ..`
-
-Run autotools toolchain on `ext/htslib`:
-
-`cd ../ext/htslib`
-
-`aclocal`
-
-`autoconf`
-
-`autoheader`
-
-`automake --add-missing`
-
-`cd ../../build`
 
 Build the code:
 
