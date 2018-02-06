@@ -47,6 +47,7 @@ Begin by moving to the source directory:
 
 `cd kallisto`
 
+##### Make htslib
 Run autoconf on `ext/htslib`: (note, this only needs to be done once, not when you recompile)
 
 `cd ext/htslib`
@@ -57,6 +58,14 @@ Run autoconf on `ext/htslib`: (note, this only needs to be done once, not when y
 
 `cd ../..`
 
+For old Linux systems, if you get an error reporting
+`thread_pool.c:658:38: error: ‘PTHREAD_MUTEX_RECURSIVE’ undeclared (first use in this function)`
+
+you might need to make htslib using this command in the htslib folder
+
+`make -j CFLAGS=-D_GNU_SOURCE lib-static`
+
+##### Build kallisto
 Make a build directory and move there:
 
 `mkdir build`
