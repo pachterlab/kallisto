@@ -70,13 +70,15 @@ void writeSparseBatchMatrix(
     }
   }
   of.open(filename.c_str(), std::ios::out);
+  of << "%%MatrixMarket matrix coordinate real general\n"; 
   of << num_rows << "\t" << num_cols << "\t" << num_entries << "\n";
   if (!data.empty()) {      
     for (size_t j = 0; j < data.size(); j++) {
       const auto &v = data[j];
       for (size_t i = 0; i < v.size(); i++) {
         if (v[i].second != T(0)) {
-          of << j << "\t" << v[i].first << "\t" << v[i].second << "\n";
+          // everything is 1-based 
+          of << (j+1) << "\t" << (v[i].first+1) << "\t" << v[i].second << "\n";
         }
       }
     }
