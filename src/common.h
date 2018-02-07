@@ -27,6 +27,7 @@ struct ProgramOptions {
   int bootstrap;
   std::vector<std::string> transfasta;
   bool batch_mode;
+  bool qbatch_mode;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
@@ -64,6 +65,7 @@ ProgramOptions() :
   min_range(1),
   bootstrap(0),
   batch_mode(false),
+  qbatch_mode(false),
   plaintext(false),
   write_index(false),
   single_end(false),

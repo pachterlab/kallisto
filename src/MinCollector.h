@@ -70,6 +70,7 @@ struct MinCollector {
 
   // DEPRECATED
   double get_mean_frag_len() const;
+  double get_sd_frag_len() const;
 
   // compute the conditional mean of each target given the FLD
   void compute_mean_frag_lens_trunc();

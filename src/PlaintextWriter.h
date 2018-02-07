@@ -40,4 +40,49 @@ void writeBatchMatrix(
   const std::vector<std::string> &ids,
   std::vector<std::vector<int>> &counts);
 
+void writeCellIds(
+  const std::string &filename,
+  const std::vector<std::string> &ids);
+
+
+void writeECList(
+  const std::string &filename,
+  const KmerIndex &index);
+
+void writeFLD(const std::string &filename, const std::vector<std::pair<double, double>> &flds);
+
+
+template<typename T>
+void writeSparseBatchMatrix(
+  const std::string &filename,
+  std::vector<std::vector<std::pair<int,T>>> &data, int cols) {
+
+  std::ofstream of;
+  int num_rows = data.size();
+  int num_cols = cols;
+  int num_entries = 0;
+  for (size_t j = 0; j < data.size(); j++) {
+    const auto &v = data[j];
+    for (size_t i = 0; i < v.size(); i++) {
+      if (v[i].second != T(0)) {
+        num_entries++;
+      }
+    }
+  }
+  of.open(filename.c_str(), std::ios::out);
+  of << num_rows << "\t" << num_cols << "\t" << num_entries << "\n";
+  if (!data.empty()) {      
+    for (size_t j = 0; j < data.size(); j++) {
+      const auto &v = data[j];
+      for (size_t i = 0; i < v.size(); i++) {
+        if (v[i].second != T(0)) {
+          of << j << "\t" << v[i].first << "\t" << v[i].second << "\n";
+        }
+      }
+    }
+  }
+  of.close();
+}
+
+
 #endif

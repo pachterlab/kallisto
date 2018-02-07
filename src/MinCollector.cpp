@@ -298,6 +298,22 @@ double MinCollector::get_mean_frag_len() const {
   return mean_fl;
 }
 
+double MinCollector::get_sd_frag_len() const {
+  double tmp = get_mean_frag_len();
+  double m = mean_fl;
+
+  size_t total_counts = 0;
+  double total_mass = 0.0;
+  
+  for (size_t i = 0; i < flens.size(); ++i) {
+    total_counts += flens[i];
+    total_mass += flens[i]*(i-m)*(i-m);
+  }
+
+  double sd_fl = std::sqrt(total_mass/total_counts);
+  return sd_fl;
+}
+
 
 
 void MinCollector::compute_mean_frag_lens_trunc()  {

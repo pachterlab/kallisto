@@ -150,10 +150,14 @@ void writeBatchMatrix(
   const std::vector<std::string> &ids,
   std::vector<std::vector<int>> &counts) {
 
-    std::string ecfilename = prefix + ".ec";
-    std::string countsfilename = prefix + ".tsv";
-    std::string cellnamesfilename = prefix + ".cells";
+  std::string ecfilename = prefix + ".ec";
+  std::string countsfilename = prefix + ".tsv";
+  std::string cellnamesfilename = prefix + ".cells";
 
+  writeECList(ecfilename, index);
+  writeCellIds(cellnamesfilename, ids);
+  std::ofstream countsof;
+/*
     std::ofstream ecof, countsof, cellsof;
     ecof.open(ecfilename.c_str(), std::ios::out);
     // output equivalence classes in the form "EC TXLIST";
@@ -180,7 +184,7 @@ void writeBatchMatrix(
       cellsof << ids[j] << "\n";
     }
     cellsof.close();
-    
+    */
     countsof.open(countsfilename.c_str(), std::ios::out);
     if (!counts.empty()) {      
       for (int j = 0; j < counts.size(); j++) {
@@ -194,4 +198,52 @@ void writeBatchMatrix(
     }
     countsof.close();
 
+}
+
+
+
+void writeECList(
+  const std::string &filename,
+  const KmerIndex &index) {
+    std::ofstream ecof;
+    ecof.open(filename.c_str(), std::ios::out);
+    // output equivalence classes in the form "EC TXLIST";
+    for (int i = 0; i < index.ecmap.size(); i++) {
+      ecof << i << "\t";
+      // output the rest of the class
+      const auto &v = index.ecmap[i];
+      bool first = true;
+      for (auto x : v) {
+        if (!first) {
+          ecof << ",";
+        } else {
+          first = false;
+        }
+        ecof << x;
+      }
+      ecof << "\n";
+    }
+    ecof.close();
+}
+
+void writeCellIds(
+  const std::string &filename,
+  const std::vector<std::string> &ids) {
+
+    std::ofstream cellsof;    
+    // write cell ids, one line per id
+    cellsof.open(filename.c_str(), std::ios::out);
+    for (int j = 0; j < ids.size(); j++) {
+      cellsof << ids[j]  << "\n";
+    }
+    cellsof.close();
+}
+
+void writeFLD(const std::string &filename, const std::vector<std::pair<double, double>> &flds) {
+  std::ofstream of;
+  of.open(filename.c_str(), std::ios::out);
+  for (int j = 0; j < flds.size(); j++) {
+    of << j << "\t" << flds[j].first << "\t" << flds[j].second << "\n";
+  }
+  of.close();
 }
