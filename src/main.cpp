@@ -1593,7 +1593,11 @@ int main(int argc, char *argv[]) {
               fld = collection.flens; // copy
               collection.compute_mean_frag_lens_trunc(false);
             } else {
-              auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+              auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len(true);
+              if (mean_fl == std::numeric_limits<double>::max()) {
+                std::cerr << "Couldn't estimate fragment length for batch file number " << id << std::endl;
+                return;
+              }
               auto sd_fl = opt.sd;
               collection.init_mean_fl_trunc( mean_fl, sd_fl );
               fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
@@ -1615,7 +1619,7 @@ int main(int argc, char *argv[]) {
               }
             }
 
-            double mean_fl = collection.get_mean_frag_len();
+            double mean_fl = collection.get_mean_frag_len(true);
             double sd_fl = collection.get_sd_frag_len();
             FLD_mat[id] = {mean_fl, sd_fl};
           }; // end of EM_lambda

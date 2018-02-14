@@ -182,6 +182,12 @@ void writeECList(
   const KmerIndex &index) {
     std::ofstream ecof;
     ecof.open(filename.c_str(), std::ios::out);
+
+    if (!ecof.is_open()) {
+      std::cerr << "Error: Couldn't open file: " << filename << std::endl;
+      exit(1);
+    }
+
     // output equivalence classes in the form "EC TXLIST";
     for (int i = 0; i < index.ecmap.size(); i++) {
       ecof << i << "\t";
@@ -208,6 +214,12 @@ void writeCellIds(
     std::ofstream cellsof;    
     // write cell ids, one line per id
     cellsof.open(filename.c_str(), std::ios::out);
+
+    if (!cellsof.is_open()) {
+      std::cerr << "Error: Couldn't open file: " << filename << std::endl;
+      exit(1);
+    }
+
     for (int j = 0; j < ids.size(); j++) {
       cellsof << ids[j]  << "\n";
     }
@@ -217,6 +229,10 @@ void writeCellIds(
 void writeFLD(const std::string &filename, const std::vector<std::pair<double, double>> &flds) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out);
+  if (!of.is_open()) {
+    std::cerr << "Error: Couldn't open file: " << filename << std::endl;
+    exit(1);
+  }
   for (int j = 0; j < flds.size(); j++) {
     of << j << "\t" << flds[j].first << "\t" << flds[j].second << "\n";
   }
@@ -226,6 +242,10 @@ void writeFLD(const std::string &filename, const std::vector<std::pair<double, d
 void writeGeneList(const std::string &filename, const Transcriptome& model) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out);
+  if (!of.is_open()) {
+    std::cerr << "Error: Couldn't open file: " << filename << std::endl;
+    exit(1);
+  }
   for (int j = 0; j < model.genes.size(); j++) {
     of << j << "\t" << model.genes[j].name << "\t" << model.genes[j].commonName << "\n";
   }
