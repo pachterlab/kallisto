@@ -10,6 +10,8 @@
 #include <vector>
 
 #include "KmerIndex.h"
+#include "GeneModel.h"
+
 
 void plaintext_writer(
     const std::string& out_name,
@@ -51,6 +53,7 @@ void writeECList(
 
 void writeFLD(const std::string &filename, const std::vector<std::pair<double, double>> &flds);
 
+void writeGeneList(const std::string &filename, const Transcriptome& model);
 
 template<typename T>
 void writeSparseBatchMatrix(

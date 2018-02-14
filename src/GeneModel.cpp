@@ -332,13 +332,13 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
     gmodel.chr = ichr;
     gmodel.start = start;
     gmodel.stop = stop;
-    gmodel.strand = (strand == '+') ? true : false;
-    gmodel.id = -1; // figure out later
+    gmodel.strand = (strand == '+') ? true : false;    
   } else if (type == Type::TRANSCRIPT) {
     tmodel.chr = ichr;
     tmodel.start = start;
     tmodel.stop = stop;
     tmodel.strand = (strand == '+') ? true : false;    
+    tmodel.gene_id = -1;    
   } else if (type == Type::EXON) {
     emodel.chr = ichr;
     emodel.start = start;
@@ -379,7 +379,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       if (key == "gene_name") {
         keycount++;
         gmodel.commonName = std::move(value);
-      }
+      } else if (key == "gene_id")
 
       if (keycount == 3) {
         break;
@@ -411,12 +411,12 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       if (p >= line.size()) {
         break;
       }
-    }
-    
+    }    
   }
 
-  if (type == Type::GENE) {
-    assert(!gene_name.empty());
+  if (type == Type::GENE) {    
+    gmodel.name = gene_name;
+    assert(!gmodel.name.empty());
     if (!gversion.empty() && gmodel.name.find('.') == std::string::npos) {
       gmodel.name += "." + gversion;
     }

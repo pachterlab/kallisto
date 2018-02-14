@@ -378,7 +378,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int umi_flag = 0;
   int quant_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:b:u:";
+  const char *opt_string = "t:i:l:s:o:b:u:g:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -390,6 +390,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"batch", required_argument, 0, 'b'},
     // short args
     {"threads", required_argument, 0, 't'},
+    {"gtf", required_argument, 0, 'g'},
     {"index", required_argument, 0, 'i'},
     {"fragment-length", required_argument, 0, 'l'},
     {"sd", required_argument, 0, 's'},
@@ -426,6 +427,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'o': {
       opt.output = optarg;
+      break;
+    }
+    case 'g': {
+      stringstream(optarg) >> opt.gtfFile;
       break;
     }
     case 'b': {
@@ -1644,8 +1649,8 @@ int main(int argc, char *argv[]) {
         std::string abfilename = prefix + ".abundance.mtx";
         std::string cellnamesfilename = prefix + ".cells";
         std::string fldfilename = prefix + ".fld.tsv";
-        std::string genelistname = prefix + "genes.txt";
-        std::string genecountname = prefix + "genes.mtx";
+        std::string genelistname = prefix + ".genelist.txt";
+        std::string genecountname = prefix + ".genes.mtx";
 
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
@@ -1654,7 +1659,60 @@ int main(int argc, char *argv[]) {
           writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
           writeFLD(fldfilename, FLD_mat);
         }
-       
+        if (!opt.gtfFile.empty()) {
+          // write out gene info
+          std::vector<std::vector<std::pair<int32_t, double>>> geneCounts;
+          geneCounts.assign(MP.batchCounts.size(), {});
+          
+          std::unordered_set<int> gene_ids;
+          gene_ids.reserve(100);
+          int n_batch_files = opt.batch_files.size();
+          std::vector<double> gc;
+
+          for (int id = 0; id < n_batch_files; id++) {
+            auto& sgc = geneCounts[id];
+            gc.assign(model.genes.size(), 0.0);  
+            const auto& bc = MP.batchCounts[id];
+            for (auto &p : bc) {
+              int ec = p.first;
+              if (ec < 0) {
+                continue; 
+              }
+              if (ec < index.num_trans) {
+                int g_id = model.transcripts[ec].gene_id;
+                if (g_id != -1) {
+                  gc[g_id] += p.second;
+                }
+              } else {
+                gene_ids.clear();
+                for (auto t : index.ecmap[ec]) {
+                  int g_id = model.transcripts[t].gene_id;
+                  if (g_id != -1) {
+                    gene_ids.insert(g_id);
+                  }
+                }
+                if (!gene_ids.empty()) {
+                  double n_genes = gene_ids.size();
+                  for (auto &g_id : gene_ids) {
+                    gc[g_id] += p.second / n_genes;
+                  }
+                }
+              }
+            }
+
+            for (int j = 0; j < gc.size(); j++) {
+              if (gc[j] > 0.0) {
+                sgc.push_back({j, gc[j]});                
+              }
+            }
+          }
+
+
+         
+
+          writeGeneList(genelistname, model);
+          writeSparseBatchMatrix(genecountname, geneCounts, model.genes.size());
+        }
 
 
         if (opt.pseudobam) {       
