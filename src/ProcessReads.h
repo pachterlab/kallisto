@@ -31,7 +31,7 @@ KSEQ_INIT(gzFile, gzread)
 class MasterProcessor;
 
 int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
-int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts);
+int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<std::pair<int32_t, int32_t>>> &batchCounts);
 int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
@@ -82,9 +82,9 @@ public:
       if (opt.batch_mode) {
         batchCounts.resize(opt.batch_ids.size(), {});
         
-        for (auto &t : batchCounts) {
+        /*for (auto &t : batchCounts) {
           t.resize(tc.counts.size(),0);
-        }
+        }*/
         newBatchECcount.resize(opt.batch_ids.size());
         newBatchECumis.resize(opt.batch_ids.size());
         batchUmis.resize(opt.batch_ids.size());
@@ -139,7 +139,8 @@ public:
   size_t bufsize;
   std::atomic<int> tlencount;
   std::atomic<int> biasCount;
-  std::vector<std::vector<int>> batchCounts;
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
+  std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   std::ofstream ofusion;
@@ -156,7 +157,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1);
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1, int local_id = -1);
 
 
 
@@ -164,7 +165,7 @@ public:
 
 class ReadProcessor {
 public:
-  ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1);
+  ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
@@ -179,6 +180,7 @@ public:
   SequenceReader batchSR;
   int numreads;
   int id;
+  int local_id;
   PseudoAlignmentBatch pseudobatch;
   
 

@@ -38,7 +38,7 @@ void writeBatchMatrix(
   const std::string &prefix,
   const KmerIndex &index,
   const std::vector<std::string> &ids,
-  std::vector<std::vector<int>> &counts);
+  std::vector<std::vector<std::pair<int32_t, int32_t>>> &counts);
 
 void writeCellIds(
   const std::string &filename,
@@ -58,9 +58,9 @@ void writeSparseBatchMatrix(
   std::vector<std::vector<std::pair<int,T>>> &data, int cols) {
 
   std::ofstream of;
-  int num_rows = data.size();
-  int num_cols = cols;
-  int num_entries = 0;
+  uint64_t num_rows = data.size();
+  uint64_t num_cols = cols;
+  uint64_t num_entries = 0;
   for (size_t j = 0; j < data.size(); j++) {
     const auto &v = data[j];
     for (size_t i = 0; i < v.size(); i++) {

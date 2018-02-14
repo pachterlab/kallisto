@@ -321,6 +321,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       c.len = 536870911; // maximum that bai can index :(
       chr.push_back(c);
       chrNameToId.insert({schr, i});
+      ichr = i;
     } else {
       return 1; // couldn't find chrom
     }

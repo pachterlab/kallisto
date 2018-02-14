@@ -77,7 +77,7 @@ const int default_genome_auxlen = 7; // for ZW:f:0.0
 
 //methods
 
-int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<int>> &batchCounts) {
+int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<std::pair<int32_t, int32_t>>> &batchCounts) {
   int limit = 1048576; 
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
@@ -252,32 +252,55 @@ void MasterProcessor::processReads() {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
     int id =0;
+    tmp_bc.assign(opt.threads, {});
     while (id < num_ids) {
       // TODO: put in thread pool
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
+      int first_id = id;
       for (int i = 0; i < nt; i++,id++) {
-        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id)));
+        tmp_bc[i].assign(tc.counts.size(), 0);     
+        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
       }
       
       for (int i = 0; i < nt; i++) {
         workers[i].join();
       }
       
-      if (opt.umi) {
+      if (!opt.umi) {
+        for (int i = 0; i < nt; i++) {
+          auto &bc = batchCounts[first_id+i];
+          auto &tmp_c = tmp_bc[i];
+          for (int j = 0; j < tmp_c.size(); j++) {
+            if (tmp_c[j] > 0) {
+              bc.push_back({j, tmp_c[j]});
+            }
+          }
+        }
+      } else {
+        std::vector<int32_t> tmp_counts;
+        tmp_counts.resize(tc.counts.size(), 0);
         // process the regular EC umi now
         for (int i = 0; i < nt; i++) {
+          tmp_counts.assign(tmp_counts.size(), 0);
           int l_id = id - nt + i;
           auto &umis = batchUmis[l_id];
           std::sort(umis.begin(), umis.end());
           size_t sz = umis.size();
           nummapped += sz;
           if (sz > 0) {
-            ++batchCounts[l_id][umis[0].first];
+            ++tmp_counts[umis[0].first];
           }
           for (int j = 1; j < sz; j++) {
             if (umis[j-1] != umis[j]) {
-              ++batchCounts[l_id][umis[j].first];
+              ++tmp_counts[umis[j].first];
+            }
+          }
+          auto &bc = batchCounts[l_id];
+          bc.clear();
+          for (int j = 0; j < tmp_counts.size(); j++) {
+            if (tmp_counts[j] > 0) {
+              bc.push_back({j, tmp_counts[j]});
             }
           }
           umis.clear();
@@ -303,9 +326,10 @@ void MasterProcessor::processReads() {
         }
       }
       // for each cell
+      std::vector<int> tmp_counts;
+      tmp_counts.resize(tc.counts.size(), 0);
       for (int id = 0; id < num_ids; id++) {
-        auto& c = batchCounts[id];
-        c.resize(c.size() + num_newEcs,0);
+        tmp_counts.assign(tmp_counts.size(), 0);
         // for each new ec
         for (auto &t : newBatchECcount[id]) {
           // count the ec
@@ -314,14 +338,21 @@ void MasterProcessor::processReads() {
           }
           int ec = tc.findEC(t.first);
           assert(ec != -1);
-          ++c[ec];
+          ++tmp_counts[ec];
+        }
+        auto& bc = batchCounts[id];
+        for (int j = 0; j < tmp_counts.size(); j++) {
+          if (tmp_counts[j] > 0) {
+            bc.push_back({j,tmp_counts[j]});
+          }
         }
       }
     } else {
       // UMI case
-      // for each cell
+      // for each cell      
       for (int id = 0; id < num_ids; id++) {
         // for each new ec
+        
         for (auto &t : newBatchECumis[id]) {
           // add the new ec
           int ecsize = index.ecmap.size();
@@ -331,10 +362,12 @@ void MasterProcessor::processReads() {
           }
         }
       }
+      
+      std::vector<int> tmp_counts;
+      tmp_counts.resize(tc.counts.size(), 0);
       // for each cell
       for (int id = 0; id < num_ids; id++) {
-        auto& c = batchCounts[id];
-        c.resize(c.size() + num_newEcs,0);
+        tmp_counts.assign(tmp_counts.size(), 0);
         std::vector<std::pair<int, std::string>> umis;
         umis.reserve(newBatchECumis[id].size());
         // for each new ec
@@ -347,16 +380,22 @@ void MasterProcessor::processReads() {
         std::sort(umis.begin(), umis.end());
         size_t sz = umis.size();
         if (sz > 0) {
-          ++batchCounts[id][umis[0].first];
+          ++tmp_counts[umis[0].first];
         }
         for (int j = 1; j < sz; j++) {
           if (umis[j-1] != umis[j]) {
-            ++batchCounts[id][umis[j].first];
+            ++tmp_counts[umis[j].first];
           }
         }
-        for (auto x : c) {
+        for (auto x : tmp_counts) {
           num_umi += x;
-        }        
+        }
+        auto& bc = batchCounts[id];
+        for (int j = 0; j < tmp_counts.size(); j++) {
+          if (tmp_counts[j] > 0) {
+            bc.push_back({j,tmp_counts[j]});
+          }
+        }
       }
     }
   }
@@ -563,7 +602,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -574,8 +613,9 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }
   } else {
     if (!opt.umi) {
+      auto& bc = tmp_bc[local_id];
       for (int i = 0; i < c.size(); i++) {
-        batchCounts[id][i] += c[i];
+        bc[i] += c[i];
         nummapped += c[i];
       }
     } else {
@@ -697,8 +737,8 @@ void MasterProcessor::outputFusion(const std::stringstream &o) {
 }
 
 
-ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id) :
- paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id) {
+ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
+ paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
@@ -727,6 +767,7 @@ ReadProcessor::ReadProcessor(ReadProcessor && o) :
   index(o.index),
   mp(o.mp),
   id(o.id),
+  local_id(o.local_id),
   bufsize(o.bufsize),
   numreads(o.numreads),
   seqs(std::move(o.seqs)),
@@ -777,7 +818,7 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, id, local_id);
     clear();
   }
 }

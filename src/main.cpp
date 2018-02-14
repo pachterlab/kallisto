@@ -179,7 +179,6 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
-    {"batch", required_argument, 0, 256},
     {0,0,0,0}
   };
   int c;
@@ -234,11 +233,6 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
-      break;
-    }
-    case 256: {
-      opt.qbatch_mode = true;
-      opt.batch_file_name = optarg;
       break;
     }
 
@@ -575,88 +569,33 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   // check for read files
   if (!emonly) {
-    if (opt.qbatch_mode) {
-      if (opt.bootstrap > 0) {
-        cerr << ERROR_STR << " specifying bootstraps is not compatible with running in batch mode." << endl;
-        ret = false;
-      }
-      if (opt.genomebam) {
-        cerr << ERROR_STR << " --genomebam not compatible with running in batch mode (yet)." << endl;
-        ret = false;
-      }
-      struct stat stFileInfo;
-      auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
-      if (intstat != 0) {
-        cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
-        ret = false;
-      }
-      // open the file, parse and fill the batch_files values
-      std::ifstream bfile(opt.batch_file_name);
-      std::string line;
-      std::string id,f1,f2;
-      while (std::getline(bfile,line)) {
-        if (line.size() == 0) {
-          continue;
-        }
-        std::stringstream ss(line);
-        ss >> id;
-        if (id[0] == '#') {
-          continue;
-        }
-        opt.batch_ids.push_back(id);
-        if (opt.single_end) {
-          ss >> f1;
-          opt.batch_files.push_back({f1});
-          intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
-          }
-        } else {
-          ss >> f1 >> f2;
-          opt.batch_files.push_back({f1,f2});
-
-          intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
-          }
-          intstat = stat(f2.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f2 << endl;
-            ret = false;
-          }
-        }
-      }
+    if (opt.files.size() == 0) {
+      cerr << ERROR_STR << " Missing read files" << endl;
+      ret = false;
     } else {
-      if (opt.files.size() == 0) {
-        cerr << ERROR_STR << " Missing read files" << endl;
-        ret = false;
-      } else {
-        struct stat stFileInfo;
-        for (auto& fn : opt.files) {
-          auto intStat = stat(fn.c_str(), &stFileInfo);
-          if (intStat != 0) {
-            cerr << ERROR_STR << " file not found " << fn << endl;
-            ret = false;
-          }
-        }
-      }
-
-      /*
-      if (opt.strand_specific && !opt.single_end) {
-        cerr << "Error: strand-specific mode requires single end mode" << endl;
-        ret = false;
-      }*/
-
-      if (!opt.single_end) {
-        if (opt.files.size() % 2 != 0) {
-          cerr << "Error: paired-end mode requires an even number of input files" << endl
-              << "       (use --single for processing single-end reads)" << endl;
+      struct stat stFileInfo;
+      for (auto& fn : opt.files) {
+        auto intStat = stat(fn.c_str(), &stFileInfo);
+        if (intStat != 0) {
+          cerr << ERROR_STR << " file not found " << fn << endl;
           ret = false;
         }
       }
     }
+
+    /*
+    if (opt.strand_specific && !opt.single_end) {
+      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      ret = false;
+    }*/
+
+    if (!opt.single_end) {
+      if (opt.files.size() % 2 != 0) {
+        cerr << "Error: paired-end mode requires an even number of input files" << endl
+            << "       (use --single for processing single-end reads)" << endl;
+        ret = false;
+      }
+    }    
   }
 
   if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
@@ -1154,7 +1093,6 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --bias                    Perform sequence based bias correction" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
@@ -1322,231 +1260,128 @@ int main(int argc, char *argv[]) {
 
 
         
-        int num_processed = 0;
-        int num_pseudoaligned = 0;
-        int num_unique = 0;
+        int64_t num_processed = 0;
+        int64_t num_pseudoaligned = 0;
+        int64_t num_unique = 0;
 
-        if (!opt.qbatch_mode) {
-          MinCollector collection(index, opt);        
-          MasterProcessor MP(index, opt, collection, model);
-          num_processed = ProcessReads(MP, opt);
+      
+        MinCollector collection(index, opt);        
+        MasterProcessor MP(index, opt, collection, model);
+        num_processed = ProcessReads(MP, opt);
 
-          // save modified index for future use
-          if (opt.write_index) {
-            index.write((opt.output + "/index.saved"), false);
+        // save modified index for future use
+        if (opt.write_index) {
+          index.write((opt.output + "/index.saved"), false);
+        }
+
+        // if mean FL not provided, estimate
+        std::vector<int> fld;
+        if (opt.fld == 0.0) {
+          fld = collection.flens; // copy
+          collection.compute_mean_frag_lens_trunc();
+        } else {
+          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+          auto sd_fl = opt.sd;
+          collection.init_mean_fl_trunc( mean_fl, sd_fl );
+          //fld.resize(MAX_FRAG_LEN,0); // no obersvations
+          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+
+          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
+          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
+          // }
+        }
+
+        std::vector<int> preBias(4096,1);
+        if (opt.bias) {
+          preBias = collection.bias5; // copy
+        }
+
+        auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+
+        /*for (int i = 0; i < collection.bias3.size(); i++) {
+          std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
+          }*/
+
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+        em.run(10000, 50, true, opt.bias);
+
+        std::string call = argv_to_string(argc, argv);
+
+        H5Writer writer;
+        if (!opt.plaintext) {
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
+              index.INDEX_VERSION, call, start_time);
+          writer.write_main(em, index.target_names_, index.target_lens_);
+        }
+
+        for (int i = 0; i < index.num_trans; i++) {
+          num_unique += collection.counts[i];          
+        }
+        for (int i = 0; i < collection.counts.size(); i++) {
+          num_pseudoaligned += collection.counts[i];
+        }
+
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(index.num_trans)),
+            std::string(std::to_string(opt.bootstrap)),
+            std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index.INDEX_VERSION)),
+            start_time,
+            call);
+
+        plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
+            em.alpha_, em.eff_lens_, index.target_lens_);
+
+        if (opt.bootstrap > 0) {
+          auto B = opt.bootstrap;
+          std::mt19937_64 rand;
+          rand.seed( opt.seed );
+
+          std::vector<size_t> seeds;
+          for (auto s = 0; s < B; ++s) {
+            seeds.push_back( rand() );
           }
 
-          // if mean FL not provided, estimate
-          std::vector<int> fld;
-          if (opt.fld == 0.0) {
-            fld = collection.flens; // copy
-            collection.compute_mean_frag_lens_trunc();
+          if (opt.threads > 1) {
+            auto n_threads = opt.threads;
+            if (opt.threads > opt.bootstrap) {
+              cerr
+                << "[~warn] number of threads (" << opt.threads <<
+                ") greater than number of bootstraps" << endl
+                << "[~warn] (cont'd) updating threads to number of bootstraps "
+                << opt.bootstrap << endl;
+              n_threads = opt.bootstrap;
+            }
+
+            BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, opt, writer, fl_means);
           } else {
-            auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-            auto sd_fl = opt.sd;
-            collection.init_mean_fl_trunc( mean_fl, sd_fl );
-            //fld.resize(MAX_FRAG_LEN,0); // no obersvations
-            fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
 
-            // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-            //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-            // }
-          }
-
-          std::vector<int> preBias(4096,1);
-          if (opt.bias) {
-            preBias = collection.bias5; // copy
-          }
-
-          auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
-
-          /*for (int i = 0; i < collection.bias3.size(); i++) {
-            std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
-            }*/
-
-          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
-          em.run(10000, 50, true, opt.bias);
-
-          std::string call = argv_to_string(argc, argv);
-
-          H5Writer writer;
-          if (!opt.plaintext) {
-            writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
-                index.INDEX_VERSION, call, start_time);
-            writer.write_main(em, index.target_names_, index.target_lens_);
-          }
-
-          for (int i = 0; i < index.num_trans; i++) {
-            num_unique += collection.counts[i];          
-          }
-          for (int i = 0; i < collection.counts.size(); i++) {
-            num_pseudoaligned += collection.counts[i];
-          }
-
-          plaintext_aux(
-              opt.output + "/run_info.json",
-              std::string(std::to_string(index.num_trans)),
-              std::string(std::to_string(opt.bootstrap)),
-              std::string(std::to_string(num_processed)),
-              std::string(std::to_string(num_pseudoaligned)),
-              std::string(std::to_string(num_unique)),
-              KALLISTO_VERSION,
-              std::string(std::to_string(index.INDEX_VERSION)),
-              start_time,
-              call);
-
-          plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
-              em.alpha_, em.eff_lens_, index.target_lens_);
-
-          if (opt.bootstrap > 0) {
-            auto B = opt.bootstrap;
-            std::mt19937_64 rand;
-            rand.seed( opt.seed );
-
-            std::vector<size_t> seeds;
-            for (auto s = 0; s < B; ++s) {
-              seeds.push_back( rand() );
-            }
-
-            if (opt.threads > 1) {
-              auto n_threads = opt.threads;
-              if (opt.threads > opt.bootstrap) {
-                cerr
-                  << "[~warn] number of threads (" << opt.threads <<
-                  ") greater than number of bootstraps" << endl
-                  << "[~warn] (cont'd) updating threads to number of bootstraps "
-                  << opt.bootstrap << endl;
-                n_threads = opt.bootstrap;
-              }
-
-              BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
-                  collection, em.eff_lens_, opt, writer, fl_means);
-            } else {
-              for (auto b = 0; b < B; ++b) {
-                Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
-                cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
-                auto res = bs.run_em();
-
-                if (!opt.plaintext) {
-                  writer.write_bootstrap(res, b);
-                } else {
-                  plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
-                      em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
-                }
+              if (!opt.plaintext) {
+                writer.write_bootstrap(res, b);
+              } else {
+                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
               }
             }
-
-            cerr << endl;
           }
+
+          cerr << endl;
+          
 
           if (opt.pseudobam) {
           
             MP.processAln(em, true);
           }
-        } else {
-          // batch mode
-          int n_batch_files = opt.batch_files.size();
-
-          std::vector<std::vector<std::pair<int32_t, int32_t>>> TCC_mat;
-          std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
-          std::vector<std::pair<double, double>> FLD_mat;
-
-          TCC_mat.resize(n_batch_files, {});
-          Abundance_mat.resize(n_batch_files, {});
-          FLD_mat.resize(n_batch_files, {});
-          
-          for (int batch_id = 0; batch_id < n_batch_files; batch_id++) {
-            opt.files = opt.batch_files[batch_id];
-
-            MinCollector collection(index, opt);        
-            MasterProcessor MP(index, opt, collection, model);
-            num_processed = ProcessReads(MP, opt);
-
-
-            // if mean FL not provided, estimate
-            std::vector<int> fld;
-            if (opt.fld == 0.0) {
-              fld = collection.flens; // copy
-              collection.compute_mean_frag_lens_trunc();
-            } else {
-              auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-              auto sd_fl = opt.sd;
-              collection.init_mean_fl_trunc( mean_fl, sd_fl );
-              fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
-            }
-
-            std::vector<int> preBias(4096,1);
-            if (opt.bias) {
-              preBias = collection.bias5; // copy
-            }
-
-            auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
-
-            EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
-            em.run(10000, 50, true, opt.bias);
-
-            for (int i = 0; i < index.num_trans; i++) {
-              num_unique += collection.counts[i];          
-            }
-            for (int i = 0; i < collection.counts.size(); i++) {
-              num_pseudoaligned += collection.counts[i];
-            }
-
-            // keep the fld, tcc and abundance info
-            auto &tcc_m = TCC_mat[batch_id];
-            for (int i = 0; i < collection.counts.size(); i++) {
-              if (collection.counts[i] > 0) {
-                tcc_m.push_back({i,collection.counts[i]});
-              }
-            }
-
-            auto &ab_m = Abundance_mat[batch_id];
-            for (int i = 0; i < em.alpha_.size(); i++) {
-              if (em.alpha_[i] > 0.0) {
-                ab_m.push_back({i,em.alpha_[i]});
-              }
-            }
-
-            double mean_fl = collection.get_mean_frag_len();
-            double sd_fl = collection.get_sd_frag_len();
-            FLD_mat[batch_id] = {mean_fl, sd_fl};
-
-          }
-
-
-          // write out matrices
-          //writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
-
-          const std::string &prefix = opt.output + "/matrix";
-  
-          std::string ecfilename = prefix + ".ec";
-          std::string tccfilename = prefix + ".tcc.mtx";
-          std::string abfilename = prefix + ".abundance.mtx";
-          std::string cellnamesfilename = prefix + ".cells";
-          std::string fldfilename = prefix + ".fld.tsv";
-
-          writeECList(ecfilename, index);
-          writeCellIds(cellnamesfilename, opt.batch_ids);
-          writeSparseBatchMatrix(tccfilename, TCC_mat, index.ecmap.size());
-          writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
-          writeFLD(fldfilename, FLD_mat);
-
-          std::string call = argv_to_string(argc, argv);
-          plaintext_aux(
-              opt.output + "/run_info.json",
-              std::string(std::to_string(index.num_trans)),
-              std::string(std::to_string(opt.bootstrap)),
-              std::string(std::to_string(num_processed)),
-              std::string(std::to_string(num_pseudoaligned)),
-              std::string(std::to_string(num_unique)),
-              KALLISTO_VERSION,
-              std::string(std::to_string(index.INDEX_VERSION)),
-              start_time,
-              call);          
- 
-
-
-        }
+        } 
 
         cerr << endl;
       }
@@ -1675,13 +1510,13 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        int num_processed = 0;
-        int num_pseudoaligned = 0;
-        int num_unique = 0;
+        int64_t num_processed = 0;
+        int64_t num_pseudoaligned = 0;
+        int64_t num_unique = 0;
 
         Transcriptome model; // empty model
         MasterProcessor MP(index, opt, collection, model);
-        std::vector<std::vector<int>> batchCounts;
+        std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
@@ -1695,11 +1530,11 @@ int main(int argc, char *argv[]) {
 
         for (int id = 0; id < batchCounts.size(); id++) {
           const auto &cc = batchCounts[id];
-          for (int i = 0; i < index.num_trans; i++) {            
-            num_unique += cc[i];          
-          }
-          for (int i = 0; i < cc.size(); i++) {
-            num_pseudoaligned += cc[i];
+          for (const auto &p : cc) {
+            if (p.first < index.num_trans) {
+              num_unique += p.second;
+            }
+            num_pseudoaligned += p.second;
           }
         }
         
