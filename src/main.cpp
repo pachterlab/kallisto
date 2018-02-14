@@ -376,6 +376,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int pbam_flag = 0;
   int gbam_flag = 0;
   int umi_flag = 0;
+  int quant_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:b:u:";
   static struct option long_options[] = {
@@ -384,6 +385,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"quant", no_argument, &quant_flag, 1},
     {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
@@ -453,8 +455,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = true;
     opt.single_overhang = true;
   }
-
-
+  
+  if (quant_flag) {
+    opt.pseudo_quant = true;
+  }
 
   if (strand_flag) {
     opt.strand_specific = true;
@@ -463,8 +467,6 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   if (pbam_flag) {
     opt.pseudobam = true;
   }
-  
-  
 }
 
 
@@ -747,6 +749,13 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     auto intStat = stat(opt.index.c_str(), &stFileInfo);
     if (intStat != 0) {
       cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  if (opt.pseudo_quant) {
+    if (!opt.batch_mode) {
+      cerr << ERROR_STR << " --quant can only be run with in batch mode with --batch" << endl;
       ret = false;
     }
   }
@@ -1131,6 +1140,7 @@ void usagePseudo(bool valid_input = true) {
        << "Optional arguments:" << endl
        << "-u  --umi                     First file in pair is a UMI file" << endl
        << "-b  --batch=FILE              Process files listed in FILE" << endl
+       << "    --quant                   Quantify using EM algorithm (only in batch mode)" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -1515,21 +1525,22 @@ int main(int argc, char *argv[]) {
         int64_t num_unique = 0;
 
         Transcriptome model; // empty model
+        if (!opt.gtfFile.empty()) {          
+          model.parseGTF(opt.gtfFile, index, opt, true);
+        }
         MasterProcessor MP(index, opt, collection, model);
-        std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
         } else {          
-          num_processed = ProcessBatchReads(index, opt, collection, batchCounts);
-          writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
+          num_processed = ProcessBatchReads(MP,opt);
         }
 
         std::string call = argv_to_string(argc, argv);
 
 
-        for (int id = 0; id < batchCounts.size(); id++) {
-          const auto &cc = batchCounts[id];
+        for (int id = 0; id < MP.batchCounts.size(); id++) {
+          const auto &cc = MP.batchCounts[id];
           for (const auto &p : cc) {
             if (p.first < index.num_trans) {
               num_unique += p.second;
@@ -1551,7 +1562,100 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
+        
+        
+        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
+        std::vector<std::pair<double, double>> FLD_mat;
+          
+        if (opt.pseudo_quant) {
+          int n_batch_files = opt.batch_files.size();
+          Abundance_mat.resize(n_batch_files, {});
+          FLD_mat.resize(n_batch_files, {});
+
+          std::cerr << "[quant] Running EM algorithm for each cell .."; std::cerr.flush();
+          
+          auto EM_lambda = [&](int id) {          
+            MinCollector collection(index, opt);
+            collection.flens = MP.batchFlens[id];
+            collection.counts.assign(index.ecmap.size(), 0);
+            const auto& bc = MP.batchCounts[id];
+            for (const auto &p : bc) {
+              collection.counts[p.first] = p.second;
+            }
+            // if mean FL not provided, estimate
+            std::vector<int> fld;
+            if (opt.fld == 0.0) {
+              fld = collection.flens; // copy
+              collection.compute_mean_frag_lens_trunc(false);
+            } else {
+              auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
+              auto sd_fl = opt.sd;
+              collection.init_mean_fl_trunc( mean_fl, sd_fl );
+              fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
+            }
+            std::vector<int> preBias(4096,1);
+            if (opt.bias) {
+              //preBias = collection.bias5; // copy
+            }
+
+            auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+
+            EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+            em.run(10000, 50, false, opt.bias);
+
+            auto &ab_m = Abundance_mat[id];
+            for (int i = 0; i < em.alpha_.size(); i++) {
+              if (em.alpha_[i] > 0.0) {
+                ab_m.push_back({i,em.alpha_[i]});
+              }
+            }
+
+            double mean_fl = collection.get_mean_frag_len();
+            double sd_fl = collection.get_sd_frag_len();
+            FLD_mat[id] = {mean_fl, sd_fl};
+          }; // end of EM_lambda
+
+          std::vector<std::thread> workers;
+          int num_ids = opt.batch_ids.size();
+          int id =0;
+          while (id < num_ids) {
+            workers.clear();
+            int nt = std::min(opt.threads, (num_ids - id));
+            int first_id = id;
+            for (int i = 0; i < nt; i++,id++) {
+              workers.emplace_back(std::thread(EM_lambda, id));
+              //workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
+            }
+            
+            for (int i = 0; i < nt; i++) {
+              workers[i].join();
+            }
+          }
+
+          std::cerr << " done" << std::endl;
+
+
+        }
         cerr << endl;
+
+        std::string prefix = opt.output + "/matrix";
+        std::string ecfilename = prefix + ".ec";
+        std::string tccfilename = prefix + ".tcc.mtx";
+        std::string abfilename = prefix + ".abundance.mtx";
+        std::string cellnamesfilename = prefix + ".cells";
+        std::string fldfilename = prefix + ".fld.tsv";
+        std::string genelistname = prefix + "genes.txt";
+        std::string genecountname = prefix + "genes.mtx";
+
+        writeECList(ecfilename, index);
+        writeCellIds(cellnamesfilename, opt.batch_ids);
+        writeSparseBatchMatrix(tccfilename, MP.batchCounts, index.ecmap.size());
+        if (opt.pseudo_quant) {
+          writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
+          writeFLD(fldfilename, FLD_mat);
+        }
+       
+
 
         if (opt.pseudobam) {       
           std::vector<double> fl_means(index.target_lens_.size(),0.0);

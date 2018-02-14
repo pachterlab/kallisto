@@ -31,7 +31,7 @@ KSEQ_INIT(gzFile, gzread)
 class MasterProcessor;
 
 int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
-int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<std::pair<int32_t, int32_t>>> &batchCounts);
+int ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
 int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
@@ -80,8 +80,9 @@ public:
     : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
       if (opt.batch_mode) {
-        batchCounts.resize(opt.batch_ids.size(), {});
-        
+        batchCounts.assign(opt.batch_ids.size(), {});
+        tlencounts.assign(opt.batch_ids.size(), 0);
+        batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
         /*for (auto &t : batchCounts) {
           t.resize(tc.counts.size(),0);
         }*/
@@ -138,7 +139,9 @@ public:
   int num_umi;
   size_t bufsize;
   std::atomic<int> tlencount;
+  std::vector<int> tlencounts;
   std::atomic<int> biasCount;
+  std::vector<std::vector<int>> batchFlens;
   std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;

@@ -316,7 +316,7 @@ double MinCollector::get_sd_frag_len() const {
 
 
 
-void MinCollector::compute_mean_frag_lens_trunc()  {
+void MinCollector::compute_mean_frag_lens_trunc(bool verbose)  {
 
   std::vector<int> counts(MAX_FRAG_LEN, 0);
   std::vector<double> mass(MAX_FRAG_LEN, 0.0);
@@ -335,8 +335,10 @@ void MinCollector::compute_mean_frag_lens_trunc()  {
 
   has_mean_fl_trunc = true;
 
-  std::cerr << "[quant] estimated average fragment length: " <<
-    mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;
+  if (verbose) {
+    std::cerr << "[quant] estimated average fragment length: " <<
+      mean_fl_trunc[MAX_FRAG_LEN - 1] << std::endl;
+  }
 }
 
 int hexamerToInt(const char *s, bool revcomp) {

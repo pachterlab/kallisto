@@ -73,7 +73,7 @@ struct MinCollector {
   double get_sd_frag_len() const;
 
   // compute the conditional mean of each target given the FLD
-  void compute_mean_frag_lens_trunc();
+  void compute_mean_frag_lens_trunc(bool verbose = true);
 
   // this function should only be used for SE data
   void init_mean_fl_trunc(double mean, double sd);

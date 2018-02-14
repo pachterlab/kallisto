@@ -77,7 +77,7 @@ const int default_genome_auxlen = 7; // for ZW:f:0.0
 
 //methods
 
-int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector& tc, std::vector<std::vector<std::pair<int32_t, int32_t>>> &batchCounts) {
+int ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
   int limit = 1048576; 
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
@@ -111,12 +111,9 @@ int ProcessBatchReads(KmerIndex& index, const ProgramOptions& opt, MinCollector&
   
   std::cerr << "[quant] finding pseudoalignments for all files ..."; std::cerr.flush();
   
-  Transcriptome model;
-  MasterProcessor MP(index, opt, tc, model);
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
-  batchCounts = std::move(MP.batchCounts);
 
   std::cerr << " done" << std::endl;
 
@@ -649,12 +646,21 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   
 
   if (!flens.empty()) {
-    int local_tlencount = 0;
-    for (int i = 0; i < flens.size(); i++) {
-      tc.flens[i] += flens[i];
-      local_tlencount += flens[i];
+    if (opt.batch_mode) {
+      auto &bflen = batchFlens[id];
+      auto &tcount = tlencounts[id];
+      for (int i = 0; i < flens.size(); i++) {
+        bflen[i] += flens[i];
+        tcount += flens[i];
+      }
+    } else {
+      int local_tlencount = 0;
+      for (int i = 0; i < flens.size(); i++) {
+        tc.flens[i] += flens[i];
+        local_tlencount += flens[i];
+      }
+      tlencount += local_tlencount;
     }
-    tlencount += local_tlencount;
   }
 
   if (!bias.empty()) {
@@ -839,6 +845,9 @@ void ReadProcessor::processBuffer() {
   int l1,l2;
 
   bool findFragmentLength = (mp.opt.fld == 0) && (mp.tlencount < 10000);
+  if (mp.opt.batch_mode) {
+    findFragmentLength = (mp.opt.fld == 0) && (mp.tlencounts[id] < 10000);
+  }
 
   int flengoal = 0;
   flens.clear();
