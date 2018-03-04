@@ -1100,7 +1100,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<KmerEntry, int
             // search2 Kmer found!
             found2=true;
             found2pos = pos;
-            KmerEntry val3 = search2->second;
+            KmerEntry valE = search2->second;
             v.push_back({valE, kit2->second});
           } else if (val.contig == search2->second.contig) {
             found2=true;
