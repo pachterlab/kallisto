@@ -1096,7 +1096,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<KmerEntry, int
           auto search2 = kmap.find(rep2);
           bool found2 = false;
           int  found2pos = pos+dist;
-          if (search2 == kmap.end()) {
+          if (search2 != kmap.end()) {
             found2=true;
             found2pos = pos;
           } else if (val.contig == search2->second.contig) {
