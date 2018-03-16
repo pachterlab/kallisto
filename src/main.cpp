@@ -23,6 +23,7 @@
 #include "Bootstrap.h"
 #include "H5Writer.h"
 #include "GeneModel.h"
+#include "Merge.h"
 
 
 //#define ERROR_STR "\033[1mError:\033[0m"
@@ -37,6 +38,12 @@ int my_mkdir(const char *path, mode_t mode) {
   #else
   return mkdir(path,mode);
   #endif
+}
+
+bool checkFileExists(std::string fn) {
+  struct stat stFileInfo;
+  auto intStat = stat(fn.c_str(), &stFileInfo);
+  return intStat == 0;
 }
 
 
@@ -475,6 +482,46 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
 }
 
 
+void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
+
+  const char *opt_string = "i:o:";
+  static struct option long_options[] = {
+    {"index", required_argument, 0, 'i'},
+    {"output-dir", required_argument, 0, 'o'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;    
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+  
+  // all other arguments are fast[a/q] files to be read
+  for (int i = optind; i < argc; i++) {
+    opt.files.push_back(argv[i]);
+  }
+ 
+}
+
+
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   int peek_flag = 0;
   const char *opt_string = "o:";
@@ -739,6 +786,89 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 
+bool CheckOptionsMerge(ProgramOptions& opt) {
+
+  bool ret = true;
+
+  cerr << endl;
+  // check for index
+  if (opt.index.empty()) {
+    cerr << ERROR_STR << " kallisto index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+    
+  if (opt.files.size() == 0) {
+    cerr << ERROR_STR << " Missing input directory to merge" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;      
+    for (auto& fn : opt.files) {        
+      auto intStat = stat(fn.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << ERROR_STR << " input directory not found " << fn << endl;
+        ret = false;
+      } else {
+        if (!S_ISDIR(stFileInfo.st_mode)) {
+          cerr << "Error: file " << fn << " exists but is not a directory" << endl;
+          ret = false;
+        }
+
+        
+        if (!checkFileExists(fn + "/matrix.ec")) {
+          cerr << "Error: file " << fn << "/matrix.ec was not found, check that it was run in batch mode" << endl;
+          ret = false;
+        }
+        if (!checkFileExists(fn + "/matrix.cells")) {
+          cerr << "Error: file " << fn << "/matrix.cells was not found, check that it was run in batch mode" << endl;
+          ret = false;
+        }
+        if (!checkFileExists(fn + "/matrix.tcc.mtx")) {
+          cerr << "Error: file " << fn << "/matrix.tcc.mtx was not found, check that it was run in batch mode" << endl;
+          ret = false;
+        }
+      }
+    }
+  }
+
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      }
+
+      auto it = std::find(opt.files.begin(), opt.files.end(), opt.output);
+      if (it != opt.files.end()) {
+        cerr << "Error: output directory cannot be part of input directory " << opt.output << endl;
+        ret = false;
+      }
+    } else {
+      // create directory
+      if (my_mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  
+  return ret;
+}
 
 bool CheckOptionsPseudo(ProgramOptions& opt) {
 
@@ -1055,6 +1185,7 @@ void usage() {
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
+       << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
        << "    inspect       Inspects and gives information about an index" << endl 
        << "    version       Prints version information" << endl
@@ -1156,6 +1287,19 @@ void usagePseudo(bool valid_input = true) {
 
 }
 
+void usageMerge(bool valid_input = true) {
+  if (valid_input) {
+    cout << "kallisto " << KALLISTO_VERSION << endl
+         << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+  }
+
+  cout << "Usage: kallisto merge [arguments] ouput-directories" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
+       << "                              pseudoalignment" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl;
+}
+
 void usageEMOnly() {
   cout << "kallisto " << KALLISTO_VERSION << endl
        << "Computes equivalence classes for reads and quantifies abundance" << endl << endl
@@ -1241,7 +1385,39 @@ int main(int argc, char *argv[]) {
         index.load(opt);
         InspectIndex(index,opt);
       }
+    } else if (cmd == "merge") {
+      if (argc == 2) {
+        usageMerge();
+        return 0;
+      }
+      ParseOptionsMerge(argc -1, argv + 1, opt);
+      if (!CheckOptionsMerge(opt)) {
+        usageMerge();
+        exit(1);        
+      } else {
+        int num_trans, index_version;
+        int64_t num_processed, num_pseudoaligned, num_unique;
+  
+        bool b = MergeBatchDirectories(opt, num_trans, num_processed, num_pseudoaligned, num_unique, index_version);        
+        if (!b) {
+          exit(1);
+        }
+        // write json file
 
+        std::string call = argv_to_string(argc, argv);
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(num_trans)),
+            std::string(std::to_string(0)),
+            std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index_version)),
+            start_time,
+            call);
+
+      }
     } else if (cmd == "quant") {
       if (argc==2) {
         usageEM();

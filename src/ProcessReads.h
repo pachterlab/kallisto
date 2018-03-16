@@ -30,8 +30,8 @@ KSEQ_INIT(gzFile, gzread)
 
 class MasterProcessor;
 
-int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
-int ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
+int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
+int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
 int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
@@ -134,9 +134,9 @@ public:
 
   bam_hdr_t *bamh;
   const ProgramOptions& opt;
-  int numreads;
-  int nummapped;
-  int num_umi;
+  int64_t numreads;
+  int64_t nummapped;
+  int64_t num_umi;
   size_t bufsize;
   std::atomic<int> tlencount;
   std::vector<int> tlencounts;
@@ -181,7 +181,7 @@ public:
   const KmerIndex& index;
   MasterProcessor& mp;
   SequenceReader batchSR;
-  int numreads;
+  int64_t numreads;
   int id;
   int local_id;
   PseudoAlignmentBatch pseudobatch;
@@ -218,7 +218,7 @@ public:
   const EMAlgorithm& em;
   MasterProcessor& mp;
   SequenceReader batchSR;
-  int numreads;
+  int64_t numreads;
   int id;
   PseudoAlignmentBatch pseudobatch;
   const Transcriptome& model;

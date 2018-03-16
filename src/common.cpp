@@ -4,6 +4,14 @@ std::string pretty_num(int num) {
   return pretty_num(static_cast<size_t>(num));
 }
 
+std::string pretty_num(int64_t num) {
+  if (num < 0) {
+    return "-" + pretty_num(static_cast<size_t>(num));
+  } else {
+    return pretty_num(static_cast<size_t>(num));
+  }
+}
+
 std::string pretty_num(size_t num) {
   auto s = std::to_string(num);
   auto ret = std::string("");

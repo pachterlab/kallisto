@@ -84,6 +84,7 @@ ProgramOptions() :
 };
 
 std::string pretty_num(size_t num);
+std::string pretty_num(int64_t num);
 std::string pretty_num(int num);
 
 #endif // KALLISTO_COMMON_H

@@ -77,7 +77,7 @@ const int default_genome_auxlen = 7; // for ZW:f:0.0
 
 //methods
 
-int ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
+int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
   int limit = 1048576; 
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
@@ -137,7 +137,7 @@ int ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
 
 }
 
-int ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
+int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 
   int limit = 1048576;
   std::vector<std::pair<const char*, int>> seqs;
