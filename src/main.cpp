@@ -1111,7 +1111,7 @@ void usageEM(bool valid_input = true) {
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
-       << "-c, --chromosomes             Tab separated file with chrosome names and lengths" << endl
+       << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl;
 
 }
