@@ -27,6 +27,7 @@ struct ProgramOptions {
   int bootstrap;
   std::vector<std::string> transfasta;
   bool batch_mode;
+  bool bus_mode;
   bool pseudo_quant;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
@@ -52,6 +53,7 @@ struct ProgramOptions {
   std::string gtfFile;
   std::string chromFile;
   std::string bedFile;
+  std::string technology;
 
 ProgramOptions() :
   verbose(false),
@@ -65,6 +67,7 @@ ProgramOptions() :
   min_range(1),
   bootstrap(0),
   batch_mode(false),
+  bus_mode(false),
   pseudo_quant(false),
   plaintext(false),
   write_index(false),

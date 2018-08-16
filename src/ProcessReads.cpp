@@ -23,6 +23,8 @@
 #include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
+#include "BUSData.h"
+#include "BUSTools.h"
 #include <htslib/kstring.h>
 
 
@@ -139,12 +141,6 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 
-  int limit = 1048576;
-  std::vector<std::pair<const char*, int>> seqs;
-  seqs.reserve(limit/50);
-
-  //SequenceReader SR(opt);
-
   // need to receive an index map
   std::ios_base::sync_with_stdio(false);
 
@@ -216,6 +212,51 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 }
 
 
+int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
+
+  // need to receive an index map
+  std::ios_base::sync_with_stdio(false);
+
+  //int tlencount = (opt.fld == 0.0) ? 10000 : 0;
+  size_t numreads = 0;
+  size_t nummapped = 0;
+  bool paired = !opt.single_end;
+
+  for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
+    if (paired) {
+      std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << opt.files[i] << std::endl
+                << "                             " << opt.files[i+1] << std::endl;
+    } else {
+      std::cerr << "[quant] will process file " << i+1 << ": " << opt.files[i] << std::endl;
+    }
+  }
+
+  // for each file
+  std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
+
+  /*if (opt.pseudobam) {
+    bam_hdr_t *t = createPseudoBamHeader(index);
+    index.writePseudoBamHeader(std::cout);
+  }*/
+
+  
+  MP.processReads();
+  numreads = MP.numreads;
+  nummapped = MP.nummapped;
+  std::cerr << " done" << std::endl;
+
+  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
+
+
+  std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
+    << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
+  if (nummapped == 0) {
+    std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
+  }
+
+  return numreads;
+}
+
 
 /** -- read processors -- **/
 
@@ -223,7 +264,7 @@ void MasterProcessor::processReads() {
   
 
   // start worker threads
-  if (!opt.batch_mode) {
+  if (!opt.batch_mode && !opt.bus_mode) {
     std::vector<std::thread> workers;
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
@@ -245,7 +286,29 @@ void MasterProcessor::processReads() {
         tc.counts[ec] += (t.second-1);
       }
     }
-  } else {
+  } else if (opt.bus_mode) {
+    std::vector<std::thread> workers;
+    for (int i = 0; i < opt.threads; i++) {
+      workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this)));
+    }
+    
+    // let the workers do their thing
+    for (int i = 0; i < opt.threads; i++) {
+      workers[i].join(); //wait for them to finish
+    }
+
+    // now handle the modification of the mincollector
+    for (auto &t : newECcount) {
+      if (t.second <= 0) {
+        continue;
+      }
+      int ec = tc.increaseCount(t.first); // modifies the ecmap
+
+      if (ec != -1 && t.second > 1) {
+        tc.counts[ec] += (t.second-1);
+      }
+    }
+  } else if (opt.batch_mode) {    
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
     int id =0;
@@ -399,6 +462,9 @@ void MasterProcessor::processReads() {
 
   if (opt.pseudobam) {
     pseudobatchf_out.close();
+  }
+  if (opt.bus_mode) {
+    busf_out.close();
   }
 }
 
@@ -599,7 +665,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id, int local_id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -693,6 +759,11 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
       pseudobatch_stragglers.erase(min_it); 
       last_pseudobatch_id += 1;
     }
+  }
+
+  if (opt.bus_mode) {
+    //copy bus mode information, write to disk or queue up
+    writeBUSData(busf_out, bv);
   }
 
   numreads += n;
@@ -824,7 +895,7 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, id, local_id);
     clear();
   }
 }
@@ -1105,6 +1176,262 @@ void ReadProcessor::clear() {
 }
 
 
+
+BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
+ paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
+   // initialize buffer
+   bufsize = mp.bufsize;
+   buffer = new char[bufsize];  
+   seqs.reserve(bufsize/50);
+   newEcs.reserve(1000);
+   bv.reserve(1000);
+   counts.reserve((int) (tc.counts.size() * 1.25));
+   clear();
+}
+
+BUSProcessor::BUSProcessor(BUSProcessor && o) :
+  paired(o.paired),
+  tc(o.tc),
+  index(o.index),
+  mp(o.mp),
+  id(o.id),
+  local_id(o.local_id),
+  bufsize(o.bufsize),
+  numreads(o.numreads),
+  seqs(std::move(o.seqs)), 
+  names(std::move(o.names)),
+  quals(std::move(o.quals)),
+  newEcs(std::move(o.newEcs)),
+  flens(std::move(o.flens)),
+  bias5(std::move(o.bias5)),
+  bv(std::move(o.bv)),
+  counts(std::move(o.counts)) {
+    buffer = o.buffer;
+    o.buffer = nullptr;
+    o.bufsize = 0;
+}
+
+BUSProcessor::~BUSProcessor() {
+  if (buffer != nullptr) {
+      delete[] buffer;
+      buffer = nullptr;
+  }
+}
+
+void BUSProcessor::operator()() {
+  while (true) {
+    int readbatch_id;
+    // grab the reader lock
+    {
+      std::lock_guard<std::mutex> lock(mp.reader_lock);
+      if (mp.SR.empty()) {
+        // nothing to do
+        return;
+      } else {
+        // get new sequences
+        std::vector<std::string> umis;
+        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, false);
+      }
+      // release the reader lock
+    }
+    // do the same for BUS ?!?
+    /*    
+    pseudobatch.aln.clear();
+    pseudobatch.batch_id = readbatch_id;*/
+    // process our sequences
+    processBuffer();
+
+    // update the results, MP acquires the lock
+    std::vector<std::pair<int, std::string>> ec_umi;
+    std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
+    PseudoAlignmentBatch pseudobatch;
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, id, local_id);
+    clear();
+  }
+}
+
+void BUSProcessor::processBuffer() {
+  // set up thread variables  
+  std::vector<std::pair<KmerEntry,int>> v,v2;
+  std::vector<int> vtmp;
+  std::vector<int> u;
+
+  u.reserve(1000);
+  v.reserve(1000);
+  vtmp.reserve(1000);
+
+  const char* s1 = 0;
+  const char* s2 = 0;
+  int l1,l2;
+
+  
+  // actually process the sequences
+  for (int i = 0; i + 1 < seqs.size(); i++) {
+    s1 = seqs[i].first;
+    l1 = seqs[i].second;
+    
+    i++;
+    s2 = seqs[i].first;
+    l2 = seqs[i].second;
+    
+
+    if (l1 < 26) { // TODO: tech specific
+      continue;
+    }
+
+    numreads++;
+    v.clear();
+    u.clear();
+
+    // process 2nd read
+    index.match(s2,l2, v);
+
+    // collect the target information
+    int ec = -1;
+    int r = tc.intersectKmers(v, v2, false,u);
+    if (!u.empty()) {      
+      ec = tc.findEC(u);
+    }
+
+
+    /* --  possibly modify the pseudoalignment  -- */
+
+    // If we have paired end reads where one end maps or single end reads, check if some transcsripts
+    // are not compatible with the mean fragment length
+    /* -- not in BUS mode
+    if (!mp.opt.single_overhang && !mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
+      vtmp.clear();
+      // inspect the positions
+      int fl = (int) tc.get_mean_frag_len();
+      int p = -1;
+      KmerEntry val;
+      Kmer km;
+
+      if (!v1.empty()) {
+        p = findFirstMappingKmer(v1,val);
+        km = Kmer((s1+p));
+      }
+      if (!v2.empty()) {
+        p = findFirstMappingKmer(v2,val);
+        km = Kmer((s2+p));
+      }
+
+      // for each transcript in the pseudoalignment
+      for (auto tr : u) {
+        auto x = index.findPosition(tr, km, val, p);
+        // if the fragment is within bounds for this transcript, keep it
+        if (x.second && x.first + fl <= index.target_lens_[tr]) {
+          vtmp.push_back(tr);
+        } else {
+          //pass
+        }
+        if (!x.second && x.first - fl >= 0) {
+          vtmp.push_back(tr);
+        } else {
+          //pass
+        }
+      }
+
+      if (vtmp.size() < u.size()) {
+        u = vtmp; // copy
+      }
+    }
+    */
+    
+    /*  -- not in BUS mode
+    if (mp.opt.strand_specific && !u.empty()) {
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      if (!v1.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+        p = findFirstMappingKmer(v1,val);
+        km = Kmer((s1+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      
+      if (!v2.empty()) {
+        vtmp.clear();
+        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
+        p = findFirstMappingKmer(v2,val);
+        km = Kmer((s2+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == secondStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+    }
+    */
+
+    // find the ec
+    if (!u.empty()) {
+      BUSData b;      
+      uint32_t f = 0;
+      b.flags = 0;
+      b.barcode = stringToBinary(s1, 10, f);
+      b.flags |= f;
+      b.UMI = stringToBinary(s1 + 10, 16, f);
+      b.flags |= (f) << 8;
+      b.count = 1;
+      //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
+
+      //ec = tc.findEC(u);
+      
+      // count the pseudoalignment
+      if (ec == -1 || ec >= counts.size()) {
+        // something we haven't seen before
+        newEcs.push_back(u);
+        // newB.push_back({b,u});
+      } else {
+        // add to count vector
+        ++counts[ec];
+        // push back BUS record
+        b.ec = ec;
+        bv.push_back(b);
+      }
+    }
+  }
+}
+
+void BUSProcessor::clear() {
+  numreads=0;
+  memset(buffer,0,bufsize);
+  newEcs.clear();
+  counts.clear();
+  counts.resize(tc.counts.size(),0);
+}
+
+
 AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome &model, bool useEM, int _id) :
  paired(!opt.single_end), index(index), mp(mp), em(em), model(model), useEM(useEM), id(_id) {
    // initialize buffer
@@ -1199,7 +1526,7 @@ void AlnProcessor::operator()() {
         // nothing to do
         return;
       } else {
-        // get new sequences
+        // get new sequences        
         mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true);
         readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
         assert(pseudobatch.batch_id == readbatch_id);

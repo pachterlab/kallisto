@@ -21,6 +21,7 @@
 #include "PseudoBam.h"
 #include "EMAlgorithm.h"
 #include "GeneModel.h"
+#include "BUSData.h"
 
 
 #ifndef KSEQ_INIT_READY
@@ -32,6 +33,7 @@ class MasterProcessor;
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
 int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
+int64_t ProcessBUSReads(MasterProcessor& MP, const ProgramOptions& opt);
 int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
 
 class SequenceReader {
@@ -97,7 +99,9 @@ public:
       if (opt.pseudobam) {
         pseudobatchf_out.open(opt.output + "/pseudoaln.bin", std::ios::out | std::ios::binary);
       }
-
+      if (opt.bus_mode) {
+        busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
+      }
     }
 
   ~MasterProcessor() {
@@ -148,6 +152,7 @@ public:
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   std::ofstream ofusion;
   std::ofstream pseudobatchf_out;
+  std::ofstream busf_out;
   std::ifstream pseudobatchf_in;
   std::vector<PseudoAlignmentBatch> pseudobatch_stragglers;
   int last_pseudobatch_id;
@@ -160,10 +165,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, int id = -1, int local_id = -1);
-
-
-
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, int id = -1, int local_id = -1);  
 };
 
 class ReadProcessor {
@@ -196,6 +198,39 @@ public:
   std::vector<int> bias5;
 
   std::vector<int> counts;
+
+  void operator()();
+  void processBuffer();
+  void clear();
+};
+
+
+class BUSProcessor {
+public:
+  BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
+  BUSProcessor(BUSProcessor && o);
+  ~BUSProcessor();
+  char *buffer;
+  
+  size_t bufsize;
+  bool paired;
+  const MinCollector& tc;
+  const KmerIndex& index;
+  MasterProcessor& mp;
+  int64_t numreads;
+  int id;
+  int local_id;
+  
+
+  std::vector<std::pair<const char*, int>> seqs;
+  std::vector<std::pair<const char*, int>> names;
+  std::vector<std::pair<const char*, int>> quals;
+
+  std::vector<std::vector<int>> newEcs;
+  std::vector<int> flens;
+  std::vector<int> bias5;
+  std::vector<int> counts;
+  std::vector<BUSData> bv;
 
   void operator()();
   void processBuffer();

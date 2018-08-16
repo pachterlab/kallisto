@@ -521,6 +521,65 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
  
 }
 
+void ListSingleCellTechnologies() {
+  //todo, figure this out
+  cout << "This will show a list of supported technologies" << endl;
+}
+
+void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
+  int list_flag = 0;
+  const char *opt_string = "i:o:x:";
+  static struct option long_options[] = {
+    {"index", required_argument, 0, 'i'},
+    {"output-dir", required_argument, 0, 'o'},
+    {"technology", required_argument, 0, 'x'},
+    {"list", no_argument, &list_flag, 1},
+    {"threads", required_argument, 0, 't'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+
+    if (c == -1) {
+      break;
+    }
+
+    switch (c) {
+    case 0:
+      break;    
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    case 'x': {
+      opt.technology = optarg;
+    }
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    default: break;
+    }
+  }
+
+  if (list_flag) {
+    ListSingleCellTechnologies();
+    exit(1);
+  }
+  
+  // all other arguments are fast[a/q] files to be read
+  for (int i = optind; i < argc; i++) {
+    opt.files.push_back(argv[i]);
+  }
+ 
+}
+
 
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   int peek_flag = 0;
@@ -561,6 +620,74 @@ void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   if (peek_flag) {
     opt.peek = true;
   }
+}
+
+bool CheckOptionsBus(ProgramOptions& opt) {
+  bool ret = true;
+
+  cerr << endl;
+
+  // check index
+  if (opt.index.empty()) {
+    cerr << ERROR_STR << " kallisto index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  // check files
+  if (opt.files.size() == 0) {
+    cerr << ERROR_STR << " Missing read files" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    for (auto& fn : opt.files) {
+      auto intStat = stat(fn.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << ERROR_STR << " file not found " << fn << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      } 
+    } else {
+      // create directory
+      if (my_mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }    
+  }
+
+  return ret;
 }
 
 bool CheckOptionsIndex(ProgramOptions& opt) {
@@ -1184,6 +1311,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
+       << "    bus           Generate BUS files for single cell data " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
        << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
@@ -1193,6 +1321,19 @@ void usage() {
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
 
+void usageBus() {
+  cout << "kallisto " << KALLISTO_VERSION << endl
+       << "Generates BUS files for single cell sequencing" << endl << endl
+       << "Usage: kallisto bus [arguments] FASTQ-files" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
+       << "                              pseudoalignment" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl 
+       << "-x, --technology=STRING       Single cell technology used " << endl << endl
+       << "Optional arguments:" << endl
+       << "-l, --list                    List all single cell technologies supported" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+}
 
 void usageIndex() {
   cout << "kallisto " << KALLISTO_VERSION << endl
@@ -1257,7 +1398,7 @@ void usageEM(bool valid_input = true) {
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
-       << "-c, --chromosomes             Tab separated file with chrosome names and lengths" << endl
+       << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl;
 
 }
@@ -1384,6 +1525,50 @@ int main(int argc, char *argv[]) {
         KmerIndex index(opt);
         index.load(opt);
         InspectIndex(index,opt);
+      }
+    } else if (cmd == "bus") {
+      if (argc ==2) {
+        usageBus();        
+        return 0;
+      }
+      ParseOptionsBus(argc-1, argv+1,opt);
+      if (!CheckOptionsBus(opt)) {
+        usageBus();
+        exit(1);
+      } else {
+        int num_trans, index_version;
+        int64_t num_processed, num_pseudoaligned, num_unique;
+        opt.bus_mode = true;
+        opt.single_end = false;
+        KmerIndex index(opt);
+        index.load(opt);
+        Transcriptome model; // empty
+        MinCollector collection(index, opt); 
+        MasterProcessor MP(index, opt, collection, model);
+        num_processed = ProcessBUSReads(MP, opt);
+
+
+        // gather stats
+        for (int i = 0; i < index.num_trans; i++) {
+          num_unique += collection.counts[i];          
+        }
+        for (int i = 0; i < collection.counts.size(); i++) {
+          num_pseudoaligned += collection.counts[i];
+        }
+        
+        // write json file
+        std::string call = argv_to_string(argc, argv);
+        plaintext_aux(
+            opt.output + "/run_info.json",
+            std::string(std::to_string(num_trans)),
+            std::string(std::to_string(0)),
+            std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
+            KALLISTO_VERSION,
+            std::string(std::to_string(index_version)),
+            start_time,
+            call);
       }
     } else if (cmd == "merge") {
       if (argc == 2) {
