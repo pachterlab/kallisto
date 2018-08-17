@@ -150,6 +150,7 @@ public:
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
+  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;  
   std::ofstream ofusion;
   std::ofstream pseudobatchf_out;
   std::ofstream busf_out;
@@ -165,7 +166,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, int id = -1, int local_id = -1);  
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newB,  int id = -1, int local_id = -1);  
 };
 
 class ReadProcessor {
@@ -231,6 +232,7 @@ public:
   std::vector<int> bias5;
   std::vector<int> counts;
   std::vector<BUSData> bv;
+  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
 
   void operator()();
   void processBuffer();

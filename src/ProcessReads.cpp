@@ -308,6 +308,18 @@ void MasterProcessor::processReads() {
         tc.counts[ec] += (t.second-1);
       }
     }
+
+    // now we know the newB ec's
+    std::vector<BUSData> bv;
+    bv.resize(newB.size());
+    for (auto &bp : newB) {
+      int ec = tc.findEC(bp.second);
+      if (ec != -1) {
+        bp.first.ec = ec;
+      }
+      bv.push_back(std::move(bp.first));
+    }
+    writeBUSData(busf_out, bv);
   } else if (opt.batch_mode) {    
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -665,7 +677,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, int id, int local_id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -764,6 +776,9 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   if (opt.bus_mode) {
     //copy bus mode information, write to disk or queue up
     writeBUSData(busf_out, bv);
+    for (auto &bp : newBP) {
+      newB.push_back(std::move(bp));
+    } 
   }
 
   numreads += n;
@@ -895,7 +910,7 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, id, local_id);
     clear();
   }
 }
@@ -1245,7 +1260,7 @@ void BUSProcessor::operator()() {
     std::vector<std::pair<int, std::string>> ec_umi;
     std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
     PseudoAlignmentBatch pseudobatch;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, id, local_id);
     clear();
   }
 }
@@ -1402,7 +1417,6 @@ void BUSProcessor::processBuffer() {
       b.flags |= f;
       b.UMI = stringToBinary(s1 + 10, 16, f);
       b.flags |= (f) << 8;
-      b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
 
       //ec = tc.findEC(u);
@@ -1411,7 +1425,7 @@ void BUSProcessor::processBuffer() {
       if (ec == -1 || ec >= counts.size()) {
         // something we haven't seen before
         newEcs.push_back(u);
-        // newB.push_back({b,u});
+        newB.push_back({b,u});
       } else {
         // add to count vector
         ++counts[ec];
@@ -1427,8 +1441,9 @@ void BUSProcessor::clear() {
   numreads=0;
   memset(buffer,0,bufsize);
   newEcs.clear();
-  counts.clear();
+  counts.clear();  
   counts.resize(tc.counts.size(),0);
+  newB.clear();
 }
 
 
