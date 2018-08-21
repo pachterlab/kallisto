@@ -528,7 +528,7 @@ void ListSingleCellTechnologies() {
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int list_flag = 0;
-  const char *opt_string = "i:o:x:";
+  const char *opt_string = "i:o:x:t:";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},

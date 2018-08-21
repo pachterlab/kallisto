@@ -1413,9 +1413,9 @@ void BUSProcessor::processBuffer() {
       BUSData b;      
       uint32_t f = 0;
       b.flags = 0;
-      b.barcode = stringToBinary(s1, 10, f);
+      b.barcode = stringToBinary(s1, 16, f);
       b.flags |= f;
-      b.UMI = stringToBinary(s1 + 10, 16, f);
+      b.UMI = stringToBinary(s1 + 16, 10, f);
       b.flags |= (f) << 8;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
 
@@ -1443,6 +1443,7 @@ void BUSProcessor::clear() {
   newEcs.clear();
   counts.clear();  
   counts.resize(tc.counts.size(),0);
+  bv.clear();
   newB.clear();
 }
 
