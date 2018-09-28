@@ -1,4 +1,5 @@
 PRE = "transcripts"
+GTF = "{0}.gtf.gz".format(PRE)
 FASTA = "{0}.fasta.gz".format(PRE)
 INDEX = "{0}.kidx".format(PRE)
 
@@ -27,4 +28,6 @@ rule kallisto_quant:
         "-i {INDEX} "
         "-b 30 "
         "-o {output[0]} "
+        "--genomebam --gtf {GTF} "
+        "--chromosomes chrom.txt "
         "{input[0]} {input[1]}"

@@ -12,6 +12,10 @@
 
 #include "hdf5.h"
 
+#ifdef _WIN64
+typedef unsigned int uint;
+#endif
+
 // begin: writing utils
 // XXX: remember to cleanup result!
 char* vec_to_ptr(const std::vector<std::string>& v);

@@ -845,7 +845,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   kmap.clear();
   if (loadKmerTable) {
-    kmap.reserve(kmap_size);
+    kmap.reserve(kmap_size,true);
   }
 
   // 6. read kmer->ec values
@@ -1190,6 +1190,15 @@ donejumping:
   }
 }
 
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+  auto it = kmap.find(km.rep());
+  if (it != kmap.end()) {
+    KmerEntry val = it->second;
+    return findPosition(tr, km, val, p);
+  } else {
+    return {-1,true};
+  }
+}
 
 //use:  (pos,sense) = index.findPosition(tr,km,val,p)
 //pre:  index.kmap[km] == val,
@@ -1396,7 +1405,20 @@ void KmerIndex::loadTranscriptSequences() const {
   return;
 }
 
-
+void KmerIndex::clear() {
+  kmap.clear_table();
+  ecmap.resize(0);
+  dbGraph.ecs.resize(0);
+  dbGraph.contigs.resize(0);
+  {
+    std::unordered_map<std::vector<int>, int, SortedVectorHasher> empty;
+    std::swap(ecmapinv, empty);
+  }
+  
+  target_lens_.resize(0);
+  target_names_.resize(0);
+  target_seqs_.resize(0);
+}
 
 void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
   // write out header

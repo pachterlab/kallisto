@@ -5,7 +5,7 @@
 #include <vector>
 #include <sys/stat.h>
 #include <getopt.h>
- #include <thread>
+#include <thread>
 #include <time.h>
 
 #include <cstdio>
@@ -23,12 +23,22 @@
 #include "Bootstrap.h"
 #include "H5Writer.h"
 #include "PseudoQuant.h"
+#include "GeneModel.h"
 
 
 //#define ERROR_STR "\033[1mError:\033[0m"
 #define ERROR_STR "Error:"
 
 using namespace std;
+
+
+int my_mkdir(const char *path, mode_t mode) {
+  #ifdef _WIN64
+  return mkdir(path);
+  #else
+  return mkdir(path,mode);
+  #endif
+}
 
 
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
@@ -83,10 +93,15 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
 
-  const char *opt_string = "";
+  const char *opt_string = "G:g:b:";
+
+  int para_flag = 0;
   static struct option long_options[] = {
     // long args
-    {"gfa", required_argument, 0, 'g'},
+    {"gfa", required_argument, 0, 'G'},
+    {"gtf", required_argument, 0, 'g'},
+    {"bed", required_argument, 0, 'b'},
+    {"paranoid", no_argument, &para_flag, 1},
     {0,0,0,0}
   };
 
@@ -102,14 +117,26 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     switch (c) {
     case 0:
       break;
-    case 'g': {
+    case 'G': {
       opt.gfa = optarg;
+      break;
+    }
+    case 'b': {
+      stringstream(optarg) >> opt.bedFile;
+      break;
+    }
+    case 'g': {
+      stringstream(optarg) >> opt.gtfFile;
       break;
     }
     default: break;
     }
   }
   opt.index = argv[optind];
+
+  if (para_flag) {
+    opt.inspect_thorough = true;
+  }
 }
 
 
@@ -119,23 +146,27 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int plaintext_flag = 0;
   int write_index_flag = 0;
   int single_flag = 0;
+  int single_overhang_flag = 0;
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int bias_flag = 0;
   int pbam_flag = 0;
+  int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"write-index", no_argument, &write_index_flag, 1},
     {"single", no_argument, &single_flag, 1},
+    {"single-overhang", no_argument, &single_overhang_flag, 1},
     {"fr-stranded", no_argument, &strand_FR_flag, 1},
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"bias", no_argument, &bias_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
+    {"genomebam", no_argument, &gbam_flag, 1},
     {"fusion", no_argument, &fusion_flag, 1},
     {"seed", required_argument, 0, 'd'},
     // short args
@@ -147,6 +178,8 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"iterations", required_argument, 0, 'n'},
     {"min-range", required_argument, 0, 'm'},
     {"bootstrap-samples", required_argument, 0, 'b'},
+    {"gtf", required_argument, 0, 'g'},
+    {"chromosomes", required_argument, 0, 'c'},
     {0,0,0,0}
   };
   int c;
@@ -192,6 +225,13 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.bootstrap;
       break;
     }
+    case 'g': {
+      stringstream(optarg) >> opt.gtfFile;
+      break;
+    }
+    case 'c': {
+      stringstream(optarg) >> opt.chromFile;
+    }
     case 'd': {
       stringstream(optarg) >> opt.seed;
       break;
@@ -221,6 +261,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = true;
   }
 
+  if (single_overhang_flag) {
+    opt.single_overhang = true;
+  }
+
   if (strand_FR_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::FR;
@@ -237,6 +281,11 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (pbam_flag) {
     opt.pseudobam = true;
+  }
+
+  if (gbam_flag) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
   }
 
   if (fusion_flag) {
@@ -380,9 +429,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int single_flag = 0;
   int strand_flag = 0;
   int pbam_flag = 0;
+  int gbam_flag = 0;
   int umi_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:b:";
+  const char *opt_string = "t:i:l:s:o:b:u:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -456,7 +506,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
 
   if (single_flag) {
     opt.single_end = true;
+    opt.single_overhang = true;
   }
+
+
 
   if (strand_flag) {
     opt.strand_specific = true;
@@ -642,6 +695,30 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     ret = false;
   }
   
+  if (opt.genomebam) {
+    if (!opt.gtfFile.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: GTF file " << opt.gtfFile << " does not exist" << endl;
+        ret = false;
+      }
+    } else {
+      cerr << "Error: need GTF file for genome alignment" << endl;
+      ret = false;
+    }
+
+    if (!opt.chromFile.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.chromFile.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: Chromosome file not found: " << opt.chromFile << endl;
+        ret = false;
+      }
+    }
+    
+  }
+
 
   if (opt.output.empty()) {
     cerr << "Error: need to specify output directory " << opt.output << endl;
@@ -678,7 +755,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
         ret = false;
       } else {
         // create directory
-        if (mkdir(opt.output.c_str(), 0777) == -1) {
+        if (my_mkdir(opt.output.c_str(), 0777) == -1) {
           cerr << "Error: could not create directory " << opt.output << endl;
           ret = false;
         }
@@ -696,8 +773,8 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
            << ", but only " << n << " cores on the machine" << endl;
     }
     if (opt.threads > 1 && opt.pseudobam) {
-      cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
-      ret = false;
+      //cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
+      //ret = false;
     }
   }
 
@@ -996,7 +1073,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       }
     } else {
       // create directory
-      if (mkdir(opt.output.c_str(), 0777) == -1) {
+      if (my_mkdir(opt.output.c_str(), 0777) == -1) {
         cerr << "Error: could not create directory " << opt.output << endl;
         ret = false;
       }
@@ -1016,6 +1093,11 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << "Error: pseudobam is not compatible with running on many threads."<< endl;
       ret = false;
     }
+  }
+
+  if (opt.pseudobam) {
+    cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
+    ret = false;
   }
 
   return ret;
@@ -1038,6 +1120,33 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
     }
   }
 
+  if (!opt.bedFile.empty() || !opt.gtfFile.empty()) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
+  }
+
+  if (opt.genomebam) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << "Error: GTF file not found " << opt.gtfFile << endl;
+      ret = false;
+    }
+
+    if (!opt.chromFile.empty()) {
+      struct stat stFileInfo;
+      auto intStat = stat(opt.chromFile.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: Chromosome file not found " << opt.chromFile << endl;
+        ret = false;
+      }
+    }
+
+    if (opt.bedFile.empty()) {
+      opt.bedFile = opt.index + ".bed";
+    }
+  }
+
   return ret;
 }
 
@@ -1056,7 +1165,7 @@ bool CheckOptionsH5Dump(ProgramOptions& opt) {
           cerr << "Error: tried to open " << opt.output << " but another file already exists there" << endl;
           ret = false;
         }
-      } else if (mkdir(opt.output.c_str(), 0777) == -1) {
+      } else if (my_mkdir(opt.output.c_str(), 0777) == -1) {
         cerr << "Error: could not create directory " << opt.output << endl;
         ret = false;
       }
@@ -1108,7 +1217,8 @@ void usage() {
        << "    quant         Runs the quantification algorithm " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl 
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
-       << "    version       Prints version information"<< endl
+       << "    inspect       Inspects and gives information about an index" << endl 
+       << "    version       Prints version information" << endl
        << "    cite          Prints citation information" << endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
 }
@@ -1139,7 +1249,10 @@ void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
        << "Usage: kallisto inspect INDEX-file" << endl << endl
        << "Optional arguments:" << endl
-       << "    --gfa=STRING              Filename for GFA output of T-DBG" << endl << endl;
+       << "-G, --gfa=STRING        Filename for GFA output of T-DBG" << endl
+       << "-g, --gtf=STRING        Filename for GTF file" << endl
+       << "-b, --bed=STRING        Filename for BED output (default: index + \".bed\")" << endl << endl;
+ 
 }
 
 void usageEM(bool valid_input = true) {
@@ -1161,6 +1274,8 @@ void usageEM(bool valid_input = true) {
        << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
+       << "    --single-overhang         Include reads where unobserved rest of fragment is" << endl
+       << "                              predicted to lie outside a transcript" << endl
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
@@ -1168,7 +1283,12 @@ void usageEM(bool valid_input = true) {
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+       << "    --pseudobam               Save pseudoalignments to transcriptome to BAM file" << endl
+       << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
+       << "-g, --gtf                     GTF file for transcriptome information" << endl
+       << "                              (required for --genomebam)" << endl
+       << "-c, --chromosomes             Tab separated file with chrosome names and lengths" << endl
+       << "                              (optional for --genomebam, but recommended)" << endl;
 
 }
 
@@ -1191,8 +1311,8 @@ void usagePseudo(bool valid_input = true) {
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+//       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
@@ -1294,7 +1414,7 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt);
-        InspectIndex(index,opt.gfa);
+        InspectIndex(index,opt);
       }
 
     } else if (cmd == "quant") {
@@ -1315,9 +1435,27 @@ int main(int argc, char *argv[]) {
           // need full transcript sequences
           index.loadTranscriptSequences();
         }
-        MinCollector collection(index, opt);
+
+        bool guessChromosomes = false;
+        Transcriptome model;
+        if (opt.genomebam) {          
+          if (!opt.chromFile.empty()) {
+            model.loadChromosomes(opt.chromFile);
+          } else {
+            guessChromosomes = true;
+          }          
+          model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
+          //model.loadTranscriptome(index, in, opt);
+        }
+
+
         int num_processed = 0;
-        num_processed = ProcessReads(index, opt, collection);
+        int num_pseudoaligned = 0;
+        int num_unique = 0;
+
+        MinCollector collection(index, opt);        
+        MasterProcessor MP(index, opt, collection, model);
+        num_processed = ProcessReads(MP, opt);
 
         // save modified index for future use
         if (opt.write_index) {
@@ -1364,11 +1502,20 @@ int main(int argc, char *argv[]) {
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
 
+        for (int i = 0; i < index.num_trans; i++) {
+          num_unique += collection.counts[i];          
+        }
+        for (int i = 0; i < collection.counts.size(); i++) {
+          num_pseudoaligned += collection.counts[i];
+        }
+
         plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(opt.bootstrap)),
             std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
@@ -1416,6 +1563,11 @@ int main(int argc, char *argv[]) {
           }
 
           cerr << endl;
+        }
+
+        if (opt.pseudobam) {
+         
+          MP.processAln(em, true);
         }
 
         cerr << endl;
@@ -1493,6 +1645,8 @@ int main(int argc, char *argv[]) {
               std::string(std::to_string(index.num_trans)),
               std::string(std::to_string(opt.bootstrap)),
               std::string(std::to_string(0)),
+              std::string(std::to_string(0)),
+              std::string(std::to_string(0)),
               KALLISTO_VERSION,
               std::string(std::to_string(index.INDEX_VERSION)),
               start_time,
@@ -1559,40 +1713,56 @@ int main(int argc, char *argv[]) {
 
         MinCollector collection(index, opt);
         int num_processed = 0;
+        int num_pseudoaligned = 0;
+        int num_unique = 0;
 
+        Transcriptome model; // empty model
+        MasterProcessor MP(index, opt, collection, model);
+        std::vector<std::vector<int>> batchCounts;
         if (!opt.batch_mode) {
-          num_processed = ProcessReads(index, opt, collection);
+          num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
-        } else {
-
-          std::vector<std::vector<int>> batchCounts;
+        } else {          
           num_processed = ProcessBatchReads(index, opt, collection, batchCounts);
-          /*
-          for (int i = 0; i < opt.batch_ids.size(); i++) {
-            std::fill(collection.counts.begin(), collection.counts.end(),0);
-            opt.files = opt.batch_files[i];
-            num_processed += ProcessReads(index, opt, collection);
-            batchCounts.push_back(collection.counts);
-          }
-          */
-
           writeBatchMatrix((opt.output + "/matrix"),index, opt.batch_ids,batchCounts);
         }
 
         std::string call = argv_to_string(argc, argv);
+
+
+        for (int id = 0; id < batchCounts.size(); id++) {
+          const auto &cc = batchCounts[id];
+          for (int i = 0; i < index.num_trans; i++) {            
+            num_unique += cc[i];          
+          }
+          for (int i = 0; i < cc.size(); i++) {
+            num_pseudoaligned += cc[i];
+          }
+        }
+        
 
         plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
             std::string(std::to_string(0)), // no bootstraps in pseudo
             std::string(std::to_string(num_processed)),
+            std::string(std::to_string(num_pseudoaligned)),
+            std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
             call);
 
         cerr << endl;
+
+        if (opt.pseudobam) {       
+          std::vector<double> fl_means(index.target_lens_.size(),0.0);
+          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          MP.processAln(em, false);
+        }
       }
+
+      
     } else if (cmd == "h5dump") {
 
       if (argc == 2) {

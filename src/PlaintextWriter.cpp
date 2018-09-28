@@ -1,4 +1,6 @@
 #include "PlaintextWriter.h"
+#include <iomanip>
+#include <sstream>
 
 std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
     const std::vector<double>& eff_lens) {
@@ -87,22 +89,51 @@ std::string to_json(const std::string& id, const std::string& val, bool quote,
   return out;
 }
 
+
 void plaintext_aux(
     const std::string& out_name,
     const std::string& n_targs,
     const std::string& n_bootstrap,
     const std::string& n_processed,
+    const std::string& n_pseudoaligned,
+    const std::string& n_unique,
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,
     const std::string& call) {
   std::ofstream of;
   of.open( out_name );
+  
+  double p_uniq =0.0;
+  double p_aln = 0.0;
+  std::stringstream ss;
+  std::string p_aln_s, p_uniq_s;
+
+  try {
+    double nreads = std::stod(n_processed);
+    double naln = std::stod(n_pseudoaligned);
+    double nuniq = std::stod(n_unique);
+    if (nreads > 0) {
+      p_uniq = 100.0* nuniq / nreads;
+      p_aln = 100.0* naln / nreads;
+    }
+  } catch (std::invalid_argument) {}
+  
+
+  ss << std::fixed << std::setprecision(1) << p_uniq;
+  p_uniq_s = ss.str();
+  ss.str("");
+  ss << std::fixed << std::setprecision(1) << p_aln;
+  p_aln_s = ss.str();
 
   of << "{" << std::endl <<
     to_json("n_targets", n_targs, false) << std::endl <<
     to_json("n_bootstraps", n_bootstrap, false) << std::endl <<
     to_json("n_processed", n_processed, false) << std::endl <<
+    to_json("n_pseudoaligned", n_pseudoaligned, false) << std::endl <<
+    to_json("n_unique", n_unique, false) << std::endl << 
+    to_json("p_pseudoaligned", p_aln_s, false) << std::endl << 
+    to_json("p_unique", p_uniq_s, false) << std::endl << 
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
     to_json("start_time", start_time, true) << std::endl <<
