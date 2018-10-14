@@ -13,7 +13,7 @@ struct BUSTranscript {
 
 
 struct BUSHeader {
-  std::string text;
+  std::string text; 
   std::vector<BUSTranscript> transcripts;
   std::vector<std::vector<int32_t>> ecs;
 };
@@ -22,9 +22,10 @@ struct BUSData {
   uint64_t barcode;
   uint64_t UMI;
   int32_t ec;
-  uint32_t flags;
+  uint32_t count;
+  uint32_t flags;  
 
-  BUSData() : barcode(0), UMI(0), ec(-1), flags(0) {}
+  BUSData() : barcode(0), UMI(0), ec(-1), count(0), flags(0) {}
 };
 
 uint64_t stringToBinary(const std::string &s, uint32_t &flag);

@@ -1548,6 +1548,8 @@ int main(int argc, char *argv[]) {
         num_processed = ProcessBUSReads(MP, opt);
 
 
+        writeECList(opt.output + "/matrix.ec", index);
+
         // gather stats
         for (int i = 0; i < index.num_trans; i++) {
           num_unique += collection.counts[i];          

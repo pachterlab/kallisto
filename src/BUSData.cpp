@@ -22,7 +22,8 @@ uint64_t stringToBinary(const char* s, const size_t len, uint32_t &flag) {
       }
       ++numN;
     }
-    r |= ((x + ((x ^ (*s & 2)) >>1)) << (2*i));
+    r = r << 2;
+    r |= (x + ((x ^ (*s & 2)) >>1));
     s++;
   }
   if (numN>0) {

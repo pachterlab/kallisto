@@ -1417,6 +1417,7 @@ void BUSProcessor::processBuffer() {
       b.flags |= f;
       b.UMI = stringToBinary(s1 + 16, 10, f);
       b.flags |= (f) << 8;
+      b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
 
       //ec = tc.findEC(u);
