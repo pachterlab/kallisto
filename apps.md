@@ -23,3 +23,7 @@ The following applications build on __kallisto__:
 - [__arkas__: rapid and reproducible RNA-Seq analysis for end users](https://github.com/Al3n70rn/arkas)
 
 - [__metaR__: utilizing the Language Workbench Technology to facilitate data analysis in R](http://campagnelab.org/metar-1-8-0-released/)
+
+- [__kallisto-sra__ : Nextflow implementation of kallisto RNA-Seq Tools fetching samples directly from SRA](https://github.com/lifebit-ai/kallisto-sra)
+
+- [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
