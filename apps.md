@@ -15,6 +15,8 @@ The following applications build on __kallisto__:
 - [Google Cloud Pilot RNA Sequencing for CCLE and TCGA](https://osf.io/gqrz9/)
 
 - [__ARCHS4__: Massive Mining of Publicly Available RNA-seq Data from Human and Mouse](http://amp.pharm.mssm.edu/archs4/) using __kallisto__
+
+- [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
   
 - [__The Lair__: interactive (re)analysis of published RNA-Seq data with __kallisto__ and __sleuth__](http://pachterlab.github.io/lair)
 
@@ -26,4 +28,4 @@ The following applications build on __kallisto__:
 
 - [__kallisto-sra__ : Nextflow implementation of kallisto RNA-Seq Tools fetching samples directly from SRA](https://github.com/lifebit-ai/kallisto-sra)
 
-- [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
+- [__elysium__ : RNA-seq alignment in the cloud](https://github.com/maayanlab/elysium)
