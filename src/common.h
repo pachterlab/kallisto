@@ -11,6 +11,43 @@
 typedef unsigned int uint;
 #endif
 
+struct BUSOptionSubstr {
+  BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
+  BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}
+  int fileno;
+  int start;
+  int stop;
+};
+
+struct BUSOptions {
+  int nfiles;
+  
+  BUSOptionSubstr umi;
+  std::vector<BUSOptionSubstr> bc;
+  BUSOptionSubstr seq;
+
+  int getBCLength() const {
+    int r =0 ;
+    if (!bc.empty()) {
+      for (auto& b : bc) {
+        if (b.start < 0) {
+          return 0;
+        } else {
+          r += b.stop - b.start;
+        }
+      }
+    }
+    return r;
+  }
+
+  int getUMILength() const {
+    if (umi.start >= 0) {
+      return umi.stop - umi.start;
+    } else {
+      return 0;
+    }
+  }
+};
 
 struct ProgramOptions {
   bool verbose;
@@ -28,6 +65,7 @@ struct ProgramOptions {
   std::vector<std::string> transfasta;
   bool batch_mode;
   bool bus_mode;
+  BUSOptions busOptions;
   bool pseudo_quant;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
@@ -89,5 +127,8 @@ ProgramOptions() :
 std::string pretty_num(size_t num);
 std::string pretty_num(int64_t num);
 std::string pretty_num(int num);
+
+
+
 
 #endif // KALLISTO_COMMON_H

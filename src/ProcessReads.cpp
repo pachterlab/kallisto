@@ -677,7 +677,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int id, int local_id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -774,6 +774,20 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   }
 
   if (opt.bus_mode) {
+    int bus_bc_sum = 0;
+    int bus_umi_sum = 0;
+    for (int i = 0; i <= 32; i++) {
+      bus_bc_sum += bus_bc_len[i];
+      bus_umi_sum += bus_umi_len[i];
+    }
+
+    if (bus_bc_sum < 10000 or bus_umi_sum < 10000) {
+      for (int i = 0; i < 32; i++) {
+        bus_bc_len[i] += bc_len[i];
+        bus_umi_len[i] += umi_len[i];
+      }
+    }
+
     //copy bus mode information, write to disk or queue up
     writeBUSData(busf_out, bv);
     for (auto &bp : newBP) {
@@ -910,7 +924,7 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, nullptr, nullptr, id, local_id);
     clear();
   }
 }
@@ -1201,6 +1215,9 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
    newEcs.reserve(1000);
    bv.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
+   memset(&bc_len[0],0,33);
+   memset(&umi_len[0],0,33);
+
    clear();
 }
 
@@ -1219,8 +1236,10 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   newEcs(std::move(o.newEcs)),
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
-  bv(std::move(o.bv)),
+  bv(std::move(o.bv)),  
   counts(std::move(o.counts)) {
+    memcpy(&bc_len[0], &o.bc_len[0], 33);
+    memcpy(&umi_len[0], &o.umi_len[0], 33);
     buffer = o.buffer;
     o.buffer = nullptr;
     o.bufsize = 0;
@@ -1260,7 +1279,7 @@ void BUSProcessor::operator()() {
     std::vector<std::pair<int, std::string>> ec_umi;
     std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
     PseudoAlignmentBatch pseudobatch;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
 }
@@ -1275,31 +1294,69 @@ void BUSProcessor::processBuffer() {
   v.reserve(1000);
   vtmp.reserve(1000);
 
+  memset(&bc_len[0], 0, 33);
+  memset(&umi_len[0], 0, 33);
+
   const char* s1 = 0;
   const char* s2 = 0;
-  int l1,l2;
+  const char* s3 = 0;
+  int l1=0,l2=0,l3=0;
 
+  const char *s[3] = {0,0,0};
+  int l[3] = {0,0,0};
+  char buffer[100];
+  memset(buffer, 0, 100);
+  char *umi = &(buffer[50]);
+  char *bc  = &(buffer[0]);
   
   // actually process the sequences
-  for (int i = 0; i + 1 < seqs.size(); i++) {
-    s1 = seqs[i].first;
-    l1 = seqs[i].second;
-    
-    i++;
-    s2 = seqs[i].first;
-    l2 = seqs[i].second;
-    
-
-    if (l1 < 26) { // TODO: tech specific
-      continue;
+  const BUSOptions& busopt = mp.opt.busOptions;
+  int incf = busopt.nfiles-1;
+  for (int i = 0; i + incf < seqs.size(); i++) {
+    for (int j = 0; j < busopt.nfiles; j++) {
+      s[j] = seqs[i+j].first;
+      l[j] = seqs[i+j].second;      
     }
+    i += incf;
+    
+    // find where the sequence is
+    const char *seq = s[busopt.seq.fileno] + busopt.seq.start;
+    int seqlen = l[busopt.seq.fileno];
+
+    // copy the umi
+    int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
+    memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
+    umi[umilen] = 0;
+    if (umilen >= 0 && umilen <= 32) {
+      umi_len[umilen]++;
+    }
+
+
+    // TODO handle concatenated barcodes
+    auto &bcc = busopt.bc[0];
+    int blen = 0;
+    for (auto &bcc : busopt.bc) {
+      int bclen = (bcc.start == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
+      memcpy(bc+blen, s[bcc.fileno] + bcc.start, bclen);
+      blen += bclen;
+    }
+    bc[blen] = 0;
+
+    if (blen >= 0 && blen <= 32) {
+      bc_len[blen]++;
+    }
+    /* debugging
+    std::cout << "seq " << seq << std::endl;
+    std::cout << "bc  " << bc << std::endl;
+    std::cout << "umi " << umi << std::endl << std::endl;
+    */
 
     numreads++;
     v.clear();
     u.clear();
 
     // process 2nd read
-    index.match(s2,l2, v);
+    index.match(seq,seqlen, v);
 
     // collect the target information
     int ec = -1;
@@ -1308,114 +1365,14 @@ void BUSProcessor::processBuffer() {
       ec = tc.findEC(u);
     }
 
-
-    /* --  possibly modify the pseudoalignment  -- */
-
-    // If we have paired end reads where one end maps or single end reads, check if some transcsripts
-    // are not compatible with the mean fragment length
-    /* -- not in BUS mode
-    if (!mp.opt.single_overhang && !mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
-      vtmp.clear();
-      // inspect the positions
-      int fl = (int) tc.get_mean_frag_len();
-      int p = -1;
-      KmerEntry val;
-      Kmer km;
-
-      if (!v1.empty()) {
-        p = findFirstMappingKmer(v1,val);
-        km = Kmer((s1+p));
-      }
-      if (!v2.empty()) {
-        p = findFirstMappingKmer(v2,val);
-        km = Kmer((s2+p));
-      }
-
-      // for each transcript in the pseudoalignment
-      for (auto tr : u) {
-        auto x = index.findPosition(tr, km, val, p);
-        // if the fragment is within bounds for this transcript, keep it
-        if (x.second && x.first + fl <= index.target_lens_[tr]) {
-          vtmp.push_back(tr);
-        } else {
-          //pass
-        }
-        if (!x.second && x.first - fl >= 0) {
-          vtmp.push_back(tr);
-        } else {
-          //pass
-        }
-      }
-
-      if (vtmp.size() < u.size()) {
-        u = vtmp; // copy
-      }
-    }
-    */
-    
-    /*  -- not in BUS mode
-    if (mp.opt.strand_specific && !u.empty()) {
-      int p = -1;
-      Kmer km;
-      KmerEntry val;
-      if (!v1.empty()) {
-        vtmp.clear();
-        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        p = findFirstMappingKmer(v1,val);
-        km = Kmer((s1+p));
-        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
-        // might need to optimize this
-        const auto &c = index.dbGraph.contigs[val.contig];
-        for (auto tr : u) {
-          for (auto ctx : c.transcripts) {
-            if (tr == ctx.trid) {
-              if ((strand == ctx.sense) == firstStrand) {
-                // swap out 
-                vtmp.push_back(tr);
-              } 
-              break;
-            }
-          }          
-        }
-        if (vtmp.size() < u.size()) {
-          u = vtmp; // copy
-        }
-      }
-      
-      if (!v2.empty()) {
-        vtmp.clear();
-        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        p = findFirstMappingKmer(v2,val);
-        km = Kmer((s2+p));
-        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
-        // might need to optimize this
-        const auto &c = index.dbGraph.contigs[val.contig];
-        for (auto tr : u) {
-          for (auto ctx : c.transcripts) {
-            if (tr == ctx.trid) {
-              if ((strand == ctx.sense) == secondStrand) {
-                // swap out 
-                vtmp.push_back(tr);
-              } 
-              break;
-            }
-          }          
-        }
-        if (vtmp.size() < u.size()) {
-          u = vtmp; // copy
-        }
-      }
-    }
-    */
-
     // find the ec
     if (!u.empty()) {
       BUSData b;      
       uint32_t f = 0;
       b.flags = 0;
-      b.barcode = stringToBinary(s1, 16, f);
+      b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = stringToBinary(s1 + 16, 10, f);
+      b.UMI = stringToBinary(umi, umilen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
@@ -2577,17 +2534,16 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 /** -- sequence reader -- **/
 
 SequenceReader::~SequenceReader() {
-  if (fp1) {
-    gzclose(fp1);
-  }
-  if (paired && fp2) {
-    gzclose(fp2);
+  for (auto &f : fp) {
+    if (f) {
+      gzclose(f);
+    }
   }
 
-  kseq_destroy(seq1);
-  if (paired) {
-    kseq_destroy(seq2);
+  for (auto &s : seq) {
+    kseq_destroy(s);
   }
+
   
   // check if umi stream is open, then close
   if (f_umi && f_umi->is_open()) {
@@ -2597,15 +2553,16 @@ SequenceReader::~SequenceReader() {
 
 
 void SequenceReader::reset() {
-  if (fp1) {
-    gzclose(fp1);
+   for (auto &f : fp) {
+    if (f) {
+      gzclose(f);
+    }
+    f = nullptr;
   }
-  if (paired && fp2) {
-    gzclose(fp2);
-  }
-  kseq_destroy(seq1);
-  if (paired) {
-    kseq_destroy(seq2);
+
+  for (auto &s : seq) {
+    kseq_destroy(s);
+    s = nullptr;
   }
 
   if (f_umi && f_umi->is_open()) {
@@ -2614,14 +2571,13 @@ void SequenceReader::reset() {
 
   f_umi->clear();
 
-  fp1 = 0;
-  fp2 = 0;
-  seq1 = 0;
-  seq2 = 0;
-  l1 = 0; 
-  l2 = 0;
-  nl1 = 0;
-  nl2 = 0;
+  for (auto &ll : l) {
+    ll = 0;
+  }
+  for (auto &nll : nl) {
+    nll = 0;
+  }
+  
   current_file = 0;
   state = false;
   readbatch_id = -1;
@@ -2650,19 +2606,18 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
   int umis_read = 0;
   
   int bufpos = 0;
-  int pad = (paired) ? 2 : 1;
+  int pad = nfiles; //(paired) ? 2 : 1;
   while (true) {
     if (!state) { // should we open a file
       if (current_file >= files.size()) {
         // nothing left
         return false;
       } else {
-        // close the current file
-        if(fp1) {
-          gzclose(fp1);
-        }
-        if (paired && fp2) {
-          gzclose(fp2);
+        // close the current files
+        for (auto &f : fp) {
+          if (f) {
+            gzclose(f);
+          }
         }
         // close current umi file
         if (usingUMIfiles) {
@@ -2671,40 +2626,56 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         }
         
         // open the next one
-        fp1 = gzopen(files[current_file].c_str(),"r");
-        seq1 = kseq_init(fp1);
-        l1 = kseq_read(seq1);
-        state = true;
-        if (paired) {
+        for (int i = 0; i < nfiles; i++) {
+          fp[i] = gzopen(files[current_file].c_str(), "r");
+          seq[i] = kseq_init(fp[i]);
+          l[i] = kseq_read(seq[i]);
           current_file++;
-          fp2 = gzopen(files[current_file].c_str(),"r");
-          seq2 = kseq_init(fp2);
-          l2 = kseq_read(seq2);
         }
         if (usingUMIfiles) {
           // open new umi file
           f_umi->open(umi_files[current_file]);          
         }
+        state = true; 
       }
     }
     // the file is open and we have read into seq1 and seq2
-
-    if (l1 > 0 && (!paired || l2 > 0)) {
-      int bufadd = l1 + l2 + pad;
+    bool all_l = true;
+    int bufadd = nfiles;
+    for (int i = 0; i < nfiles; i++) {
+      all_l = all_l && l[i] > 0;
+      bufadd += l[i]; // includes seq
+    }
+    if (all_l) {      
       // fits into the buffer
       if (full) {
-        nl1 = seq1->name.l;
-        if (paired) {
-          nl2 = seq2->name.l;
+        for (int i = 0; i < nfiles; i++) {
+          nl[i] = seq[i]->name.l;
+          bufadd += l[i] + nl[i]; // includes name and qual
         }
-        bufadd += (l1+l2) + pad + (nl1+nl2)+ pad;
+        bufadd += 2*pad;
       }
+
       if (bufpos+bufadd< limit) {
-        char *p1 = buf+bufpos;
-        memcpy(p1, seq1->seq.s, l1+1);
-        bufpos += l1+1;
-        seqs.emplace_back(p1,l1);
-        
+
+        for (int i = 0; i < nfiles; i++) {
+          char *pi = buf + bufpos;
+          memcpy(pi, seq[i]->seq.s, l[i]+1);
+          bufpos += l[i]+1;
+          seqs.emplace_back(pi,l[i]);
+
+          if (full) {
+            pi = buf + bufpos;
+            memcpy(pi, seq[i]->qual.s,l[i]+1);
+            bufpos += l[i]+1;
+            quals.emplace_back(pi,l[i]);
+            pi = buf + bufpos;
+            memcpy(pi, seq[i]->name.s, nl[i]+1);
+            bufpos += nl[i]+1;
+            names.emplace_back(pi, nl[i]);
+          }
+        }
+
         if (usingUMIfiles) {
           std::stringstream ss;
           std::getline(*f_umi, line);
@@ -2712,42 +2683,14 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
           ss >> umi;
           umis.emplace_back(std::move(umi));
         }
-        if (full) {
-          p1 = buf+bufpos;
-          memcpy(p1, seq1->qual.s,l1+1);
-          bufpos += l1+1;
-          quals.emplace_back(p1,l1);
-          p1 = buf+bufpos;
-          memcpy(p1, seq1->name.s,nl1+1);
-          bufpos += nl1+1;
-          names.emplace_back(p1,nl1);
-        }
-
-        if (paired) {
-          char *p2 = buf+bufpos;
-          memcpy(p2, seq2->seq.s,l2+1);
-          bufpos += l2+1;
-          seqs.emplace_back(p2,l2);
-          if (full) {
-            p2 = buf+bufpos;
-            memcpy(p2,seq2->qual.s,l2+1);
-            bufpos += l2+1;
-            quals.emplace_back(p2,l2);
-            p2 = buf + bufpos;
-            memcpy(p2,seq2->name.s,nl2+1);
-            bufpos += nl2+1;
-            names.emplace_back(p2,nl2);
-          }
-        }
       } else {
         return true; // read it next time
       }
 
       // read for the next one
-      l1 = kseq_read(seq1);
-      if (paired) {
-        l2 = kseq_read(seq2);
-      }
+      for (int i = 0; i < nfiles; i++) {
+        l[i] = kseq_read(seq[i]);
+      }        
     } else {
       current_file++; // move to next file
       state = false; // haven't opened file yet
@@ -2759,25 +2702,23 @@ bool SequenceReader::empty() {
   return (!state && current_file >= files.size());
 }
 
+// move constructor
 SequenceReader::SequenceReader(SequenceReader&& o) :
-  fp1(o.fp1),
-  fp2(o.fp2),
-  seq1(o.seq1),
-  seq2(o.seq2),
-  l1(o.l1),
-  l2(o.l2),
-  nl1(o.nl1),
-  nl2(o.nl2),
+  fp(std::move(o.fp)),
+  seq(std::move(o.seq)),
+  l(std::move(o.l)),
+  nl(std::move(o.nl)),
   paired(o.paired),
+  nfiles(o.nfiles),
   files(std::move(o.files)),
   umi_files(std::move(o.umi_files)),
   f_umi(std::move(o.f_umi)),
   current_file(o.current_file),
   state(o.state) {
-  o.fp1 = nullptr;
-  o.fp2 = nullptr;
-  o.seq1 = nullptr;
-  o.seq2 = nullptr;
+
+  o.fp.resize(nfiles);
+  o.seq.resize(nfiles, nullptr);
+  o.l.resize(nfiles, 0);
+  o.nl.resize(nfiles, 0);
   o.state = false;
-  
 }

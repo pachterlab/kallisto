@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include <thread>
 #include <time.h>
+#include <algorithm>
 
 #include <cstdio>
 
@@ -523,8 +524,18 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
 
 void ListSingleCellTechnologies() {
   //todo, figure this out
-  cout << "This will show a list of supported technologies" << endl;
-}
+  cout << "List of supported single cell technologies" << endl << endl 
+  << "short name       description" << endl
+  << "----------       -----------" << endl
+  << "10Xv1            10X chemistry version 1" << endl
+  << "10Xv2            10X chemistry verison 2" << endl
+  << "DropSeq          DropSeq" << endl
+  << "inDrop           inDrop" << endl
+  << "CELSeq           CEL-Seq" << endl
+  << "CELSeq2          CEL-Seq version 2" << endl
+  << "SCRBSeq          SCRB-Seq" << endl
+  << endl;
+ }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int list_flag = 0;
@@ -533,7 +544,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
-    {"list", no_argument, &list_flag, 1},
+    {"list", no_argument, &list_flag, 'l'},
     {"threads", required_argument, 0, 't'},
     {0,0,0,0}
   };
@@ -559,6 +570,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'x': {
       opt.technology = optarg;
+      std::transform(opt.technology.begin(), opt.technology.end(),opt.technology.begin(), ::toupper);
+      break;
     }
     case 't': {
       stringstream(optarg) >> opt.threads;
@@ -685,6 +698,60 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       cerr << "Warning: you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
     }    
+  }
+
+  if (opt.technology.empty()) {
+    cerr << "Error: need to specify technology to use" << endl;
+    ret = false;
+  } else {
+    auto& busopt = opt.busOptions;
+    
+    if (opt.technology == "10XV2") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
+      busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+    } else if (opt.technology == "10XV1") {
+      busopt.nfiles = 3;
+      busopt.seq = BUSOptionSubstr(0,0,0);
+      busopt.umi = BUSOptionSubstr(1,0,0);
+      busopt.bc.push_back(BUSOptionSubstr(2,0,0));
+    } else if (opt.technology == "DROPSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,12,20);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,12));
+    } else if (opt.technology == "INDROP") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,40,46);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,10));
+      busopt.bc.push_back(BUSOptionSubstr(0,32,40));    
+    } else if (opt.technology == "CELSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,8,12);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+    } else if (opt.technology == "CELSEQ2") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,0,6);
+      busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+    } else if (opt.technology == "SCRBSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,6,16);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+    } else {
+      cerr << "Unknown technology: " << opt.technology << endl;
+      ret = false;
+    }
+  }
+
+  if (ret && opt.busOptions.nfiles != opt.files.size()) {
+    cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
+    << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
+    ret = false;
   }
 
   return ret;
@@ -1546,6 +1613,49 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt); 
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessBUSReads(MP, opt);
+
+        uint32_t bclen = 0;
+        uint32_t umilen = 0;
+
+        for (int i = 0; i <= 32; i++) {
+          if (MP.bus_bc_len[i] > MP.bus_bc_len[bclen]) {
+            bclen = i;
+          }
+          if (MP.bus_umi_len[i] > MP.bus_umi_len[umilen]) {
+            umilen = i;
+          }
+        }
+
+        bool write = false;
+        // hack, open the bus file and write over the values in there.
+        if (opt.busOptions.getBCLength() == 0) {
+          if (bclen > 0) {
+            write = true;
+          }
+        } else {
+          bclen = opt.busOptions.getBCLength();
+        }
+        if (opt.busOptions.getUMILength() == 0) {
+          if (umilen > 0) {
+            write = true;
+          }
+        } else {
+          umilen = opt.busOptions.getUMILength();
+        }
+        
+        
+        if (write) {
+          //std::cout << bclen << "\t" << umilen << endl;
+          std::FILE* fp = std::fopen((opt.output + "/output.bus").c_str(), "r+b");
+          if (fp != nullptr) {
+            std::fseek(fp,0,SEEK_SET);
+            //write to int values
+            std::fwrite(&bclen, sizeof(bclen),1,fp);
+            std::fwrite(&umilen, sizeof(umilen),1,fp);
+            std::fclose(fp);
+            fp = nullptr;
+          }
+        }
 
 
         writeECList(opt.output + "/matrix.ec", index);

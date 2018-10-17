@@ -22,6 +22,7 @@
 #include "EMAlgorithm.h"
 #include "GeneModel.h"
 #include "BUSData.h"
+#include "BUSTools.h"
 
 
 #ifndef KSEQ_INIT_READY
@@ -40,14 +41,20 @@ class SequenceReader {
 public:
 
   SequenceReader(const ProgramOptions& opt) :
-  fp1(0),fp2(0),seq1(0),seq2(0),
-  l1(0),l2(0),nl1(0),nl2(0),
   paired(!opt.single_end), files(opt.files),
   f_umi(new std::ifstream{}),
-  current_file(0), state(false), readbatch_id(-1) {}
+  current_file(0), state(false), readbatch_id(-1) {
+    if (opt.bus_mode) {
+      nfiles = opt.busOptions.nfiles;      
+    } else {
+      nfiles = paired ? 2 : 1;
+    }
+    fp.resize(nfiles);
+    seq.resize(nfiles, nullptr);
+    l.resize(nfiles, 0);
+    nl.resize(nfiles, 0);
+  }
   SequenceReader() :
-  fp1(0),fp2(0),seq1(0),seq2(0),
-  l1(0),l2(0),nl1(0),nl2(0),
   paired(false), 
   f_umi(new std::ifstream{}),
   current_file(0), state(false), readbatch_id(-1) {}
@@ -64,9 +71,14 @@ public:
                       bool full=false);
 
 public:
-  gzFile fp1 = 0, fp2 = 0;
-  kseq_t *seq1 = 0, *seq2 = 0;
-  int l1,l2,nl1,nl2;
+  int nfiles = 1;
+  std::vector<gzFile> fp;
+  //gzFile fp1 = 0, fp2 = 0;
+  std::vector<kseq_t*> seq;
+  std::vector<int> l;
+  std::vector<int> nl;
+  //kseq_t *seq1 = 0, *seq2 = 0;
+  //int l1,l2,nl1,nl2;
   bool paired;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;
@@ -82,6 +94,8 @@ public:
     : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
       if (opt.batch_mode) {
+        memset(&bus_bc_len[0],0,33);
+        memset(&bus_umi_len[0],0,33);
         batchCounts.assign(opt.batch_ids.size(), {});
         tlencounts.assign(opt.batch_ids.size(), 0);
         batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
@@ -101,6 +115,8 @@ public:
       }
       if (opt.bus_mode) {
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
+        
+        writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
       }
     }
 
@@ -142,6 +158,10 @@ public:
   int64_t nummapped;
   int64_t num_umi;
   size_t bufsize;
+
+  int bus_bc_len[33];
+  int bus_umi_len[33];
+
   std::atomic<int> tlencount;
   std::vector<int> tlencounts;
   std::atomic<int> biasCount;
@@ -166,7 +186,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newB,  int id = -1, int local_id = -1);  
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);  
 };
 
 class ReadProcessor {
@@ -221,6 +241,9 @@ public:
   int64_t numreads;
   int id;
   int local_id;
+
+  int bc_len[33];
+  int umi_len[33];
   
 
   std::vector<std::pair<const char*, int>> seqs;
