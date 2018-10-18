@@ -748,7 +748,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
   }
 
-  if (ret && opt.busOptions.nfiles != opt.files.size()) {
+  if (ret && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;
