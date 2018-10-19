@@ -2634,7 +2634,8 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         }
         if (usingUMIfiles) {
           // open new umi file
-          f_umi->open(umi_files[current_file]);          
+          f_umi->open(umi_files[current_file]);  
+          current_file++;        
         }
         state = true; 
       }
@@ -2692,7 +2693,6 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         l[i] = kseq_read(seq[i]);
       }        
     } else {
-      current_file++; // move to next file
       state = false; // haven't opened file yet
     }
   }

@@ -30,7 +30,7 @@ uint64_t stringToBinary(const char* s, const size_t len, uint32_t &flag) {
     if (numN > 3) {
       numN = 3;      
     }    
-    flag = (numN & 3) | (posN & 15) << 2;
+    flag = (numN & 3) | (posN & 31) << 2;
   }
   return r;
 }
