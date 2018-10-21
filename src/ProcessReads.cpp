@@ -222,12 +222,15 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   size_t nummapped = 0;
   bool paired = !opt.single_end;
 
-  for (int i = 0; i < opt.files.size(); i += (paired) ? 2 : 1) {
-    if (paired) {
-      std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << opt.files[i] << std::endl
-                << "                             " << opt.files[i+1] << std::endl;
-    } else {
-      std::cerr << "[quant] will process file " << i+1 << ": " << opt.files[i] << std::endl;
+  for (int i = 0, si=1; i < opt.files.size(); si++) {
+    auto& busopt = opt.busOptions;
+    std::cerr << "[quant] will process sample " << si<< ": ";
+    for (int j = 0; j < busopt.nfiles; j++,i++) {
+      //              "[quant] will process sample 1: "
+      if (j>0) {
+        std::cerr << "                               ";
+      }
+      std::cerr << opt.files[i] << std::endl;
     }
   }
 
