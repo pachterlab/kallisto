@@ -18,7 +18,7 @@ The following applications build on __kallisto__:
 
 - [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
   
-- [__EndoDB__ : a database of endothelial cell transcriptomics data](https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gky997/5144156)
+- [__EndoDB__ : a database of endothelial cell transcriptomics data](https://endotheliomics.shinyapps.io/endodb/)
 
 - [__The Lair__: interactive (re)analysis of published RNA-Seq data with __kallisto__ and __sleuth__](http://pachterlab.github.io/lair)
 
