@@ -301,28 +301,19 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    for (auto &t : newECcount) {
-      if (t.second <= 0) {
-        continue;
-      }
-      int ec = tc.increaseCount(t.first); // modifies the ecmap
-
-      if (ec != -1 && t.second > 1) {
-        tc.counts[ec] += (t.second-1);
-      }
+    for (int i = 0; i < bus_ecmap.size(); i++) {
+      auto &u = bus_ecmap[i];
+      int ec = index.ecmapinv.size();
+      auto it = bus_ecmapinv.find(u);
+      if (it->second != ec) {
+        std::cout << "Error" << std::endl;
+        exit(1);
+      }      
+      index.ecmapinv.insert({u,ec});
+      index.ecmap.push_back(u);
     }
 
-    // now we know the newB ec's
-    std::vector<BUSData> bv;
-    bv.resize(newB.size());
-    for (auto &bp : newB) {
-      int ec = tc.findEC(bp.second);
-      if (ec != -1) {
-        bp.first.ec = ec;
-      }
-      bv.push_back(std::move(bp.first));
-    }
-    writeBUSData(busf_out, bv);
+  
   } else if (opt.batch_mode) {    
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -680,7 +671,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, const std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -791,11 +782,29 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
       }
     }
 
-    //copy bus mode information, write to disk or queue up
-    writeBUSData(busf_out, bv);
+    // add new equiv classes to extra format
+    int offset = index.ecmapinv.size();
     for (auto &bp : newBP) {
+      auto& u = bp.second;
+      int ec = -1;
+      auto it = bus_ecmapinv.find(u);
+      if (it != bus_ecmapinv.end()) {
+        ec = it->second;
+      } else {
+        ec = offset + bus_ecmapinv.size();
+        bus_ecmapinv.insert({u,ec});
+        bus_ecmap.push_back(u);
+      }
+      auto &b = bp.first;
+      b.ec = ec;
+      bv.push_back(b);
+    }
+
+    //copy bus mode information, write to disk or queue up
+    writeBUSData(busf_out, bv); 
+    /*for (auto &bp : newBP) {
       newB.push_back(std::move(bp));
-    } 
+    } */
   }
 
   numreads += n;
@@ -927,7 +936,8 @@ void ReadProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, std::vector<BUSData>{}, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, nullptr, nullptr, id, local_id);
+    std::vector<BUSData> tmp_v{};
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, tmp_v, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, nullptr, nullptr, id, local_id);
     clear();
   }
 }
