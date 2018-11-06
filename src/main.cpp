@@ -1661,6 +1661,7 @@ int main(int argc, char *argv[]) {
         writeECList(opt.output + "/matrix.ec", index);
 
         // gather stats
+        num_unique = 0;
         for (int i = 0; i < index.num_trans; i++) {
           num_unique += collection.counts[i];          
         }
