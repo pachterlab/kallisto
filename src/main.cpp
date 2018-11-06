@@ -724,9 +724,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     } else if (opt.technology == "INDROP") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,40,46);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,10));
-      busopt.bc.push_back(BUSOptionSubstr(0,32,40));    
+      busopt.umi = BUSOptionSubstr(0,42,48);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,11));
+      busopt.bc.push_back(BUSOptionSubstr(0,30,38));    
     } else if (opt.technology == "CELSEQ") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
