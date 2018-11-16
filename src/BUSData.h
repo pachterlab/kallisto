@@ -5,6 +5,8 @@
 #include <vector>
 #include <stdint.h>
 
+const uint32_t BUSFORMAT_VERSION = 1;
+
 struct BUSTranscript {
   std::string name;
   uint32_t transcriptLength;
@@ -13,7 +15,7 @@ struct BUSTranscript {
 
 
 struct BUSHeader {
-  std::string text; 
+  std::string text;
   std::vector<BUSTranscript> transcripts;
   std::vector<std::vector<int32_t>> ecs;
 };

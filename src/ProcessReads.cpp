@@ -1338,20 +1338,30 @@ void BUSProcessor::processBuffer() {
 
     // copy the umi
     int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
+    if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
+      continue; // too short
+    }
     memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
     umi[umilen] = 0;
     if (umilen >= 0 && umilen <= 32) {
       umi_len[umilen]++;
     }
 
-
-    // TODO handle concatenated barcodes
+    
     auto &bcc = busopt.bc[0];
     int blen = 0;
+    bool bad_bc = false;
     for (auto &bcc : busopt.bc) {
       int bclen = (bcc.start == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
+      if (l[bcc.fileno] < bcc.start + bclen) {
+        bad_bc = true;
+        break;
+      }
       memcpy(bc+blen, s[bcc.fileno] + bcc.start, bclen);
       blen += bclen;
+    }
+    if (bad_bc) {
+      continue;
     }
     bc[blen] = 0;
 

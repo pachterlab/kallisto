@@ -1644,12 +1644,11 @@ int main(int argc, char *argv[]) {
         }
         
         
-        if (write) {
-          //std::cout << bclen << "\t" << umilen << endl;
+        if (write) {          
           std::FILE* fp = std::fopen((opt.output + "/output.bus").c_str(), "r+b");
           if (fp != nullptr) {
-            std::fseek(fp,0,SEEK_SET);
-            //write to int values
+            std::fseek(fp,8,SEEK_SET); // skip magic string and version
+            // write to uint32_t values
             std::fwrite(&bclen, sizeof(bclen),1,fp);
             std::fwrite(&umilen, sizeof(umilen),1,fp);
             std::fclose(fp);
@@ -1659,6 +1658,14 @@ int main(int argc, char *argv[]) {
 
 
         writeECList(opt.output + "/matrix.ec", index);
+
+        // write transcript names
+        std::ofstream transout_f((opt.output + "/transcripts.txt"));
+        for (const auto &t : index.target_names_) {
+          transout_f << t << "\n";
+        }
+        transout_f.close();
+
 
         // gather stats
         num_unique = 0;
