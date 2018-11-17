@@ -10,7 +10,6 @@ If using a Mac the easiest way to download and install __kallisto__ is via brew 
 
 ```
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-brew tap homebrew/science
 brew install kallisto
 ```
 
