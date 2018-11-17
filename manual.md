@@ -9,15 +9,17 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.44.0
+kallisto 0.45.0
 
 Usage: kallisto <CMD> [arguments] ..
 
 Where <CMD> can be one of:
 
-    index         Builds a kallisto index 
-    quant         Runs the quantification algorithm 
-    pseudo        Runs the pseudoalignment step 
+    index         Builds a kallisto index
+    quant         Runs the quantification algorithm
+    bus           Generate BUS files for single cell data
+    pseudo        Runs the pseudoalignment step
+    merge         Merges several batch runs
     h5dump        Converts HDF5-formatted results to plaintext
     inspect       Inspects and gives information about an index
     version       Prints version information
@@ -32,7 +34,7 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.44.0
+kallisto 0.45.0
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -82,7 +84,7 @@ Optional arguments:
     --genomebam               Project pseudoalignments to genome sorted BAM file
 -g, --gtf                     GTF file for transcriptome information
                               (required for --genomebam)
--c, --chromosomes             Tab separated file with chrosome names and lengths
+-c, --chromosomes             Tab separated file with chromosome names and lengths
                               (optional for --genomebam, but recommended)
 ~~~
 
@@ -146,12 +148,36 @@ A detailed description of the SAM output is [here](pseudobam.html).
 `--genomebam` constructs the pseudoalignments to the transcriptome, but projects the transcript alignments to genome coordinates, resulting in split-read alignments. When the `--genomebam` option is supplied at GTF file must be given with the `--gtf` option. The GTF file, which can be plain text or gzipped, translates transcripts into genomic coordinates. We recommend downloading a the cdna FASTA files and GTF files from the same data source. The `--chromosomes` option can provide a length of the genomic chromosomes, this option is not neccessary, but gives a more consistent BAM header, some programs may require this for downstream analysis. __kallisto__ does not require the genome sequence to do pseudoalignment, but downstream tools such as genome browsers will probably need it.
 
 
+#### bus
+
+`kallisto bus` works with raw FASTQ files for single cell RNA-Seq datasets. For each read the cell barcode and UMI information and the equivalence class resulting from pseudoalignemnt are stored in a [BUS](https://github.com/BUStools/BUS) file `output.bus` stored in the output directory directory, along with `matrix.ec` and `transcripts.txt` which store information about the equivalence classes and transcript names for downstream processing.
+
+~~~
+kallisto 0.45.0
+Generates BUS files for single cell sequencing
+
+Usage: kallisto bus [arguments] FASTQ-files
+
+Required arguments:
+-i, --index=STRING            Filename for the kallisto index to be used for
+                              pseudoalignment
+-o, --output-dir=STRING       Directory to write output to
+-x, --technology=STRING       Single cell technology used 
+
+Optional arguments:
+-l, --list                    List all single cell technologies supported
+-t, --threads=INT             Number of threads to use (default: 1)
+~~~
+
+To process the `output.bus` file further use [bustools](https://github.com/BUStools/bustools), examples of downstream processing can be seen in [example notebooks](https://github.com/BUStools/Notebooks)
+
+
 #### pseudo
 
 `kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
-kallisto 0.44.0
+kallisto 0.45.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto pseudo [arguments] FASTQ-files
@@ -233,6 +259,36 @@ Required argument:
 
 ~~~
 
+#### merge
+
+`kallisto merge` can merge the results of several batches performed by `pseudo`, this creates a single output as if `kallisto` had ben run on the entire sample.
+
+~~~
+kallisto 0.45.0
+Computes equivalence classes for reads and quantifies abundances
+
+Usage: kallisto merge [arguments] ouput-directories
+
+Required arguments:
+-i, --index=STRING            Filename for the kallisto index to be used for
+                              pseudoalignment
+-o, --output-dir=STRING       Directory to write output to
+~~~
+
+#### inspect
+
+`kallisto inspect` can output the Target de Bruijn Graph in the index in two ways, as a file in `GFA` [format](https://github.com/GFA-spec/GFA-spec) or it can map the contigs of the graph and and equivalence classes in a `BED` format that can be visualized using [IGV](http://software.broadinstitute.org/software/igv/)
+
+~~~
+kallisto 0.45.0
+
+Usage: kallisto inspect INDEX-file
+
+Optional arguments:
+-G, --gfa=STRING        Filename for GFA output of T-DBG
+-g, --gtf=STRING        Filename for GTF file
+-b, --bed=STRING        Filename for BED output (default: index + ".bed")
+~~~
 
 #### version
 
