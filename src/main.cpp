@@ -527,13 +527,15 @@ void ListSingleCellTechnologies() {
   cout << "List of supported single cell technologies" << endl << endl 
   << "short name       description" << endl
   << "----------       -----------" << endl
-  << "10Xv1            10X chemistry version 1" << endl
-  << "10Xv2            10X chemistry verison 2" << endl
-  << "DropSeq          DropSeq" << endl
-  << "inDrop           inDrop" << endl
+  << "10xv1            10x version 1 chemistry" << endl
+  << "10xv2            10x verison 2 chemistry" << endl
+  << "10xv3            10x version 3 chemistry" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
+  << "DropSeq          DropSeq" << endl
+  << "inDrop           inDrop" << endl
   << "SCRBSeq          SCRB-Seq" << endl
+  << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
 
@@ -706,16 +708,28 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   } else {
     auto& busopt = opt.busOptions;
     
-    if (opt.technology == "10XV2") {
+    if (opt.technology == "10xv2") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
       busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16))
+    } else if (opt.technology == "10xv3") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,16,28);
       busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-    } else if (opt.technology == "10XV1") {
+    } else if (opt.technology == "10xv1") {
       busopt.nfiles = 3;
       busopt.seq = BUSOptionSubstr(0,0,0);
       busopt.umi = BUSOptionSubstr(1,0,0);
       busopt.bc.push_back(BUSOptionSubstr(2,0,0));
+    } else if (opt.technology == "SureCell") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionsSubstr(0,51,59);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      busopt.bc.push_back(BUSOptionSubstr(0,21,27));
+      busopt.bc.push_back(BUSOptionSubstr(0,42,48));
     } else if (opt.technology == "DROPSEQ") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
