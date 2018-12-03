@@ -528,12 +528,12 @@ void ListSingleCellTechnologies() {
   << "short name       description" << endl
   << "----------       -----------" << endl
   << "10xv1            10x version 1 chemistry" << endl
-  << "10xv2            10x verison 2 chemistry" << endl
+  << "10xv2            10x version 2 chemistry" << endl
   << "10xv3            10x version 3 chemistry" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
   << "DropSeq          DropSeq" << endl
-  << "inDrop           inDrop" << endl
+  << "inDrops          inDrops" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
@@ -735,7 +735,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,12,20);
       busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-    } else if (opt.technology == "INDROP") {
+    } else if (opt.technology == "INDROPS") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,42,48);
