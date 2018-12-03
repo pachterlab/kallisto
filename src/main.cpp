@@ -712,7 +712,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
       busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
-      busopt.bc.push_back(BUSOptionSubstr(0,0,16))
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
     } else if (opt.technology == "10xv3") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
@@ -726,7 +726,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     } else if (opt.technology == "SureCell") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionsSubstr(0,51,59);
+      busopt.umi = BUSOptionSubstr(0,51,59);
       busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       busopt.bc.push_back(BUSOptionSubstr(0,21,27));
       busopt.bc.push_back(BUSOptionSubstr(0,42,48));
