@@ -708,22 +708,22 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   } else {
     auto& busopt = opt.busOptions;
     
-    if (opt.technology == "10xv2") {
+    if (opt.technology == "10XV2") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
       busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
       busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-    } else if (opt.technology == "10xv3") {
+    } else if (opt.technology == "10XV3") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,16,28);
       busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-    } else if (opt.technology == "10xv1") {
+    } else if (opt.technology == "10XV1") {
       busopt.nfiles = 3;
       busopt.seq = BUSOptionSubstr(0,0,0);
       busopt.umi = BUSOptionSubstr(1,0,0);
       busopt.bc.push_back(BUSOptionSubstr(2,0,0));
-    } else if (opt.technology == "SureCell") {
+    } else if (opt.technology == "SURECELL") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,51,59);
