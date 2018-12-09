@@ -452,7 +452,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   
   if (umi_flag) {
     opt.umi = true;
-    opt.single_end = true; // UMI implies single end reads
+    opt.single_end = true; // UMI implies single-end reads
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -524,7 +524,7 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
 
 void ListSingleCellTechnologies() {
   //todo, figure this out
-  cout << "List of supported single cell technologies" << endl << endl 
+  cout << "List of supported single-cell technologies" << endl << endl 
   << "short name       description" << endl
   << "----------       -----------" << endl
   << "10xv1            10x version 1 chemistry" << endl
@@ -847,7 +847,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
     /*
     if (opt.strand_specific && !opt.single_end) {
-      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      cerr << "Error: strand-specific mode requires single-end mode" << endl;
       ret = false;
     }*/
 
@@ -1185,7 +1185,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
 
   /*
   if (opt.strand_specific && !opt.single_end) {
-    cerr << "Error: strand-specific mode requires single end mode" << endl;
+    cerr << "Error: strand-specific mode requires single-end mode" << endl;
     ret = false;
   }*/
 
@@ -1392,7 +1392,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    bus           Generate BUS files for single cell data " << endl
+       << "    bus           Generate BUS files for single-cell data " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
        << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
@@ -1404,15 +1404,15 @@ void usage() {
 
 void usageBus() {
   cout << "kallisto " << KALLISTO_VERSION << endl
-       << "Generates BUS files for single cell sequencing" << endl << endl
+       << "Generates BUS files for single-cell sequencing" << endl << endl
        << "Usage: kallisto bus [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl 
-       << "-x, --technology=STRING       Single cell technology used " << endl << endl
+       << "-x, --technology=STRING       Single-cell technology used " << endl << endl
        << "Optional arguments:" << endl
-       << "-l, --list                    List all single cell technologies supported" << endl
+       << "-l, --list                    List all single-cell technologies supported" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 }
 
