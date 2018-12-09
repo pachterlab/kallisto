@@ -17,7 +17,7 @@ Where <CMD> can be one of:
 
     index         Builds a kallisto index
     quant         Runs the quantification algorithm
-    bus           Generate BUS files for single cell data
+    bus           Generate BUS files for single-cell data
     pseudo        Runs the pseudoalignment step
     merge         Merges several batch runs
     h5dump        Converts HDF5-formatted results to plaintext
@@ -47,14 +47,14 @@ Optional argument:
     --make-unique           Replace repeated target names with unique names
 ~~~
 
-The Fasta file supplied can be either in plaintext or gzipped format.
+The Fasta file supplied can be either in plaintext or gzipped format. Prebuilt indices constructed from [Ensembl reference transcriptomes](https://uswest.ensembl.org/info/data/ftp/index.html) can be download from the [kallisto transcriptome indices](https://github.com/pachterlab/kallisto-transcriptome-indices/releases) site.
 
 #### quant
 
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.44.0
+kallisto 0.45.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -150,11 +150,11 @@ A detailed description of the SAM output is [here](pseudobam.html).
 
 #### bus
 
-`kallisto bus` works with raw FASTQ files for single cell RNA-Seq datasets. For each read the cell barcode and UMI information and the equivalence class resulting from pseudoalignemnt are stored in a [BUS](https://github.com/BUStools/BUS) file `output.bus` stored in the output directory directory, along with `matrix.ec` and `transcripts.txt` which store information about the equivalence classes and transcript names for downstream processing.
+`kallisto bus` works with raw FASTQ files for single-cell RNA-Seq datasets. For each read the cell barcode and UMI information and the equivalence class resulting from pseudoalignment are stored in a [BUS](https://github.com/BUStools/BUS) file `output.bus` stored in the output directory directory, along with `matrix.ec` and `transcripts.txt` which store information about the equivalence classes and transcript names for downstream processing.
 
 ~~~
 kallisto 0.45.0
-Generates BUS files for single cell sequencing
+Generates BUS files for single-cell sequencing
 
 Usage: kallisto bus [arguments] FASTQ-files
 
@@ -162,19 +162,19 @@ Required arguments:
 -i, --index=STRING            Filename for the kallisto index to be used for
                               pseudoalignment
 -o, --output-dir=STRING       Directory to write output to
--x, --technology=STRING       Single cell technology used 
+-x, --technology=STRING       Single-cell technology used 
 
 Optional arguments:
--l, --list                    List all single cell technologies supported
+-l, --list                    List all single-cell technologies supported
 -t, --threads=INT             Number of threads to use (default: 1)
 ~~~
 
-To process the `output.bus` file further use [bustools](https://github.com/BUStools/bustools), examples of downstream processing can be seen in [example notebooks](https://github.com/BUStools/Notebooks)
+To process the `output.bus` file further use [bustools](https://github.com/BUStools/bustools); examples of downstream processing can be seen in [dataset specific notebooks](https://github.com/BUStools/Notebooks) available from the [bustools repository](https://github.com/BUStools). 
 
 
 #### pseudo
 
-`kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single cell RNA-seq. The arguments for the pseudo command are:
+`kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single-cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
 kallisto 0.45.0
@@ -249,7 +249,7 @@ When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign an
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.44.0
+kallisto 0.45.0
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
