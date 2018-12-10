@@ -6,7 +6,7 @@ group: navigation
 
 {% include JB/setup %}
 
-If using a Mac the easiest way to download and install __kallisto__ is via brew with the commands:
+If using a Mac, the easiest way to download and install __kallisto__ is via brew with the commands:
 
 ```
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -21,7 +21,7 @@ conda install kallisto
 
 The __kallisto__ bioconda installation will work with 64 bit linux or Mac OS. More details are available at the [__kallisto__ bioconda page](https://bioconda.github.io/recipes/kallisto/README.html).
 
-For other operating systems download executables or source from the links below and follow the provided instructions.
+For other operating systems download executables or source from the links below and follow the provided instructions. Note that prebuilt kallisto indices from the human transcriptome and many model organism transcriptomes are available from the [kallisto transcriptome indices](https://github.com/pachterlab/kallisto-transcriptome-indices) page.
 
 #### Releases
 
