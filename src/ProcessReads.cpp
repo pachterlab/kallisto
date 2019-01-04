@@ -475,6 +475,75 @@ void MasterProcessor::processReads() {
 }
 
 void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
+  
+  // modifications needed for the paper
+  std::ofstream tsv(opt.output + "/read_ecs.tsv", std::ios::out);
+  std::cerr << "[  bam] writing ECs to tsv file .. "; std::cerr.flush();
+  assert(opt.pseudobam);
+  pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
+  SR.reset();
+
+  { // local scope
+    char *buffer = new char[bufsize];
+    std::vector<std::pair<const char*, int>> seqs;
+    std::vector<std::pair<const char*, int>> names;
+    std::vector<std::pair<const char*, int>> quals;
+    std::vector<std::string> umis;
+    PseudoAlignmentBatch pseudobatch;
+    std::vector<int> u;
+    u.reserve(1000);
+    while (true) {
+      pseudobatch.aln.clear();
+      pseudobatch.batch_id = -1;
+      int readbatch_id;
+      // grab the reader lock
+      
+      std::lock_guard<std::mutex> lock(reader_lock);
+      if (SR.empty()) {
+        // nothing to do
+        break;
+      } else {
+        // get new sequences        
+        SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true);
+        readPseudoAlignmentBatch(pseudobatchf_in, pseudobatch);
+        assert(pseudobatch.batch_id == readbatch_id);
+        assert(pseudobatch.aln.size() == ((!opt.single_end) ? seqs.size()/2 : seqs.size())); // sanity checks
+      }
+
+      int n = pseudobatch.aln.size();
+      for (int i = 0; i < n; i++) {
+        PseudoAlignmentInfo &pi = pseudobatch.aln[i];
+        int si = (!opt.single_end) ? 2*i : i;
+        int ec = -1;
+        if (pi.r1empty && pi.r2empty) {
+          // nothing
+        } else {
+          u.clear();
+          ec = pi.ec_id;
+          if (ec == -1) {
+            u = pi.u;
+            auto it = index.ecmapinv.find(u);
+            if (it != index.ecmapinv.end()) {
+              ec = it->second;
+            }
+
+            if (ec == -1) {
+              assert(false && "Problem with ecmapinv");
+            }
+          }
+        }
+        tsv << names[si].first << "\t" << ec << "\n";
+      }
+      
+    }
+
+  }
+  pseudobatchf_in.close();
+  
+  tsv.close();
+  std::cerr << "done" << std::endl;
+  
+  
   // open bamfile and fetch header
   std::string bamfn = opt.output + "/pseudoalignments.bam";
   if (opt.pseudobam) {
@@ -561,6 +630,8 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
   std::cout << "}" << std::endl;
   */
+
+
 
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
