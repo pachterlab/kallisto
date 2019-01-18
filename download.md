@@ -21,6 +21,18 @@ conda install kallisto
 
 The __kallisto__ bioconda installation will work with 64 bit linux or Mac OS. More details are available at the [__kallisto__ bioconda page](https://bioconda.github.io/recipes/kallisto/README.html).
 
+__kllisto__ can also be installed on [FreeBSD](https://www.freebsd.org/ports/index.html) via the FreeBSD ports system using
+
+```
+pkg install kallisto
+```
+
+__kallisto binaries for Mac OS X, NetBSD, RHEL/CentOS and SmartOS can be installed on most POSIX platforms using [pkgsrc](https://www.pkgsrc.org):
+
+```
+pkgin install kallisto
+```
+
 For other operating systems download executables or source from the links below and follow the provided instructions. Note that prebuilt kallisto indices from the human transcriptome and many model organism transcriptomes are available from the [kallisto transcriptome indices](https://github.com/pachterlab/kallisto-transcriptome-indices) page.
 
 #### Releases
