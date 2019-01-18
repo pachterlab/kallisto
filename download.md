@@ -27,7 +27,7 @@ __kllisto__ can also be installed on [FreeBSD](https://www.freebsd.org/ports/ind
 pkg install kallisto
 ```
 
-__kallisto binaries for Mac OS X, NetBSD, RHEL/CentOS and SmartOS can be installed on most POSIX platforms using [pkgsrc](https://www.pkgsrc.org):
+__kallisto__ binaries for Mac OS X, NetBSD, RHEL/CentOS and SmartOS can be installed on most POSIX platforms using [pkgsrc](https://www.pkgsrc.org):
 
 ```
 pkgin install kallisto
