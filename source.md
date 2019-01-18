@@ -30,7 +30,7 @@ Other dependencies are included, or can be installed using package managers on t
     - Ubuntu: `sudo apt-get install autoconf`
     - CentOS: `sudo yum install autoconf`
 - __HDF5__ C library version >= 1.8.12
-    - Mac: first get homebrew/science with `brew tap homebrew/science` then run `brew install hdf5`
+    - Mac: `brew install hdf5`
     - Ubuntu: `sudo apt-get install libhdf5-dev`
     - CentOS: `sudo yum install hdf5-devel`
 
