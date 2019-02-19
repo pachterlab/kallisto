@@ -49,10 +49,7 @@ public:
     } else {
       nfiles = paired ? 2 : 1;
     }
-    fp.resize(nfiles);
-    seq.resize(nfiles, nullptr);
-    l.resize(nfiles, 0);
-    nl.resize(nfiles, 0);
+    reserveNfiles(nfiles);
   }
   SequenceReader() :
   paired(false), 
@@ -62,6 +59,7 @@ public:
   
   bool empty();
   void reset();
+  void reserveNfiles(int n);
   ~SequenceReader();
 
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
