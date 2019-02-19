@@ -1885,13 +1885,13 @@ int main(int argc, char *argv[]) {
           }
 
           cerr << endl;
-          
+        }
 
-          if (opt.pseudobam) {
-          
-            MP.processAln(em, true);
-          }
-        } 
+        if (opt.pseudobam) {
+        
+          MP.processAln(em, true);
+        }
+        
 
         cerr << endl;
       }
