@@ -540,16 +540,17 @@ void ListSingleCellTechnologies() {
  }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
-  int list_flag = 0;
-  const char *opt_string = "i:o:x:t:";
+  const char *opt_string = "i:o:x:t:l";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
-    {"list", no_argument, &list_flag, 'l'},
+    {"list", no_argument, 0, 'l'},
     {"threads", required_argument, 0, 't'},
     {0,0,0,0}
   };
+
+  int list_flag = 0;
   int c;
   int option_index = 0;
   while (true) {
@@ -564,6 +565,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
       break;    
     case 'i': {
       opt.index = optarg;
+      break;
+    }
+    case 'l': {
+      list_flag = 1;
       break;
     }
     case 'o': {
