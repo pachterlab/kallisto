@@ -452,7 +452,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   
   if (umi_flag) {
     opt.umi = true;
-    opt.single_end = true; // UMI implies single end reads
+    opt.single_end = true; // UMI implies single-end reads
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -524,30 +524,33 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
 
 void ListSingleCellTechnologies() {
   //todo, figure this out
-  cout << "List of supported single cell technologies" << endl << endl 
+  cout << "List of supported single-cell technologies" << endl << endl 
   << "short name       description" << endl
   << "----------       -----------" << endl
-  << "10Xv1            10X chemistry version 1" << endl
-  << "10Xv2            10X chemistry verison 2" << endl
-  << "DropSeq          DropSeq" << endl
-  << "inDrop           inDrop" << endl
+  << "10xv1            10x version 1 chemistry" << endl
+  << "10xv2            10x version 2 chemistry" << endl
+  << "10xv3            10x version 3 chemistry" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
+  << "DropSeq          DropSeq" << endl
+  << "inDrops          inDrops" << endl
   << "SCRBSeq          SCRB-Seq" << endl
+  << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
-  int list_flag = 0;
-  const char *opt_string = "i:o:x:t:";
+  const char *opt_string = "i:o:x:t:l";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
-    {"list", no_argument, &list_flag, 'l'},
+    {"list", no_argument, 0, 'l'},
     {"threads", required_argument, 0, 't'},
     {0,0,0,0}
   };
+
+  int list_flag = 0;
   int c;
   int option_index = 0;
   while (true) {
@@ -562,6 +565,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
       break;    
     case 'i': {
       opt.index = optarg;
+      break;
+    }
+    case 'l': {
+      list_flag = 1;
       break;
     }
     case 'o': {
@@ -711,17 +718,29 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
       busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
       busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+    } else if (opt.technology == "10XV3") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,16,28);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
     } else if (opt.technology == "10XV1") {
       busopt.nfiles = 3;
       busopt.seq = BUSOptionSubstr(0,0,0);
       busopt.umi = BUSOptionSubstr(1,0,0);
       busopt.bc.push_back(BUSOptionSubstr(2,0,0));
+    } else if (opt.technology == "SURECELL") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(1,0,0);
+      busopt.umi = BUSOptionSubstr(0,51,59);
+      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      busopt.bc.push_back(BUSOptionSubstr(0,21,27));
+      busopt.bc.push_back(BUSOptionSubstr(0,42,48));
     } else if (opt.technology == "DROPSEQ") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,12,20);
       busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-    } else if (opt.technology == "INDROP") {
+    } else if (opt.technology == "INDROPS") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,42,48);
@@ -833,7 +852,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
     /*
     if (opt.strand_specific && !opt.single_end) {
-      cerr << "Error: strand-specific mode requires single end mode" << endl;
+      cerr << "Error: strand-specific mode requires single-end mode" << endl;
       ret = false;
     }*/
 
@@ -1171,7 +1190,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
 
   /*
   if (opt.strand_specific && !opt.single_end) {
-    cerr << "Error: strand-specific mode requires single end mode" << endl;
+    cerr << "Error: strand-specific mode requires single-end mode" << endl;
     ret = false;
   }*/
 
@@ -1378,7 +1397,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
-       << "    bus           Generate BUS files for single cell data " << endl
+       << "    bus           Generate BUS files for single-cell data " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
        << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
@@ -1390,15 +1409,15 @@ void usage() {
 
 void usageBus() {
   cout << "kallisto " << KALLISTO_VERSION << endl
-       << "Generates BUS files for single cell sequencing" << endl << endl
+       << "Generates BUS files for single-cell sequencing" << endl << endl
        << "Usage: kallisto bus [arguments] FASTQ-files" << endl << endl
        << "Required arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
        << "                              pseudoalignment" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl 
-       << "-x, --technology=STRING       Single cell technology used " << endl << endl
+       << "-x, --technology=STRING       Single-cell technology used " << endl << endl
        << "Optional arguments:" << endl
-       << "-l, --list                    List all single cell technologies supported" << endl
+       << "-l, --list                    List all single-cell technologies supported" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 }
 
@@ -1871,13 +1890,13 @@ int main(int argc, char *argv[]) {
           }
 
           cerr << endl;
-          
+        }
 
-          if (opt.pseudobam) {
-          
-            MP.processAln(em, true);
-          }
-        } 
+        if (opt.pseudobam) {
+        
+          MP.processAln(em, true);
+        }
+        
 
         cerr << endl;
       }

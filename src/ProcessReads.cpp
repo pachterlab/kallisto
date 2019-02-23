@@ -453,14 +453,15 @@ void MasterProcessor::processReads() {
             ++tmp_counts[umis[j].first];
           }
         }
-        for (auto x : tmp_counts) {
-          num_umi += x;
-        }
+        
         auto& bc = batchCounts[id];
         for (int j = 0; j < tmp_counts.size(); j++) {
           if (tmp_counts[j] > 0) {
             bc.push_back({j,tmp_counts[j]});
           }
+        }
+        for (auto x : bc) {
+          num_umi += x.second;
         }
       }
     }
@@ -864,6 +865,7 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
    if (opt.batch_mode) {
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
+     batchSR.reserveNfiles(opt.batch_files[id].size());
      if (opt.umi) {
        batchSR.umi_files = {opt.umi_files[id]};
      }
@@ -1442,6 +1444,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
      /* need to check this later */
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
+     batchSR.reserveNfiles(opt.batch_files[id].size());
      if (opt.umi) {
        batchSR.umi_files = {opt.umi_files[id]};
      }
@@ -2575,6 +2578,13 @@ SequenceReader::~SequenceReader() {
 }
 
 
+void SequenceReader::reserveNfiles(int n) {
+  fp.resize(nfiles);
+  seq.resize(nfiles, nullptr);
+  l.resize(nfiles, 0);
+  nl.resize(nfiles, 0);
+}
+
 void SequenceReader::reset() {
    for (auto &f : fp) {
     if (f) {
@@ -2650,16 +2660,17 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
         
         // open the next one
         for (int i = 0; i < nfiles; i++) {
-          fp[i] = gzopen(files[current_file].c_str(), "r");
+          fp[i] = gzopen(files[current_file+i].c_str(), "r");
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
-          current_file++;
+          
         }
         if (usingUMIfiles) {
           // open new umi file
           f_umi->open(umi_files[current_file]);  
           current_file++;        
         }
+        current_file+=nfiles;
         state = true; 
       }
     }
