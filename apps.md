@@ -16,6 +16,8 @@ The following applications build on __kallisto__:
 
 - [__ARCHS4__: Massive Mining of Publicly Available RNA-seq Data from Human and Mouse](http://amp.pharm.mssm.edu/archs4/) using __kallisto__
 
+- [__DEE2__: Digital Expression Explorer 2](http://dee2.io/) 
+
 - [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
   
 - [__EndoDB__ : a database of endothelial cell transcriptomics data](https://endotheliomics.shinyapps.io/endodb/)
