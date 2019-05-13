@@ -9,8 +9,8 @@ group: navigation
 - I'm having trouble with __kallisto__. Can I get help?
   - Yes. If you think you have discovered a bug that needs to be fixed please
     file a report on the GitHub page. If you have a question about installing
-    or running the program please ask on the [kallisto-sleuth-users Google user
-    group](https://groups.google.com/forum/#!forum/kallisto-sleuth-users).
+    or running the program please ask on the [kallisto-and-applications Google user
+    group](https://groups.google.com/forum/#!forum/kallisto-and-applications).
 
 - Where can I get announcements about new releases?
   - You can get announcements via the [kallisto-sleuth-announcements Google
