@@ -762,8 +762,111 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.umi = BUSOptionSubstr(0,6,16);
       busopt.bc.push_back(BUSOptionSubstr(0,0,6));
     } else {
-      cerr << "Unknown technology: " << opt.technology << endl;
-      ret = false;
+      int lastIndex = 0; //the last place in the string a colon and punctuation was found
+      int currValue = 1; //tells us the index of the three sequences needed barcode, umi, sequence
+      bool invalid = false; //tells us whether there has been an error when creating the technology
+      vector<int> numbers; //stores the numbers in a pair
+      vector<int> files;
+      vector<BUSOptionSubstr> values;
+      const char punctuationCompare = ',';
+      const char colonCompare = ':';
+      bool colon;
+      bool duplicate = false;
+      std::string stringVal;
+      int val;
+
+      for(int i = 1; i < opt.technology.length(); i++) {
+        colon = false;
+        if(opt.technology[i] == colonCompare) {
+          colon = true;
+        }
+
+        if(opt.technology[i] == punctuationCompare || colon) {
+          stringVal = opt.technology.substr(lastIndex, i-lastIndex);
+          try {
+            val = stoi(stringVal);
+            numbers.push_back(val);
+            if(numbers.size() == 1) {
+              if(files.size() != 0) {
+                for(int j = 0; j < files.size(); j++) {
+                  if(val == j) {
+                    duplicate = true;
+                    break;
+                  }
+                }
+                if(!duplicate) {
+                  files.push_back(val);
+                } else {
+                  duplicate = false;
+                }
+              } else {
+                files.push_back(val);
+              }
+            }
+            lastIndex = i + 1;
+          } catch(const std:: invalid_argument& ia) {
+            cerr << "Error: Invalid argument" << endl;
+            invalid = true;
+            break;
+          }
+          if(colon) {
+            if(numbers.size() != 3) {
+              cerr << "Error: Wrong number of pairs provided" << endl;
+              invalid = true;
+              break;
+            }
+          }
+        }
+        if(numbers.size() == 3) {
+          if(currValue == 1) {
+            busopt.bc.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
+          } else {
+            values.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
+          }
+          numbers.clear();
+        }
+        if(colon) {
+          currValue++;
+        }
+      }
+      if(!invalid) {
+        std::sort(files.begin(), files.end());
+        for(int k = 0; k < files.size()-1; k++) {
+          if(files[k]+1 != files[k+1]) {
+            invalid = true;
+            cerr << "Error: files aren't correctly referenced" << endl;
+            break;
+          }
+        }
+      }
+      stringVal = opt.technology.substr(lastIndex, opt.technology.length()-lastIndex);
+      if(numbers.size() == 2 && !invalid) {
+        try {
+          val = stoi(stringVal);
+          numbers.push_back(val);
+          values.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
+          numbers.clear();  
+        } catch(const std:: invalid_argument& ia) {
+          cerr << "Error: Invalid argument" << endl;
+        }
+      } else {
+        if(!invalid) {
+          cerr << "Error: Wrong number of pairs provided" << endl;
+          invalid = true;
+        }
+      }
+      if(currValue != 3 && !invalid) {
+        cerr << "Error: Wrong number of substrings provided" << endl;
+        invalid = true;
+      }
+      if(!invalid) {
+        busopt.nfiles = files.size(); 
+        busopt.umi = values[0];
+        busopt.seq = values[1];
+      } else {
+        cerr << "Unable to create technology: " << opt.technology << endl;
+        ret = false;
+      }
     }
   }
 
