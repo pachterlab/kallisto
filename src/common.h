@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.45.1"
+#define KALLISTO_VERSION "0.46.0"
 
 #include <string>
 #include <vector>
