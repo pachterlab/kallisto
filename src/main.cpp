@@ -623,9 +623,9 @@ bool ParseTechnology(const std::string &techstr, std::vector<BUSOptionSubstr> &v
         val = stoi(stringVal);
         numbers.push_back(val);
         if(numbers.size() == 1) {
-          if(files.size() != 0) {
+          if(!files.empty()) {
             for(int j = 0; j < files.size(); j++) {
-              if(val == j) {
+              if(val == files[j]) {
                 duplicate = true;
                 break;
               }
@@ -636,20 +636,21 @@ bool ParseTechnology(const std::string &techstr, std::vector<BUSOptionSubstr> &v
               duplicate = false;
             }
           } else {
-              files.push_back(val);
+            files.push_back(val);
           }
         }
         lastIndex = i + 1;
-        } catch(const std:: invalid_argument& ia) {
-          errorList.push_back("Error: Invalid argument");
+      } catch(const std:: invalid_argument& ia) {
+        errorList.push_back("Error: Invalid argument");
+        return true;
+      }
+
+      if(colon) {
+        if(numbers.size() != 3) {
+          errorList.push_back("Error: Wrong number of pairs provided");
           return true;
         }
-        if(colon) {
-          if(numbers.size() != 3) {
-            errorList.push_back("Error: Wrong number of pairs provided");
-            return true;
-          }
-        }
+      }
     }
     if(numbers.size() == 3) {
       if(currValue == 1) {
@@ -657,19 +658,26 @@ bool ParseTechnology(const std::string &techstr, std::vector<BUSOptionSubstr> &v
       } else {
         values.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
       }
-        numbers.clear();
-      }
-      if(colon) {
-        currValue++;
-      }
+      numbers.clear();
+    }
+    if(colon) {
+      currValue++;
+    }
   }
+
+  if (files.empty()) {
+    errorList.push_back(std::string("Error: parsing technology string \"") + techstr + "\"");
+    return true;
+  }
+
   std::sort(files.begin(), files.end());
-    for(int k = 0; k < files.size()-1; k++) {
+  for(int k = 0; k < files.size()-1; k++) {
     if(files[k]+1 != files[k+1]) {
       errorList.push_back("Error: files aren't correctly referenced");
       return true;
     }
   }
+
   stringVal = techstr.substr(lastIndex, techstr.length()-lastIndex);
   if(numbers.size() == 2) {
     try {
