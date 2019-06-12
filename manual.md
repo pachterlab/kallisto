@@ -9,7 +9,7 @@ group: navigation
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -34,7 +34,7 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -54,7 +54,7 @@ The Fasta file supplied can be either in plaintext or gzipped format. Prebuilt i
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -153,7 +153,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 `kallisto bus` works with raw FASTQ files for single-cell RNA-Seq datasets. For each read the cell barcode and UMI information and the equivalence class resulting from pseudoalignment are stored in a [BUS](https://github.com/BUStools/BUS) file `output.bus` stored in the output directory directory, along with `matrix.ec` and `transcripts.txt` which store information about the equivalence classes and transcript names for downstream processing.
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Generates BUS files for single-cell sequencing
 
 Usage: kallisto bus [arguments] FASTQ-files
@@ -171,13 +171,34 @@ Optional arguments:
 
 To process the `output.bus` file further use [bustools](https://github.com/BUStools/bustools); examples of downstream processing can be seen in [dataset specific notebooks](https://github.com/BUStools/Notebooks) available from the [bustools repository](https://github.com/BUStools). 
 
+Running `kallisto bus -l` gives a list of currently supported single cell technologies
+
+~~~
+List of supported single-cell technologies
+
+short name       description
+----------       -----------
+10xv1            10x version 1 chemistry
+10xv2            10x version 2 chemistry
+10xv3            10x version 3 chemistry
+CELSeq           CEL-Seq
+CELSeq2          CEL-Seq version 2
+DropSeq          DropSeq
+inDrops          inDrops
+SCRBSeq          SCRB-Seq
+SureCell         SureCell for ddSEQ
+~~~
+
+When specifying the input the short name can be used to indicate the technology.
+
+Additionally `kallisto bus` will accept a string specifying a new technology in the format of `bc:umi:seq` where each of `bc`,`umi` and `seq` are a triplet of integers separated by a comma, denoting the file index, start and stop of the sequence used. For example to specify the `10xV2` technology we would use `0,0,16:0,16,26:1,0,0`. The first part `bc` is `0,0,16` indicating it is in the 0-th file (also known as the first file in plain english), the barcode starts at the 0-th bp and ends at the 16-th bp in the sequence (i.e. 16bp barcode), the UMI is similarly in the same file, right after the barcode in position 16-26 (a 10bp UMI), finally the sequence is in a separate file, starts at 0 and ends at 0 (in this case stopping at 0 means there is no limit, we use the entire sequence).
 
 #### pseudo
 
 `kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single-cell RNA-seq. The arguments for the pseudo command are:
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto pseudo [arguments] FASTQ-files
@@ -249,7 +270,7 @@ When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign an
 plaintext. The arguments for the h5dump command are:
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Converts HDF5-formatted results to plaintext
 
 Usage:  kallisto h5dump [arguments] abundance.h5
@@ -264,7 +285,7 @@ Required argument:
 `kallisto merge` can merge the results of several batches performed by `pseudo`, this creates a single output as if `kallisto` had ben run on the entire sample.
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto merge [arguments] ouput-directories
@@ -280,7 +301,7 @@ Required arguments:
 `kallisto inspect` can output the Target de Bruijn Graph in the index in two ways, as a file in `GFA` [format](https://github.com/GFA-spec/GFA-spec) or it can map the contigs of the graph and and equivalence classes in a `BED` format that can be visualized using [IGV](http://software.broadinstitute.org/software/igv/)
 
 ~~~
-kallisto 0.45.0
+kallisto 0.46.0
 
 Usage: kallisto inspect INDEX-file
 
