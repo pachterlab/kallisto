@@ -12,12 +12,6 @@ group: navigation
     or running the program please ask on the [kallisto-and-applications Google user
     group](https://groups.google.com/forum/#!forum/kallisto-and-applications).
 
-- Where can I get announcements about new releases?
-  - You can get announcements via the [kallisto-sleuth-announcements Google
-    group](https://groups.google.com/forum/#!forum/kallisto-sleuth-announcements).
-    This is a read-only, low traffic mailing list that only sends an email when
-    a major version is released.
-
 - __kallisto__ is fast but is it as accurate as other quantification tools?
   - Yes. The source of  __kallisto__'s speed is the novel concept of
     _pseudoalignment_ of reads. Pseudosalignment is all that is needed for
