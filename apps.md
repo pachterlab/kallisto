@@ -29,7 +29,7 @@ The following applications build on __kallisto__:
 
 - [__MiPanda__ : Michigan Portal for the Analysis of NGS Data](http://www.mipanda.org/)
 
-- [__kallisto bustools__: Single-cell RNA-seq pre-processing](https://pachterlab.github.io/kallistobustools/)
+- [__kallisto &#124; bustools__: Single-cell RNA-seq pre-processing](https://pachterlab.github.io/kallistobustools/)
 
 - [__SkeletalVis__ : exploration of skeletal biology related expression datasets](http://phenome.manchester.ac.uk/)
 
