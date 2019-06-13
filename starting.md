@@ -6,7 +6,7 @@ group: navigation
 ---
 {% include JB/setup %}
 
-The short tutorial below explains how to run __kallisto__ on bulk RNA-seq data using a small example distributed with the program. __kallisto__ can also be used to pre-process single-cell RNA-seq, and a tutorial on that is available at the [kallisto|bustools page](https://pachterlab.github.io/kallistobustools/velocity_tutorial).
+The short tutorial below explains how to run __kallisto__ on bulk RNA-seq data using a small example distributed with the program. __kallisto__ can also be used to pre-process single-cell RNA-seq, and a tutorial on that is available at the [__kallisto bustools__ page](https://pachterlab.github.io/kallistobustools/velocity_tutorial).
 
 
 #### Download and installation
