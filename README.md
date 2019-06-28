@@ -5,7 +5,7 @@ RNA-Seq data, or more generally of target sequences using high-throughput
 sequencing reads. It is based on the novel idea of _pseudoalignment_ for
 rapidly determining the compatibility of reads with targets, without the need
 for alignment. On benchmarks with standard RNA-Seq data, __kallisto__ can
-quantify 30 million human reads in less than 3  minutes on a Mac desktop
+quantify 30 million human bulk RNA-seq reads in less than 3  minutes on a Mac desktop
 computer using only the read sequences and a transcriptome index that
 itself takes less than 10 minutes to build. Pseudoalignment of reads
 preserves the key information needed for quantification, and __kallisto__
@@ -20,6 +20,8 @@ Scripts reproducing all the results of the paper are available [here](https://gi
 
 __kallisto__ quantified RNA-Seq can be analyzed with [__sleuth__](https://github.com/pachterlab/sleuth/).
 
+__kallisto__ can be used together with [__bustools__](https://bustools.github.io/) to pre-process single-cell RNA-seq data. See the [kallistobus.tools](https://www.kallistobus.tools/) website for instructions.
+
 ## Manual
 
 Please visit http://pachterlab.github.io/kallisto/manual.html for the manual.
@@ -28,17 +30,9 @@ Please visit http://pachterlab.github.io/kallisto/manual.html for the manual.
 
 Please read the license before using kallisto. The license is distributed with __kallisto__ in the file `license.txt` also viewable [here](https://pachterlab.github.io/kallisto/download).
 
-## Announcements
-
-There is a low traffic Google Group,
-[kallisto-sleuth-announcements](https://groups.google.com/d/forum/kallisto-sleuth-announcements)
-where we make announcements about new releases. This is a read-only mailing
-list.
-
 ## Getting help
 
-For help running __kallisto__, please post to the [kallisto-sleuth-users
-Google Group](https://groups.google.com/d/forum/kallisto-sleuth-users).
+For help running __kallisto__, please post to the [kallisto-and-applications Google Group](https://groups.google.com/forum/#!forum/kallisto-and-applications).
 
 ## Reporting bugs
 
