@@ -5,7 +5,7 @@ title: "Rock64 Install"
 
 {% include JB/setup %}
 
-# How to Compile Kallisto from Source on a Rock64 (Arm64 architecture)*
+### How to Compile Kallisto from Source on a Rock64 (Arm64 architecture)
 
 0. Navigate to home directory: `cd ~`
 1. Install automake and autoreconf by the following commands: `sudo apt install automake` and `sudo apt install autoreconf`
