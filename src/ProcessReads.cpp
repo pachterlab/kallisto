@@ -256,7 +256,7 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
-
+  
   return numreads;
 }
 
@@ -565,7 +565,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
-  SR.reset();
+  SR->reset();
 
   std::vector<std::thread> workers;
   for (int i = 0; i < opt.threads; i++) {
@@ -923,12 +923,12 @@ void ReadProcessor::operator()() {
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
-      if (mp.SR.empty()) {
+      if (mp.SR->empty()) {
         // nothing to do
         return;
       } else {
         // get new sequences
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
@@ -1222,7 +1222,7 @@ void ReadProcessor::clear() {
 
 
 BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
- paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
+ paired(!opt.single_end), bam(opt.bam), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];  
@@ -1238,6 +1238,7 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
 
 BUSProcessor::BUSProcessor(BUSProcessor && o) :
   paired(o.paired),
+  bam(o.bam),
   tc(o.tc),
   index(o.index),
   mp(o.mp),
@@ -1273,16 +1274,24 @@ void BUSProcessor::operator()() {
     // grab the reader lock
     {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
-      if (mp.SR.empty()) {
+      if (mp.SR->empty()) {
         // nothing to do
         return;
       } else {
         // get new sequences
         std::vector<std::string> umis;
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, false);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, false);
       }
       // release the reader lock
     }
+#if 0
+//    std::cout << seqs.size() << ": " << std::flush;
+//    if (seqs.size()) std::cout << seqs[seqs.size() - 1].first << " " << seqs[seqs.size() - 1].second << std::endl;
+    for (int aardvark = 0; aardvark < seqs.size(); ++aardvark) {
+    std::cout << seqs[aardvark].first << " " << seqs[aardvark].second << std::endl;
+    //if (seqs.size() > 0) std::cout << seqs[1].first << " " << seqs[1].second << std::endl;
+    }exit(1);
+#endif
     // do the same for BUS ?!?
     /*    
     pseudobatch.aln.clear();
@@ -1304,7 +1313,7 @@ void BUSProcessor::processBuffer() {
   std::vector<std::pair<KmerEntry,int>> v,v2;
   std::vector<int> vtmp;
   std::vector<int> u;
-
+  
   u.reserve(1000);
   v.reserve(1000);
   vtmp.reserve(1000);
@@ -1326,9 +1335,17 @@ void BUSProcessor::processBuffer() {
   
   // actually process the sequences
   const BUSOptions& busopt = mp.opt.busOptions;
-  int incf = busopt.nfiles-1;
+  int incf, jmax;
+  if (bam) {
+    incf = 1;
+    jmax = 2;
+  } else {
+    incf = busopt.nfiles-1;
+    jmax = busopt.nfiles;
+  }
+  //int incf = (bam) ? 1 : busopt.nfiles-1;
   for (int i = 0; i + incf < seqs.size(); i++) {
-    for (int j = 0; j < busopt.nfiles; j++) {
+    for (int j = 0; j < jmax /*(bam) ? 2 : busopt.nfiles*/; j++) {
       s[j] = seqs[i+j].first;
       l[j] = seqs[i+j].second;      
     }
@@ -1438,8 +1455,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
    buffer = new char[bufsize];
    bambufsize = 1<<20;
    bambuffer = new char[bambufsize]; // refactor this?
-
-
+   
    if (opt.batch_mode) {
      /* need to check this later */
      assert(id != -1);
@@ -1522,12 +1538,12 @@ void AlnProcessor::operator()() {
       }
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
-      if (mp.SR.empty()) {
+      if (mp.SR->empty()) {
         // nothing to do
         return;
       } else {
         // get new sequences        
-        mp.SR.fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, umis, readbatch_id, true);
         readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
         assert(pseudobatch.batch_id == readbatch_id);
         assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
@@ -2557,9 +2573,14 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 }
 
 
-/** -- sequence reader -- **/
+/** -- sequence readers -- **/
 
-SequenceReader::~SequenceReader() {
+void SequenceReader::reset() {
+  state = false;
+  readbatch_id = -1;
+}
+
+FastqSequenceReader::~FastqSequenceReader() {
   for (auto &f : fp) {
     if (f) {
       gzclose(f);
@@ -2578,24 +2599,18 @@ SequenceReader::~SequenceReader() {
 }
 
 
-void SequenceReader::reserveNfiles(int n) {
-  fp.resize(nfiles);
-  seq.resize(nfiles, nullptr);
-  l.resize(nfiles, 0);
-  nl.resize(nfiles, 0);
+bool FastqSequenceReader::empty() {
+  return (!state && current_file >= files.size());
 }
 
-void SequenceReader::reset() {
-   for (auto &f : fp) {
+void FastqSequenceReader::reset() {
+  SequenceReader::reset();
+   
+  for (auto &f : fp) {
     if (f) {
       gzclose(f);
     }
     f = nullptr;
-  }
-
-  for (auto &s : seq) {
-    kseq_destroy(s);
-    s = nullptr;
   }
 
   if (f_umi && f_umi->is_open()) {
@@ -2612,13 +2627,21 @@ void SequenceReader::reset() {
   }
   
   current_file = 0;
-  state = false;
-  readbatch_id = -1;
+  for (auto &s : seq) {
+    kseq_destroy(s);
+    s = nullptr;
+  }
 }
 
+void FastqSequenceReader::reserveNfiles(int n) {
+  fp.resize(nfiles);
+  l.resize(nfiles, 0);
+  nl.resize(nfiles, 0);
+  seq.resize(nfiles, nullptr);
+}
 
 // returns true if there is more left to read from the files
-bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
+bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
   std::vector<std::pair<const char *, int> > &names,
   std::vector<std::pair<const char *, int> > &quals,
   std::vector<std::string> &umis, int& read_id,
@@ -2732,14 +2755,10 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
   }
 }
 
-bool SequenceReader::empty() {
-  return (!state && current_file >= files.size());
-}
-
 // move constructor
+#if 0
 SequenceReader::SequenceReader(SequenceReader&& o) :
   fp(std::move(o.fp)),
-  seq(std::move(o.seq)),
   l(std::move(o.l)),
   nl(std::move(o.nl)),
   paired(o.paired),
@@ -2751,8 +2770,99 @@ SequenceReader::SequenceReader(SequenceReader&& o) :
   state(o.state) {
 
   o.fp.resize(nfiles);
-  o.seq.resize(nfiles, nullptr);
   o.l.resize(nfiles, 0);
   o.nl.resize(nfiles, 0);
   o.state = false;
 }
+#endif
+
+FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) {
+  fp          = (std::move(o.fp));
+  l           = (std::move(o.l));
+  nl          = (std::move(o.nl));
+  paired      = (o.paired);
+  nfiles      = (o.nfiles);
+  files       = (std::move(o.files)),
+  umi_files   = (std::move(o.umi_files));
+  f_umi       = (std::move(o.f_umi));
+  current_file= (o.current_file);
+  state       = (o.state);
+  seq         = (std::move(o.seq));
+
+  o.fp.resize(nfiles);
+  o.l.resize(nfiles, 0);
+  o.nl.resize(nfiles, 0);
+  o.state = false;
+  o.seq.resize(nfiles, nullptr);
+}
+
+BamSequenceReader::~BamSequenceReader() {
+  if (fp) {
+    gzclose(fp);
+  }
+}
+
+bool BamSequenceReader::empty() {
+  return !state;
+}
+
+void BamSequenceReader::reset() {
+  SequenceReader::reset();
+}
+
+void BamSequenceReader::reserveNfiles(int n) {
+}
+
+// returns true if there is more left to read from the files
+bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<std::pair<const char *, int> > &seqs,
+  std::vector<std::pair<const char *, int> > &names,
+  std::vector<std::pair<const char *, int> > &quals,
+  std::vector<std::string> &umis, int& read_id,
+  bool full) {
+  
+  readbatch_id += 1; // increase the batch id
+  read_id = readbatch_id; // copy now because we are inside a lock
+  seqs.clear();
+  
+  int bufpos = 0;
+
+  while (true) {
+    if (!state) { // should we open a file
+        return false;
+    }
+
+    // the file is open and we have read into seq1 and seq2
+    if (err > 0) {
+      if (seq.nh == 1) {
+        int l_bcumi = seq.l_bc + seq.l_umi;
+        int bufadd = l_bcumi + 1 + seq.l_seq + 1;
+
+        // fits into the buffer
+        if (bufpos+bufadd < limit) {
+          char *pi;
+
+          pi = buf + bufpos;
+          memcpy(pi, seq.bc, seq.l_bc);
+          memcpy(pi + seq.l_bc, seq.umi, seq.l_umi);
+          *(pi + l_bcumi) = '\x00';
+          bufpos += l_bcumi + 1;
+          seqs.emplace_back(pi, l_bcumi);
+
+          pi += l_bcumi + 1;
+          memcpy(pi, seq.seq, seq.l_seq);
+          *(pi + seq.l_seq) = '\x00';
+          bufpos += seq.l_seq + 1;
+          seqs.emplace_back(pi, seq.l_seq);
+        } else {
+          return true; // read it next time
+        }
+      }
+      
+      // read for the next one
+      err = getBAMSequence(fp, seq, bamBuf);
+    } else {
+      state = false; // haven't opened file yet
+    }
+  }
+}
+

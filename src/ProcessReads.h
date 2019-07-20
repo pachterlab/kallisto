@@ -23,6 +23,7 @@
 #include "GeneModel.h"
 #include "BUSData.h"
 #include "BUSTools.h"
+#include "BAMUtil.hpp"
 
 
 #ifndef KSEQ_INIT_READY
@@ -41,9 +42,33 @@ class SequenceReader {
 public:
 
   SequenceReader(const ProgramOptions& opt) :
-  paired(!opt.single_end), files(opt.files),
-  f_umi(new std::ifstream{}),
-  current_file(0), state(false), readbatch_id(-1) {
+  readbatch_id(-1) {};
+  SequenceReader() : state(false), readbatch_id(-1) {};
+//  SequenceReader(SequenceReader&& o);
+  
+  virtual bool empty() = 0;
+  virtual void reset();
+  virtual void reserveNfiles(int n) = 0;
+  virtual bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
+                      std::vector<std::pair<const char*, int>>& names,
+                      std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<std::string>& umis, int &readbatch_id,
+                      bool full=false) = 0;
+
+
+public:
+  bool state; // is the file open
+  int readbatch_id = -1;
+};
+
+class FastqSequenceReader : public SequenceReader {
+public:
+
+  FastqSequenceReader(const ProgramOptions& opt) : SequenceReader(opt),
+  current_file(0), paired(!opt.single_end), files(opt.files),
+  f_umi(new std::ifstream{}) {
+    SequenceReader::state = false;
+
     if (opt.bus_mode) {
       nfiles = opt.busOptions.nfiles;      
     } else {
@@ -51,17 +76,16 @@ public:
     }
     reserveNfiles(nfiles);
   }
-  SequenceReader() :
+  FastqSequenceReader() : SequenceReader(), 
   paired(false), 
   f_umi(new std::ifstream{}),
-  current_file(0), state(false), readbatch_id(-1) {}
-  SequenceReader(SequenceReader&& o);
-  
-  bool empty();
+  current_file(0) {};
+  FastqSequenceReader(FastqSequenceReader &&o);
+  ~FastqSequenceReader();
+
+  bool empty();  
   void reset();
   void reserveNfiles(int n);
-  ~SequenceReader();
-
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
@@ -71,26 +95,62 @@ public:
 public:
   int nfiles = 1;
   std::vector<gzFile> fp;
-  //gzFile fp1 = 0, fp2 = 0;
-  std::vector<kseq_t*> seq;
   std::vector<int> l;
   std::vector<int> nl;
-  //kseq_t *seq1 = 0, *seq2 = 0;
-  //int l1,l2,nl1,nl2;
   bool paired;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;
   std::unique_ptr<std::ifstream> f_umi;
   int current_file;
-  bool state; // is the file open
-  int readbatch_id = -1;
+  std::vector<kseq_t*> seq;
+};
+
+class BamSequenceReader : public SequenceReader {
+public:
+
+  BamSequenceReader(const ProgramOptions& opt) :
+  SequenceReader(opt) {
+    SequenceReader::state = true;
+
+    fp = gzopen(opt.files[0].c_str(), "r");
+    BAMHeader h;
+    std::vector<BAMRefInfo> v;
+    parseBAMHeader(fp, h);
+    parseBAMRefInfo(fp, v, h.n_ref);
+
+    err = getBAMSequence(fp, seq, bamBuf);
+  }
+  BamSequenceReader() : SequenceReader() {};
+//  BamSequenceReader(BamSequenceReader &&o);
+  ~BamSequenceReader();
+  
+  bool empty();
+  void reset();
+  void reserveNfiles(int n);
+  bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
+                      std::vector<std::pair<const char*, int>>& names,
+                      std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<std::string>& umis, int &readbatch_id,
+                      bool full=false);
+
+public:
+  gzFile fp;
+  BAMSequence seq;
+  int err;
+  char bamBuf[BAMBUFSIZE];
 };
 
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), SR(opt), numreads(0)
+    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
+      if (opt.bam) {
+        SR = new BamSequenceReader(opt);
+      } else {
+        SR = new FastqSequenceReader(opt);
+      }
+
       if (opt.batch_mode) {
         memset(&bus_bc_len[0],0,33);
         memset(&bus_umi_len[0],0,33);
@@ -136,13 +196,14 @@ public:
       bam_hdr_destroy(bamh);
       bamh = nullptr;
     }    
+    delete SR;
   }
 
   std::mutex reader_lock;
   std::mutex writer_lock;
 
 
-  SequenceReader SR;
+  SequenceReader *SR;
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
@@ -205,7 +266,7 @@ public:
   std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
   const KmerIndex& index;
   MasterProcessor& mp;
-  SequenceReader batchSR;
+  FastqSequenceReader batchSR;
   int64_t numreads;
   int id;
   int local_id;
@@ -237,6 +298,7 @@ public:
   
   size_t bufsize;
   bool paired;
+  bool bam;
   const MinCollector& tc;
   const KmerIndex& index;
   MasterProcessor& mp;
@@ -279,7 +341,7 @@ public:
   const KmerIndex& index;
   const EMAlgorithm& em;
   MasterProcessor& mp;
-  SequenceReader batchSR;
+  FastqSequenceReader batchSR;
   int64_t numreads;
   int id;
   PseudoAlignmentBatch pseudobatch;

@@ -540,13 +540,14 @@ void ListSingleCellTechnologies() {
  }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "i:o:x:t:l";
+  const char *opt_string = "i:o:x:t:lb";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
     {"list", no_argument, 0, 'l'},
     {"threads", required_argument, 0, 't'},
+    {"bam", no_argument, 0, 'b'},
     {0,0,0,0}
   };
 
@@ -582,6 +583,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 't': {
       stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'b': {
+      opt.bam = true;
       break;
     }
     default: break;
@@ -882,9 +887,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         ret = false;
       }
     }
+
+    if (opt.bam) {
+      busopt.nfiles = 1;
+    }
   }
 
-  if (ret && opt.files.size() %  opt.busOptions.nfiles != 0) {
+  if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;

@@ -67,6 +67,7 @@ struct ProgramOptions {
   bool bus_mode;
   BUSOptions busOptions;
   bool pseudo_quant;
+  bool bam;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
@@ -107,6 +108,7 @@ ProgramOptions() :
   batch_mode(false),
   bus_mode(false),
   pseudo_quant(false),
+  bam(false),
   plaintext(false),
   write_index(false),
   single_end(false),
