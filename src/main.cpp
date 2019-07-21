@@ -1599,7 +1599,8 @@ void usageBus() {
        << "-x, --technology=STRING       Single-cell technology used " << endl << endl
        << "Optional arguments:" << endl
        << "-l, --list                    List all single-cell technologies supported" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "-b, --bam                     Input file is a BAM file" << endl;
 }
 
 void usageIndex() {
