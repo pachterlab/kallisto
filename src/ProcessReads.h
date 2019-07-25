@@ -52,6 +52,7 @@ public:
   virtual bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<uint8_t>& nh,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false) = 0;
 
@@ -89,6 +90,7 @@ public:
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<uint8_t>& nh,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false);
 
@@ -130,6 +132,7 @@ public:
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
+                      std::vector<uint8_t>& nh,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false);
 
@@ -276,6 +279,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<uint8_t> nh;
   std::vector<std::string> umis;
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
@@ -313,6 +317,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<uint8_t> nh;
 
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
@@ -353,6 +358,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<uint8_t> nh;
   std::vector<std::string> umis;
 
   void operator()();
