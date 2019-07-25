@@ -6,8 +6,6 @@ group: navigation
 
 {% include JB/setup %}
 
-If you are compiling __kallisto__ on the Rock64 by source (or equivalent ARM64 processor architecture) follow [these steps](rock64_install.html).
-
 If using a Mac, the easiest way to download and install __kallisto__ is via brew with the commands:
 
 ```
