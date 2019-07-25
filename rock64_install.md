@@ -5,17 +5,13 @@ title: "Rock64 Install"
 
 {% include JB/setup %}
 
-### Compile kallisto from Source on a Rock64 (ARM architecture)
+### Compiling kallisto from source on a Rock64
 
-0. Navigate to home directory: `cd ~`
-1. Install automake and autoreconf by the following commands: `sudo apt install automake` and `sudo apt install autoconf`.
+1. Install automake, autoconf and libhdf5-dev with `sudo apt install automake`, `sudo apt install autoconf` and `sudo apt install hdf5-dev`. You may have to remove a dpkg lock with `sudo rm /var/lib/dpkg/lock`.
 2. Download, compile and install `cmake` by following the instructions on the [cmake website](https://cmake.org/install/).
-3. From https://pachterlab.github.io/kallisto/download, download most recent version of kallisto_Rock64 file (**kallisto_rock64-v0.46.0.tar.gz**).
-4. Uncompress the file: `gunzip kallisto_rock64-v0.46.0.tar.gz`
-5. Untar the file: `tar -xvf kallisto_rock64-v0.46.0.tar`
-6. Navigate into the Kallisto folder: *cd kallisto*
-7. Now, autoreconfigure in the htslib directory: `autoreconf ext/htslib/`
-8. Create a new folder called build: `mkdir build`
-9. To compile from the parent directory, perform the following command: `cmake ..`
-10. To finalize the process, perform the command: `make`
-11. To install in user local bin, perform the command: `sudo make install`
+3. Download the kallisto source from https://pachterlab.github.io/kallisto/download.
+4. Gunzip and untar the source code file. 
+5. Navigate to the source code directory and type `autoreconf ext/htslib/`.
+6. Create a new folder called build: `mkdir build`.
+7. Navigate into the build directory and type `cmake ..`.
+8. Then type `make` followed by `sudo make install` to place kallisto in `/usr/local/bin`.
