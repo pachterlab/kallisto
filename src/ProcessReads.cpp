@@ -1223,7 +1223,7 @@ void ReadProcessor::clear() {
 
 
 BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
- paired(!opt.single_end), bam(opt.bam), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
+ paired(!opt.single_end), bam(opt.bam), num(opt.num), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];  
@@ -1240,6 +1240,7 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
 BUSProcessor::BUSProcessor(BUSProcessor && o) :
   paired(o.paired),
   bam(o.bam),
+  num(o.num),
   tc(o.tc),
   index(o.index),
   mp(o.mp),
@@ -1421,7 +1422,7 @@ void BUSProcessor::processBuffer() {
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
       if (bam) {
         b.flags = (uint32_t) nh[i / 2];
-      } else {
+      } else if (num) {
         b.flags = (uint32_t) numreads;
       }
 

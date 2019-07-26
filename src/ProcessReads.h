@@ -303,6 +303,7 @@ public:
   size_t bufsize;
   bool paired;
   bool bam;
+  bool num;
   const MinCollector& tc;
   const KmerIndex& index;
   MasterProcessor& mp;

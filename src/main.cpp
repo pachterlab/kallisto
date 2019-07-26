@@ -548,6 +548,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"list", no_argument, 0, 'l'},
     {"threads", required_argument, 0, 't'},
     {"bam", no_argument, 0, 'b'},
+    {"num", no_argument, 0, 'n'},
     {0,0,0,0}
   };
 
@@ -587,6 +588,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'b': {
       opt.bam = true;
+      break;
+    }
+    case 'n': {
+      opt.num = true;
       break;
     }
     default: break;
@@ -952,6 +957,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;
+  }
+
+  if (opt.bam && opt.num) {
+    cerr << "Warning: --bam option was used, so --num option will be ignored" << endl;
   }
 
   return ret;
@@ -1600,7 +1609,8 @@ void usageBus() {
        << "Optional arguments:" << endl
        << "-l, --list                    List all single-cell technologies supported" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "-b, --bam                     Input file is a BAM file" << endl;
+       << "-b, --bam                     Input file is a BAM file" << endl
+       << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl;
 }
 
 void usageIndex() {
