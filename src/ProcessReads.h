@@ -23,7 +23,7 @@
 #include "GeneModel.h"
 #include "BUSData.h"
 #include "BUSTools.h"
-#include "BAMUtil.hpp"
+#include <htslib/sam.h>
 
 
 #ifndef KSEQ_INIT_READY
@@ -114,16 +114,30 @@ public:
   SequenceReader(opt) {
     SequenceReader::state = true;
 
-    fp = gzopen(opt.files[0].c_str(), "r");
-    BAMHeader h;
-    std::vector<BAMRefInfo> v;
-    parseBAMHeader(fp, h);
-    parseBAMRefInfo(fp, v, h.n_ref);
+    fp = bgzf_open(opt.files[0].c_str(), "rb");
+    head = bam_hdr_read(fp);
+    rec = bam_init1();
+    
+    err = bam_read1(fp, rec);
+    eseq = bam_get_seq(rec);
+    l_seq = rec->core.l_qseq;
 
-    err = getBAMSequence(fp, seq, bamBuf);
+    rec_nh = (uint8_t) bam_aux2i(bam_aux_get(rec, "NH"));
+
+    bc = bam_aux2Z(bam_aux_get(rec, "CR"));
+    l_bc = 0;
+    for (char *pbc = bc; *pbc != '\0'; ++pbc) {
+      ++l_bc;
+    }
+
+    umi = bam_aux2Z(bam_aux_get(rec, "UR"));
+    l_umi = 0;
+    for (char *pumi = umi; *pumi != '\0'; ++pumi) {
+      ++l_umi;
+    }
   }
   BamSequenceReader() : SequenceReader() {};
-//  BamSequenceReader(BamSequenceReader &&o);
+  BamSequenceReader(BamSequenceReader &&o);
   ~BamSequenceReader();
   
   bool empty();
@@ -137,10 +151,21 @@ public:
                       bool full=false);
 
 public:
-  gzFile fp;
-  BAMSequence seq;
+  BGZF *fp;
+  bam_hdr_t *head;
+  bam1_t *rec;
+  uint8_t *eseq;
+  int32_t l_seq;
+  uint8_t rec_nh;
+  char *bc;
+  int l_bc;
+  char *umi;
+  int l_umi;
   int err;
-  char bamBuf[BAMBUFSIZE];
+  char seq[256]; // Is there a better limit?
+  
+private:
+  static const std::string seq_enc;
 };
 
 class MasterProcessor {

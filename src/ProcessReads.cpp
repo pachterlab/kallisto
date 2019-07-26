@@ -1288,9 +1288,8 @@ void BUSProcessor::operator()() {
       // release the reader lock
     }
 #if 0
-    for (const auto &elt : nh) {
-      uint32_t fallacy = (uint32_t) elt;
-      std::cout << fallacy << "; " << std::flush;
+    for (const auto elt : seqs) {
+      std::cout << elt.first << std::endl;
     }
     exit(1);
 #endif
@@ -2805,9 +2804,17 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) {
   o.seq.resize(nfiles, nullptr);
 }
 
+const std::string BamSequenceReader::seq_enc = "=ACMGRSVTWYHKDBN";
+
 BamSequenceReader::~BamSequenceReader() {
   if (fp) {
-    gzclose(fp);
+    bgzf_close(fp);
+  }
+  if (head) {
+    bam_hdr_destroy(head);
+  }
+  if (rec) {
+    bam_destroy1(rec);
   }
 }
 
@@ -2836,41 +2843,66 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
   nh.clear();
   
   int bufpos = 0;
-
   while (true) {
     if (!state) { // should we open a file
         return false;
     }
 
     // the file is open and we have read into seq1 and seq2
-    if (err > 0) {
-      int l_bcumi = seq.l_bc + seq.l_umi;
-      int bufadd = l_bcumi + 1 + seq.l_seq + 1;
-
+    if (err >= 0) {
+      int bufadd = l_seq + l_bc + l_umi + 2;
       // fits into the buffer
       if (bufpos+bufadd < limit) {
         char *pi;
 
         pi = buf + bufpos;
-        memcpy(pi, seq.bc, seq.l_bc);
-        memcpy(pi + seq.l_bc, seq.umi, seq.l_umi);
-        *(pi + l_bcumi) = '\x00';
-        bufpos += l_bcumi + 1;
-        seqs.emplace_back(pi, l_bcumi);
+        memcpy(pi, bc, l_bc);
+        memcpy(pi + l_bc, umi, l_umi + 1);
+        seqs.emplace_back(pi, l_bc + l_umi);
+        bufpos += l_bc + l_umi + 1;
 
-        pi += l_bcumi + 1;
-        memcpy(pi, seq.seq, seq.l_seq);
-        *(pi + seq.l_seq) = '\x00';
-        bufpos += seq.l_seq + 1;
-        seqs.emplace_back(pi, seq.l_seq);
+        pi = buf + bufpos;
+        int len = (l_seq + 1) / 2;
+        if (l_seq % 2) --len;
+        int j = 0;
+        for (int i = 0; i < len; ++i, ++eseq) {
+          buf[bufpos++] = seq_enc[*eseq >> 4];
+          buf[bufpos++] = seq_enc[*eseq & 0x0F];
+        }
+        if (l_seq % 2) {
+          buf[bufpos++] = seq_enc[*eseq >> 4];
+        }
+        buf[bufpos++] = '\0';
+        seqs.emplace_back(pi, l_seq);
 
-        nh.emplace_back(seq.nh);
+        nh.emplace_back(rec_nh);
+
       } else {
         return true; // read it next time
       }
       
       // read for the next one
-      err = getBAMSequence(fp, seq, bamBuf);
+      err = bam_read1(fp, rec);
+      if (err < 0) {
+        return true;
+      }
+      eseq = bam_get_seq(rec);
+      l_seq = rec->core.l_qseq;
+
+      rec_nh = (uint8_t) bam_aux2i(bam_aux_get(rec, "NH"));
+
+      bc = bam_aux2Z(bam_aux_get(rec, "CR"));
+      l_bc = 0;
+      for (char *pbc = bc; *pbc != '\0'; ++pbc) {
+        ++l_bc;
+      }
+
+      umi = bam_aux2Z(bam_aux_get(rec, "UR"));
+      l_umi = 0;
+      for (char *pumi = umi; *pumi != '\0'; ++pumi) {
+        ++l_umi;
+      }
+
     } else {
       state = false; // haven't opened file yet
     }
