@@ -52,7 +52,7 @@ public:
   virtual bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
-                      std::vector<uint8_t>& nh,
+                      std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false) = 0;
 
@@ -90,12 +90,13 @@ public:
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
-                      std::vector<uint8_t>& nh,
+                      std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false);
 
 public:
   int nfiles = 1;
+  uint32_t numreads = 0;
   std::vector<gzFile> fp;
   std::vector<int> l;
   std::vector<int> nl;
@@ -122,7 +123,7 @@ public:
     eseq = bam_get_seq(rec);
     l_seq = rec->core.l_qseq;
 
-    rec_nh = (uint8_t) bam_aux2i(bam_aux_get(rec, "NH"));
+    nh = (uint32_t) bam_aux2i(bam_aux_get(rec, "NH"));
 
     bc = bam_aux2Z(bam_aux_get(rec, "CR"));
     l_bc = 0;
@@ -146,7 +147,7 @@ public:
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
                       std::vector<std::pair<const char*, int>>& names,
                       std::vector<std::pair<const char*, int>>& quals,
-                      std::vector<uint8_t>& nh,
+                      std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
                       bool full=false);
 
@@ -156,7 +157,7 @@ public:
   bam1_t *rec;
   uint8_t *eseq;
   int32_t l_seq;
-  uint8_t rec_nh;
+  uint32_t nh;
   char *bc;
   int l_bc;
   char *umi;
@@ -304,7 +305,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
-  std::vector<uint8_t> nh;
+  std::vector<uint32_t> flags;
   std::vector<std::string> umis;
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
@@ -343,7 +344,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
-  std::vector<uint8_t> nh;
+  std::vector<uint32_t> flags;
 
   std::vector<std::vector<int>> newEcs;
   std::vector<int> flens;
@@ -384,7 +385,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
-  std::vector<uint8_t> nh;
+  std::vector<uint32_t> flags;
   std::vector<std::string> umis;
 
   void operator()();
