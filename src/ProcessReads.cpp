@@ -1287,12 +1287,6 @@ void BUSProcessor::operator()() {
       }
       // release the reader lock
     }
-#if 0
-    for (const auto elt : seqs) {
-      std::cout << elt.first << std::endl;
-    }
-    exit(1);
-#endif
     // do the same for BUS ?!?
     /*    
     pseudobatch.aln.clear();
@@ -1368,7 +1362,7 @@ void BUSProcessor::processBuffer() {
     }
 
     
-    auto &bcc = busopt.bc[0];
+//    auto &bcc = busopt.bc[0];
     int blen = 0;
     bool bad_bc = false;
     for (auto &bcc : busopt.bc) {

@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-
+#include <iostream>
 
 #ifdef _WIN64
 typedef unsigned int uint;
