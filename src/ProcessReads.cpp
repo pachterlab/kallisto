@@ -2733,8 +2733,6 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
             bufpos += nl[i]+1;
             names.emplace_back(pi, nl[i]);
           }
-
-          flags.push_back(numreads++);
         }
 
         if (usingUMIfiles) {
@@ -2744,6 +2742,8 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           ss >> umi;
           umis.emplace_back(std::move(umi));
         }
+
+        flags.push_back(numreads++);
       } else {
         return true; // read it next time
       }
