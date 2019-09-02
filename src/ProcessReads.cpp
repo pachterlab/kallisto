@@ -2678,7 +2678,7 @@ bool SequenceReader::fetchSequences(char *buf, const int limit, std::vector<std:
     bool all_l = true;
     int bufadd = nfiles;
     for (int i = 0; i < nfiles; i++) {
-      all_l = all_l && l[i] > 0;
+      all_l = all_l && l[i] >= 0;
       bufadd += l[i]; // includes seq
     }
     if (all_l) {      
