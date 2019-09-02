@@ -1808,6 +1808,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < index.num_trans; i++) {
           num_unique += collection.counts[i];          
         }
+        num_pseudoaligned = 0;
         for (int i = 0; i < collection.counts.size(); i++) {
           num_pseudoaligned += collection.counts[i];
         }
@@ -1953,6 +1954,10 @@ int main(int argc, char *argv[]) {
           num_pseudoaligned += collection.counts[i];
         }
 
+        if (num_pseudoaligned == 0) {
+          std::cerr << "[~warn] Warning, zero reads pseudoaligned check your input files and index" << std::endl;
+        }
+
         plaintext_aux(
             opt.output + "/run_info.json",
             std::string(std::to_string(index.num_trans)),
@@ -1968,7 +1973,17 @@ int main(int argc, char *argv[]) {
         plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
             em.alpha_, em.eff_lens_, index.target_lens_);
 
-        if (opt.bootstrap > 0) {
+        if (opt.bootstrap > 0 && num_pseudoaligned == 0) {
+          // this happens if nothing aligns, then we write an empty bootstrap file
+          for (int b = 0; b < opt.bootstrap; b++) {
+            if (!opt.plaintext) {
+              writer.write_bootstrap(em, b); // em is empty
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_); // re-use empty input
+            }
+          }
+        } else if (opt.bootstrap > 0 && num_pseudoaligned > 0) {
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
           rand.seed( opt.seed );
@@ -2016,6 +2031,9 @@ int main(int argc, char *argv[]) {
         
 
         cerr << endl;
+        if (num_pseudoaligned == 0) {
+          exit(1); // exit with error
+        }
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {
@@ -2086,7 +2104,27 @@ int main(int argc, char *argv[]) {
               em.alpha_, em.eff_lens_, index.target_lens_);
         }
 
-        if (opt.bootstrap > 0) {
+        int64_t num_pseudoaligned =0;
+
+        for (int i = 0; i < collection.counts.size(); i++) {
+          num_pseudoaligned += collection.counts[i];
+        }
+
+        if (num_pseudoaligned == 0) {
+          std::cerr << "[~warn] Warning, zero reads pseudoaligned check your input files and index" << std::endl;
+        }
+
+        if (opt.bootstrap > 0 && num_pseudoaligned == 0) {
+          // this happens if nothing aligns, then we write an empty bootstrap file
+          for (int b = 0; b < opt.bootstrap; b++) {
+            if (!opt.plaintext) {
+              writer.write_bootstrap(em, b); // em is empty
+            } else {
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                    em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_); // re-use empty input
+            }
+          }
+        } else if (opt.bootstrap > 0 && num_pseudoaligned > 0) {
           std::cerr << "Bootstrapping!" << std::endl;
           auto B = opt.bootstrap;
           std::mt19937_64 rand;
@@ -2125,6 +2163,10 @@ int main(int argc, char *argv[]) {
           }
         }
         cerr << endl;
+
+        if (num_pseudoaligned == 0) {
+          exit(1);
+        }
       }
     } else if (cmd == "pseudo") {
       if (argc==2) {
