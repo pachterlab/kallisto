@@ -533,7 +533,9 @@ void ListSingleCellTechnologies() {
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
   << "DropSeq          DropSeq" << endl
-  << "inDrops          inDrops" << endl
+  << "inDropsv1        inDrops version 1 chemistry" << endl
+  << "inDropsv2        inDrops version 2 chemistry" << endl
+  << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
@@ -840,12 +842,24 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,12,20);
       busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-    } else if (opt.technology == "INDROPS") {
+    } else if (opt.technology == "INDROPSV1") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
       busopt.umi = BUSOptionSubstr(0,42,48);
       busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-      busopt.bc.push_back(BUSOptionSubstr(0,30,38));    
+      busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
+    } else if (opt.technology == "INDROPSV2") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(0,0,0);
+      busopt.umi = BUSOptionSubstr(1,42,48);
+      busopt.bc.push_back(BUSOptionSubstr(1,0,11));
+      busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
+    } else if (opt.technology == "INDROPSV3") {
+      busopt.nfiles = 2;
+      busopt.seq = BUSOptionSubstr(0,0,0);
+      busopt.umi = BUSOptionSubstr(2,8,14);
+      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      busopt.bc.push_back(BUSOptionSubstr(2,0,8));    
     } else if (opt.technology == "CELSEQ") {
       busopt.nfiles = 2;
       busopt.seq = BUSOptionSubstr(1,0,0);
