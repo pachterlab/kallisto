@@ -18,3 +18,6 @@ CTestTestfile.cmake
 debug/
 release/
 .vscode/
+ext/htslib/src/htslib-stamp
+ext/htslib/tmp/
+.snakemake

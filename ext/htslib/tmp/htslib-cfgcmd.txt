@@ -1,1 +1,0 @@
-cmd='autoheader;&&;autoconf;&&;/Users/sinabooeshaghi/kallisto/ext/htslib/configure;--prefix=;--disable-bz2;--disable-lzma;--disable-libcurl'
