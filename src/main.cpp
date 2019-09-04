@@ -855,10 +855,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,0,11));
       busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
     } else if (opt.technology == "INDROPSV3") {
-      busopt.nfiles = 2;
+      busopt.nfiles = 3;
       busopt.seq = BUSOptionSubstr(0,0,0);
       busopt.umi = BUSOptionSubstr(2,8,14);
-      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       busopt.bc.push_back(BUSOptionSubstr(2,0,8));    
     } else if (opt.technology == "CELSEQ") {
       busopt.nfiles = 2;
