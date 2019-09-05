@@ -1413,7 +1413,7 @@ void BUSProcessor::processBuffer() {
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
-      if (bam || num) {
+      if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
@@ -2844,35 +2844,35 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
 
     // the file is open and we have read into seq1 and seq2
     if (err >= 0) {
-      int bufadd = l_seq + l_bc + l_umi + 2;
-      // fits into the buffer
-      if (bufpos+bufadd < limit) {
-        char *pi;
+      if (!(rec->core.flag & BAM_FSECONDARY)) { // record is primary alignment
+        int bufadd = l_seq + l_bc + l_umi + 2;
+        // fits into the buffer
+        if (bufpos+bufadd < limit) {
+          char *pi;
 
-        pi = buf + bufpos;
-        memcpy(pi, bc, l_bc);
-        memcpy(pi + l_bc, umi, l_umi + 1);
-        seqs.emplace_back(pi, l_bc + l_umi);
-        bufpos += l_bc + l_umi + 1;
+          pi = buf + bufpos;
+          memcpy(pi, bc, l_bc);
+          memcpy(pi + l_bc, umi, l_umi + 1);
+          seqs.emplace_back(pi, l_bc + l_umi);
+          bufpos += l_bc + l_umi + 1;
 
-        pi = buf + bufpos;
-        int len = (l_seq + 1) / 2;
-        if (l_seq % 2) --len;
-        int j = 0;
-        for (int i = 0; i < len; ++i, ++eseq) {
-          buf[bufpos++] = seq_enc[*eseq >> 4];
-          buf[bufpos++] = seq_enc[*eseq & 0x0F];
+          pi = buf + bufpos;
+          int len = (l_seq + 1) / 2;
+          if (l_seq % 2) --len;
+          int j = 0;
+          for (int i = 0; i < len; ++i, ++eseq) {
+            buf[bufpos++] = seq_enc[*eseq >> 4];
+            buf[bufpos++] = seq_enc[*eseq & 0x0F];
+          }
+          if (l_seq % 2) {
+            buf[bufpos++] = seq_enc[*eseq >> 4];
+          }
+          buf[bufpos++] = '\0';
+          seqs.emplace_back(pi, l_seq);
+
+        } else {
+          return true; // read it next time
         }
-        if (l_seq % 2) {
-          buf[bufpos++] = seq_enc[*eseq >> 4];
-        }
-        buf[bufpos++] = '\0';
-        seqs.emplace_back(pi, l_seq);
-
-        flags.emplace_back(nh);
-
-      } else {
-        return true; // read it next time
       }
       
       // read for the next one
@@ -2882,8 +2882,6 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
       }
       eseq = bam_get_seq(rec);
       l_seq = rec->core.l_qseq;
-
-      nh = (uint32_t) bam_aux2i(bam_aux_get(rec, "NH"));
 
       bc = bam_aux2Z(bam_aux_get(rec, "CR"));
       l_bc = 0;

@@ -123,8 +123,6 @@ public:
     eseq = bam_get_seq(rec);
     l_seq = rec->core.l_qseq;
 
-    nh = (uint32_t) bam_aux2i(bam_aux_get(rec, "NH"));
-
     bc = bam_aux2Z(bam_aux_get(rec, "CR"));
     l_bc = 0;
     for (char *pbc = bc; *pbc != '\0'; ++pbc) {
@@ -157,7 +155,6 @@ public:
   bam1_t *rec;
   uint8_t *eseq;
   int32_t l_seq;
-  uint32_t nh;
   char *bc;
   int l_bc;
   char *umi;

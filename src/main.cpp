@@ -534,6 +534,7 @@ void ListSingleCellTechnologies() {
   << "CELSeq2          CEL-Seq version 2" << endl
   << "DropSeq          DropSeq" << endl
   << "inDrops          inDrops" << endl
+  << "inDropsV3        inDrops version 3" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
@@ -823,7 +824,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   } else {
     auto& busopt = opt.busOptions;
    
-    if (opt.bam) {
+    if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;
       if (opt.technology == "10XV2") {
         busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
@@ -859,6 +860,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq = BUSOptionSubstr(1,0,0);
         busopt.umi = BUSOptionSubstr(0,6,16);
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.bc.push_back(BUSOptionSubstr(0,6,16));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -929,6 +934,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq = BUSOptionSubstr(1,0,0);
         busopt.umi = BUSOptionSubstr(0,6,16);
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.nfiles = 3;
+        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
