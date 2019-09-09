@@ -44,6 +44,7 @@ public:
   SequenceReader(const ProgramOptions& opt) :
   readbatch_id(-1) {};
   SequenceReader() : state(false), readbatch_id(-1) {};
+  virtual ~SequenceReader() {}
 //  SequenceReader(SequenceReader&& o);
   
   virtual bool empty() = 0;
