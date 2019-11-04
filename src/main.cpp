@@ -542,13 +542,15 @@ void ListSingleCellTechnologies() {
  }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "i:o:x:t:l";
+  const char *opt_string = "i:o:x:t:lbn";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
     {"list", no_argument, 0, 'l'},
     {"threads", required_argument, 0, 't'},
+    {"bam", no_argument, 0, 'b'},
+    {"num", no_argument, 0, 'n'},
     {0,0,0,0}
   };
 
@@ -584,6 +586,14 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 't': {
       stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'b': {
+      opt.bam = true;
+      break;
+    }
+    case 'n': {
+      opt.num = true;
       break;
     }
     default: break;
@@ -814,94 +824,181 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     ret = false;
   } else {
     auto& busopt = opt.busOptions;
-    
-    if (opt.technology == "10XV2") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
-      busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
-      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-    } else if (opt.technology == "10XV3") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,16,28);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-    } else if (opt.technology == "10XV1") {
-      busopt.nfiles = 3;
-      busopt.seq = BUSOptionSubstr(0,0,0);
-      busopt.umi = BUSOptionSubstr(1,0,0);
-      busopt.bc.push_back(BUSOptionSubstr(2,0,0));
-    } else if (opt.technology == "SURECELL") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,51,59);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-      busopt.bc.push_back(BUSOptionSubstr(0,21,27));
-      busopt.bc.push_back(BUSOptionSubstr(0,42,48));
-    } else if (opt.technology == "DROPSEQ") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,12,20);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-    } else if (opt.technology == "INDROPSV1") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,42,48);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-      busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
-    } else if (opt.technology == "INDROPSV2") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(0,0,0);
-      busopt.umi = BUSOptionSubstr(1,42,48);
-      busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-      busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
-    } else if (opt.technology == "INDROPSV3") {
-      busopt.nfiles = 3;
-      busopt.seq = BUSOptionSubstr(2,0,0);
-      busopt.umi = BUSOptionSubstr(1,8,14);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-      busopt.bc.push_back(BUSOptionSubstr(1,0,8));    
-    } else if (opt.technology == "CELSEQ") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,8,12);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-    } else if (opt.technology == "CELSEQ2") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,0,6);
-      busopt.bc.push_back(BUSOptionSubstr(0,6,12));
-    } else if (opt.technology == "SCRBSEQ") {
-      busopt.nfiles = 2;
-      busopt.seq = BUSOptionSubstr(1,0,0);
-      busopt.umi = BUSOptionSubstr(0,6,16);
-      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-    } else {
-      vector<int> files;
-      vector<BUSOptionSubstr> values;
-      vector<BUSOptionSubstr> bcValues;
-      vector<std::string> errorList;
-      bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
-      if(!invalid) {
-        busopt.nfiles = files.size(); 
-        for(int i = 0; i < bcValues.size(); i++) {
-          busopt.bc.push_back(bcValues[i]);
-        }
-        busopt.umi = values[0];
-        busopt.seq = values[1];
+   
+    if (opt.bam) { // Note: only 10xV2 has been tested
+      busopt.nfiles = 1;
+      if (opt.technology == "10XV2") {
+        busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
+        busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      } else if (opt.technology == "10XV3") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,16,28);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+//      } else if (opt.technology == "10XV1") {
+
+      } else if (opt.technology == "SURECELL") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,18,26);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,18));
+      } else if (opt.technology == "DROPSEQ") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,12,20);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,12));
+      } else if (opt.technology == "INDROPSV1") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,42,48);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,11));
+        busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
+      } else if (opt.technology == "INDROPSV2") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(0,0,0);
+        busopt.umi = BUSOptionSubstr(1,42,48);
+        busopt.bc.push_back(BUSOptionSubstr(1,0,11));
+        busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.nfiles = 3;
+        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "CELSEQ") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,8,12);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+      } else if (opt.technology == "CELSEQ2") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+      } else if (opt.technology == "SCRBSEQ") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,6,16);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.bc.push_back(BUSOptionSubstr(0,6,16));
       } else {
-        for(int j = 0; j < errorList.size(); j++) {
-          cerr << errorList[j] << endl;
+        vector<int> files;
+        vector<BUSOptionSubstr> values;
+        vector<BUSOptionSubstr> bcValues;
+        vector<std::string> errorList;
+        bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
+        if(!invalid) {
+          busopt.nfiles = files.size(); 
+          for(int i = 0; i < bcValues.size(); i++) {
+            busopt.bc.push_back(bcValues[i]);
+          }
+          busopt.umi = values[0];
+          busopt.seq = values[1];
+        } else {
+          for(int j = 0; j < errorList.size(); j++) {
+            cerr << errorList[j] << endl;
+          }
+          cerr << "Unable to create technology: " << opt.technology << endl;
+          ret = false;
         }
-        cerr << "Unable to create technology: " << opt.technology << endl;
-        ret = false;
+      }
+    } else {
+      if (opt.technology == "10XV2") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
+        busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      } else if (opt.technology == "10XV3") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,16,28);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      } else if (opt.technology == "10XV1") {
+        busopt.nfiles = 3;
+        busopt.seq = BUSOptionSubstr(0,0,0);
+        busopt.umi = BUSOptionSubstr(1,0,0);
+        busopt.bc.push_back(BUSOptionSubstr(2,0,0));
+      } else if (opt.technology == "SURECELL") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,51,59);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+        busopt.bc.push_back(BUSOptionSubstr(0,21,27));
+        busopt.bc.push_back(BUSOptionSubstr(0,42,48));
+      } else if (opt.technology == "DROPSEQ") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,12,20);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,12));
+      } else if (opt.technology == "INDROPSV1") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,42,48);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,11));
+        busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
+      } else if (opt.technology == "INDROPSV2") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(0,0,0);
+        busopt.umi = BUSOptionSubstr(1,42,48);
+        busopt.bc.push_back(BUSOptionSubstr(1,0,11));
+        busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.nfiles = 3;
+        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "CELSEQ") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,8,12);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+      } else if (opt.technology == "CELSEQ2") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+      } else if (opt.technology == "SCRBSEQ") {
+        busopt.nfiles = 2;
+        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.umi = BUSOptionSubstr(0,6,16);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      } else if (opt.technology == "INDROPSV3") {
+        busopt.nfiles = 3;
+        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else {
+        vector<int> files;
+        vector<BUSOptionSubstr> values;
+        vector<BUSOptionSubstr> bcValues;
+        vector<std::string> errorList;
+        bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
+        if(!invalid) {
+          busopt.nfiles = files.size(); 
+          for(int i = 0; i < bcValues.size(); i++) {
+            busopt.bc.push_back(bcValues[i]);
+          }
+          busopt.umi = values[0];
+          busopt.seq = values[1];
+        } else {
+          for(int j = 0; j < errorList.size(); j++) {
+            cerr << errorList[j] << endl;
+          }
+          cerr << "Unable to create technology: " << opt.technology << endl;
+          ret = false;
+        }
       }
     }
   }
 
-  if (ret && opt.files.size() %  opt.busOptions.nfiles != 0) {
+  if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;
+  }
+
+  if (opt.bam && opt.num) {
+    cerr << "Warning: --bam option was used, so --num option will be ignored" << endl;
   }
 
   return ret;
@@ -1549,7 +1646,9 @@ void usageBus() {
        << "-x, --technology=STRING       Single-cell technology used " << endl << endl
        << "Optional arguments:" << endl
        << "-l, --list                    List all single-cell technologies supported" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "-b, --bam                     Input file is a BAM file" << endl
+       << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl;
 }
 
 void usageIndex() {

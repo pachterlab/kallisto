@@ -5,7 +5,7 @@
 
 #include <string>
 #include <vector>
-
+#include <iostream>
 
 #ifdef _WIN64
 typedef unsigned int uint;
@@ -67,6 +67,8 @@ struct ProgramOptions {
   bool bus_mode;
   BUSOptions busOptions;
   bool pseudo_quant;
+  bool bam;
+  bool num;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
@@ -107,6 +109,8 @@ ProgramOptions() :
   batch_mode(false),
   bus_mode(false),
   pseudo_quant(false),
+  bam(false),
+  num(false),
   plaintext(false),
   write_index(false),
   single_end(false),
