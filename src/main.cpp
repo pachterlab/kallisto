@@ -542,8 +542,10 @@ void ListSingleCellTechnologies() {
  }
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
   const char *opt_string = "i:o:x:t:lbn";
   static struct option long_options[] = {
+    {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
@@ -603,6 +605,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   if (list_flag) {
     ListSingleCellTechnologies();
     exit(1);
+  }
+  
+  if (verbose_flag) {
+    opt.verbose = true;
   }
   
   // all other arguments are fast[a/q] files to be read
@@ -1648,7 +1654,8 @@ void usageBus() {
        << "-l, --list                    List all single-cell technologies supported" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
-       << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl;
+       << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
+       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
 void usageIndex() {
@@ -1715,7 +1722,8 @@ void usageEM(bool valid_input = true) {
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
-       << "                              (optional for --genomebam, but recommended)" << endl;
+       << "                              (optional for --genomebam, but recommended)" << endl
+       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 
 }
 

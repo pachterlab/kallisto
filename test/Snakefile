@@ -5,13 +5,19 @@ INDEX = "{0}.kidx".format(PRE)
 
 rule all:
     input:
-        "kallisto_out/abundance.h5"
+        "quant_out/abundance.h5",
+        "bus_out/output.bus"
 
 rule index:
     input: FASTA
     output: INDEX
     shell:
-        "kallisto index -i {output} {input}"
+        """
+        kallisto index -i {output} {input}
+
+        mkdir quant_out
+        mkdir bus_out
+        """
 
 rule kallisto_quant:
     input:
@@ -19,15 +25,37 @@ rule kallisto_quant:
         "reads_2.fastq.gz",
         INDEX
     output:
-        "kallisto_out",
-        "kallisto_out/abundance.h5",
-        "kallisto_out/abundance.tsv",
-        "kallisto_out/run_info.json"
+        "quant_out/abundance.h5",
+        "quant_out/abundance.tsv",
+        "quant_out/run_info.json"
     shell:
-        "kallisto quant "
-        "-i {INDEX} "
-        "-b 30 "
-        "-o {output[0]} "
-        "--genomebam --gtf {GTF} "
-        "--chromosomes chrom.txt "
-        "{input[0]} {input[1]}"
+        """
+        kallisto quant \
+        -i {INDEX} \
+        -b 30 \
+        -o quant_out/ \
+        --genomebam \
+        --gtf {GTF} \
+        --chromosomes chrom.txt \
+        {input[0]} {input[1]}
+        """
+
+rule kallisto_bus:
+    input:
+        "sc_reads_1.fastq.gz",
+        "sc_reads_2.fastq.gz",
+        INDEX
+    output:
+        "bus_out/matrix.ec",
+        "bus_out/transcripts.txt",
+        "bus_out/output.bus",
+        "bus_out/run_info.json"
+    shell:
+        """
+        kallisto bus \
+        -i {INDEX} \
+        -x 10xv2 \
+        -o bus_out \
+        -t 4 \
+        {input[0]} {input[1]}
+        """

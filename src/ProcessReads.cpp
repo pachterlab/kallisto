@@ -167,6 +167,9 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
+  if (opt.verbose) {
+    std::cerr << std::endl;
+  }
 
   /*if (opt.pseudobam) {
     bam_hdr_t *t = createPseudoBamHeader(index);
@@ -177,7 +180,11 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
-  std::cerr << " done" << std::endl;
+  if (opt.verbose) {
+    std::cerr << std::endl << "[quant] done " << std::endl;
+  } else {
+    std::cerr << " done" << std::endl;
+  }
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
@@ -246,7 +253,11 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
-  std::cerr << " done" << std::endl;
+  if (opt.verbose) {
+    std::cerr << std::endl << "[quant] done " << std::endl;
+  } else {
+    std::cerr << " done" << std::endl;
+  }
 
   //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
@@ -951,6 +962,7 @@ void ReadProcessor::processBuffer() {
   std::vector<int> vtmp;
   std::vector<int> u;
 
+
   u.reserve(1000);
   v1.reserve(1000);
   v2.reserve(1000);
@@ -1199,13 +1211,17 @@ void ReadProcessor::processBuffer() {
       */
     }
     
+    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
+      int nmap = mp.nummapped;
+      for (int i = 0; i < counts.size(); i++) {
+        nmap += counts[i];
+      }
+      nmap += newEcs.size();
 
-
-
-    /*
-    if (opt.verbose && numreads % 100000 == 0 ) {
-      std::cerr << "[quant] Processed " << pretty_num(numreads) << std::endl;
-    }*/
+      std::cerr << '\r' << (numreads/1000000) << "M reads processed (" 
+        << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
+        << "% pseudoaligned)"; std::cerr.flush();
+    }
   }
 
 }
@@ -1223,7 +1239,7 @@ void ReadProcessor::clear() {
 
 
 BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
- paired(!opt.single_end), bam(opt.bam), num(opt.num), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
+ paired(!opt.single_end), bam(opt.bam), num(opt.num), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id), numreads(0) {
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];  
@@ -1430,6 +1446,18 @@ void BUSProcessor::processBuffer() {
         // push back BUS record
         b.ec = ec;
         bv.push_back(b);
+      }
+
+      if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
+        int nmap = mp.nummapped;
+        for (int i = 0; i < counts.size(); i++) {
+          nmap += counts[i];
+        }
+        nmap += newEcs.size();
+
+        std::cerr << '\r' << (numreads/1000000) << "M reads processed (" 
+          << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
+          << "% pseudoaligned)"; std::cerr.flush();
       }
     }
   }
