@@ -919,9 +919,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV1") {
         busopt.nfiles = 3;
-        busopt.seq = BUSOptionSubstr(0,0,0);
-        busopt.umi = BUSOptionSubstr(1,0,0);
-        busopt.bc.push_back(BUSOptionSubstr(2,0,0));
+        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.umi = BUSOptionSubstr(1,0,10);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,14));
       } else if (opt.technology == "SURECELL") {
         busopt.nfiles = 2;
         busopt.seq = BUSOptionSubstr(1,0,0);
