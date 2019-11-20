@@ -334,6 +334,7 @@ public:
   int64_t numreads;
   int id;
   int local_id;
+  PseudoAlignmentBatch pseudobatch;
 
   int bc_len[33];
   int umi_len[33];

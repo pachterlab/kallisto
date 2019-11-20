@@ -34,3 +34,20 @@ uint64_t stringToBinary(const char* s, const size_t len, uint32_t &flag) {
   }
   return r;
 }
+
+std::string binaryToString(uint64_t x, size_t len) {
+  std::string s(len, 'N');
+  size_t sh = len-1;
+  for (size_t i = 0; i < len; i++) {
+    char c = 'N';
+    switch((x >> (2*sh)) & 0x03ULL) {
+      case 0x00: c = 'A'; break;
+      case 0x01: c = 'C'; break;
+      case 0x02: c = 'G'; break;
+      case 0x03: c = 'T'; break;
+    }
+    sh--;
+    s.at(i) = c;
+  }
+  return std::move(s);
+}

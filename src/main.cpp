@@ -238,6 +238,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'c': {
       stringstream(optarg) >> opt.chromFile;
+      break;
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
@@ -543,7 +544,9 @@ void ListSingleCellTechnologies() {
 
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
-  const char *opt_string = "i:o:x:t:lbn";
+  int gbam_flag = 0;
+
+  const char *opt_string = "i:o:x:t:lbng:c:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
@@ -553,6 +556,9 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"bam", no_argument, 0, 'b'},
     {"num", no_argument, 0, 'n'},
+    {"genomebam", no_argument, &gbam_flag, 1},
+    {"gtf", required_argument, 0, 'g'},
+    {"chromosomes", required_argument, 0, 'c'},
     {0,0,0,0}
   };
 
@@ -598,6 +604,14 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
       opt.num = true;
       break;
     }
+    case 'g': {
+      stringstream(optarg) >> opt.gtfFile;
+      break;
+    }
+    case 'c': {
+      stringstream(optarg) >> opt.chromFile;
+      break;
+    }
     default: break;
     }
   }
@@ -610,6 +624,12 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   if (verbose_flag) {
     opt.verbose = true;
   }
+
+  if (gbam_flag) {
+    opt.pseudobam = true;
+    opt.genomebam = true;    
+  }
+
   
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
@@ -996,6 +1016,26 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       }
     }
   }
+
+  if (opt.genomebam) {
+    if (!opt.gtfFile.empty()) {
+      if (!checkFileExists(opt.gtfFile)) {
+        cerr << "Error: GTF file " << opt.gtfFile << " does not exist" << endl;
+        ret = false;
+      }
+    } else {
+      cerr << "Error: need GTF file for genome alignment" << endl;
+      ret = false;
+    }
+    if (!opt.chromFile.empty()) {
+      if (!checkFileExists(opt.chromFile)) {
+        cerr << "Error: Chromosome file not found: " << opt.chromFile << endl;
+        ret = false;
+      }
+    }
+  }
+
+  
 
   if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
@@ -1861,12 +1901,28 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         int num_trans, index_version;
-        int64_t num_processed, num_pseudoaligned, num_unique;
+        int64_t num_processed = 0;
+        int64_t num_pseudoaligned = 0;
+        int64_t num_unique = 0;
+
         opt.bus_mode = true;
         opt.single_end = false;
         KmerIndex index(opt);
         index.load(opt);
+
+
+        bool guessChromosomes = false;
         Transcriptome model; // empty
+        if (opt.genomebam) {
+          if (!opt.chromFile.empty()) {
+            model.loadChromosomes(opt.chromFile);
+          } else {
+            guessChromosomes = true;
+          }
+          model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
+        }
+
+
         MinCollector collection(index, opt); 
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessBUSReads(MP, opt);
@@ -1947,6 +2003,18 @@ int main(int argc, char *argv[]) {
             std::string(std::to_string(index_version)),
             start_time,
             call);
+
+        if (opt.pseudobam) {
+          std::vector<double> fl_means(index.target_lens_.size(),0.0);
+          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          MP.processAln(em, false);
+        }
+
+
+        cerr << endl;
+        if (num_pseudoaligned == 0) {
+          exit(1); // exit with error
+        }
       }
     } else if (cmd == "merge") {
       if (argc == 2) {

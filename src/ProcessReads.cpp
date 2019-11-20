@@ -244,10 +244,60 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
 
-  /*if (opt.pseudobam) {
-    bam_hdr_t *t = createPseudoBamHeader(index);
-    index.writePseudoBamHeader(std::cout);
-  }*/
+  if (opt.genomebam) {
+    /*
+    // open bam files for writing
+    MP.bamh = createPseudoBamHeaderGenome(MP.model);
+    MP.bamfps = new htsFile*[MP.numSortFiles];
+    for (int i = 0; i < MP.numSortFiles; i++) {
+      MP.bamfps[i] = sam_open((opt.output + "/tmp." + std::to_string(i) + ".bam").c_str(), "wb1");
+      int r = sam_hdr_write(MP.bamfps[i], MP.bamh);
+    }
+
+    // assign breakpoints to chromosomes
+    MP.breakpoints.clear();
+    MP.breakpoints.assign(MP.numSortFiles -1 , (((uint64_t)-1)<<32));
+    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> chrWeights(MP.model.chr.size());
+    for (const auto& t : MP.model.genes) {
+      if (t.chr != -1 && t.stop > 0) {
+        chrWeights[t.chr].push_back({t.stop, 1});
+      }      
+    }
+
+    double sum = 0;
+    for (const auto &chrw : chrWeights) {
+      for (const auto &p : chrw) {
+        sum += p.second;
+      }
+    }
+    double bpLimit = sum / (MP.numSortFiles-1);
+
+    for (auto& chrw : chrWeights) {
+      // sort each by stop point
+      std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t> a, std::pair<uint32_t, uint32_t> b) { return a.first < b.first;});
+    }
+
+    double bp = 0.0;
+    int ifile = 0;
+    for (int i = 0; i < chrWeights.size(); i++) {
+      const auto &chrw = chrWeights[i];
+      for (const auto &x : chrw) {
+        bp += x.second;
+        if (bp > bpLimit) {
+          uint64_t pos = ((uint64_t) i) << 32 | ((uint64_t) x.first+1) << 1;
+          MP.breakpoints[ifile] = pos;
+          ifile++;
+          while (bp > bpLimit) {
+            bp -= bpLimit;
+          }
+        }
+      }
+    }
+    */
+  }
+
+
+
 
   
   MP.processReads();
@@ -1304,16 +1354,15 @@ void BUSProcessor::operator()() {
       // release the reader lock
     }
     // do the same for BUS ?!?
-    /*    
+    
     pseudobatch.aln.clear();
-    pseudobatch.batch_id = readbatch_id;*/
+    pseudobatch.batch_id = readbatch_id;
     // process our sequences
     processBuffer();
 
     // update the results, MP acquires the lock
     std::vector<std::pair<int, std::string>> ec_umi;
     std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
-    PseudoAlignmentBatch pseudobatch;
     mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
@@ -1446,9 +1495,33 @@ void BUSProcessor::processBuffer() {
         // push back BUS record
         b.ec = ec;
         bv.push_back(b);
-      }
+      }      
+    }
 
-      if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
+    if (mp.opt.pseudobam) {
+      PseudoAlignmentInfo info;
+      info.id = i;
+      info.paired = false;
+      uint32_t f = 0;
+      info.barcode = stringToBinary(bc, blen, f);
+      info.UMI = stringToBinary(umi, umilen, f);
+      if (!u.empty()) {
+        info.r1empty = v.empty();
+        KmerEntry val;
+        info.k1pos = findFirstMappingKmer(v,val);
+        info.k2pos = -1;
+                
+        if (ec != -1) {
+          info.ec_id = ec;
+        } else {
+          info.ec_id = -1;
+          info.u = u; // copy
+        }
+      }
+      pseudobatch.aln.push_back(std::move(info));
+    }
+
+    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
         int nmap = mp.nummapped;
         for (int i = 0; i < counts.size(); i++) {
           nmap += counts[i];
@@ -1459,7 +1532,6 @@ void BUSProcessor::processBuffer() {
           << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
           << "% pseudoaligned)"; std::cerr.flush();
       }
-    }
   }
 }
 
@@ -2004,26 +2076,56 @@ void AlnProcessor::processBufferGenome() {
   std::vector<std::pair<int,double>> ua;
   u.reserve(1000);
   ua.reserve(1000);
+
+  int bclen = 0;
+  int umilen = 0;
   
   int genome_auxlen = default_genome_auxlen;
   if (!useEM) {
     genome_auxlen -= 7;
   }
+  if (mp.opt.bus_mode) {
+    //todo replace with what is written to busfile
+    bclen = mp.opt.busOptions.getBCLength();
+    if (bclen == 0) {
+      bclen = 32;
+    }
+    umilen = mp.opt.busOptions.getUMILength();
+    if (umilen == 0) {
+      umilen = 32;
+    }
+
+    genome_auxlen += (bclen + umilen) + 8;
+  }
+  std::string bc, umi;
   
 
   Kmer km1,km2;
   KmerEntry val1, val2;
+  if  (mp.opt.bus_mode) {
+    paired = false;
+  }
+  bool readpaired = paired || (mp.opt.bus_mode && mp.opt.busOptions.nfiles == 2);
+  
+  
 
   for (int i = 0; i < n; i++) {
     bam1_t b1,b2, b1c, b2c;
-    int si1 = (paired) ? 2*i : i;
-    int si2 = (paired) ? 2*i +1 : -1;
+    int si1 = (readpaired) ? 2*i : i;
+    int si2 = (readpaired) ? 2*i +1 : -1;
+    
     int rlen1 = seqs[si1].second;
     int rlen2;
-    if (paired) {
+    if (readpaired) {
       rlen2 = seqs[si2].second;
     }
     
+    if (mp.opt.busOptions.seq.fileno == 1) {
+      std::swap(si1,si2);
+      std::swap(rlen1,rlen2);
+    }
+    
+
     // fill in the bam core info
     b1.core.tid = -1;
     b1.core.pos = -1;
@@ -2056,6 +2158,22 @@ void AlnProcessor::processBufferGenome() {
     if (paired) {
       fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
       // b2.id = idnum++;
+    }
+    
+    if (mp.opt.bus_mode) {
+      b1.data[b1.l_data] = 'C';
+      b1.data[b1.l_data+1] = 'R';
+      b1.data[b1.l_data+2] = 'Z';
+      bc = binaryToString(pi.barcode, bclen);
+      memcpy(b1.data + b1.l_data + 3, bc.c_str(), bclen+1);
+      b1.l_data += bclen + 4;
+      
+      b1.data[b1.l_data] = 'U';
+      b1.data[b1.l_data+1] = 'R';
+      b1.data[b1.l_data+2] = 'Z';
+      umi = binaryToString(pi.UMI, umilen);
+      memcpy(b1.data + b1.l_data + 3, umi.c_str(), umilen+2);
+      b1.l_data += umilen + 4;
     }
 
     if (pi.r1empty && pi.r2empty) {
@@ -2139,7 +2257,7 @@ void AlnProcessor::processBufferGenome() {
           
         // set aux
         float zero = 0.0;
-        assert(b1.l_data + genome_auxlen <= b1.m_data);
+        //assert(b1.l_data + genome_auxlen <= b1.m_data);
         
         if (useEM) {
           b1.data[b1.l_data] = 'Z';
@@ -2149,7 +2267,7 @@ void AlnProcessor::processBufferGenome() {
           b1.l_data += 7;
 
           if (paired) {
-            assert(b2.l_data + genome_auxlen <= b2.m_data);
+            //assert(b2.l_data + genome_auxlen <= b2.m_data);
             b2.data[b2.l_data] = 'Z';
             b2.data[b2.l_data+1] = 'W';
             b2.data[b2.l_data+2] = 'f';
@@ -2193,7 +2311,6 @@ void AlnProcessor::processBufferGenome() {
         if (!pi.r1empty) {
           km1 = Kmer(seqs[si1].first + pi.k1pos);
           strInfo1 = strandednessInfo(km1, val1, ua);
-
         }
         if (paired && !pi.r2empty) {
           km2 = Kmer(seqs[si2].first + pi.k2pos);
