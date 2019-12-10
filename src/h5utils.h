@@ -1,3 +1,4 @@
+#ifdef USE_HDF5
 #ifndef KALLISTO_H5_UTILS
 #define KALLISTO_H5_UTILS
 
@@ -144,3 +145,4 @@ void read_dataset(hid_t group_id,
 // end: reading utils
 
 #endif // KALLISTO_H5_UTILS
+#endif // USE_HDF5

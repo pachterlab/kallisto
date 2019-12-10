@@ -5,7 +5,7 @@ INDEX = "{0}.kidx".format(PRE)
 
 rule all:
     input:
-        "quant_out/abundance.h5",
+        "quant_out/abundance.tsv",
         "bus_out/output.bus"
 
 rule index:
@@ -25,7 +25,6 @@ rule kallisto_quant:
         "reads_2.fastq.gz",
         INDEX
     output:
-        "quant_out/abundance.h5",
         "quant_out/abundance.tsv",
         "quant_out/run_info.json"
     shell:

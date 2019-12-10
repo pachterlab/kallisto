@@ -23,6 +23,7 @@
 #include "Inspect.h"
 #include "Bootstrap.h"
 #include "H5Writer.h"
+#include "PlaintextWriter.h"
 #include "GeneModel.h"
 #include "Merge.h"
 
@@ -1269,6 +1270,14 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     ret = false;
   }
 
+  #ifndef USE_HDF5  
+  if (opt.bootstrap > 0 && !opt.plaintext) {
+    cerr << "Warning: kallisto was not compiled with HDF5 support so no bootstrapping" << endl
+         << "will be performed. Run quant with --plaintext option or recompile with" << endl
+         << "HDF5 support to obtain bootstrap estimates." << endl;
+    opt.bootstrap = 0;
+  }
+  #endif
   return ret;
 }
 
@@ -2129,12 +2138,15 @@ int main(int argc, char *argv[]) {
 
         std::string call = argv_to_string(argc, argv);
 
+
+        #ifdef USE_HDF5
         H5Writer writer;
         if (!opt.plaintext) {
           writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
           writer.write_main(em, index.target_names_, index.target_lens_);
         }
+        #endif // USE_HDF5
 
         for (int i = 0; i < index.num_trans; i++) {
           num_unique += collection.counts[i];          
@@ -2166,7 +2178,9 @@ int main(int argc, char *argv[]) {
           // this happens if nothing aligns, then we write an empty bootstrap file
           for (int b = 0; b < opt.bootstrap; b++) {
             if (!opt.plaintext) {
+              #ifdef USE_HDF5
               writer.write_bootstrap(em, b); // em is empty
+              #endif
             } else {
               plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                     em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_); // re-use empty input
@@ -2192,9 +2206,10 @@ int main(int argc, char *argv[]) {
                 << opt.bootstrap << endl;
               n_threads = opt.bootstrap;
             }
-
+            #ifdef USE_HDF5            
             BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, opt, writer, fl_means);
+                collection, em.eff_lens_, opt, &writer, fl_means);
+            #endif
           } else {
             for (auto b = 0; b < B; ++b) {
               Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
@@ -2202,7 +2217,9 @@ int main(int argc, char *argv[]) {
               auto res = bs.run_em();
 
               if (!opt.plaintext) {
+                #ifdef USE_HDF5
                 writer.write_bootstrap(res, b);
+                #endif
               } else {
                 plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                     em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
@@ -2269,13 +2286,13 @@ int main(int argc, char *argv[]) {
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
-        H5Writer writer;
+        //H5Writer writer;
 
         if (!opt.plaintext) {
           // setting num_processed to 0 because quant-only is for debugging/special ops
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
+          /* writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.target_lens_);
+          writer.write_main(em, index.target_names_, index.target_lens_);*/
         } else {
           plaintext_aux(
               opt.output + "/run_info.json",
@@ -2307,7 +2324,7 @@ int main(int argc, char *argv[]) {
           // this happens if nothing aligns, then we write an empty bootstrap file
           for (int b = 0; b < opt.bootstrap; b++) {
             if (!opt.plaintext) {
-              writer.write_bootstrap(em, b); // em is empty
+              //writer.write_bootstrap(em, b); // em is empty
             } else {
               plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                     em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_); // re-use empty input
@@ -2334,8 +2351,8 @@ int main(int argc, char *argv[]) {
               n_threads = opt.bootstrap;
             }
 
-            BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, opt, writer, fl_means);
+            /*BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
+                collection, em.eff_lens_, opt, writer, fl_means);*/
           } else {
             for (auto b = 0; b < B; ++b) {
               Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
@@ -2343,7 +2360,7 @@ int main(int argc, char *argv[]) {
               auto res = bs.run_em();
 
               if (!opt.plaintext) {
-                writer.write_bootstrap(res, b);
+                //writer.write_bootstrap(res, b);
               } else {
                 plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
                     em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
@@ -2587,12 +2604,13 @@ int main(int argc, char *argv[]) {
         usageh5dump();
         exit(1);
       }
-
+      #ifdef USE_HDF5
       H5Converter h5conv(opt.files[0], opt.output);
       if (!opt.peek) {
         h5conv.write_aux();
         h5conv.convert();
       }
+      #endif
     }  else {
       cerr << "Error: invalid command " << cmd << endl;
       usage();

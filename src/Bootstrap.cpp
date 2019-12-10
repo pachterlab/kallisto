@@ -1,4 +1,5 @@
 #include "Bootstrap.h"
+#include "PlaintextWriter.h"
 
 EMAlgorithm Bootstrap::run_em() {
     auto counts = mult_.sample();
@@ -19,7 +20,7 @@ BootstrapThreadPool::BootstrapThreadPool(
     const MinCollector& tc,
     const std::vector<double>& eff_lens,
     const ProgramOptions& p_opts,
-    H5Writer& h5writer,
+    BootstrapWriter  *bswriter,
     const std::vector<double>& mean_fls
     ) :
   n_threads_(n_threads),
@@ -30,7 +31,7 @@ BootstrapThreadPool::BootstrapThreadPool(
   tc_(tc),
   eff_lens_(eff_lens),
   opt_(p_opts),
-  writer_(h5writer),
+  writer_(bswriter),
   mean_fls_(mean_fls)
 {
   for (size_t i = 0; i < n_threads_; ++i) {
@@ -78,7 +79,7 @@ void BootstrapWorker::operator() (){
       std::unique_lock<std::mutex> lock(pool_.write_lock_);
       ++pool_.n_complete_;
       std::cerr << "[bstrp] number of EM bootstraps complete: " << pool_.n_complete_ << "\r";
-      pool_.writer_.write_bootstrap(res, cur_id);
+      pool_.writer_->write_bootstrap(res, cur_id);
       // release write lock
     } else {
       // can write out plaintext in parallel

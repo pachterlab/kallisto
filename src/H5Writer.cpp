@@ -1,3 +1,4 @@
+#ifdef USE_HDF5
 #include "H5Writer.h"
 
 void H5Writer::init(const std::string& fname, int num_bootstrap, int num_processed,
@@ -201,3 +202,5 @@ void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, 
 
   plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);  
 }
+
+#endif // USE_HDF5

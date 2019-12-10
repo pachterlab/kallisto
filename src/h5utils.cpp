@@ -1,3 +1,4 @@
+#ifdef USE_HDF5
 #include "h5utils.h"
 
 // allocate a contiguous block of memory, dependent on the largest string
@@ -138,3 +139,4 @@ void read_vector(
 
   delete [] pool;
 }
+#endif // USE_HDF5

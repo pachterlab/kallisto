@@ -9,7 +9,7 @@
 #include "weights.h"
 #include "EMAlgorithm.h"
 #include "Multinomial.hpp"
-#include "H5Writer.h"
+
 
 class Bootstrap {
     // needs:
@@ -49,6 +49,21 @@ private:
   const ProgramOptions& opt;
 };
 
+class BootstrapWriter {
+  public:
+    virtual ~BootstrapWriter() {};
+
+    virtual void init(const std::string& fname, int num_bootstrap, int num_processed,
+      const std::vector<int>& fld, const std::vector<int>& preBias, const std::vector<double>& postBias, uint compression, size_t index_version,
+      const std::string& shell_call, const std::string& start_time) = 0;
+
+    virtual void write_main(const EMAlgorithm& em,
+        const std::vector<std::string>& targ_ids,
+        const std::vector<int>& lengths) = 0;
+
+    virtual void write_bootstrap(const EMAlgorithm& em, int bs_id) = 0;
+};
+
 class BootstrapThreadPool {
   friend class BootstrapWorker;
 
@@ -61,7 +76,7 @@ class BootstrapThreadPool {
         const MinCollector& tc,
         const std::vector<double>& eff_lens,
         const ProgramOptions& p_opts,
-        H5Writer& h5writer,
+        BootstrapWriter *bswriter,
         const std::vector<double>& mean_fls
         );
 
@@ -84,7 +99,7 @@ class BootstrapThreadPool {
     const MinCollector& tc_;
     const std::vector<double>& eff_lens_;
     const ProgramOptions& opt_;
-    H5Writer& writer_;
+    BootstrapWriter *writer_;
     const std::vector<double>& mean_fls_;
 };
 

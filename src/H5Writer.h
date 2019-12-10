@@ -1,3 +1,4 @@
+#ifdef USE_HDF5
 #ifndef KALLISTO_H5WRITER_H
 #define KALLISTO_H5WRITER_H
 
@@ -5,21 +6,22 @@
 
 #include "h5utils.h"
 #include "PlaintextWriter.h"
+#include "Bootstrap.h"
 
-class H5Writer {
+class H5Writer : public BootstrapWriter {
   public:
     H5Writer() : primed_(false) {}
     ~H5Writer();
 
-    void init(const std::string& fname, int num_bootstrap, int num_processed,
+    virtual void init(const std::string& fname, int num_bootstrap, int num_processed,
       const std::vector<int>& fld, const std::vector<int>& preBias, const std::vector<double>& postBias, uint compression, size_t index_version,
       const std::string& shell_call, const std::string& start_time);
 
-    void write_main(const EMAlgorithm& em,
+    virtual void write_main(const EMAlgorithm& em,
         const std::vector<std::string>& targ_ids,
         const std::vector<int>& lengths);
 
-    void write_bootstrap(const EMAlgorithm& em, int bs_id);
+    virtual void write_bootstrap(const EMAlgorithm& em, int bs_id);
 
   private:
     bool primed_;
@@ -76,3 +78,4 @@ class H5Converter {
 };
 
 #endif // KALLISTO_H5WRITER_H
+#endif // USE_HDF5

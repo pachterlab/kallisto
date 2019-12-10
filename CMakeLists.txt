@@ -4,6 +4,13 @@ project(kallisto)
 
 include(GNUInstallDirs)
 
+
+option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
+
+if(USE_HDF5)
+    add_compile_definitions("USE_HDF5=ON")
+endif(USE_HDF5)
+
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(CMAKE_CXX_FLAGS_PROFILE "-g")
 
