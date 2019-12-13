@@ -926,6 +926,7 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
    if (opt.batch_mode) {
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
+     batchSR.nfiles = opt.batch_files[id].size();
      batchSR.reserveNfiles(opt.batch_files[id].size());
      if (opt.umi) {
        batchSR.umi_files = {opt.umi_files[id]};
@@ -1558,6 +1559,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
      /* need to check this later */
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
+     batchSR.nfiles = opt.batch_files[id].size();
      batchSR.reserveNfiles(opt.batch_files[id].size());
      if (opt.umi) {
        batchSR.umi_files = {opt.umi_files[id]};
@@ -2904,7 +2906,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 }
 
 // move constructor
-#if 1
+
 FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   nfiles(o.nfiles),
   numreads(o.numreads),
@@ -2915,34 +2917,16 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   files(std::move(o.files)),
   umi_files(std::move(o.umi_files)),
   f_umi(std::move(o.f_umi)),
-  current_file(o.current_file) {
+  current_file(o.current_file),
+  seq(std::move(o.seq)) {
 
   o.fp.resize(nfiles);
   o.l.resize(nfiles, 0);
   o.nl.resize(nfiles, 0);
-  o.state = false;
-}
-#endif
-#if 0
-FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) {
-  fp          = (std::move(o.fp));
-  l           = (std::move(o.l));
-  nl          = (std::move(o.nl));
-  paired      = (o.paired);
-  nfiles      = (o.nfiles);
-  files       = (std::move(o.files)),
-  umi_files   = (std::move(o.umi_files));
-  f_umi       = (std::move(o.f_umi));
-  current_file= (o.current_file);
-  seq         = (std::move(o.seq));
-
-  o.fp.resize(nfiles);
-  o.l.resize(nfiles, 0);
-  o.nl.resize(nfiles, 0);
-  o.state = false;
   o.seq.resize(nfiles, nullptr);
+  o.state = false;
 }
-#endif
+
 const std::string BamSequenceReader::seq_enc = "=ACMGRSVTWYHKDBN";
 
 BamSequenceReader::~BamSequenceReader() {

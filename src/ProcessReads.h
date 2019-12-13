@@ -161,7 +161,7 @@ public:
   char *umi;
   int l_umi;
   int err;
-  char seq[256]; // Is there a better limit?
+  
   
 private:
   static const std::string seq_enc;
