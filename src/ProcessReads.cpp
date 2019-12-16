@@ -1364,7 +1364,7 @@ void BUSProcessor::operator()() {
     // update the results, MP acquires the lock
     std::vector<std::pair<int, std::string>> ec_umi;
     std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
 }
@@ -1382,28 +1382,35 @@ void BUSProcessor::processBuffer() {
   memset(&bc_len[0], 0, 33);
   memset(&umi_len[0], 0, 33);
 
-  const char* s1 = 0;
-  const char* s2 = 0;
-  const char* s3 = 0;
-  int l1=0,l2=0,l3=0;
-
-  const char *s[3] = {0,0,0};
-  int l[3] = {0,0,0};
+  const BUSOptions& busopt = mp.opt.busOptions;
+ 
   char buffer[100];
   memset(buffer, 0, 100);
   char *umi = &(buffer[50]);
   char *bc  = &(buffer[0]);
+  //char *seqbuffer[1000];
+  std::string seqbuffer;
+  seqbuffer.reserve(1000);
   
-  // actually process the sequences
-  const BUSOptions& busopt = mp.opt.busOptions;
+  // actually process the sequence
+  
   int incf, jmax;
   if (bam) {
     incf = 1;
     jmax = 2;
+
   } else {
     incf = busopt.nfiles-1;
     jmax = busopt.nfiles;
   }
+
+  std::vector<const char*> s(jmax, nullptr);
+  std::vector<int> l(jmax,0);
+
+  bool singleSeq = busopt.seq.size() ==1 ;
+  const BUSOptionSubstr seqopt = busopt.seq.front();
+
+
   //int incf = (bam) ? 1 : busopt.nfiles-1;
   for (int i = 0; i + incf < seqs.size(); i++) {
     for (int j = 0; j < jmax /*(bam) ? 2 : busopt.nfiles*/; j++) {
@@ -1413,8 +1420,23 @@ void BUSProcessor::processBuffer() {
     i += incf;
     
     // find where the sequence is
-    const char *seq = s[busopt.seq.fileno] + busopt.seq.start;
-    int seqlen = l[busopt.seq.fileno];
+    const char *seq = nullptr;
+    
+    int seqlen = 0;
+    if (singleSeq) {
+      const char *seq = s[seqopt.fileno] + seqopt.start;
+      int seqlen = l[seqopt.fileno];
+    } else {
+      seqbuffer.clear();
+      for (int j = 0; j < busopt.seq.size(); j++) {
+        const auto &sopt = busopt.seq[j];
+        int cplen = (sopt.stop == 0) ? l[sopt.fileno]-sopt.start : sopt.stop - sopt.start;
+        seqbuffer.append(s[sopt.fileno] + sopt.start, cplen);
+        seqbuffer.push_back('N');        
+      }
+      seqbuffer.push_back(0);
+      seq = seqbuffer.c_str();
+    }
 
     // copy the umi
     int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
@@ -2122,7 +2144,7 @@ void AlnProcessor::processBufferGenome() {
       rlen2 = seqs[si2].second;
     }
     
-    if (mp.opt.busOptions.seq.fileno == 1) {
+    if (mp.opt.busOptions.seq.front().fileno == 1) {
       std::swap(si1,si2);
       std::swap(rlen1,rlen2);
     }
@@ -2890,7 +2912,8 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           umis.emplace_back(std::move(umi));
         }
 
-        flags.push_back(numreads++);
+        numreads++;
+        flags.push_back(numreads);
       } else {
         return true; // read it next time
       }

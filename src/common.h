@@ -24,7 +24,7 @@ struct BUSOptions {
   
   BUSOptionSubstr umi;
   std::vector<BUSOptionSubstr> bc;
-  BUSOptionSubstr seq;
+  std::vector<BUSOptionSubstr> seq;
 
   int getBCLength() const {
     int r =0 ;

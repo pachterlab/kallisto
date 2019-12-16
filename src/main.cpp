@@ -639,105 +639,113 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
  
 }
 
-bool ParseTechnology(const std::string &techstr, std::vector<BUSOptionSubstr> &values, std::vector<int> &files, std::vector<std::string> &errorList, std::vector<BUSOptionSubstr> &bcValues) {
-  int lastIndex = 0; //the last place in the string a colon and punctuation was found
-  int currValue = 1; //tells us the index of the three sequences needed barcode, umi, sequence
-  vector<int> numbers; //stores the numbers in a pairs
-  const char punctuationCompare = ',';
-  const char colonCompare = ':';
-  bool colon;
-  bool duplicate = false;
-  std::string stringVal;
-  int val;
+bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector<std::string> &errorList) {
+  auto i1 = techstr.find(':');
+  if (i1 == std::string::npos) {
+    errorList.push_back("Error: technology string must contain two colons (:), none found: \"" + techstr + "\"");    
+    return false;
+  }
+  auto i2 = techstr.find(':', i1+1);
+  if (i2 == std::string::npos) {
+    errorList.push_back("Error: technology string must contain two colons (:), only one found: \"" + techstr + "\"");    
+    return false;
+  }
+  auto ip = techstr.find(':', i2+1);
+  if (ip != std::string::npos) {
+    errorList.push_back("Error: technology string must contain two colons (:), three found: \"" + techstr + "\"");    
+    return false;
+  }
+  auto bcstr = techstr.substr(0, i1);
+  auto umistr = techstr.substr(i1+1,i2-i1-1);
+  auto seqstr = techstr.substr(i2+1);
+  
 
-  for(int i = 1; i < techstr.length(); i++) {
-    colon = false;
-    if(techstr[i] == colonCompare) {
-      colon = true;
-    }
 
-    if(techstr[i] == punctuationCompare || colon) {
-      stringVal = techstr.substr(lastIndex, i-lastIndex);
+  int maxnf = 0;
+
+  auto convert_commas_to_vector = [&](const std::string &s, std::vector<BUSOptionSubstr> &v) -> bool {
+    std::vector<int> vv;
+    v.clear();
+    std::stringstream ss(s);
+    std::string t;
+    while (std::getline(ss, t, ',')) {
       try {
-        val = stoi(stringVal);
-        numbers.push_back(val);
-        if(numbers.size() == 1) {
-          if(!files.empty()) {
-            for(int j = 0; j < files.size(); j++) {
-              if(val == files[j]) {
-                duplicate = true;
-                break;
-              }
-            }
-            if(!duplicate) {
-              files.push_back(val);
-            } else {
-              duplicate = false;
-            }
-          } else {
-            files.push_back(val);
-          }
-        }
-        lastIndex = i + 1;
-      } catch(const std:: invalid_argument& ia) {
-        errorList.push_back("Error: Invalid argument");
-        return true;
+        int i = stoi(t);
+        vv.push_back(i);
+      } catch (std::invalid_argument &e) {
+        errorList.push_back("Error: converting to int: \"" + t + "\"");
+        return false;
       }
+    }
 
-      if(colon) {
-        if(numbers.size() != 3) {
-          errorList.push_back("Error: Wrong number of pairs provided");
-          return true;
+    int nv = vv.size();
+    if (nv % 3 == 0) {
+      for (int i = 0; i+2 < nv; i+=3) {
+        int f = vv[i];
+        int a = vv[i+1];
+        int b = vv[i+2];
+        if (f < 0) {
+          errorList.push_back("Error: invalid file number (" + to_string(f) + ")  " + s);
+        }
+        if (a <  0) {
+          errorList.push_back("Error: invalid start (" + to_string(a) + ")  " + s);
+        }
+        if (b != 0 && b <= a) {
+          errorList.push_back("Error: invalid stop (" + to_string(b) + ") has to be after start (" + to_string(a) + ")  " + s);
+        }
+        v.push_back(BUSOptionSubstr(f,a,b));
+        if (f > maxnf) {
+          maxnf = f;
         }
       }
+    } else {
+      errorList.push_back("Error: number of values has to be multiple of 3 " + s);
+      return false;
     }
-    if(numbers.size() == 3) {
-      if(currValue == 1) {
-        bcValues.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
-      } else {
-        values.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
-      }
-      numbers.clear();
-    }
-    if(colon) {
-      currValue++;
-    }
+
+    busopt.nfiles = maxnf+1;
+    return true;
+  };
+
+  
+
+  std::vector<BUSOptionSubstr> v;
+  if (!convert_commas_to_vector(bcstr,v)) {
+    return false;
+  }
+  if (v.empty()) {
+    errorList.push_back("Error: empty barcode list " + bcstr);
+    return false;
+  }
+  busopt.bc = std::move(v);
+
+  if (!convert_commas_to_vector(umistr, v)) {
+    return false;
+  }
+  if (v.empty()) {
+    errorList.push_back("Error: empty UMI list " + umistr);
+    return false;
+  }
+  if (v.size() != 1) {
+    errorList.push_back("Error: only a single UMI list allow " + umistr);
+    return false;
+  }
+  busopt.umi = std::move(v.front());
+
+
+  if (!convert_commas_to_vector(seqstr, v)) {
+    return false;
+  }
+  if (v.empty()) {
+    errorList.push_back("Error: empty sequence list " + bcstr);
+    return false;
   }
 
-  if (files.empty()) {
-    errorList.push_back(std::string("Error: parsing technology string \"") + techstr + "\"");
-    return true;
-  }
+  busopt.seq = std::move(v);
 
-  std::sort(files.begin(), files.end());
-  for(int k = 0; k < files.size()-1; k++) {
-    if(files[k]+1 != files[k+1]) {
-      errorList.push_back("Error: files aren't correctly referenced");
-      return true;
-    }
-  }
-
-  stringVal = techstr.substr(lastIndex, techstr.length()-lastIndex);
-  if(numbers.size() == 2) {
-    try {
-      val = stoi(stringVal);
-      numbers.push_back(val);
-      values.push_back(BUSOptionSubstr(numbers[0], numbers[1], numbers[2]));
-      numbers.clear();  
-    } catch(const std:: invalid_argument& ia) {
-      errorList.push_back("Error: Invalid argument");
-      return true;
-    }
-  } else {
-    errorList.push_back("Error: Wrong number of pairs provided");
-    return true;
-  }
-  if(currValue != 3) {
-    errorList.push_back("Error: Wrong number of substrings provided");
-    return true;
-  }
-  return false;
+  return true;
 }
+
 
 
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
@@ -855,55 +863,55 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;
       if (opt.technology == "10XV2") {
-        busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
         busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV3") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,16,28);
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
 //      } else if (opt.technology == "10XV1") {
 
       } else if (opt.technology == "SURECELL") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,18,26);
         busopt.bc.push_back(BUSOptionSubstr(0,0,18));
       } else if (opt.technology == "DROPSEQ") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,12,20);
         busopt.bc.push_back(BUSOptionSubstr(0,0,12));
       } else if (opt.technology == "INDROPSV1") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,42,48);
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
         busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(0,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
         busopt.umi = BUSOptionSubstr(1,42,48);
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
         busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
-        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi = BUSOptionSubstr(1,8,14);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "CELSEQ") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,8,12);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
       } else if (opt.technology == "CELSEQ2") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
       } else if (opt.technology == "SCRBSEQ") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,6,16);
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       } else if (opt.technology == "INDROPSV3") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,16));
       } else {
@@ -911,14 +919,18 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         vector<BUSOptionSubstr> values;
         vector<BUSOptionSubstr> bcValues;
         vector<std::string> errorList;
-        bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
-        if(!invalid) {
+        //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
+        bool valid = ParseTechnology(opt.technology, busopt, errorList);
+        
+        if(!valid) {
+          /*
           busopt.nfiles = files.size(); 
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
           busopt.umi = values[0];
-          busopt.seq = values[1];
+          busopt.seq.push_back(values[1]);
+          */
         } else {
           for(int j = 0; j < errorList.size(); j++) {
             cerr << errorList[j] << endl;
@@ -930,67 +942,67 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     } else {
       if (opt.technology == "10XV2") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0); // second file, entire string
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
         busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV3") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,16,28);
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV1") {
         busopt.nfiles = 3;
-        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi = BUSOptionSubstr(1,0,10);
         busopt.bc.push_back(BUSOptionSubstr(0,0,14));
       } else if (opt.technology == "SURECELL") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,51,59);
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,21,27));
         busopt.bc.push_back(BUSOptionSubstr(0,42,48));
       } else if (opt.technology == "DROPSEQ") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,12,20);
         busopt.bc.push_back(BUSOptionSubstr(0,0,12));
       } else if (opt.technology == "INDROPSV1") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,42,48);
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
         busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(0,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
         busopt.umi = BUSOptionSubstr(1,42,48);
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
         busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
-        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi = BUSOptionSubstr(1,8,14);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "CELSEQ") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,8,12);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
       } else if (opt.technology == "CELSEQ2") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,6,16);
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
-        busopt.seq = BUSOptionSubstr(2,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi = BUSOptionSubstr(1,8,14);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
@@ -998,15 +1010,20 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         vector<int> files;
         vector<BUSOptionSubstr> values;
         vector<BUSOptionSubstr> bcValues;
-        vector<std::string> errorList;
-        bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
-        if(!invalid) {
+        vector<std::string> errorList;        
+        //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
+        bool valid = ParseTechnology(opt.technology, busopt, errorList);
+        
+        
+        if(valid) {
+          /*
           busopt.nfiles = files.size(); 
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
           busopt.umi = values[0];
-          busopt.seq = values[1];
+          busopt.seq.push_back(values[1]);
+          */
         } else {
           for(int j = 0; j < errorList.size(); j++) {
             cerr << errorList[j] << endl;
@@ -1019,6 +1036,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
 
   if (opt.genomebam) {
+    if (opt.busOptions.seq.size() != 1) {
+      cerr << "Error: BAM output is currently only supported for technologies with a single CDNA read file" << endl;
+      ret = false;
+    }
     if (!opt.gtfFile.empty()) {
       if (!checkFileExists(opt.gtfFile)) {
         cerr << "Error: GTF file " << opt.gtfFile << " does not exist" << endl;
