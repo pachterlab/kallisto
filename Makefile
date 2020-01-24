@@ -7,13 +7,13 @@ build:
 	mkdir -p build
 	cd build \
 	&& cmake .. \
-	&& make -j
+	&& make
 
 build_mingw:
 	mkdir -p build
 	cd build \
 	&& cmake .. -DHTSLIB_CONFIGURE_OPTS="--host=x86_64-w64-mingw32" \
-	&& make -j
+	&& make
 
 install_zlib:
 	mkdir -p ext/zlib \
