@@ -13,8 +13,7 @@ build:
 	# && make -j \
 	# && make install
 	- cd ext/htslib \
-	&& autoheader \
-	&& autoconf
+	&& autoreconf
 
 	mkdir -p build
 	cd build \
@@ -23,8 +22,7 @@ build:
 
 build_mingw:
 	- cd ext/htslib \
-	&& autoheader \
-	&& autoconf
+	&& autoreconf
 
 	mkdir -p build
 	cd build \
