@@ -22,6 +22,10 @@ build:
 	&& make
 
 build_mingw:
+	- cd ext/htslib \
+	&& autoheader \
+	&& autoconf
+
 	mkdir -p build
 	cd build \
 	&& cmake .. -DHTSLIB_CONFIGURE_OPTS="--host=x86_64-w64-mingw32" \
