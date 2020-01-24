@@ -23,8 +23,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 dnl Process this file with autoconf to produce a configure script
-m4_ifndef([m4_esyscmd_s], [m4_define([m4_chomp_all], [m4_format([[%.*s]], m4_bregexp(m4_translit([[$1]], [/], [/ ]), [/*$]), [$1])])])
-m4_ifndef([m4_esyscmd_s], [m4_define([m4_esyscmd_s], [m4_chomp_all(m4_esyscmd([$1]))])])
 AC_INIT([HTSlib], m4_esyscmd_s([make print-version]),
         [samtools-help@lists.sourceforge.net], [], [http://www.htslib.org/])
 AC_PREREQ(2.63)  dnl This version introduced 4-argument AC_CHECK_HEADER
@@ -213,7 +211,7 @@ dnl Redhat/Fedora has it; Debian/Ubuntu does not.
      pc_requires="$pc_requires bzip2"
   else
      private_LIBS="$private_LIBS -lbz2"
-  fi  
+  fi
   static_LIBS="$static_LIBS -lbz2"
 fi
 
