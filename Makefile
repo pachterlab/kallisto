@@ -12,9 +12,8 @@ build:
 	# && ./configure --disable-parallel --without-szlib --without-pthread --disable-shared \
 	# && make -j \
 	# && make install
-	cd ext/htslib \
-	&& autoheader \
-	&& autoconf
+	cd ext/htslib && autoheader
+	cd ext/htslib	&& autoconf
 
 	mkdir -p build
 	cd build \
