@@ -1,36 +1,25 @@
 RELEASE_OS ?= local
 RELEASE_VERSION ?= local
 
-.PHONY : build install_zlib compile_release_linux compile_release_mac compile_release_windows clean
+.PHONY : build build_mingw install_zlib compile_release_linux compile_release_mac compile_release_windows clean
 
 build:
-	# mkdir -p h5ad
-	# cd h5ad \
-	# && curl -LO https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.15-patch1/src/hdf5-1.8.15-patch1.tar \
-	# && tar -xvf hdf5-1.8.15-patch1.tar \
-	# && cd hdf5-1.8.15-patch1 \
-	# && ./configure --disable-parallel --without-szlib --without-pthread --disable-shared \
-	# && make -j \
-	# && make install
-	- cd ext/htslib \
-	&& autoreconf --force
-
 	mkdir -p build
 	cd build \
 	&& cmake .. \
-	&& make
+	&& make -j
 
 build_mingw:
-	- cd ext/htslib \
-	&& autoreconf --force
-
 	mkdir -p build
 	cd build \
 	&& cmake .. -DHTSLIB_CONFIGURE_OPTS="--host=x86_64-w64-mingw32" \
-	&& make
+	&& make -j
 
 install_zlib:
-	cd ext/zlib \
+	mkdir -p ext/zlib \
+	&& cd ext/zlib \
+	&& wget https://zlib.net/fossils/zlib-1.2.5.tar.gz \
+	&& tar -xvf zlib-1.2.5.tar.gz --strip 1
 	&& ./configure --prefix=/usr/src/mxe/usr/x86_64-w64-mingw32.static --static \
 	&& make -j \
 	&& sudo make install
