@@ -18,8 +18,8 @@ build_mingw:
 install_zlib:
 	mkdir -p ext/zlib \
 	&& cd ext/zlib \
-	&& wget https://zlib.net/fossils/zlib-1.2.5.tar.gz \
-	&& tar -xvf zlib-1.2.5.tar.gz --strip 1
+	&& wget https://www.zlib.net/zlib-1.2.11.tar.gz \
+	&& tar -xvf https://www.zlib.net/zlib-1.2.11.tar.gz --strip 1 \
 	&& ./configure --prefix=/usr/src/mxe/usr/x86_64-w64-mingw32.static --static \
 	&& make -j \
 	&& sudo make install
@@ -45,5 +45,5 @@ compile_release_windows:
 clean:
 	rm -rf build
 	rm -rf release
-	cd ext/htslib && make clean
-	cd ext/zlib && make clean
+	rm -rf ext/zlib
+	rm -rf ext/htslib
