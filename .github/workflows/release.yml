@@ -1,0 +1,81 @@
+name: Build release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-linux:
+    name: Build linux
+    runs-on: ubuntu-18.04
+    env:
+      RELEASE_OS: linux
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@master
+      - name: Setup environment
+        id: setup
+        run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF##*/}
+      - name: Build
+        run: |
+          docker run --rm dockbuild/centos6:latest > ./dockbuild \
+          && chmod +x ./dockbuild \
+          && ./dockbuild -a "-e RELEASE_OS=$RELEASE_OS -e RELEASE_VERSION=$RELEASE_VERSION" bash -c "make build && make compile_release_$RELEASE_OS"
+        env:
+          RELEASE_VERSION: ${{ steps.setup.outputs.RELEASE_VERSION }}
+      - name: Upload to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.tar.gz
+          asset_name: kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.tar.gz
+          tag: ${{ github.ref }}
+
+  build-mac:
+    name: Build mac
+    runs-on: macos-latest
+    env:
+      RELEASE_OS: mac
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@master
+      - name: Setup environment
+        id: setup
+        run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF##*/}
+      - name: Build
+        run: make build && make compile_release_$RELEASE_OS
+        env:
+          RELEASE_VERSION: ${{ steps.setup.outputs.RELEASE_VERSION }}
+      - name: Upload to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.tar.gz
+          asset_name: kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.tar.gz
+          tag: ${{ github.ref }}
+
+  build-windows:
+    name: Build windows
+    runs-on: ubuntu-18.04
+    env:
+      RELEASE_OS: windows
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@master
+      - name: Setup environment
+        id: setup
+        run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF##*/}
+      - name: Build
+        run: |
+          docker run --rm dockcross/windows-static-x64:20191127-92bdbca > ./dockcross \
+          && chmod +x ./dockcross \
+          && ./dockcross -a "-e RELEASE_OS=$RELEASE_OS -e RELEASE_VERSION=$RELEASE_VERSION" bash -c "make install_zlib && make build_mingw && make compile_release_$RELEASE_OS"
+        env:
+          RELEASE_VERSION: ${{ steps.setup.outputs.RELEASE_VERSION }}
+      - name: Upload to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: release/kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.zip
+          asset_name: kallisto_${{ env.RELEASE_OS }}-${{ steps.setup.outputs.RELEASE_VERSION }}.zip
+          tag: ${{ github.ref }}

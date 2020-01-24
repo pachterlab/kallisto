@@ -4,7 +4,6 @@ project(kallisto)
 
 include(GNUInstallDirs)
 
-
 option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
 
 if(USE_HDF5)
@@ -41,21 +40,32 @@ ELSE(LINK MATCHES shared)
     message("shared build")
 ENDIF(LINK MATCHES static)
 
+# Need to replace some files if compiling for windows.
+if(WIN32)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/ext/htslib/hfile.c)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/ext/htslib/cram/cram_io.c)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/ext/htslib/cram/os.h)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/ext/htslib/htslib/drand48.h)
+  file(REMOVE ${PROJECT_SOURCE_DIR}/ext/htslib/htslib/ksort.h)
+  file(COPY ${PROJECT_SOURCE_DIR}/ext/htslib_windows/hfile.c DESTINATION ${PROJECT_SOURCE_DIR}/ext/htslib)
+  file(COPY ${PROJECT_SOURCE_DIR}/ext/htslib_windows/cram/cram_io.c DESTINATION ${PROJECT_SOURCE_DIR}/ext/htslib/cram)
+  file(COPY ${PROJECT_SOURCE_DIR}/ext/htslib_windows/cram/os.h DESTINATION ${PROJECT_SOURCE_DIR}/ext/htslib/cram)
+  file(COPY ${PROJECT_SOURCE_DIR}/ext/htslib_windows/htslib/drand48.h DESTINATION ${PROJECT_SOURCE_DIR}/ext/htslib/htslib)
+  file(COPY ${PROJECT_SOURCE_DIR}/ext/htslib_windows/htslib/ksort.h DESTINATION ${PROJECT_SOURCE_DIR}/ext/htslib/htslib)
+ENDIF(WIN32)
 
 include(ExternalProject)
 ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure 
-        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
+    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
+        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl ${HTSLIB_CONFIGURE_OPTS}
     BUILD_COMMAND make lib-static
     INSTALL_COMMAND ""
 )
 
 include_directories(${htslib_PREFIX}/src/htslib)
-
-
 
 # add_compile_options(-Wdeprecated-register)
 
