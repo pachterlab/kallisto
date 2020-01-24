@@ -19,7 +19,7 @@ install_zlib:
 	mkdir -p ext/zlib \
 	&& cd ext/zlib \
 	&& wget https://www.zlib.net/zlib-1.2.11.tar.gz \
-	&& tar -xvf https://www.zlib.net/zlib-1.2.11.tar.gz --strip 1 \
+	&& tar -xvf zlib-1.2.11.tar.gz --strip 1 \
 	&& ./configure --prefix=/usr/src/mxe/usr/x86_64-w64-mingw32.static --static \
 	&& make -j \
 	&& sudo make install
