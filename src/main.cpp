@@ -2419,6 +2419,11 @@ int main(int argc, char *argv[]) {
           }
         }
         
+        std::ofstream transout_f((opt.output + "/transcripts.txt"));
+        for (const auto &t : index.target_names_) {
+          transout_f << t << "\n";
+        }
+        transout_f.close();
 
         plaintext_aux(
             opt.output + "/run_info.json",
