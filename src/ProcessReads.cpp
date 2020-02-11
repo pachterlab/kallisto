@@ -1422,10 +1422,10 @@ void BUSProcessor::processBuffer() {
     // find where the sequence is
     const char *seq = nullptr;
     
-    int seqlen = 0;
+    size_t seqlen = 0;
     if (singleSeq) {
-      const char *seq = s[seqopt.fileno] + seqopt.start;
-      int seqlen = l[seqopt.fileno];
+      seq = s[seqopt.fileno] + seqopt.start;
+      seqlen = l[seqopt.fileno];
     } else {
       seqbuffer.clear();
       for (int j = 0; j < busopt.seq.size(); j++) {
@@ -1436,6 +1436,7 @@ void BUSProcessor::processBuffer() {
       }
       seqbuffer.push_back(0);
       seq = seqbuffer.c_str();
+      seqlen = seqbuffer.size();
     }
 
     // copy the umi
