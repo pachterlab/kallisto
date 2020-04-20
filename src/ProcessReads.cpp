@@ -1440,12 +1440,20 @@ void BUSProcessor::processBuffer() {
     }
 
     // copy the umi
-    int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
-    if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
-      continue; // too short
+    int umilen;
+    if (busopt.umi.fileno == -1){
+      umilen = 1;
+      umi[0] = 'A';
+      umi[umilen] = 0;
+    } else {
+      umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
+      if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
+        continue; // too short
+      }
+      memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
+      umi[umilen] = 0;
+
     }
-    memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
-    umi[umilen] = 0;
     if (umilen >= 0 && umilen <= 32) {
       umi_len[umilen]++;
     }

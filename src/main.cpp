@@ -540,6 +540,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
+  << "SwabSeq          COVID19 detection assay" << endl
   << endl;
  }
 
@@ -1004,6 +1005,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "SWABSEQ") {
+        busopt.nfiles = 3;
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+        busopt.umi = BUSOptionSubstr(-1,-1,-1);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else {
