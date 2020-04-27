@@ -541,6 +541,7 @@ void ListSingleCellTechnologies() {
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << "SwabSeq          COVID19 detection assay" << endl
+  << "SwabSeq10        COVID19 detection assay (10bp index)" << endl
   << endl;
  }
 
@@ -1013,6 +1014,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "SWABSEQ10") {
+        busopt.nfiles = 3;
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+        busopt.umi = BUSOptionSubstr(-1,-1,-1);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
