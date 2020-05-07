@@ -1028,11 +1028,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
         busopt.bc.push_back(BUSOptionSubstr(0,0,15));
       } else if (opt.technology == "LAMPSEQ") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+        busopt.nfiles = 1;
+        busopt.seq.push_back(BUSOptionSubstr(0,0,20));
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(0,42,52));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
