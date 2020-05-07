@@ -1026,7 +1026,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,15));
       } else if (opt.technology == "LAMPSEQ") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
