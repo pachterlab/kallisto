@@ -1035,7 +1035,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,42,52));
       } else if (opt.technology == "COVESEQ"){
         busopt.nfiles = 1;
-        busopt.seq.push_back(BUSOptionSubstr(0,43,120));
+        busopt.seq.push_back(BUSOptionSubstr(0,43,93));
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
         busopt.bc.push_back(BUSOptionSubstr(0, 5, 21));
       } else {
