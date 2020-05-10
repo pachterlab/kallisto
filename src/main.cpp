@@ -544,6 +544,7 @@ void ListSingleCellTechnologies() {
   << "SwabSeq10        COVID19 detection assay (10bp index)" << endl
   << "TRBSeq           Targeted RNA Barcoding" << endl
   << "LAMPSeq          Loop-mediated Isothermal Amplification" << endl
+  << "covEseq          Coronavirus detection via E gene " << endl
   << endl;
  }
 
@@ -1032,6 +1033,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(0,0,20));
         busopt.umi = BUSOptionSubstr(-1,-1,-1);
         busopt.bc.push_back(BUSOptionSubstr(0,42,52));
+      } else if (opt.technology == "COVESEQ"){
+        busopt.nfiles = 1;
+        busopt.seq.push_back(BUSOptionSubstr(0,43,220));
+        busopt.umi = BUSOptionSubstr(-1,-1,-1);
+        busopt.bc.push_back(BUSOptionSubstr(0, 5, 21));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
