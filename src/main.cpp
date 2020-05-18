@@ -916,7 +916,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,16));
       } else if (opt.technology == "SPLITSEQ") {
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,10);
         busopt.bc.push_back(BUSOptionSubstr(0,10,18));
         busopt.bc.push_back(BUSOptionSubstr(0,48,56));
@@ -1015,7 +1015,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "SPLITSEQ") {
         busopt.nfiles = 2;
-        busopt.seq = BUSOptionSubstr(1,0,0);
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,10);
         busopt.bc.push_back(BUSOptionSubstr(0,10,18));
         busopt.bc.push_back(BUSOptionSubstr(0,48,56));
