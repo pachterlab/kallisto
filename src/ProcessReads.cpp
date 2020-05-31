@@ -1482,21 +1482,14 @@ void BUSProcessor::processBuffer() {
     u.clear();
 
     // process 2nd read
-    index.match(seq,seqlen, v);
+    index.match(seq, seqlen, v);
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v, v2, false,u);
-    if (!u.empty()) {      
-      ec = tc.findEC(u);
-    }
-      
+    int r = tc.intersectKmers(v, v2, false, u);
+    
     // optional strand-specificity
     if (mp.opt.strand_specific && !u.empty()) {
-      /* debugging
-      std::cerr << "[info] applying strand specificity" << std::endl;
-      */
-      
       int p = -1;
       Kmer km;
       KmerEntry val;
@@ -1504,7 +1497,7 @@ void BUSProcessor::processBuffer() {
       if (!v.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR);
-        p = findFirstMappingKmer(v,val);
+        p = findFirstMappingKmer(v, val);
         km = Kmer((seq+p));
         bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
         // might need to optimize this
@@ -1541,7 +1534,7 @@ void BUSProcessor::processBuffer() {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
-      //ec = tc.findEC(u);
+      ec = tc.findEC(u);
       
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
