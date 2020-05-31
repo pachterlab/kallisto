@@ -1490,7 +1490,42 @@ void BUSProcessor::processBuffer() {
     if (!u.empty()) {      
       ec = tc.findEC(u);
     }
-
+      
+    // optional strand-specificity
+    if (mp.opt.strand_specific && !u.empty()) {
+      /* debugging
+      std::cerr << "[info] applying strand specificity" << std::endl;
+      */
+      
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      
+      if (!v.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR);
+        p = findFirstMappingKmer(v,val);
+        km = Kmer((seq+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out
+                vtmp.push_back(tr);
+              }
+              break;
+            }
+          }
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+    }
+    
     // find the ec
     if (!u.empty()) {
       BUSData b;      

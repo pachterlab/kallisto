@@ -546,6 +546,8 @@ void ListSingleCellTechnologies() {
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
+  int strand_FR_flag = 0;
+  int strand_RF_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:";
   static struct option long_options[] = {
@@ -560,6 +562,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"genomebam", no_argument, &gbam_flag, 1},
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
+    {"fr-stranded", no_argument, &strand_FR_flag, 1},
+    {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {0,0,0,0}
   };
 
@@ -631,6 +635,15 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     opt.genomebam = true;    
   }
 
+  if (strand_FR_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::FR;
+  }
+  
+  if (strand_RF_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::RF;
+  }
   
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
@@ -1725,6 +1738,8 @@ void usageBus() {
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
+       << "    --fr-stranded             Strand specific reads, sequence read forward" << endl
+       << "    --rf-stranded             Strand specific reads, sequence read reverse" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
