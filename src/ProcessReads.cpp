@@ -2979,7 +2979,10 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   o.state = false;
 }
 
-const std::string BamSequenceReader::seq_enc = "=ACMGRSVTWYHKDBN";
+// sequence decoding table
+const std::string BamSequenceReader::seq_enc  = "=ACMGRSVTWYHKDBN";
+// complement sequence decoding table
+const std::string BamSequenceReader::cseq_enc = "=TGKCYSBAWRDMHVN";
 
 BamSequenceReader::~BamSequenceReader() {
   if (fp) {
@@ -3038,16 +3041,31 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
           bufpos += l_bc + l_umi + 1;
 
           pi = buf + bufpos;
-          int len = (l_seq + 1) / 2;
-          if (l_seq % 2) --len;
+          int len = l_seq / 2;
           int j = 0;
-          for (int i = 0; i < len; ++i, ++eseq) {
-            buf[bufpos++] = seq_enc[*eseq >> 4];
-            buf[bufpos++] = seq_enc[*eseq & 0x0F];
+          
+          if (rec->core.flag & BAM_FREVERSE) { // insert reverse complement
+            // start at end
+            bufpos += l_seq;
+            for (int i = 0; i < len; ++i, ++eseq) {
+              buf[--bufpos] = cseq_enc[*eseq >> 4];
+              buf[--bufpos] = cseq_enc[*eseq & 0x0F];
+            }
+            if (l_seq % 2) {
+              buf[--bufpos] = cseq_enc[*eseq >> 4];
+            }
+            // reset position to end
+            bufpos += l_seq;
+          } else { // insert forward sequence
+            for (int i = 0; i < len; ++i, ++eseq) {
+              buf[bufpos++] = seq_enc[*eseq >> 4];
+              buf[bufpos++] = seq_enc[*eseq & 0x0F];
+            }
+            if (l_seq % 2) {
+              buf[bufpos++] = seq_enc[*eseq >> 4];
+            }
           }
-          if (l_seq % 2) {
-            buf[bufpos++] = seq_enc[*eseq >> 4];
-          }
+          // insert delimiter
           buf[bufpos++] = '\0';
           seqs.emplace_back(pi, l_seq);
 
