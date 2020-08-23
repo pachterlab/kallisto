@@ -540,6 +540,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
+  << "SPLiTSeq         SPLiTSeq" << endl
   << endl;
  }
 
@@ -914,6 +915,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,16));
+      } else if (opt.technology == "SPLITSEQ") {
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+        busopt.umi = BUSOptionSubstr(0,0,10);
+        busopt.bc.push_back(BUSOptionSubstr(0,10,18));
+        busopt.bc.push_back(BUSOptionSubstr(0,48,56));
+        busopt.bc.push_back(BUSOptionSubstr(0,86,94));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1006,6 +1013,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi = BUSOptionSubstr(1,8,14);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "SPLITSEQ") {
+        busopt.nfiles = 2;
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+        busopt.umi = BUSOptionSubstr(0,0,10);
+        busopt.bc.push_back(BUSOptionSubstr(0,10,18));
+        busopt.bc.push_back(BUSOptionSubstr(0,48,56));
+        busopt.bc.push_back(BUSOptionSubstr(0,86,94));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
