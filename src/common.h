@@ -11,7 +11,8 @@
 typedef unsigned int uint;
 #endif
 
-struct BUSOptionSubstr {
+struct BUSOptionSubstr
+{
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
   BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}
   int fileno;
@@ -19,20 +20,27 @@ struct BUSOptionSubstr {
   int stop;
 };
 
-struct BUSOptions {
+struct BUSOptions
+{
   int nfiles;
-  
+
   BUSOptionSubstr umi;
   std::vector<BUSOptionSubstr> bc;
   std::vector<BUSOptionSubstr> seq;
 
-  int getBCLength() const {
-    int r =0 ;
-    if (!bc.empty()) {
-      for (auto& b : bc) {
-        if (b.start < 0) {
+  int getBCLength() const
+  {
+    int r = 0;
+    if (!bc.empty())
+    {
+      for (auto &b : bc)
+      {
+        if (b.start < 0)
+        {
           return 0;
-        } else {
+        }
+        else
+        {
           r += b.stop - b.start;
         }
       }
@@ -40,16 +48,21 @@ struct BUSOptions {
     return r;
   }
 
-  int getUMILength() const {
-    if (umi.start >= 0) {
+  int getUMILength() const
+  {
+    if (umi.start >= 0)
+    {
       return umi.stop - umi.start;
-    } else {
+    }
+    else
+    {
       return 0;
     }
   }
 };
 
-struct ProgramOptions {
+struct ProgramOptions
+{
   bool verbose;
   int threads;
   std::string index;
@@ -69,6 +82,7 @@ struct ProgramOptions {
   bool pseudo_quant;
   bool bam;
   bool num;
+  bool kmer;
   std::string batch_file_name;
   std::vector<std::vector<std::string>> batch_files;
   std::vector<std::string> batch_ids;
@@ -84,7 +98,12 @@ struct ProgramOptions {
   bool genomebam;
   bool make_unique;
   bool fusion;
-  enum class StrandType {None, FR, RF};
+  enum class StrandType
+  {
+    None,
+    FR,
+    RF
+  };
   StrandType strand;
   bool umi;
   std::string gfa; // used for inspect
@@ -95,44 +114,42 @@ struct ProgramOptions {
   std::string bedFile;
   std::string technology;
 
-ProgramOptions() :
-  verbose(false),
-  threads(1),
-  k(31),
-  iterations(500),
-  skip(1),
-  seed(42),
-  fld(0.0),
-  sd(0.0),
-  min_range(1),
-  bootstrap(0),
-  batch_mode(false),
-  bus_mode(false),
-  pseudo_quant(false),
-  bam(false),
-  num(false),
-  plaintext(false),
-  write_index(false),
-  single_end(false),
-  strand_specific(false),
-  peek(false),
-  bias(false),
-  pseudobam(false),
-  genomebam(false),
-  make_unique(false),
-  fusion(false),
-  strand(StrandType::None),
-  umi(false),
-  inspect_thorough(false),
-  single_overhang(false)
-  {}
+  ProgramOptions() : verbose(false),
+                     threads(1),
+                     k(31),
+                     iterations(500),
+                     skip(1),
+                     seed(42),
+                     fld(0.0),
+                     sd(0.0),
+                     min_range(1),
+                     bootstrap(0),
+                     batch_mode(false),
+                     bus_mode(false),
+                     pseudo_quant(false),
+                     bam(false),
+                     num(false),
+                     kmer(false),
+                     plaintext(false),
+                     write_index(false),
+                     single_end(false),
+                     strand_specific(false),
+                     peek(false),
+                     bias(false),
+                     pseudobam(false),
+                     genomebam(false),
+                     make_unique(false),
+                     fusion(false),
+                     strand(StrandType::None),
+                     umi(false),
+                     inspect_thorough(false),
+                     single_overhang(false)
+  {
+  }
 };
 
 std::string pretty_num(size_t num);
 std::string pretty_num(int64_t num);
 std::string pretty_num(int num);
-
-
-
 
 #endif // KALLISTO_COMMON_H
