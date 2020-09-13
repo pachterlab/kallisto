@@ -1772,7 +1772,6 @@ void BUSProcessor::processBuffer()
 
     // process 2nd read
     index.match(seq, seqlen, v);
-
     // collect the target information
 
     int ec = -1;
@@ -1788,53 +1787,396 @@ void BUSProcessor::processBuffer()
       // for each kmer:ec pair we want a bus record
       if (!v.empty()) // if we have alignment
       {
-        for (auto const &val : v)
-        {
+        uint32_t f = 0;
 
-          BUSData b;
-          uint32_t f = 0;
-          b.flags = 0;
-          b.barcode = stringToBinary(bc, blen, f);
-          b.flags |= f;
-          b.UMI = stringToBinary(umi, umilen, f);
-          b.flags |= (f) << 8;
-          b.count = 1;
-          //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
+        // only one kmer so we write the open interval
+        if (v.size() == 1)
+        {
+          BUSData b1, b2;
+
+          // left interval
+          b1.flags = 0;
+          b1.barcode = stringToBinary(bc, blen, f);
+          b1.flags |= f;
+          b1.UMI = stringToBinary(umi, umilen, f);
+          b1.flags |= (f) << 8;
+          b1.count = 1;
+          // right interval
+          b2.flags = 0;
+          b2.barcode = stringToBinary(bc, blen, f);
+          b2.flags |= f;
+          b2.UMI = stringToBinary(umi, umilen, f);
+          b2.flags |= (f) << 8;
+          b2.count = 1;
+
+          auto const &val = v[0];
+
           if (num)
           {
-            b.flags = (uint32_t)flags[i / jmax];
-            b.pad = val.second;
-            // kmer_pos = flag % 32
-            // read_num = (flag - kmer_pos) / 32
+            b1.flags = (uint32_t)flags[i / jmax];
+            b1.pad = val.second;
+
+            b2.flags = (uint32_t)flags[i / jmax];
+            b2.pad = val.second + 1;
           }
           else
           {
-            b.flags = val.second;
+            b1.flags = val.second;
+            b2.flags = val.second + 1;
           }
 
           int ec = index.dbGraph.ecs[val.first.contig];
-
           // count the pseudoalignment
           if (ec == -1 || ec >= counts.size())
           {
             // something we haven't seen before
             newEcs.push_back(u);
-            newB.push_back({b, u});
+            newB.push_back({b1, u});
+            newB.push_back({b2, u});
           }
           else
           {
             // add to count vector
             ++counts[ec];
             // push back BUS record
-            b.ec = ec;
-            bv.push_back(b);
+            b1.ec = ec;
+            b2.ec = ec;
+            bv.push_back(b1);
+            bv.push_back(b2);
           }
         }
+        else if (v.size() == 2)
+        {
+          auto const &v1 = v[0];
+          auto const &v2 = v[1];
+
+          BUSData b1, b2;
+
+          // left interval
+          b1.flags = 0;
+          b1.barcode = stringToBinary(bc, blen, f);
+          b1.flags |= f;
+          b1.UMI = stringToBinary(umi, umilen, f);
+          b1.flags |= (f) << 8;
+          b1.count = 1;
+          // right interval
+          b2.flags = 0;
+          b2.barcode = stringToBinary(bc, blen, f);
+          b2.flags |= f;
+          b2.UMI = stringToBinary(umi, umilen, f);
+          b2.flags |= (f) << 8;
+          b2.count = 1;
+
+          if (num)
+          {
+            b1.flags = (uint32_t)flags[i / jmax];
+            b1.pad = v1.second;
+
+            b2.flags = (uint32_t)flags[i / jmax];
+            b2.pad = v2.second;
+          }
+          else
+          {
+            b1.flags = v1.second;
+            b2.flags = v2.second;
+          }
+
+          int ec1 = index.dbGraph.ecs[v1.first.contig];
+          int ec2 = index.dbGraph.ecs[v1.first.contig];
+
+          if (ec1 == ec2) // if the ec same, b2 is upper bound
+          {
+            b2.pad += 1; // add one to make it open interval
+            if (ec1 == -1 || ec1 >= counts.size())
+            {
+              // something we haven't seen before
+              newEcs.push_back(u);
+              newB.push_back({b1, u});
+              newB.push_back({b2, u});
+            }
+            else
+            {
+              // add to count vector
+              ++counts[ec1];
+              // push back BUS record
+              b1.ec = ec1;
+              b2.ec = ec1;
+              bv.push_back(b1);
+              bv.push_back(b2);
+            }
+          }
+          else if (ec1 != ec2)
+          {
+            BUSData b1u, b2u; // upper bound bus records
+
+            // first interval upper bound
+            b1u.flags = 0;
+            b1u.barcode = stringToBinary(bc, blen, f);
+            b1u.flags |= f;
+            b1u.UMI = stringToBinary(umi, umilen, f);
+            b1u.flags |= (f) << 8;
+            b1u.count = 1;
+            // second interval upper bound
+            b2u.flags = 0;
+            b2u.barcode = stringToBinary(bc, blen, f);
+            b2u.flags |= f;
+            b2u.UMI = stringToBinary(umi, umilen, f);
+            b2u.flags |= (f) << 8;
+            b2u.count = 1;
+
+            if (num)
+            {
+              b1u.flags = (uint32_t)flags[i / jmax];
+              b1u.pad = v1.second + 1;
+
+              b2u.flags = (uint32_t)flags[i / jmax];
+              b2u.pad = v2.second + 1;
+            }
+            else
+            {
+              b1u.flags = v1.second + 1;
+              b2u.flags = v2.second + 1;
+            }
+
+            if (ec1 == -1 || ec1 >= counts.size())
+            {
+              // something we haven't seen before
+              newEcs.push_back(u);
+              newB.push_back({b1, u});
+              newB.push_back({b1u, u});
+            }
+            else
+            {
+              // add to count vector
+              ++counts[ec1];
+              // push back BUS record
+              b1.ec = ec1;
+              b1u.ec = ec1;
+              bv.push_back(b1);
+              bv.push_back(b1u);
+            }
+
+            if (ec2 == -1 || ec2 >= counts.size())
+            {
+              // something we haven't seen before
+              newEcs.push_back(u);
+              newB.push_back({b2, u});
+              newB.push_back({b2u, u});
+            }
+            else
+            {
+              // add to count vector
+              ++counts[ec2];
+              // push back BUS record
+              b2.ec = ec2;
+              b2u.ec = ec2;
+              bv.push_back(b2);
+              bv.push_back(b2u);
+            }
+          }
+        }
+        else if (v.size() > 2)
+        {
+          auto &prev = v[0];
+          int prev_ec = index.dbGraph.ecs[prev.first.contig];
+          int vdx = 1;
+          while (vdx < v.size())
+          {
+            auto &curr = v[vdx];
+            int curr_ec = index.dbGraph.ecs[curr.first.contig];
+            if (prev_ec == curr_ec)
+            {
+              // write prev, curr bus record interval
+              BUSData pbr;
+
+              pbr.flags = 0;
+              pbr.barcode = stringToBinary(bc, blen, f);
+              pbr.flags |= f;
+              pbr.UMI = stringToBinary(umi, umilen, f);
+              pbr.flags |= (f) << 8;
+              pbr.count = 1;
+
+              BUSData cbr;
+
+              cbr.flags = 0;
+              cbr.barcode = stringToBinary(bc, blen, f);
+              cbr.flags |= f;
+              cbr.UMI = stringToBinary(umi, umilen, f);
+              cbr.flags |= (f) << 8;
+              cbr.count = 1;
+
+              if (num)
+              {
+                pbr.flags = (uint32_t)flags[i / jmax];
+                pbr.pad = prev.second;
+                cbr.flags = (uint32_t)flags[i / jmax];
+                cbr.pad = curr.second + 1;
+                // kmer_pos = flag % 32
+                // read_num = (flag - kmer_pos) / 32
+              }
+              else
+              {
+                pbr.flags = prev.second;
+                cbr.flags = curr.second + 1;
+              }
+
+              // count the pseudoalignment
+              if (prev_ec == -1 || prev_ec >= counts.size())
+              {
+                // something we haven't seen before
+                newEcs.push_back(u);
+                newB.push_back({pbr, u});
+                newB.push_back({cbr, u});
+              }
+              else
+              {
+                // add to count vector
+                ++counts[prev_ec];
+                // push back BUS record
+                pbr.ec = prev_ec;
+                cbr.ec = prev_ec;
+                bv.push_back(pbr);
+                bv.push_back(cbr);
+              }
+
+              vdx += 2;
+              if (vdx - 1 < v.size())
+              {
+                prev = v[vdx - 1];
+                prev_ec = index.dbGraph.ecs[prev.first.contig];
+              }
+            }
+            else
+            {
+              // write prev busrecord (sole kmer)
+              BUSData pbr;
+
+              pbr.flags = 0;
+              pbr.barcode = stringToBinary(bc, blen, f);
+              pbr.flags |= f;
+              pbr.UMI = stringToBinary(umi, umilen, f);
+              pbr.flags |= (f) << 8;
+              pbr.count = 1;
+
+              BUSData pbr_u;
+
+              pbr_u.flags = 0;
+              pbr_u.barcode = stringToBinary(bc, blen, f);
+              pbr_u.flags |= f;
+              pbr_u.UMI = stringToBinary(umi, umilen, f);
+              pbr_u.flags |= (f) << 8;
+              pbr_u.count = 1;
+
+              if (num)
+              {
+                pbr.flags = (uint32_t)flags[i / jmax];
+                pbr.pad = prev.second;
+                pbr_u.flags = (uint32_t)flags[i / jmax];
+                pbr_u.pad = prev.second + 1;
+                // kmer_pos = flag % 32
+                // read_num = (flag - kmer_pos) / 32
+              }
+              else
+              {
+                pbr.flags = prev.second;
+                pbr_u.flags = prev.second + 1;
+              }
+
+              // count the pseudoalignment
+              if (prev_ec == -1 || prev_ec >= counts.size())
+              {
+                // something we haven't seen before
+                newEcs.push_back(u);
+                newB.push_back({pbr, u});
+                newB.push_back({pbr_u, u});
+              }
+              else
+              {
+                // add to count vector
+                ++counts[prev_ec];
+                // push back BUS record
+                pbr.ec = prev_ec;
+                pbr_u.ec = prev_ec;
+                bv.push_back(pbr);
+                bv.push_back(pbr_u);
+              }
+              prev = curr;
+              prev_ec = curr_ec;
+              vdx += 1;
+            }
+
+            if (vdx == v.size())
+            {
+              // write v[vdx-1] busrecord sole kmer
+              prev = v[vdx - 1];
+              BUSData pbr;
+
+              pbr.flags = 0;
+              pbr.barcode = stringToBinary(bc, blen, f);
+              pbr.flags |= f;
+              pbr.UMI = stringToBinary(umi, umilen, f);
+              pbr.flags |= (f) << 8;
+              pbr.count = 1;
+
+              BUSData pbr_u;
+
+              pbr_u.flags = 0;
+              pbr_u.barcode = stringToBinary(bc, blen, f);
+              pbr_u.flags |= f;
+              pbr_u.UMI = stringToBinary(umi, umilen, f);
+              pbr_u.flags |= (f) << 8;
+              pbr_u.count = 1;
+
+              if (num)
+              {
+                pbr.flags = (uint32_t)flags[i / jmax];
+                pbr.pad = prev.second;
+                pbr_u.flags = (uint32_t)flags[i / jmax];
+                pbr_u.pad = prev.second + 1;
+                // kmer_pos = flag % 32
+                // read_num = (flag - kmer_pos) / 32
+              }
+              else
+              {
+                pbr.flags = prev.second;
+                pbr_u.flags = prev.second + 1;
+              }
+
+              // count the pseudoalignment
+              if (prev_ec == -1 || prev_ec >= counts.size())
+              {
+                // something we haven't seen before
+                newEcs.push_back(u);
+                newB.push_back({pbr, u});
+                newB.push_back({pbr_u, u});
+              }
+              else
+              {
+                // add to count vector
+                ++counts[prev_ec];
+                // push back BUS record
+                pbr.ec = prev_ec;
+                pbr_u.ec = prev_ec;
+                bv.push_back(pbr);
+                bv.push_back(pbr_u);
+              }
+            }
+          }
+        }
+
         // std::cout << "__________________" << std::endl;
       }
     }
     else
     {
+      // collect the target information
+
+      int ec = -1;
+      int r = tc.intersectKmers(v, v2, false, u);
+      if (!u.empty())
+      {
+        ec = tc.findEC(u);
+      }
       if (!u.empty())
       {
         BUSData b;
