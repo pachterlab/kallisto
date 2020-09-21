@@ -1787,6 +1787,14 @@ void BUSProcessor::processBuffer()
       // for each kmer:ec pair we want a bus record
       if (!v.empty()) // if we have alignment
       {
+        // std::cout << "\n"
+        //           << std::endl;
+        // for (int i = 0; i < v.size(); i++)
+        // {
+        //   std::cout << "ec, kmerpos: " << index.dbGraph.ecs[v[i].first.contig] << "\t" << v[i].second << std::endl;
+        // }
+        // std::cout << "\n"
+        //           << std::endl;
         uint32_t f = 0;
 
         // only one kmer so we write the open interval
@@ -1882,11 +1890,19 @@ void BUSProcessor::processBuffer()
           }
 
           int ec1 = index.dbGraph.ecs[v1.first.contig];
-          int ec2 = index.dbGraph.ecs[v1.first.contig];
+          int ec2 = index.dbGraph.ecs[v2.first.contig];
 
           if (ec1 == ec2) // if the ec same, b2 is upper bound
           {
-            b2.pad += 1; // add one to make it open interval
+            if (num)
+            {
+              b2.pad += 1;
+            } // add one to make it open interval}
+            else
+            {
+              b2.flags += 1;
+            }
+
             if (ec1 == -1 || ec1 >= counts.size())
             {
               // something we haven't seen before
