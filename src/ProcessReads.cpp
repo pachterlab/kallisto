@@ -1350,7 +1350,7 @@ void BUSProcessor::operator()() {
       } else {
         // get new sequences
         std::vector<std::string> umis;
-        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, false);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam);
       }
       // release the reader lock
     }
@@ -1377,12 +1377,27 @@ void BUSProcessor::processBuffer() {
   
   u.reserve(1000);
   v.reserve(1000);
+  v2.reserve(1000);
   vtmp.reserve(1000);
 
   memset(&bc_len[0], 0, 33);
   memset(&umi_len[0], 0, 33);
 
   const BUSOptions& busopt = mp.opt.busOptions;
+  
+  bool findFragmentLength = mp.tlencount < 10000 && busopt.paired && !mp.opt.tagsequence.empty();
+  int flengoal = 0;
+  flens.clear();
+  if (findFragmentLength) {
+    flengoal = (10000 - mp.tlencount);
+    if (flengoal <= 0) {
+      findFragmentLength = false;
+      flengoal = 0;
+    } else {
+      flens.resize(tc.flens.size(), 0);
+    }
+  }
+
  
   char buffer[100];
   memset(buffer, 0, 100);
@@ -1409,6 +1424,15 @@ void BUSProcessor::processBuffer() {
 
   bool singleSeq = busopt.seq.size() ==1 ;
   const BUSOptionSubstr seqopt = busopt.seq.front();
+  bool check_tag_sequence = !mp.opt.tagsequence.empty();
+  int taglen = 0;
+  uint64_t tag_binary = 0;
+  int hamming_dist = 1;
+  if (check_tag_sequence) {
+    taglen = mp.opt.tagsequence.length();
+    uint32_t f = 0;
+    tag_binary = stringToBinary(mp.opt.tagsequence, f);
+  }
 
 
   //int incf = (bam) ? 1 : busopt.nfiles-1;
@@ -1421,33 +1445,69 @@ void BUSProcessor::processBuffer() {
     
     // find where the sequence is
     const char *seq = nullptr;
+    const char *seq2 = nullptr;
     
-    size_t seqlen = 0;
-    if (singleSeq) {
-      seq = s[seqopt.fileno] + seqopt.start;
-      seqlen = l[seqopt.fileno];
-    } else {
-      seqbuffer.clear();
-      for (int j = 0; j < busopt.seq.size(); j++) {
-        const auto &sopt = busopt.seq[j];
-        int cplen = (sopt.stop == 0) ? l[sopt.fileno]-sopt.start : sopt.stop - sopt.start;
-        seqbuffer.append(s[sopt.fileno] + sopt.start, cplen);
-        seqbuffer.push_back('N');        
-      }
-      seqbuffer.push_back(0);
-      seq = seqbuffer.c_str();
-      seqlen = seqbuffer.size();
-    }
-
+    bool ignore_umi = false;
+    
     // copy the umi
     int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
     if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
       continue; // too short
     }
-    memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
+    if (check_tag_sequence) {
+      umilen += taglen; // Expand to include tag sequence
+      memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start - taglen, umilen);
+    } else {
+      memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
+    }
     umi[umilen] = 0;
+    uint64_t umi_binary = -1;
     if (umilen >= 0 && umilen <= 32) {
-      umi_len[umilen]++;
+      if (check_tag_sequence) {
+        uint32_t f = 0;
+        umi_binary = stringToBinary(umi, umilen, f);
+        if (hamming(tag_binary, umi_binary >> 2*(umilen-taglen), taglen) <= hamming_dist) { // if tag present
+          umi_binary = umi_binary & ~(~0ULL << (2*(umilen - taglen)));
+          umilen = umilen - taglen;
+          umi_len[umilen]++;
+        } else {
+          ignore_umi = true; // tag not present, it's not a UMI-read
+          umi_binary = -1;
+        }
+      } else {
+        umi_len[umilen]++;
+      }
+    }
+    
+    size_t seqlen = 0;
+    size_t seqlen2 = 0;
+    if (singleSeq) {
+      int seqstart = (ignore_umi ? busopt.umi.start - taglen : seqopt.start);
+      seq = s[seqopt.fileno] + seqstart;
+      seqlen = (seqopt.stop == 0) ? l[seqopt.fileno]-seqstart : seqopt.stop - seqstart;
+    } else if (busopt.paired) {
+      const auto &sopt1 = busopt.seq[0];
+      const auto &sopt2 = busopt.seq[1];
+      int seqstart1 = (ignore_umi && busopt.umi.fileno == sopt1.fileno ? busopt.umi.start - taglen : sopt1.start);
+      int seqstart2 = (ignore_umi && busopt.umi.fileno == sopt2.fileno ? busopt.umi.start - taglen : sopt2.start);
+      int cplen1 = (sopt1.stop == 0) ? l[sopt1.fileno]-seqstart1 : sopt1.stop - seqstart1;
+      int cplen2 = (sopt2.stop == 0) ? l[sopt2.fileno]-seqstart2 : sopt2.stop - seqstart2;
+      seq = s[sopt1.fileno] + seqstart1;
+      seq2 = s[sopt2.fileno] + seqstart2;
+      seqlen = cplen1;
+      seqlen2 = cplen2;
+    } else {
+      seqbuffer.clear();
+      for (int j = 0; j < busopt.seq.size(); j++) {
+        const auto &sopt = busopt.seq[j];
+        int seqstart = (ignore_umi && busopt.umi.fileno == sopt.fileno ? busopt.umi.start - taglen : sopt.start);
+        int cplen = (sopt.stop == 0) ? l[sopt.fileno]-seqstart : sopt.stop - seqstart;
+        seqbuffer.append(s[sopt.fileno] + seqstart, cplen);
+        seqbuffer.push_back('N');        
+      }
+      seqbuffer.push_back(0);
+      seq = seqbuffer.c_str();
+      seqlen = seqbuffer.size();
     }
 
     
@@ -1483,6 +1543,10 @@ void BUSProcessor::processBuffer() {
 
     // process 2nd read
     index.match(seq,seqlen, v);
+    if (busopt.paired) {
+      v2.clear();
+      index.match(seq2,seqlen2, v2);
+    }
 
     // collect the target information
     int ec = -1;
@@ -1498,15 +1562,26 @@ void BUSProcessor::processBuffer() {
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = stringToBinary(umi, umilen, f);
+      b.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, umilen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
       if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }
-
+      
       //ec = tc.findEC(u);
+
+      if (busopt.paired && ignore_umi) {
+        if (findFragmentLength && flengoal > 0 && 0 <= ec && ec < index.num_trans && !v.empty() && !v2.empty()) {
+          // try to map the reads
+          int tl = index.mapPair(seq, seqlen, seq2, seqlen2, ec);
+          if (0 < tl && tl < flens.size()) {
+            flens[tl]++;
+            flengoal--;
+          }
+        }
+      }
       
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
@@ -1524,16 +1599,20 @@ void BUSProcessor::processBuffer() {
 
     if (mp.opt.pseudobam) {
       PseudoAlignmentInfo info;
-      info.id = i;
-      info.paired = false;
+      info.id = i / jmax;
+      info.paired = busopt.paired;
       uint32_t f = 0;
       info.barcode = stringToBinary(bc, blen, f);
-      info.UMI = stringToBinary(umi, umilen, f);
+      info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, umilen, f);
       if (!u.empty()) {
         info.r1empty = v.empty();
         KmerEntry val;
         info.k1pos = findFirstMappingKmer(v,val);
         info.k2pos = -1;
+        if (busopt.paired) {
+          info.r2empty = v2.empty();
+          info.k2pos = findFirstMappingKmer(v2,val);
+        }
                 
         if (ec != -1) {
           info.ec_id = ec;
@@ -1670,7 +1749,11 @@ void AlnProcessor::operator()() {
         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, true);
         readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
         assert(pseudobatch.batch_id == readbatch_id);
-        assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
+        if (mp.opt.bus_mode) {
+          assert(pseudobatch.aln.size() == seqs.size()/mp.opt.busOptions.nfiles); // sanity checks
+        } else {
+          assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
+        }
       }
       // release the reader lock
     }
@@ -1689,7 +1772,6 @@ void AlnProcessor::operator()() {
 
 
 void AlnProcessor::processBufferTrans() {
-
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
 
@@ -2091,7 +2173,6 @@ void AlnProcessor::processBufferTrans() {
 
 
 void AlnProcessor::processBufferGenome() {
-
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
   int idnum = 0;
@@ -2129,28 +2210,31 @@ void AlnProcessor::processBufferGenome() {
   KmerEntry val1, val2;
   if  (mp.opt.bus_mode) {
     paired = false;
+    if (mp.opt.busOptions.paired) {
+      paired = true;
+    }
   }
-  bool readpaired = paired || (mp.opt.bus_mode && mp.opt.busOptions.nfiles == 2);
-  
-  
 
   for (int i = 0; i < n; i++) {
     bam1_t b1,b2, b1c, b2c;
-    int si1 = (readpaired) ? 2*i : i;
-    int si2 = (readpaired) ? 2*i +1 : -1;
-    
+    int si1 = (paired) ? 2*i : i;
+    int si2 = (paired) ? 2*i +1 : -1;
+    // For BUS file processing with paired-end reads:
+    if (mp.opt.bus_mode) {
+      const BUSOptions& busopt = mp.opt.busOptions;
+      si1 = i*busopt.nfiles + busopt.seq[0].fileno;
+      if (paired) {
+        si2 = i*busopt.nfiles + busopt.seq[1].fileno;
+      }
+    }
     int rlen1 = seqs[si1].second;
     int rlen2;
-    if (readpaired) {
+    int seq1_offset = 0;
+    int seq2_offset = 0;
+    if (paired) {
       rlen2 = seqs[si2].second;
     }
     
-    if (mp.opt.busOptions.seq.front().fileno == 1) {
-      std::swap(si1,si2);
-      std::swap(rlen1,rlen2);
-    }
-    
-
     // fill in the bam core info
     b1.core.tid = -1;
     b1.core.pos = -1;
@@ -2176,16 +2260,42 @@ void AlnProcessor::processBufferGenome() {
     }
 
     PseudoAlignmentInfo &pi = pseudobatch.aln[i];
-
-    // fill in the data info
-    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
-    //b1.id = idnum++;
-    if (paired) {
-      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
-      // b2.id = idnum++;
-    }
     
-    if (mp.opt.bus_mode) {
+    if (!mp.opt.bus_mode) {
+      // fill in the data info
+      fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+      //b1.id = idnum++;
+      if (paired) {
+        fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+        // b2.id = idnum++;
+      }
+    }
+    else {
+      bool tag_present = !mp.opt.tagsequence.empty() && pi.UMI != -1; // tag+UMI present in the sequence
+      bool umi_first_file = mp.opt.busOptions.umi.fileno == mp.opt.busOptions.seq[0].fileno; // UMI-containing file is the first file (file number 0)
+      int tagseqstart;
+      if (tag_present) {
+        tagseqstart = umi_first_file ? mp.opt.busOptions.seq[0].start : mp.opt.busOptions.seq[1].start; // Position where the actual sequence begins when tag+UMI present
+      }
+
+      // fill in the data info
+      if (tag_present && umi_first_file) {
+        rlen1 = seqs[si1].second-tagseqstart;
+        seq1_offset = tagseqstart;
+        fillBamRecord(b1, nullptr, seqs[si1].first+tagseqstart, names[si1].first,  quals[si1].first+tagseqstart, seqs[si1].second-tagseqstart, names[si1].second, pi.r1empty, genome_auxlen);
+      } else {
+        fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+      }
+      if (paired) {
+        if (tag_present && !umi_first_file) {
+          rlen2 = seqs[si2].second-tagseqstart;
+          seq2_offset = tagseqstart;
+          fillBamRecord(b2, nullptr, seqs[si2].first+tagseqstart, names[si2].first,  quals[si2].first+tagseqstart, seqs[si2].second-tagseqstart, names[si2].second, pi.r2empty, genome_auxlen);
+        } else {
+          fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+        }
+      }
+
       b1.data[b1.l_data] = 'C';
       b1.data[b1.l_data+1] = 'R';
       b1.data[b1.l_data+2] = 'Z';
@@ -2196,9 +2306,25 @@ void AlnProcessor::processBufferGenome() {
       b1.data[b1.l_data] = 'U';
       b1.data[b1.l_data+1] = 'R';
       b1.data[b1.l_data+2] = 'Z';
-      umi = binaryToString(pi.UMI, umilen);
+      if (!mp.opt.tagsequence.empty() && pi.UMI == -1) { // Non-UMI read
+        umi = std::string(umilen, 'N');
+      } else {
+        umi = binaryToString(pi.UMI, umilen);
+      }
       memcpy(b1.data + b1.l_data + 3, umi.c_str(), umilen+2);
       b1.l_data += umilen + 4;
+      if (paired) {
+        b2.data[b2.l_data] = 'C';
+        b2.data[b2.l_data+1] = 'R';
+        b2.data[b2.l_data+2] = 'Z';
+        memcpy(b2.data + b2.l_data + 3, bc.c_str(), bclen+1);
+        b2.l_data += bclen + 4;
+        b2.data[b2.l_data] = 'U';
+        b2.data[b2.l_data+1] = 'R';
+        b2.data[b2.l_data+2] = 'Z';
+        memcpy(b2.data + b2.l_data + 3, umi.c_str(), umilen+2);
+        b2.l_data += umilen + 4;
+      }
     }
 
     if (pi.r1empty && pi.r2empty) {
@@ -2334,11 +2460,11 @@ void AlnProcessor::processBufferGenome() {
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
         
         if (!pi.r1empty) {
-          km1 = Kmer(seqs[si1].first + pi.k1pos);
+          km1 = Kmer(seqs[si1].first + seq1_offset + pi.k1pos);
           strInfo1 = strandednessInfo(km1, val1, ua);
         }
         if (paired && !pi.r2empty) {
-          km2 = Kmer(seqs[si2].first + pi.k2pos);
+          km2 = Kmer(seqs[si2].first + seq2_offset + pi.k2pos);
           strInfo2 = strandednessInfo(km2, val2, ua);
         }
         
@@ -2459,7 +2585,7 @@ void AlnProcessor::processBufferGenome() {
           b1c.core.tid = tra.first.chr;
           if (!pi.r1empty) {
             b1c.core.pos = tra.first.chrpos;
-            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
+            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-seq1_offset-1, 14, 5);
             b1c.core.qual = 255;
             if (useEM) {
               memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
@@ -2470,7 +2596,7 @@ void AlnProcessor::processBufferGenome() {
             b2c.core.tid = tra.second.chr;
             if (!pi.r2empty) {
               b2c.core.pos = tra.second.chrpos;
-              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
+              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second-seq2_offset, 14, 5);
               b2c.core.qual = 255;
               if (useEM) {
                 memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
@@ -2914,7 +3040,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
         }
 
         numreads++;
-        flags.push_back(numreads);
+        flags.push_back(numreads-1);
       } else {
         return true; // read it next time
       }

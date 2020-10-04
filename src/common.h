@@ -25,6 +25,8 @@ struct BUSOptions {
   BUSOptionSubstr umi;
   std::vector<BUSOptionSubstr> bc;
   std::vector<BUSOptionSubstr> seq;
+  
+  bool paired;
 
   int getBCLength() const {
     int r =0 ;
@@ -94,6 +96,7 @@ struct ProgramOptions {
   std::string chromFile;
   std::string bedFile;
   std::string technology;
+  std::string tagsequence;
 
 ProgramOptions() :
   verbose(false),

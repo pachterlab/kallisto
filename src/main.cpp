@@ -539,6 +539,8 @@ void ListSingleCellTechnologies() {
   << "inDropsv2        inDrops version 2 chemistry" << endl
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
+  << "SmartSeq3        SmartSeq3 (8bp index)" << endl
+  << "SmartSeq3_10     SmartSeq3 (10bp index)" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
@@ -546,8 +548,9 @@ void ListSingleCellTechnologies() {
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
+  int paired_end_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
@@ -560,6 +563,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"genomebam", no_argument, &gbam_flag, 1},
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
+    {"tag", required_argument, 0, 'T'},
+    {"paired", no_argument, &paired_end_flag, 1},
     {0,0,0,0}
   };
 
@@ -613,6 +618,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.chromFile;
       break;
     }
+    case 'T': {
+      stringstream(optarg) >> opt.tagsequence;
+      break;
+    }
     default: break;
     }
   }
@@ -631,6 +640,11 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     opt.genomebam = true;    
   }
 
+  if (paired_end_flag) {
+    opt.single_end = false;
+  } else {
+    opt.single_end = true;
+  }
   
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
@@ -862,6 +876,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
    
     if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;
+      busopt.paired = false;
       if (opt.technology == "10XV2") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
         busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
@@ -914,6 +929,22 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi = BUSOptionSubstr(0,0,6);
         busopt.bc.push_back(BUSOptionSubstr(0,6,16));
+      } else if (opt.technology == "SMARTSEQ3") {
+        busopt.nfiles = 4;
+        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+        busopt.paired = true;
+      } else if (opt.technology == "SMARTSEQ3_10") {
+        busopt.nfiles = 4;
+        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
+        busopt.paired = true;
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -921,6 +952,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         vector<std::string> errorList;
         //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
         bool valid = ParseTechnology(opt.technology, busopt, errorList);
+        
+        if (busopt.seq.size() == 2 && !opt.single_end) {
+          busopt.paired = true;
+        }
         
         if(!valid) {
           /*
@@ -940,6 +975,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
       }
     } else {
+      busopt.paired = false;
       if (opt.technology == "10XV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
@@ -1006,6 +1042,22 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi = BUSOptionSubstr(1,8,14);
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+      } else if (opt.technology == "SMARTSEQ3") {
+        busopt.nfiles = 4;
+        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+        busopt.paired = true;
+      } else if (opt.technology == "SMARTSEQ3_10") {
+        busopt.nfiles = 4;
+        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
+        busopt.paired = true;
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1014,6 +1066,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
         bool valid = ParseTechnology(opt.technology, busopt, errorList);
         
+        if (busopt.seq.size() == 2 && !opt.single_end) {
+          busopt.paired = true;
+        }
         
         if(valid) {
           /*
@@ -1034,10 +1089,28 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       }
     }
   }
+  
+  if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3" || opt.technology == "SMARTSEQ3_10")) {
+    cerr << "Error: Tag sequence must be specified for Smart-seq3 technologies" << endl;
+    ret = false;
+  }
+  
+  if (!opt.tagsequence.empty()) {
+    opt.busOptions.umi.start += opt.tagsequence.length();
+    if (opt.busOptions.umi.start >= opt.busOptions.umi.stop) {
+      cerr << "Error: Tag sequence must be shorter than UMI sequence" << endl;
+      ret = false;
+    }
+  }
+  
+  if (!opt.single_end && !opt.busOptions.paired) {
+      cerr << "Error: Paired reads are not compatible with the specified technology" << endl;
+      ret = false;
+  }
 
   if (opt.genomebam) {
-    if (opt.busOptions.seq.size() != 1) {
-      cerr << "Error: BAM output is currently only supported for technologies with a single CDNA read file" << endl;
+    if (opt.busOptions.seq.size() != 1 && !(opt.busOptions.seq.size() == 2 && opt.busOptions.paired)) {
+      cerr << "Error: BAM output is currently only supported for technologies with a single CDNA read file or paired-end reads" << endl;
       ret = false;
     }
     if (!opt.gtfFile.empty()) {
@@ -1725,7 +1798,9 @@ void usageBus() {
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
-       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
+       << "-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies" << endl
+       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl
+       << "    --paired                  Treat reads as paired" << endl;
 }
 
 void usageIndex() {
@@ -2008,7 +2083,20 @@ int main(int argc, char *argv[]) {
           transout_f << t << "\n";
         }
         transout_f.close();
-
+        
+        std::vector<int> fld;
+        if (opt.busOptions.paired && !opt.tagsequence.empty()) {
+          fld = collection.flens; // copy
+          collection.compute_mean_frag_lens_trunc();
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false);
+          // Write out fragment length distribution:
+          std::ofstream flensout_f((opt.output + "/flens.txt"));
+          for ( size_t i = 0 ; i < fld.size(); ++i ) {
+            flensout_f << fld[i] << "\n";
+          }
+          flensout_f.close();
+        }
 
         // gather stats
         num_unique = 0;
