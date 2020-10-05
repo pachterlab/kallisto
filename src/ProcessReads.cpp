@@ -1503,7 +1503,7 @@ void BUSProcessor::processBuffer() {
         int seqstart = (ignore_umi && busopt.umi.fileno == sopt.fileno ? busopt.umi.start - taglen : sopt.start);
         int cplen = (sopt.stop == 0) ? l[sopt.fileno]-seqstart : sopt.stop - seqstart;
         seqbuffer.append(s[sopt.fileno] + seqstart, cplen);
-        seqbuffer.push_back('N');        
+        seqbuffer.push_back('N');
       }
       seqbuffer.push_back(0);
       seq = seqbuffer.c_str();
@@ -1553,6 +1553,62 @@ void BUSProcessor::processBuffer() {
     int r = tc.intersectKmers(v, v2, false,u);
     if (!u.empty()) {      
       ec = tc.findEC(u);
+    }
+
+    if (!ignore_umi && mp.opt.tag_strand_specific && !u.empty()) {
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      if (!v.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.tag_strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+        p = findFirstMappingKmer(v,val);
+        km = Kmer((seq+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      if (!v2.empty()) {
+        vtmp.clear();
+        bool secondStrand = (mp.opt.tag_strand == ProgramOptions::StrandType::RF);
+        p = findFirstMappingKmer(v2,val);
+        km = Kmer((seq2+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == secondStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      ec = -1;
+      if (!u.empty()) { // update the ec
+        ec = tc.findEC(u);
+      }
     }
 
     // find the ec

@@ -549,6 +549,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
   int paired_end_flag = 0;
+  int tag_strand_FR_flag = 0;
+  int tag_strand_RF_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:T:";
   static struct option long_options[] = {
@@ -564,6 +566,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
     {"tag", required_argument, 0, 'T'},
+    {"tag-fr-stranded", no_argument, &tag_strand_FR_flag, 1},
+    {"tag-rf-stranded", no_argument, &tag_strand_RF_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
     {0,0,0,0}
   };
@@ -638,6 +642,16 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   if (gbam_flag) {
     opt.pseudobam = true;
     opt.genomebam = true;    
+  }
+
+  if (tag_strand_FR_flag) {
+    opt.tag_strand_specific = true;
+    opt.tag_strand = ProgramOptions::StrandType::FR;
+  }
+
+  if (tag_strand_RF_flag) {
+    opt.tag_strand_specific = true;
+    opt.tag_strand = ProgramOptions::StrandType::RF;
   }
 
   if (paired_end_flag) {
@@ -937,6 +951,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
         busopt.paired = true;
+        opt.tag_strand_specific = true;
+        opt.tag_strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "SMARTSEQ3_10") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
@@ -945,6 +961,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,10));
         busopt.bc.push_back(BUSOptionSubstr(1,0,10));
         busopt.paired = true;
+        opt.tag_strand_specific = true;
+        opt.tag_strand = ProgramOptions::StrandType::FR;
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1050,6 +1068,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
         busopt.paired = true;
+        opt.tag_strand_specific = true;
+        opt.tag_strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "SMARTSEQ3_10") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
@@ -1058,6 +1078,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,10));
         busopt.bc.push_back(BUSOptionSubstr(1,0,10));
         busopt.paired = true;
+        opt.tag_strand_specific = true;
+        opt.tag_strand = ProgramOptions::StrandType::FR;
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1106,6 +1128,17 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   if (!opt.single_end && !opt.busOptions.paired) {
       cerr << "Error: Paired reads are not compatible with the specified technology" << endl;
       ret = false;
+  }
+
+  if (opt.tag_strand_specific) {
+    if (opt.busOptions.seq.size() != 1 && !(opt.busOptions.seq.size() == 2 && opt.busOptions.paired)) {
+      cerr << "Error: Strand-specific read processing is only supported for technologies with a single CDNA read file or paired-end reads" << endl;
+      ret = false;
+    }
+    if (opt.tagsequence.empty()) {
+      cerr << "Error: Strand-specific read processing is only supported for technologies with a tag sequence specified" << endl;
+      ret = false;
+    }
   }
 
   if (opt.genomebam) {
@@ -1799,8 +1832,10 @@ void usageBus() {
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
        << "-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies" << endl
-       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl
-       << "    --paired                  Treat reads as paired" << endl;
+       << "    --tag-fr-stranded         Strand specific reads for 5′ tagged UMI reads, first read forward" << endl
+       << "    --tag-rf-stranded         Strand specific reads for 5′ tagged UMI reads, first read reverse" << endl
+       << "    --paired                  Treat reads as paired" << endl
+       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
 void usageIndex() {

@@ -97,6 +97,8 @@ struct ProgramOptions {
   std::string bedFile;
   std::string technology;
   std::string tagsequence;
+  bool tag_strand_specific;
+  StrandType tag_strand;
 
 ProgramOptions() :
   verbose(false),
@@ -127,7 +129,9 @@ ProgramOptions() :
   strand(StrandType::None),
   umi(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  tag_strand_specific(false),
+  tag_strand(StrandType::None)
   {}
 };
 
