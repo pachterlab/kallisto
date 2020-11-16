@@ -379,6 +379,73 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
+void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
+  int verbose_flag = 0;
+  int plaintext_flag = 0;
+  
+  const char *opt_string = "o:i:c:e:f:l:s:t:";
+  static struct option long_options[] = {
+    // long args
+    {"index", required_argument, 0, 'i'},
+    {"tcc", required_argument, 0, 'c'},
+    // short args
+    {"threads", required_argument, 0, 't'},
+    {"fragment-file", required_argument, 0, 'f'},
+    {"fragment-length", required_argument, 0, 'l'},
+    {"sd", required_argument, 0, 's'},
+    {"output-dir", required_argument, 0, 'o'},
+    {"ec-file", required_argument, 0, 'e'},
+    {0,0,0,0}
+  };
+  int c;
+  int option_index = 0;
+  while (true) {
+    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
+    
+    if (c == -1) {
+      break;
+    }
+    
+    switch (c) {
+    case 0:
+      break;
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'f': {
+      stringstream(optarg) >> opt.fldFile;
+      break;
+    }
+    case 'l': {
+      stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 's': {
+      stringstream(optarg) >> opt.sd;
+      break;
+    }
+    case 'o': {
+      opt.output = optarg;
+      break;
+    }
+    case 'i': {
+      opt.index = optarg;
+      break;
+    }
+    case 'c': {
+      opt.tccFile = optarg;
+      break;
+    }
+    case 'e': {
+      opt.ecFile = optarg;
+      break;
+    }
+    default: break;
+    }
+  }
+}
+
 void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int single_flag = 0;
@@ -1408,6 +1475,113 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
   return ret;
 }
 
+bool CheckOptionsTCCQuant(ProgramOptions& opt) {
+  
+  bool ret = true;
+  
+  cerr << endl;
+  // check for index
+  if (opt.index.empty()) {
+    cerr << ERROR_STR << " kallisto index file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.index.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  }
+
+  if (opt.tccFile.empty()) {
+    cerr << ERROR_STR << " transcript-compatibility counts file missing" << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.tccFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " transcript-compatibility counts file not found " << opt.tccFile << endl;
+      ret = false;
+    }
+  }
+
+  if (!opt.ecFile.empty()) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.ecFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " equivalence class file not found " << opt.ecFile << endl;
+      ret = false;
+    }
+  }
+  
+  if (!opt.fldFile.empty()) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.fldFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " fragment length distribution file not found " << opt.fldFile << endl;
+      ret = false;
+    }
+  }
+  
+  if ((opt.fld != 0.0 || opt.sd != 0.0) && !opt.fldFile.empty()) {
+    cerr << ERROR_STR <<" cannot supply mean or sd while also supplying a fragment length distribution file" << endl;
+    ret = false;
+  }
+  
+  if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
+    cerr << ERROR_STR << " cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+  
+  if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
+    cerr << "[tcc] fragment length distribution is truncated gaussian with mean = " <<
+      opt.fld << ", sd = " << opt.sd << endl;
+  }
+  
+  if (opt.fld < 0.0) {
+    cerr << ERROR_STR << " invalid value for mean fragment length " << opt.fld << endl;
+    ret = false;
+  }
+  
+  if (opt.sd < 0.0) {
+    cerr << ERROR_STR << " invalid value for fragment length standard deviation " << opt.sd << endl;
+    ret = false;
+  }
+
+  if (opt.output.empty()) {
+    cerr << ERROR_STR << " need to specify output directory " << opt.output << endl;
+    ret = false;
+  } else {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.output.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      // file/dir exits
+      if (!S_ISDIR(stFileInfo.st_mode)) {
+        cerr << ERROR_STR << " file " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      }
+    } else {
+      // create directory
+      if (my_mkdir(opt.output.c_str(), 0777) == -1) {
+        cerr << ERROR_STR << " could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.threads <= 0) {
+    cerr << ERROR_STR << " invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+    }
+  }
+
+   return ret;
+}
 
 bool CheckOptionsMerge(ProgramOptions& opt) {
 
@@ -1807,6 +1981,7 @@ void usage() {
        << "Where <CMD> can be one of:" << endl << endl
        << "    index         Builds a kallisto index "<< endl
        << "    quant         Runs the quantification algorithm " << endl
+       << "    quant-tcc     Runs quantification on transcript-compatibility counts" << endl
        << "    bus           Generate BUS files for single-cell data " << endl
        << "    pseudo        Runs the pseudoalignment step " << endl
        << "    merge         Merges several batch runs " << endl
@@ -1956,6 +2131,30 @@ void usageEMOnly() {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl << endl;
+}
+
+void usageTCCQuant(bool valid_input = true) {
+  if (valid_input) {
+    cout << "kallisto " << KALLISTO_VERSION << endl
+         << "Quantifies abundance from pre-computed transcript-compatibility counts" << endl << endl;
+  }
+  
+  cout << "Usage: kallisto quant-tcc [arguments]" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used" << endl
+       << "-c, --tcc=FILE                File containing transcript-compatibility counts" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
+       << "Optional arguments:" << endl
+       << "-e, --ec-file=FILE            File containing equivalence classes" << endl
+       << "                              (default: equivalence classes are taken from the index)" << endl
+       << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl
+       << "                              (default: effective length normalization is not peformed)" << endl
+       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
+       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
+       << "                              (note: -l, -s values only should be supplied when" << endl
+       << "                               effective length normalization needs to be performed" << endl
+       << "                               but --fragment-file is not specified)" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -2128,8 +2327,12 @@ int main(int argc, char *argv[]) {
           // Write out fragment length distribution:
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
-            flensout_f << fld[i] << "\n";
+            if (i != 0) {
+              flensout_f << " ";
+            }
+            flensout_f << fld[i];
           }
+          flensout_f << "\n";
           flensout_f.close();
         }
 
@@ -2516,6 +2719,236 @@ int main(int argc, char *argv[]) {
 
         if (num_pseudoaligned == 0) {
           exit(1);
+        }
+      }
+    } else if (cmd == "quant-tcc") {
+      if (argc==2) {
+        usageTCCQuant();
+        return 0;
+      }
+      ParseOptionsTCCQuant(argc-1,argv+1,opt);
+      if (!CheckOptionsTCCQuant(opt)) {
+        usageTCCQuant();
+        exit(1);
+      } else {
+        KmerIndex index(opt);
+        index.load(opt, false); // skip the k-mer map
+        size_t num_ecs = index.ecmap.size();
+        MinCollector collection(index, opt);
+        std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts; // Stores TCCs
+        std::ifstream in((opt.tccFile));
+        bool firstline = true;
+        bool isMatrixFile = false;
+        size_t nrow = 0, ncol = 0, nlines = 0;
+        int i = 0, prevRow = 0, prevCol = 0;
+        if (in.is_open()) { // Read in TCC file
+          std::string line;
+          while (getline(in, line)) {
+            if (firstline) { // First line decides whether the file is in matrix format
+              firstline = false;
+              if (line.rfind("%%MatrixMarket", 0) == 0) {
+                std::cerr << "[tcc] Parsing transcript-compatibility counts (TCC) file as a matrix file" << std::endl;
+                isMatrixFile = true;
+                while (getline(in, line) && line.rfind("%", 0) == 0) { } // Skip header comments
+                std::stringstream ss(line);
+                ss >> nrow >> ncol >> nlines;
+                std::cerr << "[tcc] Matrix dimensions: " << pretty_num(nrow) << " x " << pretty_num(ncol) << std::endl;
+                batchCounts.assign(nrow, {});
+                continue;
+              } else {
+                std::cerr << "[tcc] Transcript-compatibility counts (TCC) file is not in matrix format; "
+                          << "it will not be parsed as a matrix file" << std::endl;
+                isMatrixFile = false;
+                batchCounts.assign(1, {});
+              }
+            }
+            std::stringstream ss(line);
+            int row, col, val;
+            if (isMatrixFile) {
+              if (i >= nlines) {
+                std::cerr << "[tcc] Warning: TCC matrix file contains additional lines which will not be read; "
+                          << "only " << pretty_num(nlines) << " entries, as specified on the first line, will be read." << std::endl;
+                break;
+              }
+              ss >> row >> col >> val;
+              if (row > nrow || col > ncol) {
+                std::cerr << "Error: TCC matrix file is malformed; " 
+                          << "row numbers or column numbers exceed the dimensions of the matrix." << std::endl;
+                exit(1);
+              }
+            } else {
+              ss >> col >> val;
+              col += 1; // Because we'll consider non-matrix TCC files to be zero-indexed
+              row = 1;
+              nrow = 1;
+              if (ncol < col) {
+                ncol = col;
+              }
+            }
+            if (row <= 0 || col <= 0) {
+              std::cerr << "Error: Invalid indices in TCC file." << std::endl;
+              exit(1);
+            }
+            if (row < prevRow || (row == prevRow && col <= prevCol)) {
+              std::cerr << "Error: TCC file is not sorted." << std::endl;
+              exit(1);
+            }
+            prevRow = row;
+            prevCol = col;
+            auto &bc = batchCounts[row-1];
+            bc.push_back({col-1, val});
+            i++;
+          }
+        } else {
+          std::cerr << "Error: could not open file " << opt.tccFile << std::endl;
+          exit(1);
+        }
+        if (isMatrixFile && i < nlines) {
+          std::cerr << "Error: Found only " << pretty_num(i) << " entries in TCC matrix file, "
+                    << "expected " << pretty_num(nlines) << std::endl;
+          exit(1);
+        }
+        if (ncol != num_ecs) {
+          std::cerr << "Error: number of equivalence classes does not match index. Found "
+                    << pretty_num(ncol) << ", expected " << pretty_num(num_ecs) << std::endl;
+          exit(1);
+        }
+        
+        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
+        std::vector<std::vector<std::pair<int32_t, double>>> TPM_mat;
+        Abundance_mat.resize(nrow, {});
+        TPM_mat.resize(nrow, {});
+        std::vector<std::pair<double, double>> FLD_mat;
+        FLD_mat.resize(nrow, {});
+        std::vector<std::vector<int>> FLDs;
+
+        std::ofstream transout_f((opt.output + "/transcripts.txt"));
+        for (const auto &t : index.target_names_) {
+          transout_f << t << "\n";
+        }
+        transout_f.close();
+        std::string prefix = opt.output + "/matrix";
+        std::string abtsvfilename = opt.output + "/abundance.tsv";
+        std::string abfilename = prefix + ".abundance.mtx";
+        std::string abtpmfilename = prefix + ".abundance.tpm.mtx";
+        std::string fldfilename = prefix + ".fld.tsv";
+
+        const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
+        if (calcEffLen && !opt.fldFile.empty()) { // Parse supplied fragment length distribution file
+          std::ifstream infld((opt.fldFile));
+          if (infld.is_open()) {
+            std::string line;
+            while (getline(infld, line)) {
+              if (line.empty() || line.rfind("#", 0) == 0) {
+                continue; // Ignore empty lines or lines that begin with a #
+              }
+              std::vector<int> tmp_vec;
+              std::stringstream ss(line);
+              while(ss.good()) {
+                std::string tmp_val;
+                getline(ss, tmp_val, ' ');
+                int tmp_val_num = std::atoi(tmp_val.c_str());
+                if (tmp_val_num < 0) {
+                  std::cerr << "Error: Fragment length distribution file contains invalid value: " 
+                            << tmp_val_num << std::endl;
+                  exit(1);
+                }
+                tmp_vec.push_back(tmp_val_num);
+              }
+              if (tmp_vec.size() != MAX_FRAG_LEN) {
+                std::cerr << "Error: Fragment length distribution file contains a line with " 
+                          << tmp_vec.size() << " values; expected: " << MAX_FRAG_LEN << std::endl;
+                exit(1);
+              }
+              FLDs.push_back(tmp_vec);
+            }
+            if (FLDs.size() != 1 && FLDs.size() != nrow) {
+              std::cerr << "Error: Fragment length distribution file contains " 
+                        << i << " valid lines; expected: " << nrow << std::endl;
+              exit(1);
+            }
+          } else {
+            std::cerr << "Error: could not open file " << opt.fldFile << std::endl;
+            exit(1);
+          }
+        }
+        
+        std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
+        auto EM_lambda = [&](int id) {
+          MinCollector collection(index, opt);
+          collection.counts.assign(index.ecmap.size(), 0);
+          const auto& bc = batchCounts[id];
+          for (const auto &p : bc) {
+            collection.counts[p.first] = p.second;
+          }
+          
+          std::vector<double> fl_means;
+          if (calcEffLen) {
+            if (opt.fld != 0.0) {
+              collection.init_mean_fl_trunc(opt.fld, opt.sd);
+            } else {
+              std::vector<int> fld;
+              if (FLDs.size() == 1) { // Only one distribution supplied; will use this for everything
+                fld = FLDs[0];
+              } else {
+                fld = FLDs[id];
+              }
+              collection.flens = fld;
+              collection.compute_mean_frag_lens_trunc(false);
+            }
+            fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+            double mean_fl = collection.get_mean_frag_len(true);
+            double sd_fl = collection.get_sd_frag_len();
+            FLD_mat[id] = {mean_fl, sd_fl};
+          } else { // Set mean fragment lengths to be target lengths so that effective lengths are all one
+            fl_means = std::vector<double>(index.target_lens_.begin(), index.target_lens_.end());
+          }
+
+          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          em.run(10000, 50, false, false);
+          
+          if (isMatrixFile) { // Update abundances matrix
+            auto &ab_m = Abundance_mat[id];
+            auto &tpm_m = TPM_mat[id];
+            std::vector<double> tpm_vec;
+            tpm_vec = counts_to_tpm(em.alpha_, em.eff_lens_);
+            for (int i = 0; i < em.alpha_.size(); i++) {
+              if (em.alpha_[i] > 0.0) {
+                ab_m.push_back({i,em.alpha_[i]});
+                tpm_m.push_back({i,tpm_vec[i]});
+              }
+            }
+          } else { // Write plaintext abundances
+            plaintext_writer(abtsvfilename, em.target_names_,
+                             em.alpha_, em.eff_lens_, index.target_lens_);
+          }
+        }; // end of EM_lambda
+        
+        std::vector<std::thread> workers;
+        int num_ids = nrow;
+        int id = 0;
+        while (id < num_ids) {
+          workers.clear();
+          int nt = std::min(opt.threads, (num_ids - id));
+          int first_id = id;
+          for (int i = 0; i < nt; i++,id++) {
+            workers.emplace_back(std::thread(EM_lambda, id));
+          }
+          for (int i = 0; i < nt; i++) {
+            workers[i].join();
+          }
+        }
+        std::cerr << " done" << std::endl;
+        
+        cerr << endl;
+        
+
+        if (isMatrixFile) {
+          writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
+          writeSparseBatchMatrix(abtpmfilename, TPM_mat, index.num_trans);
+        }
+        if (calcEffLen) {
+          writeFLD(fldfilename, FLD_mat);
         }
       }
     } else if (cmd == "pseudo") {

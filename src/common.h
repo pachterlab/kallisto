@@ -97,6 +97,9 @@ struct ProgramOptions {
   std::string bedFile;
   std::string technology;
   std::string tagsequence;
+  std::string tccFile;
+  std::string ecFile;
+  std::string fldFile;
   bool tag_strand_specific;
   StrandType tag_strand;
 

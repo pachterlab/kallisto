@@ -121,6 +121,7 @@ struct KmerIndex {
   // load methods
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
+  void loadECsFromFile(const ProgramOptions& opt);
   void clear();
 
   // positional information

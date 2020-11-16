@@ -55,6 +55,9 @@ void writeFLD(const std::string &filename, const std::vector<std::pair<double, d
 
 void writeGeneList(const std::string &filename, const Transcriptome& model);
 
+std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
+                                  const std::vector<double>& eff_lens);
+
 template<typename T>
 void writeSparseBatchMatrix(
   const std::string &filename,
