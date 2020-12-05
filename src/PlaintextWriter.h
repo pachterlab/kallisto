@@ -21,6 +21,14 @@ void plaintext_writer(
     const std::vector<int>& lens
     );
 
+void plaintext_writer_gene(
+    const std::string& out_name,
+    const std::vector<std::string>& targ_ids,
+    const std::vector<double>& alpha,
+    const std::vector<double>& eff_lens,
+    const Transcriptome& model
+);
+
 std::string to_json(const std::string& id, const std::string& val, bool quote,
     bool comma = true, int level = 1);
 

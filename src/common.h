@@ -100,6 +100,7 @@ struct ProgramOptions {
   std::string tccFile;
   std::string ecFile;
   std::string fldFile;
+  std::string genemap;
   bool tag_strand_specific;
   StrandType tag_strand;
 

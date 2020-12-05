@@ -380,21 +380,17 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  int verbose_flag = 0;
-  int plaintext_flag = 0;
-  
-  const char *opt_string = "o:i:c:e:f:l:s:t:";
+  const char *opt_string = "o:i:c:e:f:l:s:t:g:";
   static struct option long_options[] = {
-    // long args
     {"index", required_argument, 0, 'i'},
     {"tcc", required_argument, 0, 'c'},
-    // short args
     {"threads", required_argument, 0, 't'},
     {"fragment-file", required_argument, 0, 'f'},
     {"fragment-length", required_argument, 0, 'l'},
     {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"ec-file", required_argument, 0, 'e'},
+    {"genemap", required_argument, 0, 'g'},
     {0,0,0,0}
   };
   int c;
@@ -439,6 +435,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'e': {
       opt.ecFile = optarg;
+      break;
+    }
+    case 'g': {
+      opt.genemap = optarg;
       break;
     }
     default: break;
@@ -1523,6 +1523,15 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
     }
   }
   
+  if (!opt.genemap.empty()) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.genemap.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " file for mapping transcripts to genes not found " << opt.genemap << endl;
+      ret = false;
+    }
+  }
+  
   if ((opt.fld != 0.0 || opt.sd != 0.0) && !opt.fldFile.empty()) {
     cerr << ERROR_STR <<" cannot supply mean or sd while also supplying a fragment length distribution file" << endl;
     ret = false;
@@ -2148,13 +2157,15 @@ void usageTCCQuant(bool valid_input = true) {
        << "-e, --ec-file=FILE            File containing equivalence classes" << endl
        << "                              (default: equivalence classes are taken from the index)" << endl
        << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl
-       << "                              (default: effective length normalization is not peformed)" << endl
+       << "                              (default: effective length normalization is not performed)" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (note: -l, -s values only should be supplied when" << endl
        << "                               effective length normalization needs to be performed" << endl
        << "                               but --fragment-file is not specified)" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "-g, --genemap                 File for mapping transcripts to genes" << endl
+       << "                              (required for obtaining gene-level abundances)" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -2808,19 +2819,21 @@ int main(int argc, char *argv[]) {
                     << "expected " << pretty_num(nlines) << std::endl;
           exit(1);
         }
-        if (ncol != num_ecs) {
+        if ((isMatrixFile && ncol != num_ecs) || (!isMatrixFile && ncol > num_ecs)) {
           std::cerr << "Error: number of equivalence classes does not match index. Found "
                     << pretty_num(ncol) << ", expected " << pretty_num(num_ecs) << std::endl;
           exit(1);
         }
         
-        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
-        std::vector<std::vector<std::pair<int32_t, double>>> TPM_mat;
+        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
         Abundance_mat.resize(nrow, {});
+        Abundance_mat_gene.resize(nrow, {});
         TPM_mat.resize(nrow, {});
+        TPM_mat_gene.resize(nrow, {});
         std::vector<std::pair<double, double>> FLD_mat;
         FLD_mat.resize(nrow, {});
         std::vector<std::vector<int>> FLDs;
+        Transcriptome model; // empty model
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
         for (const auto &t : index.target_names_) {
@@ -2829,8 +2842,12 @@ int main(int argc, char *argv[]) {
         transout_f.close();
         std::string prefix = opt.output + "/matrix";
         std::string abtsvfilename = opt.output + "/abundance.tsv";
+        std::string gene_abtsvfilename = opt.output + "/abundance.gene.tsv";
+        std::string genelistname = opt.output + "/genelist.txt";
         std::string abfilename = prefix + ".abundance.mtx";
         std::string abtpmfilename = prefix + ".abundance.tpm.mtx";
+        std::string gene_abfilename = prefix + ".abundance.gene.mtx";
+        std::string gene_abtpmfilename = prefix + ".abundance.gene.tpm.mtx";
         std::string fldfilename = prefix + ".fld.tsv";
 
         const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
@@ -2872,7 +2889,11 @@ int main(int argc, char *argv[]) {
             exit(1);
           }
         }
-        
+
+        if (!opt.genemap.empty()) { // Parse supplied gene mapping file
+          model.parseGeneMap(opt.genemap, index, opt);
+        }
+
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
         auto EM_lambda = [&](int id) {
           MinCollector collection(index, opt);
@@ -2910,17 +2931,43 @@ int main(int argc, char *argv[]) {
           if (isMatrixFile) { // Update abundances matrix
             auto &ab_m = Abundance_mat[id];
             auto &tpm_m = TPM_mat[id];
-            std::vector<double> tpm_vec;
-            tpm_vec = counts_to_tpm(em.alpha_, em.eff_lens_);
+            std::vector<double> gc;
+            std::vector<double> gc_tpm;
+            if (!opt.genemap.empty()) {
+              gc.assign(model.genes.size(), 0.0);
+              gc_tpm.assign(model.genes.size(), 0.0);
+            }
+            auto tpm = counts_to_tpm(em.alpha_, em.eff_lens_);
             for (int i = 0; i < em.alpha_.size(); i++) {
               if (em.alpha_[i] > 0.0) {
                 ab_m.push_back({i,em.alpha_[i]});
-                tpm_m.push_back({i,tpm_vec[i]});
+                tpm_m.push_back({i,tpm[i]});
+                if (!opt.genemap.empty()) {
+                  int g_id = model.transcripts[i].gene_id;
+                  if (g_id != -1) {
+                    gc[g_id] += em.alpha_[i];
+                    gc_tpm[g_id] += tpm[i];
+                  }
+                }
+              }
+            }
+            if (!opt.genemap.empty()) {
+              auto &ab_m_g = Abundance_mat_gene[id];
+              auto &tpm_m_g = TPM_mat_gene[id];
+              for (int i = 0; i < gc.size(); i++) {
+                if (gc[i] > 0.0) {
+                  ab_m_g.push_back({i, gc[i]});
+                  tpm_m_g.push_back({i, gc_tpm[i]});
+                }
               }
             }
           } else { // Write plaintext abundances
             plaintext_writer(abtsvfilename, em.target_names_,
                              em.alpha_, em.eff_lens_, index.target_lens_);
+            if (!opt.genemap.empty()) {
+              plaintext_writer_gene(gene_abtsvfilename, em.target_names_,
+                                     em.alpha_, em.eff_lens_, model);
+            }
           }
         }; // end of EM_lambda
         
@@ -2946,6 +2993,11 @@ int main(int argc, char *argv[]) {
         if (isMatrixFile) {
           writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
           writeSparseBatchMatrix(abtpmfilename, TPM_mat, index.num_trans);
+          if (!opt.genemap.empty()) {
+            writeSparseBatchMatrix(gene_abfilename, Abundance_mat_gene, model.genes.size());
+            writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
+            writeGeneList(genelistname, model);
+          }
         }
         if (calcEffLen) {
           writeFLD(fldfilename, FLD_mat);
