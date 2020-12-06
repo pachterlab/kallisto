@@ -380,7 +380,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:c:e:f:l:s:t:g:";
+  const char *opt_string = "o:i:c:e:f:l:s:t:g:G:";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"tcc", required_argument, 0, 'c'},
@@ -391,6 +391,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"output-dir", required_argument, 0, 'o'},
     {"ec-file", required_argument, 0, 'e'},
     {"genemap", required_argument, 0, 'g'},
+    {"gtf", required_argument, 0, 'G'},
     {0,0,0,0}
   };
   int c;
@@ -439,6 +440,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'g': {
       opt.genemap = optarg;
+      break;
+    }
+    case 'G': {
+      opt.gtfFile = optarg;
       break;
     }
     default: break;
@@ -1523,6 +1528,20 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
     }
   }
   
+  if (!opt.genemap.empty() && !opt.gtfFile.empty()) {
+    cerr << ERROR_STR << " Cannot supply both --genemap and --gtf" << endl;
+    ret = false;
+  }
+  
+  if (!opt.gtfFile.empty()) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " GTF file not found " << opt.gtfFile << endl;
+      ret = false;
+    }
+  }
+  
   if (!opt.genemap.empty()) {
     struct stat stFileInfo;
     auto intStat = stat(opt.genemap.c_str(), &stFileInfo);
@@ -2165,7 +2184,9 @@ void usageTCCQuant(bool valid_input = true) {
        << "                               but --fragment-file is not specified)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-g, --genemap                 File for mapping transcripts to genes" << endl
-       << "                              (required for obtaining gene-level abundances)" << endl;
+       << "                              (required for obtaining gene-level abundances)" << endl
+       << "-G, --gtf=FILE                GTF file for transcriptome information" << endl
+       << "                              (can be used instead of --genemap for obtaining gene-level abundances)" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -2892,7 +2913,10 @@ int main(int argc, char *argv[]) {
 
         if (!opt.genemap.empty()) { // Parse supplied gene mapping file
           model.parseGeneMap(opt.genemap, index, opt);
+        } else if (!opt.gtfFile.empty()) {
+          model.parseGTF(opt.gtfFile, index, opt, true);
         }
+        const bool gene_level_counting = !opt.genemap.empty() || !opt.gtfFile.empty();
 
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
         auto EM_lambda = [&](int id) {
@@ -2933,7 +2957,7 @@ int main(int argc, char *argv[]) {
             auto &tpm_m = TPM_mat[id];
             std::vector<double> gc;
             std::vector<double> gc_tpm;
-            if (!opt.genemap.empty()) {
+            if (gene_level_counting) {
               gc.assign(model.genes.size(), 0.0);
               gc_tpm.assign(model.genes.size(), 0.0);
             }
@@ -2942,7 +2966,7 @@ int main(int argc, char *argv[]) {
               if (em.alpha_[i] > 0.0) {
                 ab_m.push_back({i,em.alpha_[i]});
                 tpm_m.push_back({i,tpm[i]});
-                if (!opt.genemap.empty()) {
+                if (gene_level_counting) {
                   int g_id = model.transcripts[i].gene_id;
                   if (g_id != -1) {
                     gc[g_id] += em.alpha_[i];
@@ -2951,7 +2975,7 @@ int main(int argc, char *argv[]) {
                 }
               }
             }
-            if (!opt.genemap.empty()) {
+            if (gene_level_counting) {
               auto &ab_m_g = Abundance_mat_gene[id];
               auto &tpm_m_g = TPM_mat_gene[id];
               for (int i = 0; i < gc.size(); i++) {
@@ -2964,7 +2988,7 @@ int main(int argc, char *argv[]) {
           } else { // Write plaintext abundances
             plaintext_writer(abtsvfilename, em.target_names_,
                              em.alpha_, em.eff_lens_, index.target_lens_);
-            if (!opt.genemap.empty()) {
+            if (gene_level_counting) {
               plaintext_writer_gene(gene_abtsvfilename, em.target_names_,
                                      em.alpha_, em.eff_lens_, model);
             }
@@ -2993,7 +3017,7 @@ int main(int argc, char *argv[]) {
         if (isMatrixFile) {
           writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
           writeSparseBatchMatrix(abtpmfilename, TPM_mat, index.num_trans);
-          if (!opt.genemap.empty()) {
+          if (gene_level_counting) {
             writeSparseBatchMatrix(gene_abfilename, Abundance_mat_gene, model.genes.size());
             writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
             writeGeneList(genelistname, model);
