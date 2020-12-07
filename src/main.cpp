@@ -380,7 +380,7 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:c:e:f:l:s:t:g:G:";
+  const char *opt_string = "o:i:c:e:f:l:s:t:g:G:b:d:";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"tcc", required_argument, 0, 'c'},
@@ -392,6 +392,8 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"ec-file", required_argument, 0, 'e'},
     {"genemap", required_argument, 0, 'g'},
     {"gtf", required_argument, 0, 'G'},
+    {"bootstrap-samples", required_argument, 0, 'b'},
+    {"seed", required_argument, 0, 'd'},
     {0,0,0,0}
   };
   int c;
@@ -444,6 +446,14 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'G': {
       opt.gtfFile = optarg;
+      break;
+    }
+    case 'b': {
+      stringstream(optarg) >> opt.bootstrap;
+      break;
+    }
+    case 'd': {
+      stringstream(optarg) >> opt.seed;
       break;
     }
     default: break;
@@ -1607,6 +1617,11 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
            << ", but only " << n << " cores on the machine" << endl;
     }
   }
+  
+  if (opt.bootstrap < 0) {
+    cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
+    ret = false;
+  }
 
    return ret;
 }
@@ -2186,7 +2201,9 @@ void usageTCCQuant(bool valid_input = true) {
        << "-g, --genemap                 File for mapping transcripts to genes" << endl
        << "                              (required for obtaining gene-level abundances)" << endl
        << "-G, --gtf=FILE                GTF file for transcriptome information" << endl
-       << "                              (can be used instead of --genemap for obtaining gene-level abundances)" << endl;
+       << "                              (can be used instead of --genemap for obtaining gene-level abundances)" << endl
+       << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -2786,6 +2803,9 @@ int main(int argc, char *argv[]) {
                 ss >> nrow >> ncol >> nlines;
                 std::cerr << "[tcc] Matrix dimensions: " << pretty_num(nrow) << " x " << pretty_num(ncol) << std::endl;
                 batchCounts.assign(nrow, {});
+                if (opt.bootstrap > 0) {
+                  cerr << "[tcc] Warning: Bootstrap can only be used for non-matrix files; will not be performed" << endl;
+                }
                 continue;
               } else {
                 std::cerr << "[tcc] Transcript-compatibility counts (TCC) file is not in matrix format; "
@@ -2992,6 +3012,25 @@ int main(int argc, char *argv[]) {
               plaintext_writer_gene(gene_abtsvfilename, em.target_names_,
                                      em.alpha_, em.eff_lens_, model);
             }
+          }
+          
+          if (opt.bootstrap > 0 && !isMatrixFile) {
+            auto B = opt.bootstrap;
+            std::mt19937_64 rand;
+            rand.seed( opt.seed );
+            std::vector<size_t> seeds;
+            for (auto s = 0; s < B; ++s) {
+              seeds.push_back( rand() );
+            }
+            cerr << endl;
+            for (auto b = 0; b < B; ++b) {
+              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
+              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
+              auto res = bs.run_em();
+              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
+                               em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+            }
+            cerr << endl;
           }
         }; // end of EM_lambda
         
