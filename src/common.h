@@ -89,6 +89,7 @@ struct ProgramOptions {
   enum class StrandType {None, FR, RF};
   StrandType strand;
   bool umi;
+  bool batch_bus;
   std::string gfa; // used for inspect
   bool inspect_thorough;
   bool single_overhang;
@@ -132,6 +133,7 @@ ProgramOptions() :
   fusion(false),
   strand(StrandType::None),
   umi(false),
+  batch_bus(false),
   inspect_thorough(false),
   single_overhang(false),
   tag_strand_specific(false),

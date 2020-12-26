@@ -469,6 +469,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int gbam_flag = 0;
   int umi_flag = 0;
   int quant_flag = 0;
+  int bus_flag = 0;
 
   const char *opt_string = "t:i:l:s:o:b:u:g:";
   static struct option long_options[] = {
@@ -478,6 +479,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     //{"strand-specific", no_argument, &strand_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"quant", no_argument, &quant_flag, 1},
+    {"bus", no_argument, &bus_flag, 1},
     {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
@@ -537,6 +539,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   if (umi_flag) {
     opt.umi = true;
     opt.single_end = true; // UMI implies single-end reads
+  }
+  
+  if (bus_flag) {
+    opt.batch_bus = true;
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -1733,12 +1739,25 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << ERROR_STR << " --quant can only be run with in batch mode with --batch" << endl;
       ret = false;
     }
+    if (opt.batch_bus) {
+      cerr << ERROR_STR << " --quant cannot be run with --bus" << endl;
+      ret = false;
+    }
+  }
+  
+  if (opt.batch_bus && opt.umi) {
+    cerr << ERROR_STR << " UMI cannot be run with --bus" << endl;
+    ret = false;   
   }
 
   // check for read files
   if (!opt.batch_mode) {
     if (opt.umi) {
       cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
+      ret = false;      
+    }
+    if (opt.batch_bus) {
+      cerr << ERROR_STR << " --bus must be run in batch mode, use --batch option" << endl;
       ret = false;      
     }
     
@@ -1907,6 +1926,18 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
   if (opt.pseudobam) {
     cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
     ret = false;
+  }
+  
+  if (opt.batch_bus && ret) { // Set up BUS options
+    auto& busopt = opt.busOptions;
+    busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+    if (opt.single_end) {
+      busopt.nfiles = 1;
+    } else {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.paired = true;
+    }
   }
 
   return ret;
@@ -2140,6 +2171,7 @@ void usagePseudo(bool valid_input = true) {
        << "-u  --umi                     First file in pair is a UMI file" << endl
        << "-b  --batch=FILE              Process files listed in FILE" << endl
        << "    --quant                   Quantify using EM algorithm (only in batch mode)" << endl
+       << "    --bus                     Output a BUS file" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -3217,10 +3249,43 @@ int main(int argc, char *argv[]) {
         std::string fldfilename = prefix + ".fld.tsv";
         std::string genelistname = prefix + ".genelist.txt";
         std::string genecountname = prefix + ".genes.mtx";
+        std::string busbarcodelistname = prefix + ".barcodes";
+        std::string busoutputname = opt.output + "/output.bus";
 
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
-        writeSparseBatchMatrix(tccfilename, MP.batchCounts, index.ecmap.size());
+        if (opt.batch_bus) {
+          // Write BUS file
+          writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+          if (!MP.batchCounts.empty()) {
+            // Write out fake barcodes that identify each cell
+            std::vector<std::string> fake_bcs;
+            fake_bcs.reserve(MP.batchCounts.size());
+            for (size_t j = 0; j < MP.batchCounts.size(); j++) {
+              fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
+            }
+            writeCellIds(busbarcodelistname, fake_bcs);
+          }
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false);
+          // Write out fragment length distributions if reads paired-end:
+          if (!opt.single_end) {
+            std::ofstream flensout_f((opt.output + "/flens.txt"));
+            for (size_t id = 0; id < opt.batch_ids.size(); id++) {
+              std::vector<int> fld = MP.batchFlens[id];
+              for ( size_t i = 0 ; i < fld.size(); ++i ) {
+                if (i != 0) {
+                  flensout_f << " ";
+                }
+                flensout_f << fld[i];
+              }
+              flensout_f << "\n";
+            }
+            flensout_f.close();
+          }
+        } else {
+          writeSparseBatchMatrix(tccfilename, MP.batchCounts, index.ecmap.size());
+        }
         if (opt.pseudo_quant) {
           writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
           writeFLD(fldfilename, FLD_mat);
