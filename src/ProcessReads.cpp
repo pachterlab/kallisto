@@ -465,7 +465,7 @@ void MasterProcessor::processReads() {
           }
           int ec = tc.findEC(t.first);
           assert(ec != -1);
-          ++tmp_counts[ec];
+          tmp_counts[ec] += t.second;
         }
         auto& bc = batchCounts[id];
         for (int j = 0; j < tmp_counts.size(); j++) {
