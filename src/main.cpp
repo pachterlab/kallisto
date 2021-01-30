@@ -380,9 +380,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:c:e:f:l:s:t:g:G:b:d:";
+  const char *opt_string = "o:i:T:c:e:f:l:s:t:g:G:b:d:";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
+    {"txnames", required_argument, 0, 'T'},
     {"tcc", required_argument, 0, 'c'},
     {"threads", required_argument, 0, 't'},
     {"fragment-file", required_argument, 0, 'f'},
@@ -454,6 +455,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
+      break;
+    }
+    case 'T': {
+      opt.transcriptsFile = optarg;
       break;
     }
     default: break;
@@ -1502,14 +1507,24 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
   
   cerr << endl;
   // check for index
-  if (opt.index.empty()) {
-    cerr << ERROR_STR << " kallisto index file missing" << endl;
+  if (opt.index.empty() && opt.transcriptsFile.empty()) {
+    cerr << ERROR_STR << " either a kallisto index file or a transcripts file need to be supplied" << endl;
     ret = false;
-  } else {
+  } else if (!opt.index.empty() && !opt.transcriptsFile.empty()) {
+    cerr << ERROR_STR << " cannot supply both a kallisto index file and a transcripts file" << endl;
+    ret = false;
+  } else if (!opt.index.empty()) {
     struct stat stFileInfo;
     auto intStat = stat(opt.index.c_str(), &stFileInfo);
     if (intStat != 0) {
       cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
+      ret = false;
+    }
+  } else if (!opt.transcriptsFile.empty()) {
+    struct stat stFileInfo;
+    auto intStat = stat(opt.transcriptsFile.c_str(), &stFileInfo);
+    if (intStat != 0) {
+      cerr << ERROR_STR << " transcripts file not found " << opt.transcriptsFile << endl;
       ret = false;
     }
   }
@@ -1524,6 +1539,11 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       cerr << ERROR_STR << " transcript-compatibility counts file not found " << opt.tccFile << endl;
       ret = false;
     }
+  }
+  
+  if (opt.ecFile.empty() && !opt.transcriptsFile.empty()) {
+    cerr << ERROR_STR << " equivalence class file must be supplied if transcripts file is supplied " << opt.tccFile << endl;
+    ret = false;
   }
 
   if (!opt.ecFile.empty()) {
@@ -1574,6 +1594,11 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
   
   if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
     cerr << ERROR_STR << " cannot supply mean/sd without supplying both -l and -s" << endl;
+    ret = false;
+  }
+  
+  if (opt.index.empty() && (!opt.fldFile.empty() || opt.fld != 0.0 || opt.sd != 0.0)) {
+    cerr << ERROR_STR << " cannot supply fragment length information unless a kallisto index is provided" << endl;
     ret = false;
   }
   
@@ -2216,10 +2241,13 @@ void usageTCCQuant(bool valid_input = true) {
   
   cout << "Usage: kallisto quant-tcc [arguments]" << endl << endl
        << "Required arguments:" << endl
-       << "-i, --index=STRING            Filename for the kallisto index to be used" << endl
        << "-c, --tcc=FILE                File containing transcript-compatibility counts" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index to be used" << endl
+       << "                              (required if file with names of transcripts not supplied)" << endl
+       << "-T, --txnames=STRING          File with names of transcripts" << endl
+       << "                              (required if index file not supplied)" << endl
        << "-e, --ec-file=FILE            File containing equivalence classes" << endl
        << "                              (default: equivalence classes are taken from the index)" << endl
        << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl

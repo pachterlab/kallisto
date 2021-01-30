@@ -783,6 +783,12 @@ bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
 }
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
+  if (opt.index.empty() && !loadKmerTable) {
+    // Make an index from transcript and EC files
+    loadTranscriptsFromFile(opt);
+    loadECsFromFile(opt);
+    return;
+  }
 
   std::string& index_in = opt.index;
   std::ifstream in;
@@ -1014,6 +1020,26 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
   }
   std::cerr << "[index] number of equivalence classes loaded from file: "
             << pretty_num(ecmap.size()) << std::endl;
+}
+
+void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
+  target_names_.clear();
+  int i = 0;
+  std::ifstream in((opt.transcriptsFile));
+  if (in.is_open()) {
+    std::string txp;
+    while (in >> txp) {
+      target_names_.push_back(txp);
+      i++;
+    }
+  } else {
+    std::cerr << "Error: could not open file " << opt.transcriptsFile << std::endl;
+    exit(1);
+  }
+  num_trans = i;
+  target_lens_.assign(num_trans, 0);
+  std::cerr << "[index] number of targets loaded from file: "
+            << pretty_num(num_trans) << std::endl;
 }
 
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
