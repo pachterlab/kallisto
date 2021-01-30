@@ -380,11 +380,10 @@ void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:T:c:e:f:l:s:t:g:G:b:d:";
+  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
   static struct option long_options[] = {
     {"index", required_argument, 0, 'i'},
     {"txnames", required_argument, 0, 'T'},
-    {"tcc", required_argument, 0, 'c'},
     {"threads", required_argument, 0, 't'},
     {"fragment-file", required_argument, 0, 'f'},
     {"fragment-length", required_argument, 0, 'l'},
@@ -433,10 +432,6 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
       opt.index = optarg;
       break;
     }
-    case 'c': {
-      opt.tccFile = optarg;
-      break;
-    }
     case 'e': {
       opt.ecFile = optarg;
       break;
@@ -463,6 +458,12 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     default: break;
     }
+  }
+  for (int i = optind; i < argc; i++) {
+    opt.files.push_back(argv[i]);
+  }
+  if (opt.files.size() > 0) {
+    opt.tccFile = opt.files[0];
   }
 }
 
@@ -2239,9 +2240,8 @@ void usageTCCQuant(bool valid_input = true) {
          << "Quantifies abundance from pre-computed transcript-compatibility counts" << endl << endl;
   }
   
-  cout << "Usage: kallisto quant-tcc [arguments]" << endl << endl
+  cout << "Usage: kallisto quant-tcc [arguments] transcript-compatibility-counts-file" << endl << endl
        << "Required arguments:" << endl
-       << "-c, --tcc=FILE                File containing transcript-compatibility counts" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used" << endl
