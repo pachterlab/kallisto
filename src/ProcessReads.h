@@ -179,8 +179,6 @@ public:
       }
 
       if (opt.batch_mode) {
-        memset(&bus_bc_len[0],0,33);
-        memset(&bus_umi_len[0],0,33);
         batchCounts.assign(opt.batch_ids.size(), {});
         tlencounts.assign(opt.batch_ids.size(), 0);
         batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
@@ -199,6 +197,8 @@ public:
         pseudobatchf_out.open(opt.output + "/pseudoaln.bin", std::ios::out | std::ios::binary);
       }
       if (opt.bus_mode) {
+        memset(&bus_bc_len[0],0,sizeof(bus_bc_len));
+        memset(&bus_umi_len[0],0,sizeof(bus_umi_len));
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
         
         writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());

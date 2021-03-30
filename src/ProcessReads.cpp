@@ -1298,8 +1298,8 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
    newEcs.reserve(1000);
    bv.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
-   memset(&bc_len[0],0,33);
-   memset(&umi_len[0],0,33);
+   memset(&bc_len[0],0,sizeof(bc_len));
+   memset(&umi_len[0],0,sizeof(umi_len));
 
    clear();
 }
@@ -1324,8 +1324,8 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   bias5(std::move(o.bias5)),
   bv(std::move(o.bv)),  
   counts(std::move(o.counts)) {
-    memcpy(&bc_len[0], &o.bc_len[0], 33);
-    memcpy(&umi_len[0], &o.umi_len[0], 33);
+    memcpy(&bc_len[0], &o.bc_len[0], sizeof(bc_len));
+    memcpy(&umi_len[0], &o.umi_len[0], sizeof(umi_len));
     buffer = o.buffer;
     o.buffer = nullptr;
     o.bufsize = 0;
@@ -1380,8 +1380,8 @@ void BUSProcessor::processBuffer() {
   v2.reserve(1000);
   vtmp.reserve(1000);
 
-  memset(&bc_len[0], 0, 33);
-  memset(&umi_len[0], 0, 33);
+  memset(&bc_len[0], 0, sizeof(bc_len));
+  memset(&umi_len[0], 0, sizeof(umi_len));
 
   const BUSOptions& busopt = mp.opt.busOptions;
   
