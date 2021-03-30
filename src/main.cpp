@@ -633,8 +633,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv2        inDrops version 2 chemistry" << endl
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
-  << "SmartSeq3        SmartSeq3 (8bp index)" << endl
-  << "SmartSeq3_10     SmartSeq3 (10bp index)" << endl
+  << "SmartSeq3        Smart-seq3" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
@@ -1042,18 +1041,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
         busopt.seq.push_back(BUSOptionSubstr(3,0,0));
         busopt.umi = BUSOptionSubstr(2,0,19);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
-        busopt.paired = true;
-        opt.tag_strand_specific = true;
-        opt.tag_strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "SMARTSEQ3_10") {
-        busopt.nfiles = 4;
-        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
-        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi = BUSOptionSubstr(2,0,19);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
         opt.tag_strand_specific = true;
         opt.tag_strand = ProgramOptions::StrandType::FR;
@@ -1159,18 +1148,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
         busopt.seq.push_back(BUSOptionSubstr(3,0,0));
         busopt.umi = BUSOptionSubstr(2,0,19);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
-        busopt.paired = true;
-        opt.tag_strand_specific = true;
-        opt.tag_strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "SMARTSEQ3_10") {
-        busopt.nfiles = 4;
-        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
-        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi = BUSOptionSubstr(2,0,19);
-        busopt.bc.push_back(BUSOptionSubstr(0,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
         opt.tag_strand_specific = true;
         opt.tag_strand = ProgramOptions::StrandType::FR;
@@ -1206,7 +1185,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
   }
   
-  if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3" || opt.technology == "SMARTSEQ3_10")) {
+  if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3")) {
     cerr << "Error: Tag sequence must be specified for Smart-seq3 technologies" << endl;
     ret = false;
   }
