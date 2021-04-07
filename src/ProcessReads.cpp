@@ -1555,13 +1555,13 @@ void BUSProcessor::processBuffer() {
       ec = tc.findEC(u);
     }
 
-    if (!ignore_umi && mp.opt.tag_strand_specific && !u.empty()) {
+    if (!ignore_umi && mp.opt.strand_specific && !u.empty()) {
       int p = -1;
       Kmer km;
       KmerEntry val;
       if (!v.empty()) {
         vtmp.clear();
-        bool firstStrand = (mp.opt.tag_strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
         p = findFirstMappingKmer(v,val);
         km = Kmer((seq+p));
         bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
@@ -1584,7 +1584,7 @@ void BUSProcessor::processBuffer() {
       }
       if (!v2.empty()) {
         vtmp.clear();
-        bool secondStrand = (mp.opt.tag_strand == ProgramOptions::StrandType::RF);
+        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
         p = findFirstMappingKmer(v2,val);
         km = Kmer((seq2+p));
         bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?

@@ -103,8 +103,6 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
-  bool tag_strand_specific;
-  StrandType tag_strand;
 
 ProgramOptions() :
   verbose(false),
@@ -136,9 +134,7 @@ ProgramOptions() :
   umi(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false),
-  tag_strand_specific(false),
-  tag_strand(StrandType::None)
+  single_overhang(false)
   {}
 };
 
