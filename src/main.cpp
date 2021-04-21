@@ -626,6 +626,7 @@ void ListSingleCellTechnologies() {
   << "10xv1            10x version 1 chemistry" << endl
   << "10xv2            10x version 2 chemistry" << endl
   << "10xv3            10x version 3 chemistry" << endl
+  << "BDWTA            BD Rhapsody WTA" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
   << "DropSeq          DropSeq" << endl
@@ -1040,6 +1041,15 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
+      } else if (opt.technology == "BDWTA") {
+        busopt.nfiles = 2;
+        busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
+        // busopt.bc.push_back(BUSOptionSubstr(0,9,9+12)); // linker
+        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12, 9 + 12 + 9)); // bc2 CLS2
+        // busopt.bc.push_back(BUSOptionSubstr(0,9+12+9,9+12+9+13)); // linker
+        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
+        busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
+        busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1145,6 +1155,15 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
+      } else if (opt.technology == "BDWTA") {
+        busopt.nfiles = 2;
+        busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
+        // busopt.bc.push_back(BUSOptionSubstr(0,9,9+12)); // linker
+        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12, 9 + 12 + 9)); // bc2 CLS2
+        // busopt.bc.push_back(BUSOptionSubstr(0,9+12+9,9+12+9+13)); // linker
+        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
+        busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
+        busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1178,8 +1197,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
   
   if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3")) {
-    cerr << "Error: Tag sequence must be specified for Smart-seq3 technologies" << endl;
-    ret = false;
+    opt.tagsequence = "ATTGCGCAATG";
+    cerr << "[bus] Using " <<  opt.tagsequence << " as UMI tag sequence" << endl;
   }
   
   if (!opt.tagsequence.empty()) {
