@@ -847,11 +847,7 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
     errorList.push_back("Error: empty UMI list " + umistr);
     return false;
   }
-  if (v.size() != 1) {
-    errorList.push_back("Error: only a single UMI list allow " + umistr);
-    return false;
-  }
-  busopt.umi = std::move(v.front());
+  busopt.umi = std::move(v);
 
 
   if (!convert_commas_to_vector(seqstr, v)) {
@@ -986,61 +982,61 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.paired = false;
       if (opt.technology == "10XV2") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
-        busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+        busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV3") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,16,28);
+        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
 //      } else if (opt.technology == "10XV1") {
 
       } else if (opt.technology == "SURECELL") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,18,26);
+        busopt.umi.push_back(BUSOptionSubstr(0,18,26));
         busopt.bc.push_back(BUSOptionSubstr(0,0,18));
       } else if (opt.technology == "DROPSEQ") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,12,20);
+        busopt.umi.push_back(BUSOptionSubstr(0,12,20));
         busopt.bc.push_back(BUSOptionSubstr(0,0,12));
       } else if (opt.technology == "INDROPSV1") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,42,48);
+        busopt.umi.push_back(BUSOptionSubstr(0,42,48));
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
         busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi = BUSOptionSubstr(1,42,48);
+        busopt.umi.push_back(BUSOptionSubstr(1,42,48));
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
         busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "CELSEQ") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,8,12);
+        busopt.umi.push_back(BUSOptionSubstr(0,8,12));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
       } else if (opt.technology == "CELSEQ2") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,6,16);
+        busopt.umi.push_back(BUSOptionSubstr(0,6,16));
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       } else if (opt.technology == "INDROPSV3") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,16));
       } else if (opt.technology == "SMARTSEQ3") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
         busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.umi.push_back(BUSOptionSubstr(2,0,19));
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
@@ -1062,7 +1058,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
-          busopt.umi = values[0];
+          busopt.umi.push_back(values[0]);
           busopt.seq.push_back(values[1]);
           */
         } else {
@@ -1078,74 +1074,74 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       if (opt.technology == "10XV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
-        busopt.umi = BUSOptionSubstr(0,16,26); // first file [16:26]
+        busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV3") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,16,28);
+        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
       } else if (opt.technology == "10XV1") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi = BUSOptionSubstr(1,0,10);
+        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
         busopt.bc.push_back(BUSOptionSubstr(0,0,14));
       } else if (opt.technology == "SURECELL") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,51,59);
+        busopt.umi.push_back(BUSOptionSubstr(0,51,59));
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,21,27));
         busopt.bc.push_back(BUSOptionSubstr(0,42,48));
       } else if (opt.technology == "DROPSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,12,20);
+        busopt.umi.push_back(BUSOptionSubstr(0,12,20));
         busopt.bc.push_back(BUSOptionSubstr(0,0,12));
       } else if (opt.technology == "INDROPSV1") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,42,48);
+        busopt.umi.push_back(BUSOptionSubstr(0,42,48));
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
         busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi = BUSOptionSubstr(1,42,48);
+        busopt.umi.push_back(BUSOptionSubstr(1,42,48));
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
         busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "CELSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,8,12);
+        busopt.umi.push_back(BUSOptionSubstr(0,8,12));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
       } else if (opt.technology == "CELSEQ2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,0,6);
+        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi = BUSOptionSubstr(0,6,16);
+        busopt.umi.push_back(BUSOptionSubstr(0,6,16));
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi = BUSOptionSubstr(1,8,14);
+        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
         busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "SMARTSEQ3") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
         busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi = BUSOptionSubstr(2,0,19);
+        busopt.umi.push_back(BUSOptionSubstr(2,0,19));
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
@@ -1167,7 +1163,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
-          busopt.umi = values[0];
+          busopt.umi.push_back(values[0]);
           busopt.seq.push_back(values[1]);
           */
         } else {
@@ -1187,8 +1183,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
   
   if (!opt.tagsequence.empty()) {
-    opt.busOptions.umi.start += opt.tagsequence.length();
-    if (opt.busOptions.umi.start >= opt.busOptions.umi.stop) {
+    opt.busOptions.umi[0].start += opt.tagsequence.length();
+    if (opt.busOptions.umi[0].start >= opt.busOptions.umi[0].stop) {
       cerr << "Error: Tag sequence must be shorter than UMI sequence" << endl;
       ret = false;
     }

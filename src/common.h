@@ -22,7 +22,7 @@ struct BUSOptionSubstr {
 struct BUSOptions {
   int nfiles;
   
-  BUSOptionSubstr umi;
+  std::vector<BUSOptionSubstr> umi;
   std::vector<BUSOptionSubstr> bc;
   std::vector<BUSOptionSubstr> seq;
   
@@ -34,6 +34,8 @@ struct BUSOptions {
       for (auto& b : bc) {
         if (b.start < 0) {
           return 0;
+        } else if (b.stop == 0) {
+          return 0;
         } else {
           r += b.stop - b.start;
         }
@@ -43,11 +45,19 @@ struct BUSOptions {
   }
 
   int getUMILength() const {
-    if (umi.start >= 0) {
-      return umi.stop - umi.start;
-    } else {
-      return 0;
+    int r =0 ;
+    if (!umi.empty()) {
+      for (auto& u : umi) {
+        if (u.start < 0) {
+          return 0;
+        } else if (u.stop == 0) {
+          return 0;
+        } else {
+          r += u.stop - u.start;
+        }
+      }
     }
+    return r;
   }
 };
 

@@ -1450,46 +1450,58 @@ void BUSProcessor::processBuffer() {
     bool ignore_umi = false;
     
     // copy the umi
-    int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
-    if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
-      continue; // too short
+    int ulen = 0;
+    bool bad_umi = false;
+    for (auto &umic : busopt.umi) {
+      int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
+      if (l[umic.fileno] < umic.start + umilen || umilen <= 0) {
+        bad_umi = true;
+        break;
+      }
+      if (check_tag_sequence && ulen == 0) {
+        umilen += taglen; // Expand to include tag sequence
+        memcpy(umi, s[umic.fileno] + umic.start - taglen, umilen);
+      } else {
+        memcpy(umi+ulen, s[umic.fileno] + umic.start, umilen);
+      }
+      ulen += umilen;
     }
-    if (check_tag_sequence) {
-      umilen += taglen; // Expand to include tag sequence
-      memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start - taglen, umilen);
-    } else {
-      memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
+    if (bad_umi) {
+      continue;
     }
-    umi[umilen] = 0;
+    umi[ulen] = 0;
+
     uint64_t umi_binary = -1;
-    if (umilen >= 0 && umilen <= 32) {
-      if (check_tag_sequence) {
-        uint32_t f = 0;
-        umi_binary = stringToBinary(umi, umilen, f);
-        if (hamming(tag_binary, umi_binary >> 2*(umilen-taglen), taglen) <= hamming_dist) { // if tag present
-          umi_binary = umi_binary & ~(~0ULL << (2*(umilen - taglen)));
-          umilen = umilen - taglen;
-          umi_len[umilen]++;
-        } else {
-          ignore_umi = true; // tag not present, it's not a UMI-read
-          umi_binary = -1;
+    if (check_tag_sequence) {
+      uint32_t f = 0;
+      umi_binary = stringToBinary(umi, ulen, f);
+      if (hamming(tag_binary, umi_binary >> 2*(ulen-taglen), taglen) <= hamming_dist) { // if tag present
+        umi_binary = umi_binary & ~(~0ULL << (2*(ulen - taglen)));
+        ulen = ulen - taglen;
+        if (ulen <= 32) {
+          umi_len[ulen]++;
         }
       } else {
-        umi_len[umilen]++;
+        ignore_umi = true; // tag not present, it's not a UMI-read
+        umi_binary = -1;
+      }
+    } else {
+      if (ulen <= 32) {
+        umi_len[ulen]++;
       }
     }
     
     size_t seqlen = 0;
     size_t seqlen2 = 0;
     if (singleSeq) {
-      int seqstart = (ignore_umi ? busopt.umi.start - taglen : seqopt.start);
+      int seqstart = (ignore_umi && busopt.umi[0].fileno == seqopt.fileno ? busopt.umi[0].start - taglen : seqopt.start);
       seq = s[seqopt.fileno] + seqstart;
       seqlen = (seqopt.stop == 0) ? l[seqopt.fileno]-seqstart : seqopt.stop - seqstart;
     } else if (busopt.paired) {
       const auto &sopt1 = busopt.seq[0];
       const auto &sopt2 = busopt.seq[1];
-      int seqstart1 = (ignore_umi && busopt.umi.fileno == sopt1.fileno ? busopt.umi.start - taglen : sopt1.start);
-      int seqstart2 = (ignore_umi && busopt.umi.fileno == sopt2.fileno ? busopt.umi.start - taglen : sopt2.start);
+      int seqstart1 = (ignore_umi && busopt.umi[0].fileno == sopt1.fileno ? busopt.umi[0].start - taglen : sopt1.start);
+      int seqstart2 = (ignore_umi && busopt.umi[0].fileno == sopt2.fileno ? busopt.umi[0].start - taglen : sopt2.start);
       int cplen1 = (sopt1.stop == 0) ? l[sopt1.fileno]-seqstart1 : sopt1.stop - seqstart1;
       int cplen2 = (sopt2.stop == 0) ? l[sopt2.fileno]-seqstart2 : sopt2.stop - seqstart2;
       seq = s[sopt1.fileno] + seqstart1;
@@ -1500,7 +1512,7 @@ void BUSProcessor::processBuffer() {
       seqbuffer.clear();
       for (int j = 0; j < busopt.seq.size(); j++) {
         const auto &sopt = busopt.seq[j];
-        int seqstart = (ignore_umi && busopt.umi.fileno == sopt.fileno ? busopt.umi.start - taglen : sopt.start);
+        int seqstart = (ignore_umi && busopt.umi[0].fileno == sopt.fileno ? busopt.umi[0].start - taglen : sopt.start);
         int cplen = (sopt.stop == 0) ? l[sopt.fileno]-seqstart : sopt.stop - seqstart;
         seqbuffer.append(s[sopt.fileno] + seqstart, cplen);
         seqbuffer.push_back('N');
@@ -1515,8 +1527,8 @@ void BUSProcessor::processBuffer() {
     int blen = 0;
     bool bad_bc = false;
     for (auto &bcc : busopt.bc) {
-      int bclen = (bcc.start == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
-      if (l[bcc.fileno] < bcc.start + bclen) {
+      int bclen = (0 == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
+      if (l[bcc.fileno] < bcc.start + bclen || bclen <= 0) {
         bad_bc = true;
         break;
       }
@@ -1618,7 +1630,7 @@ void BUSProcessor::processBuffer() {
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, umilen, f);
+      b.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
@@ -1659,7 +1671,7 @@ void BUSProcessor::processBuffer() {
       info.paired = busopt.paired;
       uint32_t f = 0;
       info.barcode = stringToBinary(bc, blen, f);
-      info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, umilen, f);
+      info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
       if (!u.empty()) {
         info.r1empty = v.empty();
         KmerEntry val;
@@ -2247,14 +2259,21 @@ void AlnProcessor::processBufferGenome() {
     genome_auxlen -= 7;
   }
   if (mp.opt.bus_mode) {
-    //todo replace with what is written to busfile
     bclen = mp.opt.busOptions.getBCLength();
     if (bclen == 0) {
-      bclen = 32;
+      for (int i = 0; i <= 32; i++) {
+        if (mp.bus_bc_len[i] > mp.bus_bc_len[bclen]) {
+          bclen = i;
+        }
+      }
     }
     umilen = mp.opt.busOptions.getUMILength();
     if (umilen == 0) {
-      umilen = 32;
+      for (int i = 0; i <= 32; i++) {
+        if (mp.bus_umi_len[i] > mp.bus_umi_len[umilen]) {
+          umilen = i;
+        }
+      }
     }
 
     genome_auxlen += (bclen + umilen) + 8;
@@ -2328,7 +2347,7 @@ void AlnProcessor::processBufferGenome() {
     }
     else {
       bool tag_present = !mp.opt.tagsequence.empty() && pi.UMI != -1; // tag+UMI present in the sequence
-      bool umi_first_file = mp.opt.busOptions.umi.fileno == mp.opt.busOptions.seq[0].fileno; // UMI-containing file is the first file (file number 0)
+      bool umi_first_file = mp.opt.busOptions.umi[0].fileno == mp.opt.busOptions.seq[0].fileno; // UMI-containing file is the first file (file number 0)
       int tagseqstart;
       if (tag_present) {
         tagseqstart = umi_first_file ? mp.opt.busOptions.seq[0].start : mp.opt.busOptions.seq[1].start; // Position where the actual sequence begins when tag+UMI present
