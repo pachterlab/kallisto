@@ -471,21 +471,26 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int single_flag = 0;
   int strand_flag = 0;
+  int strand_FR_flag = 0;
+  int strand_RF_flag = 0;
   int pbam_flag = 0;
   int gbam_flag = 0;
   int umi_flag = 0;
   int quant_flag = 0;
   int bus_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:b:u:g:";
+  const char *opt_string = "t:i:l:s:o:b:u:g:n";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
+    {"fr-stranded", no_argument, &strand_FR_flag, 1},
+    {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"quant", no_argument, &quant_flag, 1},
     {"bus", no_argument, &bus_flag, 1},
+    {"num", no_argument, 0, 'n'},
     {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
@@ -523,6 +528,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     }
     case 's': {
       stringstream(optarg) >> opt.sd;
+      break;
+    }
+    case 'n': {
+      opt.num = true;
       break;
     }
     case 'o': {
@@ -571,6 +580,16 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
 
   if (strand_flag) {
     opt.strand_specific = true;
+  }
+  
+  if (strand_FR_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::FR;
+  }
+  
+  if (strand_RF_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::RF;
   }
 
   if (pbam_flag) {
@@ -1934,17 +1953,29 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
+  
+  if (opt.strand_specific && !opt.batch_bus) {
+    cerr << "Error: Strand-specific read processing is only supported when --bus is specified" << endl;
+    ret = false;
+  }
 
   if (opt.pseudobam) {
     cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
     ret = false;
   }
   
+  if (!opt.batch_bus && opt.num) {
+    cerr << "Warning: --bus option was not used, so --num option will be ignored" << endl;
+  }
+  
   if (opt.batch_bus && ret) { // Set up BUS options
     auto& busopt = opt.busOptions;
     busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+    busopt.umi.resize(0);
+    busopt.bc.resize(0);
     if (opt.single_end) {
       busopt.nfiles = 1;
+      busopt.paired = false;
     } else {
       busopt.nfiles = 2;
       busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -2189,6 +2220,9 @@ void usagePseudo(bool valid_input = true) {
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
+       << "    --fr-stranded             Strand specific reads, first read forward (only with --bus)" << endl
+       << "    --rf-stranded             Strand specific reads, first read reverse (only with --bus)" << endl
+       << "-n, --num                     Output number of read in BUS file flag column (only with --bus)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 //       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
@@ -3146,14 +3180,22 @@ int main(int argc, char *argv[]) {
 
         std::string call = argv_to_string(argc, argv);
 
-
-        for (int id = 0; id < MP.batchCounts.size(); id++) {
-          const auto &cc = MP.batchCounts[id];
-          for (const auto &p : cc) {
-            if (p.first < index.num_trans) {
-              num_unique += p.second;
+        if (!opt.batch_bus) {
+          for (int id = 0; id < MP.batchCounts.size(); id++) {
+            const auto &cc = MP.batchCounts[id];
+            for (const auto &p : cc) {
+              if (p.first < index.num_trans) {
+                num_unique += p.second;
+              }
+              num_pseudoaligned += p.second;
             }
-            num_pseudoaligned += p.second;
+          }
+        } else {
+          for (int i = 0; i < index.num_trans; i++) {
+            num_unique += collection.counts[i];          
+          }
+          for (int i = 0; i < collection.counts.size(); i++) {
+            num_pseudoaligned += collection.counts[i];
           }
         }
         
@@ -3269,8 +3311,8 @@ int main(int argc, char *argv[]) {
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
         if (opt.batch_bus) {
-          // Write BUS file
-          writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+          // Write BUS file [deprecated]
+          //writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell
             std::vector<std::string> fake_bcs;
