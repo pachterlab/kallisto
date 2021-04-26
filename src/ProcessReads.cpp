@@ -388,7 +388,7 @@ void MasterProcessor::processReads() {
       }
       
       // let the workers do their thing
-      for (int i = 0; i < opt.threads; i++) {
+      for (int i = 0; i < nt; i++) {
         workers[i].join(); //wait for them to finish
       }
     }
@@ -1432,7 +1432,7 @@ void BUSProcessor::processBuffer() {
 
   const BUSOptions& busopt = mp.opt.busOptions;
   
-  bool findFragmentLength = mp.tlencount < 10000 && busopt.paired && !mp.opt.tagsequence.empty();
+  bool findFragmentLength = mp.tlencount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || mp.opt.batch_bus);
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
