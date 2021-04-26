@@ -3002,7 +3002,7 @@ int main(int argc, char *argv[]) {
             }
             if (FLDs.size() != 1 && FLDs.size() != nrow) {
               std::cerr << "Error: Fragment length distribution file contains " 
-                        << i << " valid lines; expected: " << nrow << std::endl;
+                        << FLDs.size() << " valid lines; expected: " << nrow << std::endl;
               exit(1);
             }
           } else {
