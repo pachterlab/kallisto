@@ -557,7 +557,11 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   }
   
   if (bus_flag) {
-    opt.batch_bus = true;
+    if (!opt.num) {
+      opt.batch_bus_write = true;
+    } else {
+      opt.batch_bus = true;
+    }
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -1764,19 +1768,22 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
+  
+  assert(!(opt.batch_bus && opt.batch_bus_write));
+  bool opt_bus_mode = opt.batch_bus || opt.batch_bus_write;
 
   if (opt.pseudo_quant) {
     if (!opt.batch_mode) {
       cerr << ERROR_STR << " --quant can only be run with in batch mode with --batch" << endl;
       ret = false;
     }
-    if (opt.batch_bus) {
+    if (opt_bus_mode) {
       cerr << ERROR_STR << " --quant cannot be run with --bus" << endl;
       ret = false;
     }
   }
   
-  if (opt.batch_bus && opt.umi) {
+  if (opt_bus_mode && opt.umi) {
     cerr << ERROR_STR << " UMI cannot be run with --bus" << endl;
     ret = false;   
   }
@@ -1787,12 +1794,44 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
       ret = false;      
     }
-    if (opt.batch_bus) {
-      cerr << ERROR_STR << " --bus must be run in batch mode, use --batch option" << endl;
-      ret = false;      
-    }
-    
-    if (opt.files.size() == 0) {
+    if (opt_bus_mode && ret) {
+      cerr << "--bus specified; will try running read files in batch mode" << endl;
+      opt.batch_ids.push_back("sample");
+      opt.batch_mode = true;
+      if (opt.files.size() != 1 && opt.files.size() != 2) {
+        cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
+        ret = false;
+      } else if (opt.single_end && opt.files.size() != 1) {
+        cerr << ERROR_STR << " single-end mode requires exactly one read file" << endl;
+        ret = false;
+      } else {
+        std::string f1,f2;
+        struct stat stFileInfo;
+        if (opt.files.size() == 1) {
+          f1 = opt.files[0];
+          opt.batch_files.push_back({f1});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+        } else {
+          f1 = opt.files[0];
+          f2 = opt.files[1];
+          opt.batch_files.push_back({f1,f2});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+          intstat = stat(f2.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f2 << endl;
+            ret = false;
+          }
+        }
+      }
+    } else if (opt.files.size() == 0) {
       cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
@@ -1953,22 +1992,17 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
-  if (opt.strand_specific && !opt.batch_bus) {
-    cerr << "Error: Strand-specific read processing is only supported when --bus is specified" << endl;
-    ret = false;
-  }
 
   if (opt.pseudobam) {
     cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
     ret = false;
   }
   
-  if (!opt.batch_bus && opt.num) {
+  if (!opt_bus_mode && opt.num) {
     cerr << "Warning: --bus option was not used, so --num option will be ignored" << endl;
   }
   
-  if (opt.batch_bus && ret) { // Set up BUS options
+  if (opt_bus_mode && ret) { // Set up BUS options
     auto& busopt = opt.busOptions;
     busopt.seq.push_back(BUSOptionSubstr(0,0,0));
     busopt.umi.resize(0);
@@ -3310,9 +3344,10 @@ int main(int argc, char *argv[]) {
 
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
-        if (opt.batch_bus) {
-          // Write BUS file [deprecated]
-          //writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+        if (opt.batch_bus || opt.batch_bus_write) {
+          if (opt.batch_bus_write) {
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+          }
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell
             std::vector<std::string> fake_bcs;

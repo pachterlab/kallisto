@@ -1432,11 +1432,15 @@ void BUSProcessor::processBuffer() {
 
   const BUSOptions& busopt = mp.opt.busOptions;
   
-  bool findFragmentLength = mp.tlencount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || mp.opt.batch_bus);
+  auto &tcount = mp.tlencount;
+  if (mp.opt.batch_bus) {
+    tcount = mp.tlencounts[id];
+  }
+  bool findFragmentLength = tcount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || mp.opt.batch_bus);
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
-    flengoal = (10000 - mp.tlencount);
+    flengoal = (10000 - tcount);
     if (flengoal <= 0) {
       findFragmentLength = false;
       flengoal = 0;
