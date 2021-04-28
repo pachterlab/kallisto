@@ -1923,7 +1923,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     if (opt.fld != 0.0 || opt.sd != 0.0) {
       cerr << "[~warn] you supplied fragment length information for UMI data which will be ignored" << endl;
     }
-  } else {
+  } else if (!opt_bus_mode) {
     if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
       cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
       ret = false;
