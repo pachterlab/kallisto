@@ -471,21 +471,26 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int single_flag = 0;
   int strand_flag = 0;
+  int strand_FR_flag = 0;
+  int strand_RF_flag = 0;
   int pbam_flag = 0;
   int gbam_flag = 0;
   int umi_flag = 0;
   int quant_flag = 0;
   int bus_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:b:u:g:";
+  const char *opt_string = "t:i:l:s:o:b:u:g:n";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"single", no_argument, &single_flag, 1},
     //{"strand-specific", no_argument, &strand_flag, 1},
+    {"fr-stranded", no_argument, &strand_FR_flag, 1},
+    {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"pseudobam", no_argument, &pbam_flag, 1},
     {"quant", no_argument, &quant_flag, 1},
     {"bus", no_argument, &bus_flag, 1},
+    {"num", no_argument, 0, 'n'},
     {"umi", no_argument, &umi_flag, 'u'},
     {"batch", required_argument, 0, 'b'},
     // short args
@@ -525,6 +530,10 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.sd;
       break;
     }
+    case 'n': {
+      opt.num = true;
+      break;
+    }
     case 'o': {
       opt.output = optarg;
       break;
@@ -548,7 +557,11 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   }
   
   if (bus_flag) {
-    opt.batch_bus = true;
+    if (!opt.num) {
+      opt.batch_bus_write = true;
+    } else {
+      opt.batch_bus = true;
+    }
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -571,6 +584,16 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
 
   if (strand_flag) {
     opt.strand_specific = true;
+  }
+  
+  if (strand_FR_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::FR;
+  }
+  
+  if (strand_RF_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::RF;
   }
 
   if (pbam_flag) {
@@ -1745,19 +1768,22 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
+  
+  assert(!(opt.batch_bus && opt.batch_bus_write));
+  bool opt_bus_mode = opt.batch_bus || opt.batch_bus_write;
 
   if (opt.pseudo_quant) {
     if (!opt.batch_mode) {
       cerr << ERROR_STR << " --quant can only be run with in batch mode with --batch" << endl;
       ret = false;
     }
-    if (opt.batch_bus) {
+    if (opt_bus_mode) {
       cerr << ERROR_STR << " --quant cannot be run with --bus" << endl;
       ret = false;
     }
   }
   
-  if (opt.batch_bus && opt.umi) {
+  if (opt_bus_mode && opt.umi) {
     cerr << ERROR_STR << " UMI cannot be run with --bus" << endl;
     ret = false;   
   }
@@ -1768,12 +1794,45 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
       ret = false;      
     }
-    if (opt.batch_bus) {
-      cerr << ERROR_STR << " --bus must be run in batch mode, use --batch option" << endl;
-      ret = false;      
-    }
-    
-    if (opt.files.size() == 0) {
+    if (opt_bus_mode && ret) {
+      cerr << "--bus specified; will try running read files in batch mode" << endl;
+      opt.batch_ids.push_back("sample");
+      opt.batch_mode = true;
+      opt.pseudo_read_files_supplied = true;
+      if (opt.files.size() != 1 && opt.files.size() != 2) {
+        cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
+        ret = false;
+      } else if (opt.single_end && opt.files.size() != 1) {
+        cerr << ERROR_STR << " single-end mode requires exactly one read file" << endl;
+        ret = false;
+      } else {
+        std::string f1,f2;
+        struct stat stFileInfo;
+        if (opt.files.size() == 1) {
+          f1 = opt.files[0];
+          opt.batch_files.push_back({f1});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+        } else {
+          f1 = opt.files[0];
+          f2 = opt.files[1];
+          opt.batch_files.push_back({f1,f2});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+          intstat = stat(f2.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f2 << endl;
+            ret = false;
+          }
+        }
+      }
+    } else if (opt.files.size() == 0) {
       cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
@@ -1865,6 +1924,12 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     if (opt.fld != 0.0 || opt.sd != 0.0) {
       cerr << "[~warn] you supplied fragment length information for UMI data which will be ignored" << endl;
     }
+  } else if (opt_bus_mode) {
+    if (opt.fld != 0.0 || opt.sd != 0.0) {
+      cerr << "[~warn] you supplied fragment length information for --bus mode which will be ignored" << endl;
+    }
+    opt.fld = 0.0;
+    opt.sd = 0.0;
   } else {
     if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
       cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
@@ -1940,11 +2005,18 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     ret = false;
   }
   
-  if (opt.batch_bus && ret) { // Set up BUS options
+  if (!opt_bus_mode && opt.num) {
+    cerr << "Warning: --bus option was not used, so --num option will be ignored" << endl;
+  }
+  
+  if (opt_bus_mode && ret) { // Set up BUS options
     auto& busopt = opt.busOptions;
     busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+    busopt.umi.resize(0);
+    busopt.bc.resize(0);
     if (opt.single_end) {
       busopt.nfiles = 1;
+      busopt.paired = false;
     } else {
       busopt.nfiles = 2;
       busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -2188,7 +2260,11 @@ void usagePseudo(bool valid_input = true) {
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
-       << "                               end data, but are required when using --single)" << endl
+       << "                               end data, but are required when using --single" << endl
+       << "                               unless outputting a BUS file via --bus)" << endl
+       << "    --fr-stranded             Strand specific reads, first read forward" << endl
+       << "    --rf-stranded             Strand specific reads, first read reverse" << endl
+       << "-n, --num                     Output number of read in BUS file flag column (only with --bus)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 //       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
@@ -3146,14 +3222,22 @@ int main(int argc, char *argv[]) {
 
         std::string call = argv_to_string(argc, argv);
 
-
-        for (int id = 0; id < MP.batchCounts.size(); id++) {
-          const auto &cc = MP.batchCounts[id];
-          for (const auto &p : cc) {
-            if (p.first < index.num_trans) {
-              num_unique += p.second;
+        if (!opt.batch_bus) {
+          for (int id = 0; id < MP.batchCounts.size(); id++) {
+            const auto &cc = MP.batchCounts[id];
+            for (const auto &p : cc) {
+              if (p.first < index.num_trans) {
+                num_unique += p.second;
+              }
+              num_pseudoaligned += p.second;
             }
-            num_pseudoaligned += p.second;
+          }
+        } else {
+          for (int i = 0; i < index.num_trans; i++) {
+            num_unique += collection.counts[i];          
+          }
+          for (int i = 0; i < collection.counts.size(); i++) {
+            num_pseudoaligned += collection.counts[i];
           }
         }
         
@@ -3268,9 +3352,10 @@ int main(int argc, char *argv[]) {
 
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
-        if (opt.batch_bus) {
-          // Write BUS file
-          writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+        if (opt.batch_bus || opt.batch_bus_write) {
+          if (opt.batch_bus_write) {
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+          }
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell
             std::vector<std::string> fake_bcs;

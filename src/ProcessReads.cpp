@@ -375,6 +375,46 @@ void MasterProcessor::processReads() {
     }
 
   
+  } else if (opt.batch_mode && opt.batch_bus) {
+    std::vector<std::thread> workers;
+    int num_ids = opt.batch_ids.size();
+    int id =0;
+    while (id < num_ids) {
+      // TODO: put in thread pool
+      workers.clear();
+      int nt = std::min(opt.threads, (num_ids - id));
+      if (opt.pseudo_read_files_supplied) {
+        for (int i = 0; i < opt.threads; i++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        }
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
+        }
+        // let the workers do their thing
+        for (int i = 0; i < nt; i++) {
+          workers[i].join(); //wait for them to finish
+        }
+      }
+    }
+    
+    // now handle the modification of the mincollector
+    for (int i = 0; i < bus_ecmap.size(); i++) {
+      auto &u = bus_ecmap[i];
+      int ec = index.ecmapinv.size();
+      auto it = bus_ecmapinv.find(u);
+      if (it->second != ec) {
+        std::cout << "Error" << std::endl;
+        exit(1);
+      }      
+      index.ecmapinv.insert({u,ec});
+      index.ecmap.push_back(u);
+    }
   } else if (opt.batch_mode) {    
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -385,13 +425,24 @@ void MasterProcessor::processReads() {
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
       int first_id = id;
-      for (int i = 0; i < nt; i++,id++) {
-        tmp_bc[i].assign(tc.counts.size(), 0);     
-        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
-      }
-      
-      for (int i = 0; i < nt; i++) {
-        workers[i].join();
+      if (opt.pseudo_read_files_supplied) {
+        for (int i = 0; i < opt.threads; i++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);     
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, 0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        } 
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
+        }
+        for (int i = 0; i < nt; i++) {
+          workers[i].join();
+        }
       }
       
       if (!opt.umi) {
@@ -531,7 +582,7 @@ void MasterProcessor::processReads() {
   if (opt.pseudobam) {
     pseudobatchf_out.close();
   }
-  if (opt.bus_mode) {
+  if (opt.bus_mode || opt.batch_bus) {
     busf_out.close();
   }
 }
@@ -737,7 +788,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
-  if (!opt.batch_mode) {
+  if (!opt.batch_mode || opt.batch_bus) {
     for (int i = 0; i < c.size(); i++) {
       tc.counts[i] += c[i]; // add up ec counts
       nummapped += c[i];
@@ -756,7 +807,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }    
   }
 
-  if (!opt.batch_mode) {
+  if (!opt.batch_mode || opt.batch_bus) {
     for(auto &u : newEcs) {
       ++newECcount[u];
     }
@@ -829,7 +880,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }
   }
 
-  if (opt.bus_mode) {
+  if (opt.bus_mode || opt.batch_bus) {
     int bus_bc_sum = 0;
     int bus_umi_sum = 0;
     for (int i = 0; i <= 32; i++) {
@@ -978,7 +1029,7 @@ void ReadProcessor::operator()() {
   while (true) {
     int readbatch_id;
     // grab the reader lock
-    if (mp.opt.batch_mode) {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
       if (batchSR.empty()) {
         return;
       } else {
@@ -1294,6 +1345,17 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];  
+   if (opt.batch_mode) {
+     assert(id != -1);
+     batchSR.files = opt.batch_files[id];
+     batchSR.nfiles = opt.batch_files[id].size();
+     batchSR.reserveNfiles(opt.batch_files[id].size());
+     if (opt.umi) {
+       batchSR.umi_files = {opt.umi_files[id]};
+     }
+     batchSR.paired = !opt.single_end;
+   }
+
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
    bv.reserve(1000);
@@ -1323,6 +1385,7 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
   bv(std::move(o.bv)),  
+  batchSR(std::move(o.batchSR)),
   counts(std::move(o.counts)) {
     memcpy(&bc_len[0], &o.bc_len[0], sizeof(bc_len));
     memcpy(&umi_len[0], &o.umi_len[0], sizeof(umi_len));
@@ -1341,20 +1404,25 @@ BUSProcessor::~BUSProcessor() {
 void BUSProcessor::operator()() {
   while (true) {
     int readbatch_id;
+    std::vector<std::string> umis;
     // grab the reader lock
-    {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
+      if (batchSR.empty()) {
+        return;
+      } else {
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
+      }
+    } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (mp.SR->empty()) {
         // nothing to do
         return;
       } else {
         // get new sequences
-        std::vector<std::string> umis;
-        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
-    // do the same for BUS ?!?
     
     pseudobatch.aln.clear();
     pseudobatch.batch_id = readbatch_id;
@@ -1385,11 +1453,15 @@ void BUSProcessor::processBuffer() {
 
   const BUSOptions& busopt = mp.opt.busOptions;
   
-  bool findFragmentLength = mp.tlencount < 10000 && busopt.paired && !mp.opt.tagsequence.empty();
+  auto &tcount = mp.tlencount;
+  if (mp.opt.batch_bus) {
+    tcount = mp.tlencounts[id];
+  }
+  bool findFragmentLength = tcount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || mp.opt.batch_bus);
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
-    flengoal = (10000 - mp.tlencount);
+    flengoal = (10000 - tcount);
     if (flengoal <= 0) {
       findFragmentLength = false;
       flengoal = 0;
@@ -1538,6 +1610,11 @@ void BUSProcessor::processBuffer() {
     if (bad_bc) {
       continue;
     }
+    if (mp.opt.batch_bus) {
+      ignore_umi = true;
+      blen = BUSFORMAT_FAKE_BARCODE_LEN;
+      memcpy(bc, binaryToString(id, blen).c_str(), blen); // Create fake barcode that identifies the batch
+    }
     bc[blen] = 0;
 
     if (blen >= 0 && blen <= 32) {
@@ -1567,7 +1644,7 @@ void BUSProcessor::processBuffer() {
       ec = tc.findEC(u);
     }
 
-    if (!ignore_umi && mp.opt.strand_specific && !u.empty()) {
+    if ((!ignore_umi || mp.opt.batch_bus) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
       int p = -1;
       Kmer km;
       KmerEntry val;
@@ -1630,7 +1707,7 @@ void BUSProcessor::processBuffer() {
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
+      b.UMI = check_tag_sequence || mp.opt.batch_bus ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";

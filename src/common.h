@@ -76,6 +76,7 @@ struct ProgramOptions {
   int bootstrap;
   std::vector<std::string> transfasta;
   bool batch_mode;
+  bool pseudo_read_files_supplied;
   bool bus_mode;
   BUSOptions busOptions;
   bool pseudo_quant;
@@ -99,6 +100,7 @@ struct ProgramOptions {
   enum class StrandType {None, FR, RF};
   StrandType strand;
   bool umi;
+  bool batch_bus_write;
   bool batch_bus;
   std::string gfa; // used for inspect
   bool inspect_thorough;
@@ -126,6 +128,7 @@ ProgramOptions() :
   min_range(1),
   bootstrap(0),
   batch_mode(false),
+  pseudo_read_files_supplied(false),
   bus_mode(false),
   pseudo_quant(false),
   bam(false),
@@ -142,6 +145,7 @@ ProgramOptions() :
   fusion(false),
   strand(StrandType::None),
   umi(false),
+  batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
   single_overhang(false)
