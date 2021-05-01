@@ -1924,7 +1924,13 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     if (opt.fld != 0.0 || opt.sd != 0.0) {
       cerr << "[~warn] you supplied fragment length information for UMI data which will be ignored" << endl;
     }
-  } else if (!opt_bus_mode) {
+  } else if (opt_bus_mode) {
+    if (opt.fld != 0.0 || opt.sd != 0.0) {
+      cerr << "[~warn] you supplied fragment length information for --bus mode which will be ignored" << endl;
+    }
+    opt.fld = 0.0;
+    opt.sd = 0.0;
+  } else {
     if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
       cerr << "Error: cannot supply mean/sd without supplying both -l and -s" << endl;
       ret = false;
@@ -2254,9 +2260,10 @@ void usagePseudo(bool valid_input = true) {
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
-       << "                               end data, but are required when using --single)" << endl
-       << "    --fr-stranded             Strand specific reads, first read forward (only with --bus)" << endl
-       << "    --rf-stranded             Strand specific reads, first read reverse (only with --bus)" << endl
+       << "                               end data, but are required when using --single" << endl
+       << "                               unless outputting a BUS file via --bus)" << endl
+       << "    --fr-stranded             Strand specific reads, first read forward" << endl
+       << "    --rf-stranded             Strand specific reads, first read reverse" << endl
        << "-n, --num                     Output number of read in BUS file flag column (only with --bus)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
 //       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
