@@ -383,13 +383,23 @@ void MasterProcessor::processReads() {
       // TODO: put in thread pool
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
-      for (int i = 0; i < nt; i++,id++) {
-        workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
-      }
-      
-      // let the workers do their thing
-      for (int i = 0; i < nt; i++) {
-        workers[i].join(); //wait for them to finish
+      if (opt.pseudo_read_files_supplied) {
+        for (int i = 0; i < opt.threads; i++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        }
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
+        }
+        // let the workers do their thing
+        for (int i = 0; i < nt; i++) {
+          workers[i].join(); //wait for them to finish
+        }
       }
     }
     
@@ -415,13 +425,24 @@ void MasterProcessor::processReads() {
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
       int first_id = id;
-      for (int i = 0; i < nt; i++,id++) {
-        tmp_bc[i].assign(tc.counts.size(), 0);     
-        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
-      }
-      
-      for (int i = 0; i < nt; i++) {
-        workers[i].join();
+      if (opt.pseudo_read_files_supplied) {
+        for (int i = 0; i < opt.threads; i++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);     
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, 0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        } 
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
+        }
+        for (int i = 0; i < nt; i++) {
+          workers[i].join();
+        }
       }
       
       if (!opt.umi) {
@@ -1008,7 +1029,7 @@ void ReadProcessor::operator()() {
   while (true) {
     int readbatch_id;
     // grab the reader lock
-    if (mp.opt.batch_mode) {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
       if (batchSR.empty()) {
         return;
       } else {
@@ -1385,7 +1406,7 @@ void BUSProcessor::operator()() {
     int readbatch_id;
     std::vector<std::string> umis;
     // grab the reader lock
-    if (mp.opt.batch_mode) {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
       if (batchSR.empty()) {
         return;
       } else {

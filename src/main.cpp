@@ -1798,6 +1798,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << "--bus specified; will try running read files in batch mode" << endl;
       opt.batch_ids.push_back("sample");
       opt.batch_mode = true;
+      opt.pseudo_read_files_supplied = true;
       if (opt.files.size() != 1 && opt.files.size() != 2) {
         cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
         ret = false;

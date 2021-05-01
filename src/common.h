@@ -76,6 +76,7 @@ struct ProgramOptions {
   int bootstrap;
   std::vector<std::string> transfasta;
   bool batch_mode;
+  bool pseudo_read_files_supplied;
   bool bus_mode;
   BUSOptions busOptions;
   bool pseudo_quant;
@@ -127,6 +128,7 @@ ProgramOptions() :
   min_range(1),
   bootstrap(0),
   batch_mode(false),
+  pseudo_read_files_supplied(false),
   bus_mode(false),
   pseudo_quant(false),
   bam(false),
