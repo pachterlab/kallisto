@@ -165,6 +165,7 @@ public:
   
 private:
   static const std::string seq_enc;
+  static const std::string cseq_enc;
 };
 
 class MasterProcessor {

@@ -1422,10 +1422,10 @@ void BUSProcessor::processBuffer() {
     // find where the sequence is
     const char *seq = nullptr;
     
-    int seqlen = 0;
+    size_t seqlen = 0;
     if (singleSeq) {
-      const char *seq = s[seqopt.fileno] + seqopt.start;
-      int seqlen = l[seqopt.fileno];
+      seq = s[seqopt.fileno] + seqopt.start;
+      seqlen = l[seqopt.fileno];
     } else {
       seqbuffer.clear();
       for (int j = 0; j < busopt.seq.size(); j++) {
@@ -1436,6 +1436,7 @@ void BUSProcessor::processBuffer() {
       }
       seqbuffer.push_back(0);
       seq = seqbuffer.c_str();
+      seqlen = seqbuffer.size();
     }
 
     // copy the umi
@@ -1481,15 +1482,43 @@ void BUSProcessor::processBuffer() {
     u.clear();
 
     // process 2nd read
-    index.match(seq,seqlen, v);
+    index.match(seq, seqlen, v);
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v, v2, false,u);
-    if (!u.empty()) {      
-      ec = tc.findEC(u);
+    int r = tc.intersectKmers(v, v2, false, u);
+    
+    // optional strand-specificity
+    if (mp.opt.strand_specific && !u.empty()) {
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      
+      if (!v.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR);
+        p = findFirstMappingKmer(v, val);
+        km = Kmer((seq+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out
+                vtmp.push_back(tr);
+              }
+              break;
+            }
+          }
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
     }
-
+    
     // find the ec
     if (!u.empty()) {
       BUSData b;      
@@ -1505,7 +1534,7 @@ void BUSProcessor::processBuffer() {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
-      //ec = tc.findEC(u);
+      ec = tc.findEC(u);
       
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
@@ -2950,7 +2979,10 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   o.state = false;
 }
 
-const std::string BamSequenceReader::seq_enc = "=ACMGRSVTWYHKDBN";
+// sequence decoding table
+const std::string BamSequenceReader::seq_enc  = "=ACMGRSVTWYHKDBN";
+// complement sequence decoding table
+const std::string BamSequenceReader::cseq_enc = "=TGKCYSBAWRDMHVN";
 
 BamSequenceReader::~BamSequenceReader() {
   if (fp) {
@@ -3009,16 +3041,31 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
           bufpos += l_bc + l_umi + 1;
 
           pi = buf + bufpos;
-          int len = (l_seq + 1) / 2;
-          if (l_seq % 2) --len;
+          int len = l_seq / 2;
           int j = 0;
-          for (int i = 0; i < len; ++i, ++eseq) {
-            buf[bufpos++] = seq_enc[*eseq >> 4];
-            buf[bufpos++] = seq_enc[*eseq & 0x0F];
+          
+          if (rec->core.flag & BAM_FREVERSE) { // insert reverse complement
+            // start at end
+            bufpos += l_seq;
+            for (int i = 0; i < len; ++i, ++eseq) {
+              buf[--bufpos] = cseq_enc[*eseq >> 4];
+              buf[--bufpos] = cseq_enc[*eseq & 0x0F];
+            }
+            if (l_seq % 2) {
+              buf[--bufpos] = cseq_enc[*eseq >> 4];
+            }
+            // reset position to end
+            bufpos += l_seq;
+          } else { // insert forward sequence
+            for (int i = 0; i < len; ++i, ++eseq) {
+              buf[bufpos++] = seq_enc[*eseq >> 4];
+              buf[bufpos++] = seq_enc[*eseq & 0x0F];
+            }
+            if (l_seq % 2) {
+              buf[bufpos++] = seq_enc[*eseq >> 4];
+            }
           }
-          if (l_seq % 2) {
-            buf[bufpos++] = seq_enc[*eseq >> 4];
-          }
+          // insert delimiter
           buf[bufpos++] = '\0';
           seqs.emplace_back(pi, l_seq);
 
