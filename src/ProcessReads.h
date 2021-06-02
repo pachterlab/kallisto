@@ -231,10 +231,13 @@ public:
   }
 
   std::mutex reader_lock;
+  std::vector<std::mutex> parallel_bus_reader_locks;
+  bool parallel_bus_read;
   std::mutex writer_lock;
 
 
   SequenceReader *SR;
+  std::vector<FastqSequenceReader> FSRs;
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;

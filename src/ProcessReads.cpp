@@ -26,6 +26,7 @@
 #include "BUSData.h"
 #include "BUSTools.h"
 #include <htslib/kstring.h>
+#include <unordered_set>
 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
@@ -352,6 +353,23 @@ void MasterProcessor::processReads() {
     }
   } else if (opt.bus_mode) {
     std::vector<std::thread> workers;
+    parallel_bus_read = opt.threads > 4 && opt.files.size() > opt.busOptions.nfiles && !opt.num && !opt.pseudobam;
+    if (parallel_bus_read) {
+      delete SR;
+      SR = nullptr;
+      assert(opt.files.size() % opt.busOptions.nfiles == 0);
+      int nbatches = opt.files.size() / opt.busOptions.nfiles;
+      std::vector<std::mutex> mutexes(nbatches);
+      parallel_bus_reader_locks.swap(mutexes);
+      for (int i = 0; i < nbatches; i++) {
+        FastqSequenceReader fSR(opt);
+        fSR.files.erase(fSR.files.begin(), fSR.files.begin()+opt.busOptions.nfiles*i);
+        fSR.files.erase(fSR.files.begin()+opt.busOptions.nfiles, fSR.files.end());
+        assert(fSR.files.size() == opt.busOptions.nfiles);
+        FSRs.push_back(std::move(fSR));
+      }
+    }
+    
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this)));
     }
@@ -1402,6 +1420,8 @@ BUSProcessor::~BUSProcessor() {
 }
 
 void BUSProcessor::operator()() {
+  uint64_t parallel_bus_read_counter = 0;
+  std::unordered_set<int> parallel_bus_read_empty;
   while (true) {
     int readbatch_id;
     std::vector<std::string> umis;
@@ -1412,6 +1432,19 @@ void BUSProcessor::operator()() {
       } else {
         batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
       }
+    } else if (mp.opt.bus_mode && mp.parallel_bus_read) {
+      int nbatches = mp.opt.files.size() / mp.opt.busOptions.nfiles;
+      int i = parallel_bus_read_counter % nbatches;
+      if (parallel_bus_read_empty.size() >= nbatches) {
+        return;
+      }
+      parallel_bus_read_counter++;
+      std::lock_guard<std::mutex> lock(mp.parallel_bus_reader_locks[i]);
+      if (mp.FSRs[i].empty()) {
+        parallel_bus_read_empty.emplace(i);
+        continue;
+      }
+      mp.FSRs[i].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (mp.SR->empty()) {
