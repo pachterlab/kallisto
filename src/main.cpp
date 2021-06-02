@@ -668,6 +668,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int paired_end_flag = 0;
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
+  int unstranded_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:T:";
   static struct option long_options[] = {
@@ -685,6 +686,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"tag", required_argument, 0, 'T'},
     {"fr-stranded", no_argument, &strand_FR_flag, 1},
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
+    {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
     {0,0,0,0}
   };
@@ -769,6 +771,11 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   if (strand_RF_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::RF;
+  }
+  
+  if (unstranded_flag) {
+    opt.strand_specific = true;
+    opt.strand = ProgramOptions::StrandType::None;
   }
 
   if (paired_end_flag) {
@@ -995,6 +1002,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }    
   }
 
+  ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
   if (opt.technology.empty()) {
     cerr << "Error: need to specify technology to use" << endl;
     ret = false;
@@ -1109,16 +1117,19 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
         busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "10XV3") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,16,28));
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "10XV1") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
         busopt.umi.push_back(BUSOptionSubstr(1,0,10));
         busopt.bc.push_back(BUSOptionSubstr(0,0,14));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "SURECELL") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -1126,6 +1137,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,21,27));
         busopt.bc.push_back(BUSOptionSubstr(0,42,48));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "DROPSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -1136,13 +1148,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,42,48));
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
+        busopt.bc.push_back(BUSOptionSubstr(0,30,38)); 
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(0,0,0));
         busopt.umi.push_back(BUSOptionSubstr(1,42,48));
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
+        busopt.bc.push_back(BUSOptionSubstr(1,30,38)); 
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
@@ -1154,22 +1166,18 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,8,12));
         busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "CELSEQ2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "SCRBSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,6,16));
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-      } else if (opt.technology == "INDROPSV3") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
       } else if (opt.technology == "SMARTSEQ3") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
@@ -1178,6 +1186,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
+        strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "BDWTA") {
         busopt.nfiles = 2;
         busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
@@ -1187,6 +1196,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
         busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
         busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
+        strand = ProgramOptions::StrandType::FR;
       } else {
         vector<int> files;
         vector<BUSOptionSubstr> values;
@@ -1222,6 +1232,21 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3")) {
     opt.tagsequence = "ATTGCGCAATG";
     cerr << "[bus] Using " <<  opt.tagsequence << " as UMI tag sequence" << endl;
+  }
+  
+  if (opt.strand_specific && opt.strand == ProgramOptions::StrandType::None) {
+    opt.strand_specific = false; // User specified --unstranded
+  } else if (!opt.strand_specific && ret) {
+    opt.strand = strand;
+    if (opt.strand == ProgramOptions::StrandType::FR) {
+      cerr << "[bus] Note: Strand option was not specified; setting it to --fr-stranded for specified technology" << endl;
+      opt.strand_specific = true;
+    } else if (opt.strand == ProgramOptions::StrandType::RF) {
+      cerr << "[bus] Note: Strand option was not specified; setting it to --rf-stranded for specified technology" << endl;
+      opt.strand_specific = true;
+    } else {
+      cerr << "[bus] Note: Strand option was not specified; setting it to --unstranded for specified technology" << endl;
+    }
   }
   
   if (!opt.tagsequence.empty()) {
@@ -2167,6 +2192,7 @@ void usageBus() {
        << "-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies" << endl
        << "    --fr-stranded             Strand specific reads for UMI-tagged reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
+       << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
