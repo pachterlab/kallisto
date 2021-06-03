@@ -670,13 +670,14 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:T:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:B:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
     {"list", no_argument, 0, 'l'},
+    {"batch", required_argument, 0, 'B'},
     {"threads", required_argument, 0, 't'},
     {"bam", no_argument, 0, 'b'},
     {"num", no_argument, 0, 'n'},
@@ -727,6 +728,11 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'b': {
       opt.bam = true;
+      break;
+    }
+    case 'B': {
+      opt.batch_mode = true;
+      opt.batch_file_name = optarg;
       break;
     }
     case 'n': {
@@ -956,7 +962,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
 
   // check files
-  if (opt.files.size() == 0) {
+  if (opt.files.size() == 0 && !opt.batch_mode) {
     cerr << ERROR_STR << " Missing read files" << endl;
     ret = false;
   } else {
@@ -1003,9 +1009,142 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
 
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
-  if (opt.technology.empty()) {
-    cerr << "Error: need to specify technology to use" << endl;
-    ret = false;
+
+  if (opt.technology.empty()) { // kallisto pseudo
+    if (!opt.num) {
+      opt.batch_bus_write = true;
+    } else {
+      opt.batch_bus = true;
+    }
+    // check for read files
+    if (!opt.batch_mode) {
+      cerr << "[bus] no technology specified; will try running read files as-is" << endl;
+      opt.batch_ids.push_back("sample");
+      opt.batch_mode = true;
+      opt.pseudo_read_files_supplied = true;
+      if (opt.files.size() != 1 && opt.files.size() != 2) {
+        cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
+        ret = false;
+      } else if (opt.single_end && opt.files.size() != 1) {
+        cerr << ERROR_STR << " single-end mode requires exactly one read file; use --paired for paired-end mode" << endl;
+        ret = false;
+      } else {
+        std::string f1,f2;
+        struct stat stFileInfo;
+        if (opt.files.size() == 1) {
+          f1 = opt.files[0];
+          opt.batch_files.push_back({f1});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+        } else {
+          f1 = opt.files[0];
+          f2 = opt.files[1];
+          opt.batch_files.push_back({f1,f2});
+          auto intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+          intstat = stat(f2.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f2 << endl;
+            ret = false;
+          }
+        }
+      }
+    } else if (ret) {
+      cerr << "[bus] no technology specified; will try running read files supplied in batch file" << endl;
+      if (opt.files.size() != 0) {
+        cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
+        ret = false;
+      } else {
+        // check for batch files
+        if (opt.batch_mode) {
+          struct stat stFileInfo;
+          auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
+            ret = false;
+          }
+          // open the file, parse and fill the batch_files values
+          std::ifstream bfile(opt.batch_file_name);
+          std::string line;
+          std::string id,f1,f2;
+          while (std::getline(bfile,line)) {
+            if (line.size() == 0) {
+              continue;
+            }
+            std::stringstream ss(line);
+            ss >> id;
+            if (id[0] == '#') {
+              continue;
+            }
+            opt.batch_ids.push_back(id);
+            if (opt.single_end) {
+              ss >> f1;
+              opt.batch_files.push_back({f1});
+              intstat = stat(f1.c_str(), &stFileInfo);
+              if (intstat != 0) {
+                cerr << ERROR_STR << " file not found " << f1 << endl;
+                ret = false;
+              }
+            } else {
+              ss >> f1 >> f2;
+              opt.batch_files.push_back({f1,f2});
+              intstat = stat(f1.c_str(), &stFileInfo);
+              if (intstat != 0) {
+                cerr << ERROR_STR << " file not found " << f1 << endl;
+                ret = false;
+              }
+              intstat = stat(f2.c_str(), &stFileInfo);
+              if (intstat != 0) {
+                cerr << ERROR_STR << " file not found " << f2 << endl;
+                ret = false;
+              }
+            }
+          }
+        }
+      }
+    }
+    if (!opt.single_end) {
+      if (opt.files.size() % 2 != 0) {
+        cerr << "Error: paired-end mode requires an even number of input files" << endl;
+        ret = false;
+      }
+    }
+    if (opt.pseudobam) {
+      cerr << "Error: Pseudobam not supported yet in this mode" << endl;
+      ret = false;
+    }
+    if (opt.bam) {
+      cerr << "Error: --bam not supported in this mode" << endl;
+      ret = false;
+    }
+    if (!opt.tagsequence.empty()) {
+      cerr << "Error: --tag not supported in this mode" << endl;
+      ret = false;
+    }
+    if (opt.strand_specific && opt.strand == ProgramOptions::StrandType::None) {
+      opt.strand_specific = false;
+    }
+    if (ret) { // Set up BUS options
+      auto& busopt = opt.busOptions;
+      busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+      busopt.umi.resize(0);
+      busopt.bc.resize(0);
+      if (opt.single_end) {
+        busopt.nfiles = 1;
+        busopt.paired = false;
+      } else {
+        busopt.nfiles = 2;
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+        busopt.paired = true;
+      }
+    }
+    return ret;
   } else {
     auto& busopt = opt.busOptions;
    
@@ -2182,10 +2321,11 @@ void usageBus() {
        << "Required arguments:" << endl
        << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
        << "                              pseudoalignment" << endl
-       << "-o, --output-dir=STRING       Directory to write output to" << endl 
-       << "-x, --technology=STRING       Single-cell technology used " << endl << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
+       << "-x, --technology=STRING       Single-cell technology used " << endl
        << "-l, --list                    List all single-cell technologies supported" << endl
+       << "-B, --batch=FILE              Process files listed in FILE" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
@@ -2194,6 +2334,11 @@ void usageBus() {
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
+       << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
+       << "-g, --gtf                     GTF file for transcriptome information" << endl
+       << "                              (required for --genomebam)" << endl
+       << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
+       << "                              (optional for --genomebam, but recommended)" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
@@ -2435,7 +2580,115 @@ int main(int argc, char *argv[]) {
       if (!CheckOptionsBus(opt)) {
         usageBus();
         exit(1);
-      } else {
+      } else if (opt.batch_mode) { // kallisto pseudo
+        // pseudoalign the reads
+        KmerIndex index(opt);
+        index.load(opt);
+        
+        MinCollector collection(index, opt);
+        int64_t num_processed = 0;
+        int64_t num_pseudoaligned = 0;
+        int64_t num_unique = 0;
+        
+        Transcriptome model; // empty model
+        if (!opt.gtfFile.empty()) {          
+          model.parseGTF(opt.gtfFile, index, opt, true);
+        }
+        MasterProcessor MP(index, opt, collection, model);
+        if (!opt.batch_mode) {
+          num_processed = ProcessReads(MP, opt);
+          collection.write((opt.output + "/pseudoalignments"));
+        } else {          
+          num_processed = ProcessBatchReads(MP,opt);
+        }
+        
+        std::string call = argv_to_string(argc, argv);
+        
+        if (!opt.batch_bus) {
+          for (int id = 0; id < MP.batchCounts.size(); id++) {
+            const auto &cc = MP.batchCounts[id];
+            for (const auto &p : cc) {
+              if (p.first < index.num_trans) {
+                num_unique += p.second;
+              }
+              num_pseudoaligned += p.second;
+            }
+          }
+        } else {
+          for (int i = 0; i < index.num_trans; i++) {
+            num_unique += collection.counts[i];          
+          }
+          for (int i = 0; i < collection.counts.size(); i++) {
+            num_pseudoaligned += collection.counts[i];
+          }
+        }
+        
+        std::ofstream transout_f((opt.output + "/transcripts.txt"));
+        for (const auto &t : index.target_names_) {
+          transout_f << t << "\n";
+        }
+        transout_f.close();
+        
+        plaintext_aux(
+          opt.output + "/run_info.json",
+          std::string(std::to_string(index.num_trans)),
+          std::string(std::to_string(0)), // no bootstraps in pseudo
+          std::string(std::to_string(num_processed)),
+          std::string(std::to_string(num_pseudoaligned)),
+          std::string(std::to_string(num_unique)),
+          KALLISTO_VERSION,
+          std::string(std::to_string(index.INDEX_VERSION)),
+          start_time,
+          call);
+
+        cerr << endl;
+        
+        std::string prefix = opt.output + "/matrix";
+        std::string ecfilename = prefix + ".ec";
+        std::string tccfilename = prefix + ".tcc.mtx";
+        std::string cellnamesfilename = prefix + ".cells";
+        std::string genelistname = prefix + ".genelist.txt";
+        std::string busbarcodelistname = prefix + ".barcodes";
+        std::string busoutputname = opt.output + "/output.bus";
+        
+        writeECList(ecfilename, index);
+        writeCellIds(cellnamesfilename, opt.batch_ids);
+        if (opt.batch_bus || opt.batch_bus_write) {
+          if (opt.batch_bus_write) {
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+          }
+          if (!MP.batchCounts.empty()) {
+            // Write out fake barcodes that identify each cell
+            std::vector<std::string> fake_bcs;
+            fake_bcs.reserve(MP.batchCounts.size());
+            for (size_t j = 0; j < MP.batchCounts.size(); j++) {
+              fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
+            }
+            writeCellIds(busbarcodelistname, fake_bcs);
+          }
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false);
+          // Write out fragment length distributions if reads paired-end:
+          if (!opt.single_end) {
+            std::ofstream flensout_f((opt.output + "/flens.txt"));
+            for (size_t id = 0; id < opt.batch_ids.size(); id++) {
+              std::vector<int> fld = MP.batchFlens[id];
+              for ( size_t i = 0 ; i < fld.size(); ++i ) {
+                if (i != 0) {
+                  flensout_f << " ";
+                }
+                flensout_f << fld[i];
+              }
+              flensout_f << "\n";
+            }
+            flensout_f.close();
+          }
+        }
+        if (!opt.gtfFile.empty()) {
+          // write out gene info
+          writeGeneList(genelistname, model);
+        }
+      } else { // kallisto bus -x
         int num_trans, index_version;
         int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
