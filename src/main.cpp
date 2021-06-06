@@ -1125,6 +1125,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
                 ret = false;
               }
             }
+            f1.clear();
+            f2.clear();
           }
         }
       }
