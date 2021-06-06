@@ -1016,6 +1016,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     } else {
       opt.batch_bus = true;
     }
+    if (!opt.single_end) {
+      cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
+    }
     // check for read files
     if (!opt.batch_mode) {
       cerr << "[bus] no technology specified; will try running read files as-is" << endl;
@@ -1025,13 +1028,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       if (opt.files.size() != 1 && opt.files.size() != 2) {
         cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
         ret = false;
-      } else if (opt.single_end && opt.files.size() != 1) {
-        cerr << ERROR_STR << " single-end mode requires exactly one read file; use --paired for paired-end mode" << endl;
-        ret = false;
       } else {
         std::string f1,f2;
         struct stat stFileInfo;
         if (opt.files.size() == 1) {
+          opt.single_end = true;
           f1 = opt.files[0];
           opt.batch_files.push_back({f1});
           auto intstat = stat(f1.c_str(), &stFileInfo);
@@ -1040,6 +1041,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
             ret = false;
           }
         } else {
+          opt.single_end = false;
           f1 = opt.files[0];
           f2 = opt.files[1];
           opt.batch_files.push_back({f1,f2});
@@ -1073,6 +1075,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           std::ifstream bfile(opt.batch_file_name);
           std::string line;
           std::string id,f1,f2;
+          bool read_first_batch_file_line = false;
           while (std::getline(bfile,line)) {
             if (line.size() == 0) {
               continue;
@@ -1083,21 +1086,38 @@ bool CheckOptionsBus(ProgramOptions& opt) {
               continue;
             }
             opt.batch_ids.push_back(id);
+            ss >> f1 >> f2;
+            if (!read_first_batch_file_line) {
+              if (f2.empty()) {
+                opt.single_end = true;
+              } else {
+                opt.single_end = false;
+              }
+              read_first_batch_file_line = true;
+            }
             if (opt.single_end) {
-              ss >> f1;
               opt.batch_files.push_back({f1});
               intstat = stat(f1.c_str(), &stFileInfo);
               if (intstat != 0) {
                 cerr << ERROR_STR << " file not found " << f1 << endl;
                 ret = false;
               }
+              if (!f2.empty()) {
+                cerr << ERROR_STR << " batch file malformatted" << endl;
+                ret = false;
+                break;
+              }
             } else {
-              ss >> f1 >> f2;
               opt.batch_files.push_back({f1,f2});
               intstat = stat(f1.c_str(), &stFileInfo);
               if (intstat != 0) {
                 cerr << ERROR_STR << " file not found " << f1 << endl;
                 ret = false;
+              }
+              if (f2.empty()) {
+                cerr << ERROR_STR << " batch file malformatted" << endl;
+                ret = false;
+                break;
               }
               intstat = stat(f2.c_str(), &stFileInfo);
               if (intstat != 0) {
