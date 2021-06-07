@@ -13,6 +13,10 @@ add_executable(kallisto main.cpp)
 find_package( Threads REQUIRED )
 target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
 
+if(WIN32)
+    target_link_libraries(kallisto ws2_32)
+endif(WIN32)
+
 if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
     set(HDF5_USE_STATIC_LIBRARIES 1)

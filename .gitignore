@@ -6,7 +6,6 @@ build/*
 
 CMakeCache.txt
 CMakeFiles
-Makefile
 cmake_install.cmake
 install_manifest.txt
 test/tests
