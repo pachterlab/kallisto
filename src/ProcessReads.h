@@ -179,8 +179,6 @@ public:
       }
 
       if (opt.batch_mode) {
-        memset(&bus_bc_len[0],0,33);
-        memset(&bus_umi_len[0],0,33);
         batchCounts.assign(opt.batch_ids.size(), {});
         tlencounts.assign(opt.batch_ids.size(), 0);
         batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
@@ -198,10 +196,16 @@ public:
       if (opt.pseudobam) {
         pseudobatchf_out.open(opt.output + "/pseudoaln.bin", std::ios::out | std::ios::binary);
       }
-      if (opt.bus_mode) {
+      if (opt.bus_mode || opt.batch_bus) {
+        memset(&bus_bc_len[0],0,sizeof(bus_bc_len));
+        memset(&bus_umi_len[0],0,sizeof(bus_umi_len));
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
         
-        writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
+        if (opt.batch_bus) {
+          writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
+        } else {
+          writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
+        }
       }
     }
 
@@ -227,10 +231,13 @@ public:
   }
 
   std::mutex reader_lock;
+  std::vector<std::mutex> parallel_bus_reader_locks;
+  bool parallel_bus_read;
   std::mutex writer_lock;
 
 
   SequenceReader *SR;
+  std::vector<FastqSequenceReader> FSRs;
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
@@ -335,6 +342,7 @@ public:
   int id;
   int local_id;
   PseudoAlignmentBatch pseudobatch;
+  FastqSequenceReader batchSR;
 
   int bc_len[33];
   int umi_len[33];

@@ -51,3 +51,16 @@ std::string binaryToString(uint64_t x, size_t len) {
   }
   return std::move(s);
 }
+
+int hamming(uint64_t a, uint64_t b, size_t len) {
+  uint64_t df = a^b;
+  int d = 0;
+  size_t sh = len-1;
+  for (size_t i = 0; i < len; ++i) {
+    if (((df>>(2*sh)) & 0x03ULL) != 0) {
+      d++;
+    }    
+    sh--;
+  }
+  return d;
+}

@@ -581,3 +581,57 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
     std::cerr << "Warning: " << num_trans_missing << " transcripts were defined in GTF file, but not in the index" << std::endl;
   }
 }
+
+void Transcriptome::parseGeneMap(const std::string &genemap_fn, const KmerIndex& index, const ProgramOptions& options) {
+  for (int i = 0; i < index.num_trans; i++) {
+    TranscriptModel tr;
+    tr.id = i;
+    tr.chr = -1;
+    tr.gene_id = -1;
+    tr.strand = true;
+    transcripts.push_back(std::move(tr));
+    trNameToId.insert({index.target_names_[i], i});
+  }
+  
+  std::ifstream ingenemap((genemap_fn));
+  if (ingenemap.is_open()) {
+    std::string line;
+    while (getline(ingenemap, line)) {
+      if (line.empty()) {
+        continue;
+      }
+      std::stringstream ss(line);
+      std::string txp, gene_name, gene_common_name;
+      ss >> txp >> gene_name >> gene_common_name;
+      if (gene_name.empty()) {
+        std::cerr << "Error: No gene associated with transcript " << txp << " in " << genemap_fn << std::endl;
+        exit(1);
+      }
+      auto it = trNameToId.find(txp);
+      if (it != trNameToId.end()) {
+        TranscriptModel tmodel;
+        tmodel.id = it->second;
+        tmodel.length = index.target_lens_[tmodel.id];
+        auto it2 = geneNameToId.find(gene_name);
+        if (it2 == geneNameToId.end()) {
+          GeneModel gmodel;
+          gmodel.id = genes.size();
+          gmodel.name = gene_name;
+          gmodel.commonName = gene_common_name;
+          geneNameToId.insert({gmodel.name, gmodel.id});
+          genes.push_back(std::move(gmodel));
+          tmodel.gene_id = gmodel.id;
+        } else {
+          tmodel.gene_id = it2->second;
+        }
+        transcripts[tmodel.id] = std::move(tmodel);
+      } else {
+        std::cerr << "Error: Invalid transcript: " << txp << " in " << genemap_fn << std::endl;
+        exit(1);
+      }
+    }
+  } else {
+    std::cerr << "Error: could not open file " << genemap_fn << std::endl;
+    exit(1);
+  }
+}
