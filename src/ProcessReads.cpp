@@ -1485,12 +1485,13 @@ void BUSProcessor::processBuffer() {
   memset(&umi_len[0], 0, sizeof(umi_len));
 
   const BUSOptions& busopt = mp.opt.busOptions;
+  bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: find flen, potential strand-specificity, no UMI
   
   auto &tcount = mp.tlencount;
   if (mp.opt.batch_bus) {
     tcount = mp.tlencounts[id];
   }
-  bool findFragmentLength = tcount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || mp.opt.batch_bus);
+  bool findFragmentLength = tcount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || bulk_like);
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
@@ -1557,24 +1558,31 @@ void BUSProcessor::processBuffer() {
     // copy the umi
     int ulen = 0;
     bool bad_umi = false;
-    for (auto &umic : busopt.umi) {
-      int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
-      if (l[umic.fileno] < umic.start + umilen || umilen <= 0) {
-        bad_umi = true;
-        break;
+    if (busopt.umi[0].fileno == -1) {
+      ulen = 1;
+      umi[0] = 'A';
+      umi[ulen] = 0;
+      ignore_umi = true;
+    } else {
+      for (auto &umic : busopt.umi) {
+        int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
+        if (l[umic.fileno] < umic.start + umilen || umilen <= 0) {
+          bad_umi = true;
+          break;
+        }
+        if (check_tag_sequence && ulen == 0) {
+          umilen += taglen; // Expand to include tag sequence
+          memcpy(umi, s[umic.fileno] + umic.start - taglen, umilen);
+        } else {
+          memcpy(umi+ulen, s[umic.fileno] + umic.start, umilen);
+        }
+        ulen += umilen;
       }
-      if (check_tag_sequence && ulen == 0) {
-        umilen += taglen; // Expand to include tag sequence
-        memcpy(umi, s[umic.fileno] + umic.start - taglen, umilen);
-      } else {
-        memcpy(umi+ulen, s[umic.fileno] + umic.start, umilen);
+      if (bad_umi) {
+        continue;
       }
-      ulen += umilen;
+      umi[ulen] = 0;
     }
-    if (bad_umi) {
-      continue;
-    }
-    umi[ulen] = 0;
 
     uint64_t umi_binary = -1;
     if (check_tag_sequence) {
@@ -1677,7 +1685,7 @@ void BUSProcessor::processBuffer() {
       ec = tc.findEC(u);
     }
 
-    if ((!ignore_umi || mp.opt.batch_bus) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
+    if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
       int p = -1;
       Kmer km;
       KmerEntry val;
@@ -1740,7 +1748,7 @@ void BUSProcessor::processBuffer() {
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = check_tag_sequence || mp.opt.batch_bus ? umi_binary : stringToBinary(umi, ulen, f);
+      b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";

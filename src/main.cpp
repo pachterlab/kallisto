@@ -649,6 +649,7 @@ void ListSingleCellTechnologies() {
   << "10xv1            10x version 1 chemistry" << endl
   << "10xv2            10x version 2 chemistry" << endl
   << "10xv3            10x version 3 chemistry" << endl
+  << "Bulk             Bulk RNA-seq or Smart-seq2 (multiplexed)" << endl
   << "BDWTA            BD Rhapsody WTA" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
@@ -1233,6 +1234,17 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,0));
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
+      } else if (opt.technology == "BULK") {
+        busopt.nfiles = 3;
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+        busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+        if (!opt.single_end) {
+          busopt.nfiles++;
+          busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+          busopt.paired = true;
+        }
       } else if (opt.technology == "BDWTA") {
         busopt.nfiles = 2;
         busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
@@ -1348,6 +1360,17 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
         strand = ProgramOptions::StrandType::FR;
+      } else if (opt.technology == "BULK") {
+        busopt.nfiles = 3;
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+        busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+        if (!opt.single_end) {
+          busopt.nfiles++;
+          busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+          busopt.paired = true;
+        }
       } else if (opt.technology == "BDWTA") {
         busopt.nfiles = 2;
         busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
