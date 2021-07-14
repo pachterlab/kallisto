@@ -1485,13 +1485,13 @@ void BUSProcessor::processBuffer() {
   memset(&umi_len[0], 0, sizeof(umi_len));
 
   const BUSOptions& busopt = mp.opt.busOptions;
-  bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: find flen, potential strand-specificity, no UMI
+  bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
   
   auto &tcount = mp.tlencount;
   if (mp.opt.batch_bus) {
     tcount = mp.tlencounts[id];
   }
-  bool findFragmentLength = tcount < 10000 && busopt.paired && (!mp.opt.tagsequence.empty() || bulk_like);
+  bool findFragmentLength = tcount < 10000 && busopt.paired;
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
