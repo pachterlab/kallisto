@@ -2814,7 +2814,7 @@ int main(int argc, char *argv[]) {
         transout_f.close();
         
         std::vector<int> fld;
-        if (opt.busOptions.paired && !opt.tagsequence.empty()) {
+        if (opt.busOptions.paired) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
           // Write out index:
