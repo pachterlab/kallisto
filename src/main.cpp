@@ -1021,14 +1021,14 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     if (!opt.batch_mode) {
       cerr << "[bus] no technology specified; will try running read files as-is" << endl;
       opt.batch_mode = true;
-      opt.pseudo_read_files_supplied = true;
       if (!opt.single_end && opt.files.size() % 2 != 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
       } else {
         int i = 0;
-        opt.batch_ids.push_back("sample");
+        int sample_id = 0;
         while (i < opt.files.size()) {
+          opt.batch_ids.push_back("batch" + std::to_string(sample_id));
           std::string f1,f2;
           struct stat stFileInfo;
           f1 = opt.files[i];
@@ -1055,6 +1055,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
             }
           }
           i++;
+          sample_id++;
+        }
+        if (sample_id == 1) {
+          opt.pseudo_read_files_supplied = true; // Only one sample supplied; use SR instead of batchSR to read
         }
       }
     } else if (ret) {
@@ -2826,6 +2830,9 @@ int main(int argc, char *argv[]) {
           }
           flensout_f << "\n";
           flensout_f.close();
+        } else if (opt.busOptions.umi[0].fileno == -1) {
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false);
         }
 
         // gather stats
