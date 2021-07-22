@@ -1017,49 +1017,51 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     } else {
       opt.batch_bus = true;
     }
-    if (!opt.single_end) {
-      cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
-    }
     // check for read files
     if (!opt.batch_mode) {
       cerr << "[bus] no technology specified; will try running read files as-is" << endl;
-      opt.batch_ids.push_back("sample");
       opt.batch_mode = true;
       opt.pseudo_read_files_supplied = true;
-      if (opt.files.size() != 1 && opt.files.size() != 2) {
-        cerr << ERROR_STR << " A minimum of one and a maximum of two read files must be provided" << endl;
+      if (!opt.single_end && opt.files.size() % 2 != 0) {
+        cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
       } else {
-        std::string f1,f2;
-        struct stat stFileInfo;
-        if (opt.files.size() == 1) {
-          opt.single_end = true;
-          f1 = opt.files[0];
-          opt.batch_files.push_back({f1});
-          auto intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
+        int i = 0;
+        opt.batch_ids.push_back("sample");
+        while (i < opt.files.size()) {
+          std::string f1,f2;
+          struct stat stFileInfo;
+          f1 = opt.files[i];
+          if (opt.single_end) {
+            opt.batch_files.push_back({f1});
+            auto intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+          } else {
+            i++;
+            f2 = opt.files[i];
+            opt.batch_files.push_back({f1,f2});
+            auto intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+            intstat = stat(f2.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f2 << endl;
+              ret = false;
+            }
           }
-        } else {
-          opt.single_end = false;
-          f1 = opt.files[0];
-          f2 = opt.files[1];
-          opt.batch_files.push_back({f1,f2});
-          auto intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
-          }
-          intstat = stat(f2.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f2 << endl;
-            ret = false;
-          }
+          i++;
         }
       }
     } else if (ret) {
       cerr << "[bus] no technology specified; will try running read files supplied in batch file" << endl;
+      if (!opt.single_end) {
+        cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
+      }
       if (opt.files.size() != 0) {
         cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
         ret = false;
@@ -1132,12 +1134,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
       }
     }
-    if (!opt.single_end) {
-      if (opt.files.size() % 2 != 0) {
-        cerr << "Error: paired-end mode requires an even number of input files" << endl;
-        ret = false;
-      }
-    }
     if (opt.pseudobam) {
       cerr << "Error: Pseudobam not supported yet in this mode" << endl;
       ret = false;
@@ -1166,6 +1162,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
       }
+      busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
     }
     return ret;
   } else {

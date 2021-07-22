@@ -401,7 +401,7 @@ void MasterProcessor::processReads() {
       // TODO: put in thread pool
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
-      if (opt.pseudo_read_files_supplied) {
+      if (opt.pseudo_read_files_supplied) { // pseudo_read_files_supplied: read using SR (no batch identifier) rather than batchSR
         for (int i = 0; i < opt.threads; i++) {
           workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,0)));
         }
@@ -1558,7 +1558,7 @@ void BUSProcessor::processBuffer() {
     // copy the umi
     int ulen = 0;
     bool bad_umi = false;
-    if (busopt.umi[0].fileno == -1) {
+    if (bulk_like) {
       ulen = 1;
       umi[0] = 'A';
       umi[ulen] = 0;
