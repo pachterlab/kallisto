@@ -1008,6 +1008,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
            << ", but only " << n << " cores on the machine" << endl;
     }    
   }
+  if (!opt.technology.empty() && opt.batch_mode) {
+    cerr << "Error: cannot specify both -x and --batch" << endl;
+    ret = false;
+  }
 
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
