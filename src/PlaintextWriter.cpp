@@ -286,7 +286,7 @@ void writeFLD(const std::string &filename, const std::vector<std::pair<double, d
   of.close();
 }
 
-void writeGeneList(const std::string &filename, const Transcriptome& model) {
+void writeGeneList(const std::string &filename, const Transcriptome& model, bool writeNamesOnly) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out);
   if (!of.is_open()) {
@@ -294,7 +294,11 @@ void writeGeneList(const std::string &filename, const Transcriptome& model) {
     exit(1);
   }
   for (int j = 0; j < model.genes.size(); j++) {
-    of << j << "\t" << model.genes[j].name << "\t" << model.genes[j].commonName << "\n";
+    if (writeNamesOnly) {
+      of << model.genes[j].name << "\n";
+    } else {
+      of << j << "\t" << model.genes[j].name << "\t" << model.genes[j].commonName << "\n";
+    }
   }
   of.close();
 }

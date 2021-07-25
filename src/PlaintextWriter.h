@@ -61,7 +61,7 @@ void writeECList(
 
 void writeFLD(const std::string &filename, const std::vector<std::pair<double, double>> &flds);
 
-void writeGeneList(const std::string &filename, const Transcriptome& model);
+void writeGeneList(const std::string &filename, const Transcriptome& model, bool writeNamesOnly = false);
 
 std::vector<double> counts_to_tpm(const std::vector<double>& est_counts,
                                   const std::vector<double>& eff_lens);
