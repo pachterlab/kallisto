@@ -3334,7 +3334,7 @@ int main(int argc, char *argv[]) {
         std::string prefix = opt.output + "/matrix";
         std::string abtsvfilename = opt.output + "/abundance.tsv";
         std::string gene_abtsvfilename = opt.output + "/abundance.gene.tsv";
-        std::string genelistname = opt.output + "/genelist.txt";
+        std::string genelistname = opt.output + "/genes.txt";
         std::string abfilename = prefix + ".abundance.mtx";
         std::string abtpmfilename = prefix + ".abundance.tpm.mtx";
         std::string gene_abfilename = prefix + ".abundance.gene.mtx";
@@ -3509,7 +3509,7 @@ int main(int argc, char *argv[]) {
           if (gene_level_counting) {
             writeSparseBatchMatrix(gene_abfilename, Abundance_mat_gene, model.genes.size());
             writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
-            writeGeneList(genelistname, model);
+            writeGeneList(genelistname, model, true);
           }
         }
         if (calcEffLen) {
