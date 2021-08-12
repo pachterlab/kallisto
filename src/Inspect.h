@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <unordered_set>
+#include <limits>
 #include "KmerIndex.h"
 #include "GeneModel.h"
 

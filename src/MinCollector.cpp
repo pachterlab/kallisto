@@ -1,5 +1,6 @@
 #include "MinCollector.h"
 #include <algorithm>
+#include <limits>
 
 // utility functions
 
