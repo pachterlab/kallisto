@@ -539,7 +539,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv2        inDrops version 2 chemistry" << endl
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
-  << "SPLiT-seq        Split Bio SPLiT-seq 1" << endl
+  << "SPLiT-seq        SPLiT-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
