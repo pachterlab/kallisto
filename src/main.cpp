@@ -660,6 +660,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SmartSeq3        Smart-seq3" << endl
+  << "SPLiT-seq        SPLiT-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
   << endl;
  }
@@ -1224,6 +1225,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+      } else if (opt.technology == "SPLIT-SEQ") {
+        busopt.nfiles = 2;
+        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(1,10,18));
+        busopt.bc.push_back(BUSOptionSubstr(1,48,56));
+        busopt.bc.push_back(BUSOptionSubstr(1,78,86));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,6,16));
@@ -1352,6 +1360,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi.push_back(BUSOptionSubstr(0,0,6));
         busopt.bc.push_back(BUSOptionSubstr(0,6,12));
         strand = ProgramOptions::StrandType::FR;
+      } else if (opt.technology == "SPLIT-SEQ"){
+        busopt.nfiles = 2;
+        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+        busopt.bc.push_back(BUSOptionSubstr(1,10,18));
+        busopt.bc.push_back(BUSOptionSubstr(1,48,56));
+        busopt.bc.push_back(BUSOptionSubstr(1,78,86));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -2356,7 +2371,6 @@ void usage() {
        << "    quant         Runs the quantification algorithm " << endl
        << "    quant-tcc     Runs quantification on transcript-compatibility counts" << endl
        << "    bus           Generate BUS files for single-cell data " << endl
-       << "    pseudo        Runs the pseudoalignment step " << endl
        << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
        << "    inspect       Inspects and gives information about an index" << endl 
@@ -2465,7 +2479,7 @@ void usageEM(bool valid_input = true) {
 void usagePseudo(bool valid_input = true) {
   if (valid_input) {
     cout << "kallisto " << KALLISTO_VERSION << endl
-         << "Computes equivalence classes for reads and quantifies abundances" << endl << endl;
+         << "Computes equivalence classes for reads and quantifies abundances (deprecated)" << endl << endl;
   }
 
   cout << "Usage: kallisto pseudo [arguments] FASTQ-files" << endl << endl
