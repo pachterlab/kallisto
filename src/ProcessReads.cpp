@@ -1680,7 +1680,7 @@ void BUSProcessor::processBuffer() {
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v, v2, false,u);
+    int r = tc.intersectKmers(v, v2, !busopt.paired,u);
     if (!u.empty()) {      
       ec = tc.findEC(u);
     }
