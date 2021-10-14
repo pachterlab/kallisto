@@ -662,6 +662,7 @@ void ListSingleCellTechnologies() {
   << "SmartSeq3        Smart-seq3" << endl
   << "SPLiT-seq        SPLiT-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
+  << "Visium           10x Visium Spatial Transcriptomics" << endl
   << endl;
  }
 
@@ -1306,6 +1307,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
         strand = ProgramOptions::StrandType::FR;
       } else if (opt.technology == "10XV3") {
+        busopt.nfiles = 2;
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
+        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+        strand = ProgramOptions::StrandType::FR;
+      } else if (opt.technology == "VISIUM") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,16,28));
