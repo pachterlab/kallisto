@@ -65,7 +65,7 @@ The __kallisto__ GitHub repository is [here](http://github.com/pachterlab/kallis
 {% endfor %}
 </table>
 
-#### Licence
+#### License
 
 kallisto is distributed under the BSD 2-clause "Simplified" License:
 
