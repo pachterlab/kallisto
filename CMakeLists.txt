@@ -74,5 +74,16 @@ if (BUILD_TESTING)
     add_subdirectory(unit_tests)
 endif(BUILD_TESTING)
 
+option(BUILD_FUNCTESTING "Build functional tests." OFF)
+
+if (BUILD_FUNCTESTING)
+    add_subdirectory(func_tests)
+    message("Functional testing enabled.")
+    add_custom_target(test
+    COMMAND /bin/sh ./func_tests/runtests.sh
+    DEPENDS ./src/kallisto
+    )
+endif(BUILD_FUNCTESTING)
+
 # enable_testing()
 # add_test(MainTest test/tests)
