@@ -1,0 +1,24 @@
+name: Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    name: Build and test linux
+    runs-on: ubuntu-18.04
+    env:
+      RELEASE_OS: linux
+    steps:
+      - name: checkout branch
+        uses: actions/checkout@master
+      - name: Setup environment
+        id: setup
+        run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF##*/}
+      - name: make
+        run: |
+          cd ext/htslib && autoheader && autoconf && cd ../..
+          mkdir build && cd build && cmake .. -DBUILD_FUNCTESTING=ON && make && make install
+      - name: Functional testing
+        run: |
+          make test
