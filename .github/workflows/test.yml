@@ -18,7 +18,7 @@ jobs:
       - name: make
         run: |
           cd ext/htslib && autoheader && autoconf && cd ../..
-          mkdir build && cd build && cmake .. -DBUILD_FUNCTESTING=ON && make && make install
+          mkdir build && cd build && cmake .. -DBUILD_FUNCTESTING=ON && make && make install && cd ..
       - name: Functional testing
         run: |
-          make test
+          cd build && make test
