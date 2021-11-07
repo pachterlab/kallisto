@@ -22,7 +22,7 @@ jobs:
       - name: Setup bustools
         run: |
           git clone https://github.com/BUStools/bustools.git
-          mkdir build && cd build && cmake .. && make && make install && cd ..
+          cd bustools && mkdir build && cd build && cmake .. && make && make install && cd ../..
       - name: Functional testing
         run: |
           cd build && make test
