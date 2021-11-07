@@ -80,7 +80,7 @@ if (BUILD_FUNCTESTING)
     add_subdirectory(func_tests)
     message("Functional testing enabled.")
     add_custom_target(test
-    COMMAND /bin/sh ./func_tests/runtests.sh
+    COMMAND /bin/bash ./func_tests/runtests.sh
     DEPENDS ./src/kallisto
     )
 endif(BUILD_FUNCTESTING)
