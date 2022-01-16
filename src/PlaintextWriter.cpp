@@ -99,13 +99,13 @@ void plaintext_writer_gene(
   of << "gene_id" << "\t"
      << "gene_name" << "\t"
      << "est_counts" << "\t"
-     << "tpm" << std::endl;
+     << "tpm" << "\n";
 
   for (int i = 0; i < gc.size(); i++) {
     of << model.genes[i].name << '\t'
        << model.genes[i].commonName << '\t'
        << gc[i] << '\t'
-       << gc_tpm[i] << std::endl;
+       << gc_tpm[i] << "\n";
   }
 
   of.close();

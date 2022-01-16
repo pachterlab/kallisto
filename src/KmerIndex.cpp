@@ -1010,8 +1010,8 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
         }
         tmp_vec.push_back(tmp_ecval_num);
       }
-      ecmap.push_back(tmp_vec);
-      ecmapinv.insert({tmp_vec, i});
+      ecmap.push_back(tmp_vec); // copy
+      ecmapinv.insert({std::move(tmp_vec), i}); // move
       i++;
     }
   } else {

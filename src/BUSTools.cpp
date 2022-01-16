@@ -26,7 +26,7 @@ void writeBUSMatrix(const std::string &filename,
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out | std::ios::binary);
   writeBUSHeader(of, BUSFORMAT_FAKE_BARCODE_LEN, 1);
-  if (!data.empty()) {      
+  if (!data.empty()) { // reduntant  
     for (size_t j = 0; j < data.size(); j++) {
       const auto &v = data[j];
       for (size_t i = 0; i < v.size(); i++) {
