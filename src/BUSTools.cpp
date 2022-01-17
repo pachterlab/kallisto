@@ -1,6 +1,6 @@
 #include <vector>
 #include <fstream>
-#include "BUSData.h"
+#include "BUSTools.h"
 
 void writeBUSHeader(std::ofstream &out, int bclen, int umilen) {
   out.write("BUS\0", 4);
@@ -19,4 +19,28 @@ void writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
       out.write((char*)(&b), sizeof(b));
     }
   }
+}
+
+void writeBUSMatrix(const std::string &filename,
+                    std::vector<std::vector<std::pair<int,int>>> &data, int cols) {
+  std::ofstream of;
+  of.open(filename.c_str(), std::ios::out | std::ios::binary);
+  writeBUSHeader(of, BUSFORMAT_FAKE_BARCODE_LEN, 1);
+  if (!data.empty()) { // reduntant  
+    for (size_t j = 0; j < data.size(); j++) {
+      const auto &v = data[j];
+      for (size_t i = 0; i < v.size(); i++) {
+        if (v[i].second != 0 && v[i].first != -1) {
+          BUSData b;
+          b.barcode = j;
+          b.flags = 0;
+          b.UMI = -1;
+          b.ec = v[i].first;
+          b.count = v[i].second;
+          of.write((char*)(&b), sizeof(b));
+        }
+      }
+    }
+  }
+  of.close();
 }

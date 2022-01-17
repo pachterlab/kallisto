@@ -26,6 +26,7 @@
 #include "BUSData.h"
 #include "BUSTools.h"
 #include <htslib/kstring.h>
+#include <unordered_set>
 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
@@ -352,6 +353,23 @@ void MasterProcessor::processReads() {
     }
   } else if (opt.bus_mode) {
     std::vector<std::thread> workers;
+    parallel_bus_read = opt.threads > 4 && opt.files.size() > opt.busOptions.nfiles && !opt.num && !opt.pseudobam;
+    if (parallel_bus_read) {
+      delete SR;
+      SR = nullptr;
+      assert(opt.files.size() % opt.busOptions.nfiles == 0);
+      int nbatches = opt.files.size() / opt.busOptions.nfiles;
+      std::vector<std::mutex> mutexes(nbatches);
+      parallel_bus_reader_locks.swap(mutexes);
+      for (int i = 0; i < nbatches; i++) {
+        FastqSequenceReader fSR(opt);
+        fSR.files.erase(fSR.files.begin(), fSR.files.begin()+opt.busOptions.nfiles*i);
+        fSR.files.erase(fSR.files.begin()+opt.busOptions.nfiles, fSR.files.end());
+        assert(fSR.files.size() == opt.busOptions.nfiles);
+        FSRs.push_back(std::move(fSR));
+      }
+    }
+    
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this)));
     }
@@ -375,6 +393,46 @@ void MasterProcessor::processReads() {
     }
 
   
+  } else if (opt.batch_mode && opt.batch_bus) {
+    std::vector<std::thread> workers;
+    int num_ids = opt.batch_ids.size();
+    int id =0;
+    while (id < num_ids) {
+      // TODO: put in thread pool
+      workers.clear();
+      int nt = std::min(opt.threads, (num_ids - id));
+      if (opt.pseudo_read_files_supplied) { // pseudo_read_files_supplied: read using SR (no batch identifier) rather than batchSR
+        for (int i = 0; i < opt.threads; i++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        }
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
+        }
+        // let the workers do their thing
+        for (int i = 0; i < nt; i++) {
+          workers[i].join(); //wait for them to finish
+        }
+      }
+    }
+    
+    // now handle the modification of the mincollector
+    for (int i = 0; i < bus_ecmap.size(); i++) {
+      auto &u = bus_ecmap[i];
+      int ec = index.ecmapinv.size();
+      auto it = bus_ecmapinv.find(u);
+      if (it->second != ec) {
+        std::cout << "Error" << std::endl;
+        exit(1);
+      }      
+      index.ecmapinv.insert({u,ec});
+      index.ecmap.push_back(u);
+    }
   } else if (opt.batch_mode) {    
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -385,13 +443,24 @@ void MasterProcessor::processReads() {
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
       int first_id = id;
-      for (int i = 0; i < nt; i++,id++) {
-        tmp_bc[i].assign(tc.counts.size(), 0);     
-        workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
-      }
-      
-      for (int i = 0; i < nt; i++) {
-        workers[i].join();
+      if (opt.pseudo_read_files_supplied) {
+        for (int i = 0; i < opt.threads; i++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);     
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, 0)));
+        }
+        for (int i = 0; i < opt.threads; i++) {
+          workers[i].join();
+        } 
+        id++;
+        assert(id == num_ids);
+      } else {
+        for (int i = 0; i < nt; i++,id++) {
+          tmp_bc[i].assign(tc.counts.size(), 0);
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
+        }
+        for (int i = 0; i < nt; i++) {
+          workers[i].join();
+        }
       }
       
       if (!opt.umi) {
@@ -465,7 +534,7 @@ void MasterProcessor::processReads() {
           }
           int ec = tc.findEC(t.first);
           assert(ec != -1);
-          ++tmp_counts[ec];
+          tmp_counts[ec] += t.second;
         }
         auto& bc = batchCounts[id];
         for (int j = 0; j < tmp_counts.size(); j++) {
@@ -531,7 +600,7 @@ void MasterProcessor::processReads() {
   if (opt.pseudobam) {
     pseudobatchf_out.close();
   }
-  if (opt.bus_mode) {
+  if (opt.bus_mode || opt.batch_bus) {
     busf_out.close();
   }
 }
@@ -737,7 +806,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
-  if (!opt.batch_mode) {
+  if (!opt.batch_mode || opt.batch_bus) {
     for (int i = 0; i < c.size(); i++) {
       tc.counts[i] += c[i]; // add up ec counts
       nummapped += c[i];
@@ -756,7 +825,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }    
   }
 
-  if (!opt.batch_mode) {
+  if (!opt.batch_mode || opt.batch_bus) {
     for(auto &u : newEcs) {
       ++newECcount[u];
     }
@@ -829,7 +898,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }
   }
 
-  if (opt.bus_mode) {
+  if (opt.bus_mode || opt.batch_bus) {
     int bus_bc_sum = 0;
     int bus_umi_sum = 0;
     for (int i = 0; i <= 32; i++) {
@@ -978,7 +1047,7 @@ void ReadProcessor::operator()() {
   while (true) {
     int readbatch_id;
     // grab the reader lock
-    if (mp.opt.batch_mode) {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
       if (batchSR.empty()) {
         return;
       } else {
@@ -1294,12 +1363,23 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];  
+   if (opt.batch_mode) {
+     assert(id != -1);
+     batchSR.files = opt.batch_files[id];
+     batchSR.nfiles = opt.batch_files[id].size();
+     batchSR.reserveNfiles(opt.batch_files[id].size());
+     if (opt.umi) {
+       batchSR.umi_files = {opt.umi_files[id]};
+     }
+     batchSR.paired = !opt.single_end;
+   }
+
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
    bv.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
-   memset(&bc_len[0],0,33);
-   memset(&umi_len[0],0,33);
+   memset(&bc_len[0],0,sizeof(bc_len));
+   memset(&umi_len[0],0,sizeof(umi_len));
 
    clear();
 }
@@ -1323,9 +1403,10 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
   bv(std::move(o.bv)),  
+  batchSR(std::move(o.batchSR)),
   counts(std::move(o.counts)) {
-    memcpy(&bc_len[0], &o.bc_len[0], 33);
-    memcpy(&umi_len[0], &o.umi_len[0], 33);
+    memcpy(&bc_len[0], &o.bc_len[0], sizeof(bc_len));
+    memcpy(&umi_len[0], &o.umi_len[0], sizeof(umi_len));
     buffer = o.buffer;
     o.buffer = nullptr;
     o.bufsize = 0;
@@ -1339,22 +1420,42 @@ BUSProcessor::~BUSProcessor() {
 }
 
 void BUSProcessor::operator()() {
+  uint64_t parallel_bus_read_counter = 0;
+  std::unordered_set<int> parallel_bus_read_empty;
   while (true) {
     int readbatch_id;
+    std::vector<std::string> umis;
     // grab the reader lock
-    {
+    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
+      if (batchSR.empty()) {
+        return;
+      } else {
+        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
+      }
+    } else if (mp.opt.bus_mode && mp.parallel_bus_read) {
+      int nbatches = mp.opt.files.size() / mp.opt.busOptions.nfiles;
+      int i = parallel_bus_read_counter % nbatches;
+      if (parallel_bus_read_empty.size() >= nbatches) {
+        return;
+      }
+      parallel_bus_read_counter++;
+      std::lock_guard<std::mutex> lock(mp.parallel_bus_reader_locks[i]);
+      if (mp.FSRs[i].empty()) {
+        parallel_bus_read_empty.emplace(i);
+        continue;
+      }
+      mp.FSRs[i].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
+    } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (mp.SR->empty()) {
         // nothing to do
         return;
       } else {
         // get new sequences
-        std::vector<std::string> umis;
-        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, false);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
       // release the reader lock
     }
-    // do the same for BUS ?!?
     
     pseudobatch.aln.clear();
     pseudobatch.batch_id = readbatch_id;
@@ -1364,7 +1465,7 @@ void BUSProcessor::operator()() {
     // update the results, MP acquires the lock
     std::vector<std::pair<int, std::string>> ec_umi;
     std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
 }
@@ -1377,33 +1478,69 @@ void BUSProcessor::processBuffer() {
   
   u.reserve(1000);
   v.reserve(1000);
+  v2.reserve(1000);
   vtmp.reserve(1000);
 
-  memset(&bc_len[0], 0, 33);
-  memset(&umi_len[0], 0, 33);
+  memset(&bc_len[0], 0, sizeof(bc_len));
+  memset(&umi_len[0], 0, sizeof(umi_len));
 
-  const char* s1 = 0;
-  const char* s2 = 0;
-  const char* s3 = 0;
-  int l1=0,l2=0,l3=0;
+  const BUSOptions& busopt = mp.opt.busOptions;
+  bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
+  
+  auto &tcount = mp.tlencount;
+  if (mp.opt.batch_bus) {
+    tcount = mp.tlencounts[id];
+  }
+  bool findFragmentLength = tcount < 10000 && busopt.paired;
+  int flengoal = 0;
+  flens.clear();
+  if (findFragmentLength) {
+    flengoal = (10000 - tcount);
+    if (flengoal <= 0) {
+      findFragmentLength = false;
+      flengoal = 0;
+    } else {
+      flens.resize(tc.flens.size(), 0);
+    }
+  }
 
-  const char *s[3] = {0,0,0};
-  int l[3] = {0,0,0};
+ 
   char buffer[100];
   memset(buffer, 0, 100);
   char *umi = &(buffer[50]);
   char *bc  = &(buffer[0]);
+  //char *seqbuffer[1000];
+  std::string seqbuffer;
+  seqbuffer.reserve(1000);
   
-  // actually process the sequences
-  const BUSOptions& busopt = mp.opt.busOptions;
+  // actually process the sequence
+  
   int incf, jmax;
   if (bam) {
     incf = 1;
     jmax = 2;
+
   } else {
     incf = busopt.nfiles-1;
     jmax = busopt.nfiles;
   }
+
+  std::vector<const char*> s(jmax, nullptr);
+  std::vector<int> l(jmax,0);
+
+  bool singleSeq = busopt.seq.size() ==1 ;
+  const BUSOptionSubstr seqopt = busopt.seq.front();
+  bool check_tag_sequence = !mp.opt.tagsequence.empty();
+  int taglen = 0;
+  uint64_t tag_binary = 0;
+  int hamming_dist = 1;
+  if (check_tag_sequence) {
+    taglen = mp.opt.tagsequence.length();
+    uint32_t f = 0;
+    tag_binary = stringToBinary(mp.opt.tagsequence, f);
+  }
+
+
   //int incf = (bam) ? 1 : busopt.nfiles-1;
   for (int i = 0; i + incf < seqs.size(); i++) {
     for (int j = 0; j < jmax /*(bam) ? 2 : busopt.nfiles*/; j++) {
@@ -1413,18 +1550,89 @@ void BUSProcessor::processBuffer() {
     i += incf;
     
     // find where the sequence is
-    const char *seq = s[busopt.seq.fileno] + busopt.seq.start;
-    int seqlen = l[busopt.seq.fileno];
-
+    const char *seq = nullptr;
+    const char *seq2 = nullptr;
+    
+    bool ignore_umi = false;
+    
     // copy the umi
-    int umilen = (busopt.umi.start == busopt.umi.stop) ? l[busopt.umi.fileno] - busopt.umi.start : busopt.umi.stop - busopt.umi.start;
-    if (l[busopt.umi.fileno] < busopt.umi.start + umilen) {
-      continue; // too short
+    int ulen = 0;
+    bool bad_umi = false;
+    if (bulk_like) {
+      ulen = 1;
+      umi[0] = 'A';
+      umi[ulen] = 0;
+      ignore_umi = true;
+    } else {
+      for (auto &umic : busopt.umi) {
+        int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
+        if (l[umic.fileno] < umic.start + umilen || umilen <= 0) {
+          bad_umi = true;
+          break;
+        }
+        if (check_tag_sequence && ulen == 0) {
+          umilen += taglen; // Expand to include tag sequence
+          memcpy(umi, s[umic.fileno] + umic.start - taglen, umilen);
+        } else {
+          memcpy(umi+ulen, s[umic.fileno] + umic.start, umilen);
+        }
+        ulen += umilen;
+      }
+      if (bad_umi) {
+        continue;
+      }
+      umi[ulen] = 0;
     }
-    memcpy(umi, s[busopt.umi.fileno] + busopt.umi.start, umilen);
-    umi[umilen] = 0;
-    if (umilen >= 0 && umilen <= 32) {
-      umi_len[umilen]++;
+
+    uint64_t umi_binary = -1;
+    if (check_tag_sequence) {
+      uint32_t f = 0;
+      umi_binary = stringToBinary(umi, ulen, f);
+      if (hamming(tag_binary, umi_binary >> 2*(ulen-taglen), taglen) <= hamming_dist) { // if tag present
+        umi_binary = umi_binary & ~(~0ULL << (2*(ulen - taglen)));
+        ulen = ulen - taglen;
+        if (ulen <= 32) {
+          umi_len[ulen]++;
+        }
+      } else {
+        ignore_umi = true; // tag not present, it's not a UMI-read
+        umi_binary = -1;
+      }
+    } else {
+      if (ulen <= 32) {
+        umi_len[ulen]++;
+      }
+    }
+    
+    size_t seqlen = 0;
+    size_t seqlen2 = 0;
+    if (singleSeq) {
+      int seqstart = (ignore_umi && busopt.umi[0].fileno == seqopt.fileno ? busopt.umi[0].start - taglen : seqopt.start);
+      seq = s[seqopt.fileno] + seqstart;
+      seqlen = (seqopt.stop == 0) ? l[seqopt.fileno]-seqstart : seqopt.stop - seqstart;
+    } else if (busopt.paired) {
+      const auto &sopt1 = busopt.seq[0];
+      const auto &sopt2 = busopt.seq[1];
+      int seqstart1 = (ignore_umi && busopt.umi[0].fileno == sopt1.fileno ? busopt.umi[0].start - taglen : sopt1.start);
+      int seqstart2 = (ignore_umi && busopt.umi[0].fileno == sopt2.fileno ? busopt.umi[0].start - taglen : sopt2.start);
+      int cplen1 = (sopt1.stop == 0) ? l[sopt1.fileno]-seqstart1 : sopt1.stop - seqstart1;
+      int cplen2 = (sopt2.stop == 0) ? l[sopt2.fileno]-seqstart2 : sopt2.stop - seqstart2;
+      seq = s[sopt1.fileno] + seqstart1;
+      seq2 = s[sopt2.fileno] + seqstart2;
+      seqlen = cplen1;
+      seqlen2 = cplen2;
+    } else {
+      seqbuffer.clear();
+      for (int j = 0; j < busopt.seq.size(); j++) {
+        const auto &sopt = busopt.seq[j];
+        int seqstart = (ignore_umi && busopt.umi[0].fileno == sopt.fileno ? busopt.umi[0].start - taglen : sopt.start);
+        int cplen = (sopt.stop == 0) ? l[sopt.fileno]-seqstart : sopt.stop - seqstart;
+        seqbuffer.append(s[sopt.fileno] + seqstart, cplen);
+        seqbuffer.push_back('N');
+      }
+      seqbuffer.push_back(0);
+      seq = seqbuffer.c_str();
+      seqlen = seqbuffer.size();
     }
 
     
@@ -1432,8 +1640,8 @@ void BUSProcessor::processBuffer() {
     int blen = 0;
     bool bad_bc = false;
     for (auto &bcc : busopt.bc) {
-      int bclen = (bcc.start == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
-      if (l[bcc.fileno] < bcc.start + bclen) {
+      int bclen = (0 == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
+      if (l[bcc.fileno] < bcc.start + bclen || bclen <= 0) {
         bad_bc = true;
         break;
       }
@@ -1442,6 +1650,11 @@ void BUSProcessor::processBuffer() {
     }
     if (bad_bc) {
       continue;
+    }
+    if (mp.opt.batch_bus) {
+      ignore_umi = true;
+      blen = BUSFORMAT_FAKE_BARCODE_LEN;
+      memcpy(bc, binaryToString(id, blen).c_str(), blen); // Create fake barcode that identifies the batch
     }
     bc[blen] = 0;
 
@@ -1460,12 +1673,72 @@ void BUSProcessor::processBuffer() {
 
     // process 2nd read
     index.match(seq,seqlen, v);
+    if (busopt.paired) {
+      v2.clear();
+      index.match(seq2,seqlen2, v2);
+    }
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v, v2, false,u);
+    int r = tc.intersectKmers(v, v2, !busopt.paired,u);
     if (!u.empty()) {      
       ec = tc.findEC(u);
+    }
+
+    if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
+      int p = -1;
+      Kmer km;
+      KmerEntry val;
+      if (!v.empty()) {
+        vtmp.clear();
+        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+        p = findFirstMappingKmer(v,val);
+        km = Kmer((seq+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == firstStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      if (!v2.empty()) {
+        vtmp.clear();
+        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
+        p = findFirstMappingKmer(v2,val);
+        km = Kmer((seq2+p));
+        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
+        // might need to optimize this
+        const auto &c = index.dbGraph.contigs[val.contig];
+        for (auto tr : u) {
+          for (auto ctx : c.transcripts) {
+            if (tr == ctx.trid) {
+              if ((strand == ctx.sense) == secondStrand) {
+                // swap out 
+                vtmp.push_back(tr);
+              } 
+              break;
+            }
+          }          
+        }
+        if (vtmp.size() < u.size()) {
+          u = vtmp; // copy
+        }
+      }
+      ec = -1;
+      if (!u.empty()) { // update the ec
+        ec = tc.findEC(u);
+      }
     }
 
     // find the ec
@@ -1475,15 +1748,26 @@ void BUSProcessor::processBuffer() {
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
       b.flags |= f;
-      b.UMI = stringToBinary(umi, umilen, f);
+      b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
       //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
       if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }
-
+      
       //ec = tc.findEC(u);
+
+      if (busopt.paired && ignore_umi) {
+        if (findFragmentLength && flengoal > 0 && 0 <= ec && ec < index.num_trans && !v.empty() && !v2.empty()) {
+          // try to map the reads
+          int tl = index.mapPair(seq, seqlen, seq2, seqlen2, ec);
+          if (0 < tl && tl < flens.size()) {
+            flens[tl]++;
+            flengoal--;
+          }
+        }
+      }
       
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
@@ -1501,16 +1785,20 @@ void BUSProcessor::processBuffer() {
 
     if (mp.opt.pseudobam) {
       PseudoAlignmentInfo info;
-      info.id = i;
-      info.paired = false;
+      info.id = i / jmax;
+      info.paired = busopt.paired;
       uint32_t f = 0;
       info.barcode = stringToBinary(bc, blen, f);
-      info.UMI = stringToBinary(umi, umilen, f);
+      info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
       if (!u.empty()) {
         info.r1empty = v.empty();
         KmerEntry val;
         info.k1pos = findFirstMappingKmer(v,val);
         info.k2pos = -1;
+        if (busopt.paired) {
+          info.r2empty = v2.empty();
+          info.k2pos = findFirstMappingKmer(v2,val);
+        }
                 
         if (ec != -1) {
           info.ec_id = ec;
@@ -1647,7 +1935,11 @@ void AlnProcessor::operator()() {
         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, true);
         readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
         assert(pseudobatch.batch_id == readbatch_id);
-        assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
+        if (mp.opt.bus_mode) {
+          assert(pseudobatch.aln.size() == seqs.size()/mp.opt.busOptions.nfiles); // sanity checks
+        } else {
+          assert(pseudobatch.aln.size() == ((paired) ? seqs.size()/2 : seqs.size())); // sanity checks
+        }
       }
       // release the reader lock
     }
@@ -1666,7 +1958,6 @@ void AlnProcessor::operator()() {
 
 
 void AlnProcessor::processBufferTrans() {
-
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
 
@@ -2068,7 +2359,6 @@ void AlnProcessor::processBufferTrans() {
 
 
 void AlnProcessor::processBufferGenome() {
-
   /* something simple where we can construct the bam records */
   std::vector<bam1_t> bv;
   int idnum = 0;
@@ -2087,14 +2377,21 @@ void AlnProcessor::processBufferGenome() {
     genome_auxlen -= 7;
   }
   if (mp.opt.bus_mode) {
-    //todo replace with what is written to busfile
     bclen = mp.opt.busOptions.getBCLength();
     if (bclen == 0) {
-      bclen = 32;
+      for (int i = 0; i <= 32; i++) {
+        if (mp.bus_bc_len[i] > mp.bus_bc_len[bclen]) {
+          bclen = i;
+        }
+      }
     }
     umilen = mp.opt.busOptions.getUMILength();
     if (umilen == 0) {
-      umilen = 32;
+      for (int i = 0; i <= 32; i++) {
+        if (mp.bus_umi_len[i] > mp.bus_umi_len[umilen]) {
+          umilen = i;
+        }
+      }
     }
 
     genome_auxlen += (bclen + umilen) + 8;
@@ -2106,28 +2403,31 @@ void AlnProcessor::processBufferGenome() {
   KmerEntry val1, val2;
   if  (mp.opt.bus_mode) {
     paired = false;
+    if (mp.opt.busOptions.paired) {
+      paired = true;
+    }
   }
-  bool readpaired = paired || (mp.opt.bus_mode && mp.opt.busOptions.nfiles == 2);
-  
-  
 
   for (int i = 0; i < n; i++) {
     bam1_t b1,b2, b1c, b2c;
-    int si1 = (readpaired) ? 2*i : i;
-    int si2 = (readpaired) ? 2*i +1 : -1;
-    
+    int si1 = (paired) ? 2*i : i;
+    int si2 = (paired) ? 2*i +1 : -1;
+    // For BUS file processing with paired-end reads:
+    if (mp.opt.bus_mode) {
+      const BUSOptions& busopt = mp.opt.busOptions;
+      si1 = i*busopt.nfiles + busopt.seq[0].fileno;
+      if (paired) {
+        si2 = i*busopt.nfiles + busopt.seq[1].fileno;
+      }
+    }
     int rlen1 = seqs[si1].second;
     int rlen2;
-    if (readpaired) {
+    int seq1_offset = 0;
+    int seq2_offset = 0;
+    if (paired) {
       rlen2 = seqs[si2].second;
     }
     
-    if (mp.opt.busOptions.seq.fileno == 1) {
-      std::swap(si1,si2);
-      std::swap(rlen1,rlen2);
-    }
-    
-
     // fill in the bam core info
     b1.core.tid = -1;
     b1.core.pos = -1;
@@ -2153,16 +2453,42 @@ void AlnProcessor::processBufferGenome() {
     }
 
     PseudoAlignmentInfo &pi = pseudobatch.aln[i];
-
-    // fill in the data info
-    fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
-    //b1.id = idnum++;
-    if (paired) {
-      fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
-      // b2.id = idnum++;
-    }
     
-    if (mp.opt.bus_mode) {
+    if (!mp.opt.bus_mode) {
+      // fill in the data info
+      fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+      //b1.id = idnum++;
+      if (paired) {
+        fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+        // b2.id = idnum++;
+      }
+    }
+    else {
+      bool tag_present = !mp.opt.tagsequence.empty() && pi.UMI != -1; // tag+UMI present in the sequence
+      bool umi_first_file = mp.opt.busOptions.umi[0].fileno == mp.opt.busOptions.seq[0].fileno; // UMI-containing file is the first file (file number 0)
+      int tagseqstart;
+      if (tag_present) {
+        tagseqstart = umi_first_file ? mp.opt.busOptions.seq[0].start : mp.opt.busOptions.seq[1].start; // Position where the actual sequence begins when tag+UMI present
+      }
+
+      // fill in the data info
+      if (tag_present && umi_first_file) {
+        rlen1 = seqs[si1].second-tagseqstart;
+        seq1_offset = tagseqstart;
+        fillBamRecord(b1, nullptr, seqs[si1].first+tagseqstart, names[si1].first,  quals[si1].first+tagseqstart, seqs[si1].second-tagseqstart, names[si1].second, pi.r1empty, genome_auxlen);
+      } else {
+        fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
+      }
+      if (paired) {
+        if (tag_present && !umi_first_file) {
+          rlen2 = seqs[si2].second-tagseqstart;
+          seq2_offset = tagseqstart;
+          fillBamRecord(b2, nullptr, seqs[si2].first+tagseqstart, names[si2].first,  quals[si2].first+tagseqstart, seqs[si2].second-tagseqstart, names[si2].second, pi.r2empty, genome_auxlen);
+        } else {
+          fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, genome_auxlen);
+        }
+      }
+
       b1.data[b1.l_data] = 'C';
       b1.data[b1.l_data+1] = 'R';
       b1.data[b1.l_data+2] = 'Z';
@@ -2173,9 +2499,25 @@ void AlnProcessor::processBufferGenome() {
       b1.data[b1.l_data] = 'U';
       b1.data[b1.l_data+1] = 'R';
       b1.data[b1.l_data+2] = 'Z';
-      umi = binaryToString(pi.UMI, umilen);
+      if (!mp.opt.tagsequence.empty() && pi.UMI == -1) { // Non-UMI read
+        umi = std::string(umilen, 'N');
+      } else {
+        umi = binaryToString(pi.UMI, umilen);
+      }
       memcpy(b1.data + b1.l_data + 3, umi.c_str(), umilen+2);
       b1.l_data += umilen + 4;
+      if (paired) {
+        b2.data[b2.l_data] = 'C';
+        b2.data[b2.l_data+1] = 'R';
+        b2.data[b2.l_data+2] = 'Z';
+        memcpy(b2.data + b2.l_data + 3, bc.c_str(), bclen+1);
+        b2.l_data += bclen + 4;
+        b2.data[b2.l_data] = 'U';
+        b2.data[b2.l_data+1] = 'R';
+        b2.data[b2.l_data+2] = 'Z';
+        memcpy(b2.data + b2.l_data + 3, umi.c_str(), umilen+2);
+        b2.l_data += umilen + 4;
+      }
     }
 
     if (pi.r1empty && pi.r2empty) {
@@ -2311,11 +2653,11 @@ void AlnProcessor::processBufferGenome() {
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
         
         if (!pi.r1empty) {
-          km1 = Kmer(seqs[si1].first + pi.k1pos);
+          km1 = Kmer(seqs[si1].first + seq1_offset + pi.k1pos);
           strInfo1 = strandednessInfo(km1, val1, ua);
         }
         if (paired && !pi.r2empty) {
-          km2 = Kmer(seqs[si2].first + pi.k2pos);
+          km2 = Kmer(seqs[si2].first + seq2_offset + pi.k2pos);
           strInfo2 = strandednessInfo(km2, val2, ua);
         }
         
@@ -2436,7 +2778,7 @@ void AlnProcessor::processBufferGenome() {
           b1c.core.tid = tra.first.chr;
           if (!pi.r1empty) {
             b1c.core.pos = tra.first.chrpos;
-            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
+            b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-seq1_offset-1, 14, 5);
             b1c.core.qual = 255;
             if (useEM) {
               memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
@@ -2447,7 +2789,7 @@ void AlnProcessor::processBufferGenome() {
             b2c.core.tid = tra.second.chr;
             if (!pi.r2empty) {
               b2c.core.pos = tra.second.chrpos;
-              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second, 14, 5);
+              b2c.core.bin = hts_reg2bin(b2c.core.pos, b2c.core.pos + seqs[si2].second-seq2_offset, 14, 5);
               b2c.core.qual = 255;
               if (useEM) {
                 memcpy(b2c.data + b2c.l_data - 4, &prob, 4);
@@ -2890,7 +3232,8 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           umis.emplace_back(std::move(umi));
         }
 
-        flags.push_back(numreads++);
+        numreads++;
+        flags.push_back(numreads-1);
       } else {
         return true; // read it next time
       }

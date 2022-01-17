@@ -64,6 +64,53 @@ void plaintext_writer(
   of.close();
 }
 
+void plaintext_writer_gene(
+    const std::string& out_name,
+    const std::vector<std::string>& targ_ids,
+    const std::vector<double>& alpha,
+    const std::vector<double>& eff_lens,
+    const Transcriptome& model
+){
+  
+  std::ofstream of;
+  of.open( out_name );
+  
+  if (!of.is_open()) {
+    std::cerr << "Error: Couldn't open file: " << out_name << std::endl;
+    
+    exit(1);
+  }
+  
+  std::vector<double> gc;
+  std::vector<double> gc_tpm;
+  gc.assign(model.genes.size(), 0.0);
+  gc_tpm.assign(model.genes.size(), 0.0);
+  auto tpm = counts_to_tpm(alpha, eff_lens);
+  for (int i = 0; i < alpha.size(); i++) {
+    if (alpha[i] > 0.0) {
+      int g_id = model.transcripts[i].gene_id;
+      if (g_id != -1) {
+        gc[g_id] += alpha[i];
+        gc_tpm[g_id] += tpm[i];
+      }
+    }
+  }
+
+  of << "gene_id" << "\t"
+     << "gene_name" << "\t"
+     << "est_counts" << "\t"
+     << "tpm" << "\n";
+
+  for (int i = 0; i < gc.size(); i++) {
+    of << model.genes[i].name << '\t'
+       << model.genes[i].commonName << '\t'
+       << gc[i] << '\t'
+       << gc_tpm[i] << "\n";
+  }
+
+  of.close();
+}
+
 std::string to_json(const std::string& id, const std::string& val, bool quote,
     bool comma, int level) {
   std::string out;
@@ -239,7 +286,7 @@ void writeFLD(const std::string &filename, const std::vector<std::pair<double, d
   of.close();
 }
 
-void writeGeneList(const std::string &filename, const Transcriptome& model) {
+void writeGeneList(const std::string &filename, const Transcriptome& model, bool writeNamesOnly) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out);
   if (!of.is_open()) {
@@ -247,7 +294,11 @@ void writeGeneList(const std::string &filename, const Transcriptome& model) {
     exit(1);
   }
   for (int j = 0; j < model.genes.size(); j++) {
-    of << j << "\t" << model.genes[j].name << "\t" << model.genes[j].commonName << "\n";
+    if (writeNamesOnly) {
+      of << model.genes[j].name << "\n";
+    } else {
+      of << j << "\t" << model.genes[j].name << "\t" << model.genes[j].commonName << "\n";
+    }
   }
   of.close();
 }
