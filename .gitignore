@@ -20,3 +20,4 @@ release/
 ext/htslib/src/htslib-stamp
 ext/htslib/tmp/
 .snakemake
+dockcross

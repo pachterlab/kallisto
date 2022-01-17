@@ -33,7 +33,7 @@ jobs:
 
   build-mac:
     name: Build mac
-    runs-on: macos-latest
+    runs-on: macos-10.15
     env:
       RELEASE_OS: mac
     steps:
@@ -58,7 +58,7 @@ jobs:
 
   build-windows:
     name: Build windows
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       RELEASE_OS: windows
     steps:
