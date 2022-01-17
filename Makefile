@@ -46,4 +46,4 @@ clean:
 	rm -rf build
 	rm -rf release
 	rm -rf ext/zlib
-	rm -rf ext/htslib
+	# rm -rf ext/htslib

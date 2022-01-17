@@ -1,0 +1,507 @@
+m4trace:/usr/local/share/aclocal/pkg.m4:79: -1- AC_DEFUN([PKG_PROG_PKG_CONFIG], [m4_pattern_forbid([^_?PKG_[A-Z_]+$])
+m4_pattern_allow([^PKG_CONFIG(_(PATH|LIBDIR|SYSROOT_DIR|ALLOW_SYSTEM_(CFLAGS|LIBS)))?$])
+m4_pattern_allow([^PKG_CONFIG_(DISABLE_UNINSTALLED|TOP_BUILD_DIR|DEBUG_SPEW)$])
+AC_ARG_VAR([PKG_CONFIG], [path to pkg-config utility])
+AC_ARG_VAR([PKG_CONFIG_PATH], [directories to add to pkg-config's search path])
+AC_ARG_VAR([PKG_CONFIG_LIBDIR], [path overriding pkg-config's built-in search path])
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	AC_PATH_TOOL([PKG_CONFIG], [pkg-config])
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=m4_default([$1], [0.9.0])
+	AC_MSG_CHECKING([pkg-config is at least version $_pkg_min_version])
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		AC_MSG_RESULT([yes])
+	else
+		AC_MSG_RESULT([no])
+		PKG_CONFIG=""
+	fi
+fi[]dnl
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:99: -1- AC_DEFUN([PKG_CHECK_EXISTS], [AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+if test -n "$PKG_CONFIG" && \
+    AC_RUN_LOG([$PKG_CONFIG --exists --print-errors "$1"]); then
+  m4_default([$2], [:])
+m4_ifvaln([$3], [else
+  $3])dnl
+fi])
+m4trace:/usr/local/share/aclocal/pkg.m4:128: -1- AC_DEFUN([_PKG_SHORT_ERRORS_SUPPORTED], [AC_REQUIRE([PKG_PROG_PKG_CONFIG])
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi[]dnl
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:192: -1- AC_DEFUN([PKG_CHECK_MODULES], [AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+AC_ARG_VAR([$1][_CFLAGS], [C compiler flags for $1, overriding pkg-config])dnl
+AC_ARG_VAR([$1][_LIBS], [linker flags for $1, overriding pkg-config])dnl
+
+pkg_failed=no
+AC_MSG_CHECKING([for $2])
+
+_PKG_CONFIG([$1][_CFLAGS], [cflags], [$2])
+_PKG_CONFIG([$1][_LIBS], [libs], [$2])
+
+m4_define([_PKG_TEXT], [Alternatively, you may set the environment variables $1[]_CFLAGS
+and $1[]_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.])
+
+if test $pkg_failed = yes; then
+        AC_MSG_RESULT([no])
+        _PKG_SHORT_ERRORS_SUPPORTED
+        if test $_pkg_short_errors_supported = yes; then
+	        $1[]_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "$2" 2>&1`
+        else
+	        $1[]_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "$2" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$$1[]_PKG_ERRORS" >&AS_MESSAGE_LOG_FD
+
+	m4_default([$4], [AC_MSG_ERROR(
+[Package requirements ($2) were not met:
+
+$$1_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+_PKG_TEXT])[]dnl
+        ])
+elif test $pkg_failed = untried; then
+        AC_MSG_RESULT([no])
+	m4_default([$4], [AC_MSG_FAILURE(
+[The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+_PKG_TEXT
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.])[]dnl
+        ])
+else
+	$1[]_CFLAGS=$pkg_cv_[]$1[]_CFLAGS
+	$1[]_LIBS=$pkg_cv_[]$1[]_LIBS
+        AC_MSG_RESULT([yes])
+	$3
+fi[]dnl
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:214: -1- AC_DEFUN([PKG_CHECK_MODULES_STATIC], [AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+_save_PKG_CONFIG=$PKG_CONFIG
+PKG_CONFIG="$PKG_CONFIG --static"
+PKG_CHECK_MODULES($@)
+PKG_CONFIG=$_save_PKG_CONFIG[]dnl
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:236: -1- AC_DEFUN([PKG_INSTALLDIR], [m4_pushdef([pkg_default], [m4_default([$1], ['${libdir}/pkgconfig'])])
+m4_pushdef([pkg_description],
+    [pkg-config installation directory @<:@]pkg_default[@:>@])
+AC_ARG_WITH([pkgconfigdir],
+    [AS_HELP_STRING([--with-pkgconfigdir], pkg_description)],,
+    [with_pkgconfigdir=]pkg_default)
+AC_SUBST([pkgconfigdir], [$with_pkgconfigdir])
+m4_popdef([pkg_default])
+m4_popdef([pkg_description])
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:258: -1- AC_DEFUN([PKG_NOARCH_INSTALLDIR], [m4_pushdef([pkg_default], [m4_default([$1], ['${datadir}/pkgconfig'])])
+m4_pushdef([pkg_description],
+    [pkg-config arch-independent installation directory @<:@]pkg_default[@:>@])
+AC_ARG_WITH([noarch-pkgconfigdir],
+    [AS_HELP_STRING([--with-noarch-pkgconfigdir], pkg_description)],,
+    [with_noarch_pkgconfigdir=]pkg_default)
+AC_SUBST([noarch_pkgconfigdir], [$with_noarch_pkgconfigdir])
+m4_popdef([pkg_default])
+m4_popdef([pkg_description])
+])
+m4trace:/usr/local/share/aclocal/pkg.m4:275: -1- AC_DEFUN([PKG_CHECK_VAR], [AC_REQUIRE([PKG_PROG_PKG_CONFIG])dnl
+AC_ARG_VAR([$1], [value of $3 for $2, overriding pkg-config])dnl
+
+_PKG_CONFIG([$1], [variable="][$3]["], [$2])
+AS_VAR_COPY([$1], [pkg_cv_][$1])
+
+AS_VAR_IF([$1], [""], [$5], [$4])dnl
+])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([^_?A[CHUM]_])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([_AC_])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([^LIBOBJS$], [do not use LIBOBJS directly, use AC_LIBOBJ (see section `AC_LIBOBJ vs LIBOBJS'])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^AS_FLAGS$])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([^_?m4_])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([^dnl$])
+m4trace:configure.ac:27: -1- m4_pattern_forbid([^_?AS_])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^SHELL$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PATH_SEPARATOR$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_NAME$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_TARNAME$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_VERSION$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_STRING$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_BUGREPORT$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_URL$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^exec_prefix$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^prefix$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^program_transform_name$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^bindir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^sbindir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^libexecdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^datarootdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^datadir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^sysconfdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^sharedstatedir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^localstatedir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^includedir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^oldincludedir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^docdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^infodir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^htmldir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^dvidir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^pdfdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^psdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^libdir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^localedir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^mandir$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_NAME$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_TARNAME$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_VERSION$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_STRING$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_BUGREPORT$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^PACKAGE_URL$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^DEFS$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^ECHO_C$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^ECHO_N$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^ECHO_T$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^LIBS$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^build_alias$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^host_alias$])
+m4trace:configure.ac:27: -1- m4_pattern_allow([^target_alias$])
+m4trace:configure.ac:32: -1- m4_include([m4/hts_prog_cc_warnings.m4])
+m4trace:m4/hts_prog_cc_warnings.m4:158: -1- AC_DEFUN([HTS_PROG_CC_WARNINGS], [
+  AC_ARG_ENABLE([warnings],
+    [AS_HELP_STRING([--disable-warnings], [turn off compiler warnings])],
+    [],
+    [enable_warnings=yes])
+
+  AS_IF([test "x$enable_warnings" != xno],[
+    AC_REQUIRE([AC_PROG_GREP])
+
+    ansi="$1"
+    AS_IF([test "x$ansi" = "x"],
+          [msg="for C compiler warning flags"],
+          [msg="for C compiler warning and ANSI conformance flags"])
+
+    AC_MSG_CHECKING($msg)
+    AC_CACHE_VAL(hts_cv_prog_cc_warnings, [dnl
+      hts_cv_prog_cc_warnings=""
+      AS_IF([test "x$CC" != "x"],[
+        cat > conftest.c <<EOF
+int main(int argc, char **argv) { return 0; }
+EOF
+
+dnl Most compilers print some kind of a version string with some command
+dnl line options (often "-V").  The version string should be checked
+dnl before doing a test compilation run with compiler-specific flags.
+dnl This is because some compilers (like the Cray compiler) only
+dnl produce a warning message for unknown flags instead of returning
+dnl an error, resulting in a false positive.  Also, compilers may do
+dnl erratic things when invoked with flags meant for a different
+dnl compiler.
+
+dnl We attempt to strip out any flags that are already on CFLAGS.
+dnl If an option needs more than one word (e.g. see Cray below) then
+dnl they should be separated by hash signs (#), which will be converted
+dnl to spaces before comparing and possibly adding to CFLAGS.
+dnl This separator will need to be changed if a new compiler ever needs
+dnl an option that includes a hash sign...
+
+        # Tests for flags to enable C compiler warnings
+        # GCC compatible
+        AS_IF([test "x$GCC" = "xyes" &&
+               "$CC" -c -Wall conftest.c > /dev/null 2>&1 &&
+               test -f conftest.o],[dnl
+          AS_IF([test "x$ansi" = "x"],
+                [hts_cv_prog_cc_warnings="-Wall"],
+                [hts_cv_prog_cc_warnings="-Wall -ansi -pedantic"])
+        ],
+        # Sun Studio or Solaris C compiler
+        ["$CC" -V 2>&1 | $GREP -i -E "WorkShop|Sun C" > /dev/null 2>&1 &&
+         "$CC" -c -v -Xc conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+        AS_IF([test "x$ansi" = "x"],
+              [hts_cv_prog_cc_warnings="-v"],
+              [hts_cv_prog_cc_warnings="-v -Xc"])
+        ],
+        # Digital Unix C compiler
+        ["$CC" -V 2>&1 | $GREP -i "Digital UNIX Compiler" > /dev/null 2>&1 &&
+         "$CC" -c -verbose -w0 -warnprotos -std1 conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o], [dnl
+           AS_IF([test "x$ansi" = "x"],
+                 [hts_cv_prog_cc_warnings="-verbose -w0 -warnprotos"],
+                 [hts_cv_prog_cc_warnings="-verbose -w0 -warnprotos -std1"])
+           ],
+        # C for AIX Compiler
+        ["$CC" 2>&1 | $GREP -i "C for AIX Compiler" > /dev/null 2>&1 &&
+         "$CC" -c -qlanglvl=ansi -qinfo=all conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+        AS_IF([test "x$ansi" = "x"],
+              [hts_cv_prog_cc_warnings="-qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd"],
+              [hts_cv_prog_cc_warnings="-qsrcmsg -qinfo=all:noppt:noppc:noobs:nocnd -qlanglvl=ansi"])
+        ],
+        # IRIX C compiler
+        ["$CC" -version 2>&1 | $GREP -i "MIPSpro Compilers" > /dev/null 2>&1 &&
+         "$CC" -c -fullwarn -ansi -ansiE conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+           AS_IF([test "x$ansi" = "x"],
+                 [hts_cv_prog_cc_warnings="-fullwarn"],
+                 [hts_cv_prog_cc_warnings="-fullwarn -ansi -ansiE"])
+          ],
+        # HP-UX C compiler
+        [what "$CC" 2>&1 | $GREP -i "HP C Compiler" > /dev/null 2>&1 &&
+         "$CC" -c -Aa +w1 conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+        AS_IF([test "x$ansi" = "x"],
+              [hts_cv_prog_cc_warnings="+w1"],
+              [hts_cv_prog_cc_warnings="+w1 -Aa"])
+        ],
+        # The NEC SX series (Super-UX 10) C compiler
+        ["$CC" -V 2>&1 | $GREP "/SX" > /dev/null 2>&1 &&
+         "$CC" -c -pvctl[,]fullmsg -Xc conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[
+        AS_IF([test "x$ansi" = "x"],
+              [hts_cv_prog_cc_warnings="-pvctl[,]fullmsg"],
+              [hts_cv_prog_cc_warnings="-pvctl[,]fullmsg -Xc"])
+        ],
+        # The Cray C compiler (Unicos)
+        ["$CC" -V 2>&1 | $GREP -i "Cray" > /dev/null 2>&1 &&
+         "$CC" -c -h msglevel_2 conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+        AS_IF([test "x$ansi" = "x"],
+              [hts_cv_prog_cc_warnings="-h#msglevel_2"],
+              [hts_cv_prog_cc_warnings="-h#msglevel_2,conform"])
+        ],
+	# The Tiny C Compiler
+        ["$CC" -v 2>&1 | $GREP "tcc version" > /dev/null &&
+         "$CC" -Wall -c conftest.c > /dev/null 2>&1 &&
+         test -f conftest.o],[dnl
+         hts_cv_prog_cc_warnings="-Wall"
+        ])
+        rm -f conftest.*
+      ])
+    ])
+
+    AS_IF([test "x$hts_cv_prog_cc_warnings" != "x"],[
+dnl Print result, with underscores as spaces
+ac_arg_result=`echo "$hts_cv_prog_cc_warnings" | tr '#' ' '`
+AC_MSG_RESULT($ac_arg_result)
+
+dnl Add options to CFLAGS only if they are not already present
+ac_arg_needed=""
+for ac_arg in $hts_cv_prog_cc_warnings
+do
+  ac_arg_sp=`echo "$ac_arg" | tr '#' ' '`
+  AS_CASE([" $CFLAGS "],
+[*" $ac_arg_sp "*], [],
+[ac_arg_needed="$ac_arg_all $ac_arg_sp"])
+done
+CFLAGS="$ac_arg_needed $CFLAGS"],[dnl
+      AC_MSG_RESULT(unknown)
+    ])
+  ])
+])
+m4trace:m4/hts_prog_cc_warnings.m4:208: -1- AC_DEFUN([HTS_PROG_CC_WERROR], [
+  AC_ARG_ENABLE([werror],
+    [AS_HELP_STRING([--enable-werror], [change warnings into errors, where supported])],
+    [enable_werror=yes],
+    [])
+
+  AS_IF([test "x$enable_werror" = xyes],[
+    AC_MSG_CHECKING([for C compiler flags to error on warnings])
+    AC_CACHE_VAL(hts_cv_prog_cc_werror, [dnl
+      hts_cv_prog_cc_werror=""
+      AS_IF([test "x$CC" != "x"],[
+        cat > conftest.c <<EOF
+int main(int argc, char **argv) { return 0; }
+EOF
+
+        AS_IF(dnl
+	 # Tests for flags to make the C compiler treat warnings as errors
+         # GCC compatible
+         [test "x$GCC" = "xyes" &&
+          "$CC" -c -Werror conftest.c > /dev/null 2>&1 &&
+          test -f conftest.o],[hts_cv_prog_cc_werror="-Werror"],
+         # Sun Studio or Solaris C compiler
+         ["$CC" -V 2>&1 | $GREP -i -E "WorkShop|Sun C" > /dev/null 2>&1 &&
+          "$CC" -c -errwarn=%all conftest.c > /dev/null 2>&1 &&
+          test -f conftest.o],[hts_cv_prog_cc_werror="-errwarn=%all"],
+	 # The Tiny C Compiler
+         ["$CC" -v 2>&1 | $GREP "tcc version" > /dev/null &&
+          "$CC" -Wall -c conftest.c > /dev/null 2>&1 &&
+          test -f conftest.o],[hts_cv_prog_cc_werror="-Werror"]
+         dnl TODO: Add more compilers
+        )
+        rm -f conftest.*
+      ])
+    ])
+    AS_IF([test "x$hts_cv_prog_cc_werror" != x],[
+      AC_MSG_RESULT($hts_cv_prog_cc_werror)
+      AS_IF([test "x$1" != x],[eval AS_TR_SH([$1])="$hts_cv_prog_cc_werror"])
+    ],[dnl
+      AC_MSG_RESULT(unknown)
+    ])
+  ])
+])
+m4trace:configure.ac:59: -1- AC_DEFUN([MSG_ERROR], [cat > config.mk <<'EOF'
+ifneq ($(MAKECMDGOALS),distclean)
+$(error Resolve configure error first)
+endif
+EOF
+   AC_MSG_ERROR([$1], [$2])])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CFLAGS$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^LDFLAGS$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^LIBS$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CPPFLAGS$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^ac_ct_CC$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^EXEEXT$])
+m4trace:configure.ac:61: -1- m4_pattern_allow([^OBJEXT$])
+m4trace:configure.ac:62: -1- m4_pattern_allow([^RANLIB$])
+m4trace:configure.ac:65: -1- HTS_PROG_CC_WARNINGS
+m4trace:configure.ac:65: -1- m4_pattern_allow([^GREP$])
+m4trace:configure.ac:68: -1- HTS_PROG_CC_WERROR([hts_late_cflags])
+m4trace:configure.ac:73: -1- PKG_PROG_PKG_CONFIG
+m4trace:configure.ac:73: -1- m4_pattern_forbid([^_?PKG_[A-Z_]+$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG(_(PATH|LIBDIR|SYSROOT_DIR|ALLOW_SYSTEM_(CFLAGS|LIBS)))?$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG_(DISABLE_UNINSTALLED|TOP_BUILD_DIR|DEBUG_SPEW)$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG_PATH$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG_LIBDIR$])
+m4trace:configure.ac:73: -1- m4_pattern_allow([^PKG_CONFIG$])
+m4trace:configure.ac:91: -1- m4_pattern_allow([^_FILE_OFFSET_BITS$])
+m4trace:configure.ac:91: -1- m4_pattern_allow([^_LARGE_FILES$])
+m4trace:configure.ac:92: -1- m4_pattern_allow([^_LARGEFILE_SOURCE$])
+m4trace:configure.ac:92: -1- m4_pattern_allow([^HAVE_FSEEKO$])
+m4trace:configure.ac:108: -1- m4_pattern_allow([^enable_plugins$])
+m4trace:configure.ac:121: -1- MSG_ERROR([no directory specified for --with-plugin-dir])
+m4trace:configure.ac:122: -1- m4_pattern_allow([^plugindir$])
+m4trace:configure.ac:131: -1- MSG_ERROR([no path specified for --with-plugin-path])
+m4trace:configure.ac:132: -1- m4_pattern_allow([^pluginpath$])
+m4trace:configure.ac:168: -1- m4_pattern_allow([^PLATFORM$])
+m4trace:configure.ac:171: -1- AC_DEFUN([_AC_Header_stdlib_h], [m4_divert_text([INIT_PREPARE], [AS_VAR_APPEND([ac_header_list], [" stdlib.h"])])
+_AC_HEADERS_EXPANSION])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^CPP$])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^CPPFLAGS$])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^CPP$])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^EGREP$])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^STDC_HEADERS$])
+m4trace:configure.ac:171: -1- AC_DEFUN([_AC_Header_unistd_h], [m4_divert_text([INIT_PREPARE], [AS_VAR_APPEND([ac_header_list], [" unistd.h"])])
+_AC_HEADERS_EXPANSION])
+m4trace:configure.ac:171: -1- AC_DEFUN([_AC_Header_sys_param_h], [m4_divert_text([INIT_PREPARE], [AS_VAR_APPEND([ac_header_list], [" sys/param.h"])])
+_AC_HEADERS_EXPANSION])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^HAVE_GETPAGESIZE$])
+m4trace:configure.ac:171: -1- m4_pattern_allow([^HAVE_MMAP$])
+m4trace:configure.ac:175: -1- m4_pattern_allow([^HAVE_FDATASYNC$])
+m4trace:configure.ac:182: -1- MSG_ERROR([dlopen() not found
+
+Plugin support requires dynamic linking facilities from the operating system.
+Either configure with --disable-plugins or resolve this error to build HTSlib.])
+m4trace:configure.ac:189: -1- m4_pattern_allow([^ENABLE_PLUGINS$])
+m4trace:configure.ac:190: -1- m4_pattern_allow([^PLUGIN_EXT$])
+m4trace:configure.ac:192: -1- m4_pattern_allow([^PLUGIN_EXT$])
+m4trace:configure.ac:199: -1- MSG_ERROR([log() not found
+
+HTSLIB requires a working floating-point math library.
+FAILED.  This error must be resolved in order to build HTSlib successfully.])
+m4trace:configure.ac:204: -1- m4_pattern_allow([^HAVE_LIBZ$])
+m4trace:configure.ac:215: -1- MSG_ERROR([zlib development files not found
+
+HTSlib uses compression routines from the zlib library <http://zlib.net>.
+Building HTSlib requires zlib development files to be installed on the build
+machine; you may need to ensure a package such as zlib1g-dev (on Debian or
+Ubuntu Linux) or zlib-devel (on RPM-based Linux distributions or Cygwin)
+is installed.
+
+FAILED.  This error must be resolved in order to build HTSlib successfully.])
+m4trace:configure.ac:223: -1- MSG_ERROR([unable to find the recv() function])
+m4trace:configure.ac:228: -1- m4_pattern_allow([^HAVE_LIBBZ2$])
+m4trace:configure.ac:241: -1- MSG_ERROR([libbzip2 development files not found
+
+The CRAM format may use bzip2 compression, which is implemented in HTSlib
+by using compression routines from libbzip2 <http://www.bzip.org/>.
+
+Building HTSlib requires libbzip2 development files to be installed on the
+build machine; you may need to ensure a package such as libbz2-dev (on Debian
+or Ubuntu Linux) or bzip2-devel (on RPM-based Linux distributions or Cygwin)
+is installed.
+
+Either configure with --disable-bz2 (which will make some CRAM files
+produced elsewhere unreadable) or resolve this error to build HTSlib.])
+m4trace:configure.ac:255: -1- m4_pattern_allow([^HAVE_LZMA_H$])
+m4trace:configure.ac:256: -1- m4_pattern_allow([^HAVE_LIBLZMA$])
+m4trace:configure.ac:269: -1- MSG_ERROR([liblzma development files not found
+
+The CRAM format may use LZMA2 compression, which is implemented in HTSlib
+by using compression routines from liblzma <http://tukaani.org/xz/>.
+
+Building HTSlib requires liblzma development files to be installed on the
+build machine; you may need to ensure a package such as liblzma-dev (on Debian
+or Ubuntu Linux), xz-devel (on RPM-based Linux distributions or Cygwin), or
+xz (via Homebrew on macOS) is installed; or build XZ Utils from source.
+
+Either configure with --disable-lzma (which will make some CRAM files
+produced elsewhere unreadable) or resolve this error to build HTSlib.])
+m4trace:configure.ac:293: -1- m4_pattern_allow([^HAVE_LIBDEFLATE$])
+m4trace:configure.ac:293: -1- m4_pattern_allow([^HAVE_LIBDEFLATE$])
+m4trace:configure.ac:293: -1- MSG_ERROR([libdeflate development files not found: $libdeflate
+
+You requested libdeflate, but do not have the required header / library
+files.  The source for libdeflate is available from
+<https://github.com/ebiggers/libdeflate>.  You may have to adjust
+search paths in CPPFLAGS and/or LDFLAGS if the header and library
+are not currently on them.
+
+Either configure with --without-libdeflate or resolve this error to build
+HTSlib.])
+m4trace:configure.ac:316: -1- m4_pattern_allow([^HAVE_LIBCURL$])
+m4trace:configure.ac:316: -1- MSG_ERROR([libcurl $message
+
+Support for HTTPS and other SSL-based URLs requires routines from the libcurl
+library <http://curl.haxx.se/libcurl/>.  Building HTSlib with libcurl enabled
+requires libcurl development files to be installed on the build machine; you
+may need to ensure a package such as libcurl4-{gnutls,nss,openssl}-dev (on
+Debian or Ubuntu Linux) or libcurl-devel (on RPM-based Linux distributions
+or Cygwin) is installed.
+
+Either configure with --disable-libcurl or resolve this error to build HTSlib.])
+m4trace:configure.ac:324: -1- m4_pattern_allow([^libcurl$])
+m4trace:configure.ac:329: -1- m4_pattern_allow([^ENABLE_GCS$])
+m4trace:configure.ac:337: -1- MSG_ERROR([GCS support not enabled
+
+Support for Google Cloud Storage URLs requires libcurl support to be enabled
+in HTSlib.  Configure with --enable-libcurl in order to use GCS URLs.])
+m4trace:configure.ac:342: -1- m4_pattern_allow([^gcs$])
+m4trace:configure.ac:355: -1- MSG_ERROR([S3 support not enabled
+
+Support for Amazon AWS S3 URLs requires libcurl support to be enabled
+in HTSlib.  Configure with --enable-libcurl in order to use S3 URLs.])
+m4trace:configure.ac:386: -1- m4_pattern_allow([^HAVE_COMMONCRYPTO$])
+m4trace:configure.ac:386: -1- m4_pattern_allow([^HAVE_HMAC$])
+m4trace:configure.ac:386: -1- MSG_ERROR([SSL development files not found
+
+Support for AWS S3 URLs requires routines from an SSL library.  Building
+HTSlib with libcurl enabled requires SSL development files to be installed
+on the build machine; you may need to ensure a package such as libgnutls-dev,
+libnss3-dev, or libssl-dev (on Debian or Ubuntu Linux, corresponding to the
+libcurl4-*-dev package installed), or openssl-devel (on RPM-based Linux
+distributions or Cygwin) is installed.
+
+Either configure with --disable-s3 or resolve this error to build HTSlib.])
+m4trace:configure.ac:395: -1- m4_pattern_allow([^_XOPEN_SOURCE$])
+m4trace:configure.ac:398: -1- m4_pattern_allow([^ENABLE_S3$])
+m4trace:configure.ac:404: -1- m4_pattern_allow([^s3$])
+m4trace:configure.ac:405: -1- m4_pattern_allow([^CRYPTO_LIBS$])
+m4trace:configure.ac:407: -1- m4_pattern_allow([^pc_requires$])
+m4trace:configure.ac:408: -1- m4_pattern_allow([^private_LIBS$])
+m4trace:configure.ac:409: -1- m4_pattern_allow([^static_LDFLAGS$])
+m4trace:configure.ac:410: -1- m4_pattern_allow([^static_LIBS$])
+m4trace:configure.ac:413: -1- m4_pattern_allow([^LIB@&t@OBJS$])
+m4trace:configure.ac:413: -1- m4_pattern_allow([^LTLIBOBJS$])

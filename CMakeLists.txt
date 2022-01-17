@@ -44,12 +44,13 @@ include(ExternalProject)
 ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
-    DOWNLOAD_COMMAND wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
-        -O ${EXT_PROJECTS_DIR}/htslib/htslib-1.9.tar.bz2
-        && tar -xvf ${EXT_PROJECTS_DIR}/htslib/htslib-1.9.tar.bz2 -C ${EXT_PROJECTS_DIR}/htslib --strip 1
+    # DOWNLOAD_COMMAND wget https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2
+    #     -O ${EXT_PROJECTS_DIR}/htslib/htslib-1.9.tar.bz2
+    #     && tar -xvf ${EXT_PROJECTS_DIR}/htslib/htslib-1.9.tar.bz2 -C ${EXT_PROJECTS_DIR}/htslib --strip 1
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoreconf ${EXT_PROJECTS_DIR}/htslib && ${EXT_PROJECTS_DIR}/htslib/configure
-        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl ${HTSLIB_CONFIGURE_OPTS}
+    CONFIGURE_COMMAND autoheader && autoconf
+    # CONFIGURE_COMMAND autoreconf ${EXT_PROJECTS_DIR}/htslib && ${EXT_PROJECTS_DIR}/htslib/configure
+    #     --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl ${HTSLIB_CONFIGURE_OPTS}
     BUILD_COMMAND make lib-static
     INSTALL_COMMAND ""
 )
