@@ -38,4 +38,5 @@ struct BUSData {
 uint64_t stringToBinary(const std::string &s, uint32_t &flag);
 uint64_t stringToBinary(const char* s, const size_t len, uint32_t &flag);
 std::string binaryToString(uint64_t x, size_t len);
+int hamming(uint64_t a, uint64_t b, size_t len);
 #endif // KALLISTO_BUSDATA_H

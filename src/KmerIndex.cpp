@@ -1,6 +1,7 @@
 #include "KmerIndex.h"
 #include <algorithm>
 #include <random>
+#include <sstream>
 #include <ctype.h>
 #include <zlib.h>
 #include <unordered_set>
@@ -782,6 +783,12 @@ bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
 }
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
+  if (opt.index.empty() && !loadKmerTable) {
+    // Make an index from transcript and EC files
+    loadTranscriptsFromFile(opt);
+    loadECsFromFile(opt);
+    return;
+  }
 
   std::string& index_in = opt.index;
   std::ifstream in;
@@ -967,8 +974,73 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
   
   in.close();
+  
+  if (!opt.ecFile.empty()) {
+    loadECsFromFile(opt);
+  }
 }
 
+void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
+  ecmap.clear();
+  ecmapinv.clear();
+  int i = 0;
+  std::ifstream in((opt.ecFile));
+  if (in.is_open()) {
+    std::string line;
+    while (getline(in, line)) {
+      std::stringstream ss(line);
+      int ec;
+      std::string transcripts;
+      ss >> ec >> transcripts;
+      if (i != ec) {
+        std::cerr << "Error: equivalence class file has a misplaced equivalence class."
+                  << " Found " << ec << ", expected " << i << std::endl;
+        exit(1);
+      }
+      std::vector<int> tmp_vec;
+      std::stringstream ss2(transcripts);
+      while(ss2.good()) {
+        std::string tmp_ecval;
+        getline(ss2, tmp_ecval, ',');
+        int tmp_ecval_num = std::atoi(tmp_ecval.c_str());
+        if (tmp_ecval_num < 0 || tmp_ecval_num >= num_trans) {
+          std::cerr << "Error: equivalence class file has invalid value: " 
+                    << tmp_ecval << " in " << transcripts << std::endl;
+          exit(1);
+        }
+        tmp_vec.push_back(tmp_ecval_num);
+      }
+      ecmap.push_back(tmp_vec); // copy
+      ecmapinv.insert({std::move(tmp_vec), i}); // move
+      i++;
+    }
+  } else {
+    std::cerr << "Error: could not open file " << opt.ecFile << std::endl;
+    exit(1);
+  }
+  std::cerr << "[index] number of equivalence classes loaded from file: "
+            << pretty_num(ecmap.size()) << std::endl;
+}
+
+void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
+  target_names_.clear();
+  int i = 0;
+  std::ifstream in((opt.transcriptsFile));
+  if (in.is_open()) {
+    std::string txp;
+    while (in >> txp) {
+      target_names_.push_back(txp);
+      i++;
+    }
+  } else {
+    std::cerr << "Error: could not open file " << opt.transcriptsFile << std::endl;
+    exit(1);
+  }
+  num_trans = i;
+  target_lens_.assign(num_trans, 0);
+  std::cerr << "[index] number of targets loaded from file: "
+            << pretty_num(num_trans) << std::endl;
+}
 
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
   bool d1 = true;
