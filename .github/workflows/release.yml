@@ -18,9 +18,9 @@ jobs:
         run: echo ::set-output name=RELEASE_VERSION::${GITHUB_REF##*/}
       - name: Build
         run: |
-          docker run --rm dockbuild/ubuntu1604:latest > ./dockbuild \
+          docker run --rm dockbuild/centos7:latest > ./dockbuild \
           && chmod +x ./dockbuild \
-          && ./dockbuild -a "-e RELEASE_OS=$RELEASE_OS -e RELEASE_VERSION=$RELEASE_VERSION" bash -c "make build && make compile_release_$RELEASE_OS"
+          && ./dockbuild -a "-e RELEASE_OS=$RELEASE_OS -e RELEASE_VERSION=$RELEASE_VERSION" bash -c "yum install bzip2 && make build && make compile_release_$RELEASE_OS"
         env:
           RELEASE_VERSION: ${{ steps.setup.outputs.RELEASE_VERSION }}
       - name: Upload to release
