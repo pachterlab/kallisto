@@ -1,0 +1,27 @@
+\hypertarget{Kmer_8hpp}{}\section{src/\+Kmer.hpp File Reference}
+\label{Kmer_8hpp}\index{src/\+Kmer.\+hpp@{src/\+Kmer.\+hpp}}
+
+
+Interface for the class \hyperlink{classKmer}{Kmer}\+:  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classKmer}{Kmer}
+\begin{DoxyCompactList}\small\item\em Interface to store and manipulate k-\/mers. \end{DoxyCompactList}\item 
+struct \hyperlink{structKmerHash}{Kmer\+Hash}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Interface for the class \hyperlink{classKmer}{Kmer}\+: 
+
+
+\begin{DoxyItemize}
+\item Store k-\/mer strings by using 2 bits per base
+\item Easily return reverse-\/complements of k-\/mers, e.\+g. T\+T\+GG -\/$>$ C\+C\+AA
+\item Easily compare k-\/mers
+\item Provide hash of k-\/mers
+\item Get last and next kmer, e.\+g. A\+C\+GT -\/$>$ C\+G\+TT or A\+C\+GT -\/$>$ A\+A\+C\+GT 
+\end{DoxyItemize}

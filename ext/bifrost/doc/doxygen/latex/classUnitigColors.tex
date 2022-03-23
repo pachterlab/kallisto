@@ -1,0 +1,393 @@
+\hypertarget{classUnitigColors}{}\section{Unitig\+Colors Class Reference}
+\label{classUnitigColors}\index{Unitig\+Colors@{Unitig\+Colors}}
+
+
+Represent the k-\/mer color sets of a unitig.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator}
+\begin{DoxyCompactList}\small\item\em See \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{Unitig\+Colors\+::const\+\_\+iterator}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\+\_\+iterator}
+\begin{DoxyCompactList}\small\item\em Iterator for the colors of a unitig. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}\label{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}} 
+\hyperlink{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}{Unitig\+Colors} ()
+\begin{DoxyCompactList}\small\item\em Constructor (set up an empty container of k-\/mer color sets). \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_af5accc6ad5fdeab9aeae11bb8af9fd9f}{Unitig\+Colors} (const \hyperlink{classUnitigColors}{Unitig\+Colors} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_a3c8668fa0cb7ea4ff68cf61e2e7fff91}{Unitig\+Colors} (\hyperlink{classUnitigColors}{Unitig\+Colors} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move constructor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classUnitigColors_af0b4c187dcb539a57bc39c924af8de54}\label{classUnitigColors_af0b4c187dcb539a57bc39c924af8de54}} 
+\hyperlink{classUnitigColors_af0b4c187dcb539a57bc39c924af8de54}{$\sim$\+Unitig\+Colors} ()
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors}{Unitig\+Colors} \& \hyperlink{classUnitigColors_a2c86fc45efad798e190efe4924b623b1}{operator=} (const \hyperlink{classUnitigColors}{Unitig\+Colors} \&o)
+\begin{DoxyCompactList}\small\item\em Copy assignment operator. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors}{Unitig\+Colors} \& \hyperlink{classUnitigColors_acbd4042c11f8d3c8faa47e42b38cfd90}{operator=} (\hyperlink{classUnitigColors}{Unitig\+Colors} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move assignment operator. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classUnitigColors_a5a2723ca4914c4db05630fef8fa1e665}\label{classUnitigColors_a5a2723ca4914c4db05630fef8fa1e665}} 
+void \hyperlink{classUnitigColors_a5a2723ca4914c4db05630fef8fa1e665}{clear} ()
+\begin{DoxyCompactList}\small\item\em Empty a \hyperlink{classUnitigColors}{Unitig\+Colors} of its content. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_a242276ed4b9198fd1718f0c2692af9e5}{is\+Equal} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um, const \hyperlink{classUnitigColors}{Unitig\+Colors} \&o, const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um\+\_\+o) const
+\begin{DoxyCompactList}\small\item\em Check if two \hyperlink{classUnitigColors}{Unitig\+Colors} are equal. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_a8211a4472374f696433df782d30a8ee2}{is\+Empty} () const
+\begin{DoxyCompactList}\small\item\em Check if a \hyperlink{classUnitigColors}{Unitig\+Colors} is empty (no colors). \end{DoxyCompactList}\item 
+void \hyperlink{classUnitigColors_aefd6309649156f4a1035f8381270d225}{add} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um, const size\+\_\+t color\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Add a color in the current \hyperlink{classUnitigColors}{Unitig\+Colors} to all k-\/mers of a unitig mapping. \end{DoxyCompactList}\item 
+void \hyperlink{classUnitigColors_a31e28cb0fdb60ba373af28bab79cce40}{remove} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um, const size\+\_\+t color\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Remove a color in the current \hyperlink{classUnitigColors}{Unitig\+Colors} for all k-\/mers of a unitig mapping. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_a80198f26ea0b2d7c6c0378779c8e1810}{contains} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um, const size\+\_\+t color\+\_\+id) const
+\begin{DoxyCompactList}\small\item\em Check if a color is present on all k-\/mers of a unitig mapping. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}{size} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um) const
+\begin{DoxyCompactList}\small\item\em Get the number of pairs (k-\/mer position, color) of a reference unitig. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_a354c6f26708ddbd2223f1f58d695dc32}{size} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um, const size\+\_\+t color\+\_\+id) const
+\begin{DoxyCompactList}\small\item\em Get the number of k-\/mers of a reference unitig having a given color. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_aa68c4fe9877305f2db67cb998aabe6b6}{color\+Max} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um) const
+\begin{DoxyCompactList}\small\item\em Get the largest color index of all k-\/mers of a reference unitig. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_adbd2e7d19983b0fc1d4b7a7a65f74689}{write} (ostream \&stream\+\_\+out, const bool copy\+\_\+\+Unitig\+Colors=true) const
+\begin{DoxyCompactList}\small\item\em Write a \hyperlink{classUnitigColors}{Unitig\+Colors} to a stream. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_a6bc79eb9e7c5b94dfbf8235033d32af5}{read} (istream \&stream\+\_\+in)
+\begin{DoxyCompactList}\small\item\em Read a \hyperlink{classUnitigColors}{Unitig\+Colors} from a stream. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_af44f80476c0d1764a8b1c5530cf8f42e}{get\+Size\+In\+Bytes} () const
+\begin{DoxyCompactList}\small\item\em Size of the \hyperlink{classUnitigColors}{Unitig\+Colors} in bytes. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\+\_\+iterator} \hyperlink{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}{begin} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um) const
+\begin{DoxyCompactList}\small\item\em Create a constant iterator on all pairs (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\+\_\+iterator} \hyperlink{classUnitigColors_adf18eea48391e100c5167405a9679b35}{end} () const
+\begin{DoxyCompactList}\small\item\em Create a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} pair (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_a032cc5da8535232251e1c44c9a8d0258}{optimize\+Full\+Colors} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&um)
+\begin{DoxyCompactList}\small\item\em If possible, decrease the memory usage of the \hyperlink{classUnitigColors}{Unitig\+Colors} by optimizing the memory for \char`\"{}full
+colors\char`\"{} (a color is \char`\"{}full\char`\"{} when it is present on all k-\/mers of the reference unitig). \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Represent the k-\/mer color sets of a unitig. 
+
+\subsection{Member Typedef Documentation}
+\mbox{\Hypertarget{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}\label{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!const\+\_\+iterator@{const\+\_\+iterator}}
+\index{const\+\_\+iterator@{const\+\_\+iterator}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{const\+\_\+iterator}{const\_iterator}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{Unitig\+Colors\+::const\+\_\+iterator}}
+
+
+
+Iterator for the colors of a unitig. 
+
+The iterator iterates over the colors of a unitig in ascending order. For each color, it iterates over the positions of the mapped k-\/mers (\hyperlink{classUnitigMap}{Unitig\+Map} parameter of \hyperlink{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}{Unitig\+Colors\+::begin()}) having this color, in ascending order. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classUnitigColors_af5accc6ad5fdeab9aeae11bb8af9fd9f}\label{classUnitigColors_af5accc6ad5fdeab9aeae11bb8af9fd9f}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!Unitig\+Colors@{Unitig\+Colors}}
+\index{Unitig\+Colors@{Unitig\+Colors}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{Unitig\+Colors()}{UnitigColors()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Unitig\+Colors\+::\+Unitig\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors}{Unitig\+Colors} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor. 
+
+After the call to this constructor, the same \hyperlink{classUnitigColors}{Unitig\+Colors} object exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to copy. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classUnitigColors_a3c8668fa0cb7ea4ff68cf61e2e7fff91}\label{classUnitigColors_a3c8668fa0cb7ea4ff68cf61e2e7fff91}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!Unitig\+Colors@{Unitig\+Colors}}
+\index{Unitig\+Colors@{Unitig\+Colors}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{Unitig\+Colors()}{UnitigColors()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Unitig\+Colors\+::\+Unitig\+Colors (\begin{DoxyParamCaption}\item[{\hyperlink{classUnitigColors}{Unitig\+Colors} \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move constructor. 
+
+After the call to this constructor, the \hyperlink{classUnitigColors}{Unitig\+Colors} to move is empty\+: its content has been transfered (moved) to a new \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to move. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classUnitigColors_aefd6309649156f4a1035f8381270d225}\label{classUnitigColors_aefd6309649156f4a1035f8381270d225}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!add@{add}}
+\index{add@{add}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{add()}{add()}}
+{\footnotesize\ttfamily void Unitig\+Colors\+::add (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Add a color in the current \hyperlink{classUnitigColors}{Unitig\+Colors} to all k-\/mers of a unitig mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig for which the color must be added. The color will be added only for the given mapping, i.\+e, unitig\mbox{[}um.\+dist..um.\+dist+um.len+k-\/1\mbox{]} \\
+\hline
+{\em color\+\_\+id} & is the ID of the color to add. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}\label{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!begin@{begin}}
+\index{begin@{begin}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\+\_\+iterator} Unitig\+Colors\+::begin (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Create a constant iterator on all pairs (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+
+The iterator goes from the smallest to the largest color index. For each such color index, the iterator goes from the smallest to the largest k-\/mer position. \begin{DoxyReturn}{Returns}
+a constant iterator to the smallest pair (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_aa68c4fe9877305f2db67cb998aabe6b6}\label{classUnitigColors_aa68c4fe9877305f2db67cb998aabe6b6}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!color\+Max@{color\+Max}}
+\index{color\+Max@{color\+Max}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{color\+Max()}{colorMax()}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::color\+Max (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the largest color index of all k-\/mers of a reference unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The largest color index of all k-\/mers of a reference unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a80198f26ea0b2d7c6c0378779c8e1810}\label{classUnitigColors_a80198f26ea0b2d7c6c0378779c8e1810}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!contains@{contains}}
+\index{contains@{contains}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{contains()}{contains()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::contains (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption}) const}
+
+
+
+Check if a color is present on all k-\/mers of a unitig mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig. All k-\/mers of this mapping will be checked for the presence of the color. If true is returned, all k-\/mers of the mapping have the color. If false is returned, at least one k-\/mer of the mapping does not have the color. \\
+\hline
+{\em color\+\_\+id} & is the ID of the color to check the presence. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the color is present on all k-\/mers of the unitig mapping. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_adf18eea48391e100c5167405a9679b35}\label{classUnitigColors_adf18eea48391e100c5167405a9679b35}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!end@{end}}
+\index{end@{end}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{end()}{end()}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\+\_\+iterator} Unitig\+Colors\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} pair (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+
+\begin{DoxyReturn}{Returns}
+a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} pair (k-\/mer position, color) of the \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_af44f80476c0d1764a8b1c5530cf8f42e}\label{classUnitigColors_af44f80476c0d1764a8b1c5530cf8f42e}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!get\+Size\+In\+Bytes@{get\+Size\+In\+Bytes}}
+\index{get\+Size\+In\+Bytes@{get\+Size\+In\+Bytes}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{get\+Size\+In\+Bytes()}{getSizeInBytes()}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::get\+Size\+In\+Bytes (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Size of the \hyperlink{classUnitigColors}{Unitig\+Colors} in bytes. 
+
+\begin{DoxyReturn}{Returns}
+Size of the \hyperlink{classUnitigColors}{Unitig\+Colors} in bytes. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a8211a4472374f696433df782d30a8ee2}\label{classUnitigColors_a8211a4472374f696433df782d30a8ee2}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!is\+Empty@{is\+Empty}}
+\index{is\+Empty@{is\+Empty}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{is\+Empty()}{isEmpty()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::is\+Empty (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Check if a \hyperlink{classUnitigColors}{Unitig\+Colors} is empty (no colors). 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the \hyperlink{classUnitigColors}{Unitig\+Colors} is empty. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a242276ed4b9198fd1718f0c2692af9e5}\label{classUnitigColors_a242276ed4b9198fd1718f0c2692af9e5}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!is\+Equal@{is\+Equal}}
+\index{is\+Equal@{is\+Equal}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{is\+Equal()}{isEqual()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::is\+Equal (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um,  }\item[{const \hyperlink{classUnitigColors}{Unitig\+Colors} \&}]{o,  }\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um\+\_\+o }\end{DoxyParamCaption}) const}
+
+
+
+Check if two \hyperlink{classUnitigColors}{Unitig\+Colors} are equal. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing the reference unitig to which the current \hyperlink{classUnitigColors}{Unitig\+Colors} calling this function (this) is associated. \\
+\hline
+{\em o} & is the \hyperlink{classUnitigColors}{Unitig\+Colors} to compare to the current \hyperlink{classUnitigColors}{Unitig\+Colors} calling this function (this). \\
+\hline
+{\em um\+\_\+o} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing the reference unitig to which the input \hyperlink{classUnitigColors}{Unitig\+Colors} o (parameter) is associated. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating whether the two \hyperlink{classUnitigColors}{Unitig\+Colors} are equal. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a2c86fc45efad798e190efe4924b623b1}\label{classUnitigColors_a2c86fc45efad798e190efe4924b623b1}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!operator=@{operator=}}
+\index{operator=@{operator=}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors}{Unitig\+Colors}\& Unitig\+Colors\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors}{Unitig\+Colors} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy assignment operator. 
+
+After the call to this operator, the same \hyperlink{classUnitigColors}{Unitig\+Colors} object exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the \hyperlink{classUnitigColors}{Unitig\+Colors} to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current \hyperlink{classUnitigColors}{Unitig\+Colors} which is a copy of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_acbd4042c11f8d3c8faa47e42b38cfd90}\label{classUnitigColors_acbd4042c11f8d3c8faa47e42b38cfd90}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!operator=@{operator=}}
+\index{operator=@{operator=}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors}{Unitig\+Colors}\& Unitig\+Colors\+::operator= (\begin{DoxyParamCaption}\item[{\hyperlink{classUnitigColors}{Unitig\+Colors} \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move assignment operator. 
+
+After the call to this operator, the \hyperlink{classUnitigColors}{Unitig\+Colors} to move is empty\+: its content has been transfered (moved) to another \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the \hyperlink{classUnitigColors}{Unitig\+Colors} to move. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current \hyperlink{classUnitigColors}{Unitig\+Colors} having (owning) the content of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a032cc5da8535232251e1c44c9a8d0258}\label{classUnitigColors_a032cc5da8535232251e1c44c9a8d0258}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!optimize\+Full\+Colors@{optimize\+Full\+Colors}}
+\index{optimize\+Full\+Colors@{optimize\+Full\+Colors}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{optimize\+Full\+Colors()}{optimizeFullColors()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::optimize\+Full\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um }\end{DoxyParamCaption})}
+
+
+
+If possible, decrease the memory usage of the \hyperlink{classUnitigColors}{Unitig\+Colors} by optimizing the memory for \char`\"{}full
+colors\char`\"{} (a color is \char`\"{}full\char`\"{} when it is present on all k-\/mers of the reference unitig). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if it was possible to optimize the memory usage of the \hyperlink{classUnitigColors}{Unitig\+Colors}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a6bc79eb9e7c5b94dfbf8235033d32af5}\label{classUnitigColors_a6bc79eb9e7c5b94dfbf8235033d32af5}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!read@{read}}
+\index{read@{read}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::read (\begin{DoxyParamCaption}\item[{istream \&}]{stream\+\_\+in }\end{DoxyParamCaption})}
+
+
+
+Read a \hyperlink{classUnitigColors}{Unitig\+Colors} from a stream. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em stream\+\_\+in} & is an in stream from which the \hyperlink{classUnitigColors}{Unitig\+Colors} must be read. It must be opened prior to the call of this function and it won\textquotesingle{}t be closed by this function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the write was successful. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a31e28cb0fdb60ba373af28bab79cce40}\label{classUnitigColors_a31e28cb0fdb60ba373af28bab79cce40}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!remove@{remove}}
+\index{remove@{remove}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{remove()}{remove()}}
+{\footnotesize\ttfamily void Unitig\+Colors\+::remove (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Remove a color in the current \hyperlink{classUnitigColors}{Unitig\+Colors} for all k-\/mers of a unitig mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig for which the color must be removed. The color will be removed only for the given mapping, i.\+e, unitig\mbox{[}um.\+dist..um.\+dist+um.len+k-\/1\mbox{]} \\
+\hline
+{\em color\+\_\+id} & is the ID of the color to remove. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}\label{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!size@{size}}
+\index{size@{size}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{size()}{size()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::size (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the number of pairs (k-\/mer position, color) of a reference unitig. 
+
+\begin{DoxyReturn}{Returns}
+Number of pairs (k-\/mer position, color) of a reference unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_a354c6f26708ddbd2223f1f58d695dc32}\label{classUnitigColors_a354c6f26708ddbd2223f1f58d695dc32}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!size@{size}}
+\index{size@{size}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{size()}{size()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::size (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption}) const}
+
+
+
+Get the number of k-\/mers of a reference unitig having a given color. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} object representing a mapping to a reference unitig. \\
+\hline
+{\em color\+\_\+id} & is the color index. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Number of k-\/mers of a reference unitig having a given color. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_adbd2e7d19983b0fc1d4b7a7a65f74689}\label{classUnitigColors_adbd2e7d19983b0fc1d4b7a7a65f74689}} 
+\index{Unitig\+Colors@{Unitig\+Colors}!write@{write}}
+\index{write@{write}!Unitig\+Colors@{Unitig\+Colors}}
+\subsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::write (\begin{DoxyParamCaption}\item[{ostream \&}]{stream\+\_\+out,  }\item[{const bool}]{copy\+\_\+\+Unitig\+Colors = {\ttfamily true} }\end{DoxyParamCaption}) const}
+
+
+
+Write a \hyperlink{classUnitigColors}{Unitig\+Colors} to a stream. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em stream\+\_\+out} & is an out stream to which the \hyperlink{classUnitigColors}{Unitig\+Colors} must be written. It must be opened prior to the call of this function and it won\textquotesingle{}t be closed by this function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the write was successful. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColorSet_8hpp}{Color\+Set.\+hpp}\end{DoxyCompactItemize}

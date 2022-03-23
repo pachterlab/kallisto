@@ -1,0 +1,367 @@
+\hypertarget{classKmer}{}\section{Kmer Class Reference}
+\label{classKmer}\index{Kmer@{Kmer}}
+
+
+Interface to store and manipulate k-\/mers.  
+
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classKmer_a5ab9d401261a8bd25968b7be5554bf45}\label{classKmer_a5ab9d401261a8bd25968b7be5554bf45}} 
+\hyperlink{classKmer_a5ab9d401261a8bd25968b7be5554bf45}{Kmer} ()
+\begin{DoxyCompactList}\small\item\em Constructor (initialize a k-\/mer with \textquotesingle{}A\textquotesingle{} k times). \end{DoxyCompactList}\item 
+\hyperlink{classKmer_a8b6222680b4b2c7ba854f59bdbddc5b6}{Kmer} (const \hyperlink{classKmer}{Kmer} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor (copy a k-\/mer). \end{DoxyCompactList}\item 
+\hyperlink{classKmer_a1fb825d0a9444de791c5bba652d69f1d}{Kmer} (const char $\ast$s)
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \& \hyperlink{classKmer_a56dc01450914c70b999ff95893a1df2c}{operator=} (const \hyperlink{classKmer}{Kmer} \&o)
+\begin{DoxyCompactList}\small\item\em Copy assignment operator (copy a k-\/mer). \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classKmer_a13f76eacb925e986280191035788bc03}\label{classKmer_a13f76eacb925e986280191035788bc03}} 
+void \hyperlink{classKmer_a13f76eacb925e986280191035788bc03}{set\+\_\+empty} ()
+\begin{DoxyCompactList}\small\item\em Set a k-\/mer as \char`\"{}empty\char`\"{}. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classKmer_aed7e4989323e49f78e3b0ceeaedc21b4}\label{classKmer_aed7e4989323e49f78e3b0ceeaedc21b4}} 
+void \hyperlink{classKmer_aed7e4989323e49f78e3b0ceeaedc21b4}{set\+\_\+deleted} ()
+\begin{DoxyCompactList}\small\item\em Set a k-\/mer as \char`\"{}deleted\char`\"{}. \end{DoxyCompactList}\item 
+bool \hyperlink{classKmer_a7d0f2060f9bda7c9b29a40e1b991ce85}{operator==} (const \hyperlink{classKmer}{Kmer} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality comparison operator. \end{DoxyCompactList}\item 
+bool \hyperlink{classKmer_ab859842b0a779eae64aace119eec9244}{operator!=} (const \hyperlink{classKmer}{Kmer} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality comparison operator. \end{DoxyCompactList}\item 
+uint64\+\_\+t \hyperlink{classKmer_a11645c016419fec967ab50743cf4c83e}{hash} (const uint64\+\_\+t seed=0) const
+\begin{DoxyCompactList}\small\item\em Get the hash of a k-\/mer. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classKmer_a82924425f6f6bd3e1d746f600936781c}{twin} () const
+\begin{DoxyCompactList}\small\item\em Get the reverse-\/complement of a k-\/mer. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classKmer_a2b86fe792388a910a073d9fc4a811779}{rep} () const
+\begin{DoxyCompactList}\small\item\em Get the canonical k-\/mer (lexicographically smallest between a k-\/mer and its reverse-\/complement). \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classKmer_ad21155c7aa0e25973bc8c95047cee78d}{forward\+Base} (const char b) const
+\begin{DoxyCompactList}\small\item\em Get a new k-\/mer which is the shift of the current k-\/mer of one base on the left with one new character on the right. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classKmer_a7670003b3027c3401454dc700ca5b3c5}{backward\+Base} (const char b) const
+\begin{DoxyCompactList}\small\item\em Get a new k-\/mer which is the shift of the current k-\/mer of one base on the right with one new character on the left. \end{DoxyCompactList}\item 
+void \hyperlink{classKmer_a605ec250880652507ae279f348046936}{self\+Forward\+Base} (const char b)
+\begin{DoxyCompactList}\small\item\em Shift the current k-\/mer of one base on the left with one new character on the right. \end{DoxyCompactList}\item 
+char \hyperlink{classKmer_af23c636ad07801e49b09565513da451c}{get\+Char} (const size\+\_\+t offset) const
+\begin{DoxyCompactList}\small\item\em Get the character at a given position in a k-\/mer. \end{DoxyCompactList}\item 
+bool \hyperlink{classKmer_acd1e99defb65ea71c7cf804d3f1e3dc4}{set\+Char} (const size\+\_\+t offset, const char b)
+\begin{DoxyCompactList}\small\item\em Set a character at a given position in a k-\/mer. \end{DoxyCompactList}\item 
+void \hyperlink{classKmer_a69125d95f234312a670b970cd14d9ef3}{to\+String} (char $\ast$s) const
+\begin{DoxyCompactList}\small\item\em Get the string of a k-\/mer. \end{DoxyCompactList}\item 
+std\+::string \hyperlink{classKmer_ae394adf5587405c5204a07df6b95cebb}{to\+String} () const
+\begin{DoxyCompactList}\small\item\em Get the string of a k-\/mer. \end{DoxyCompactList}\item 
+bool \hyperlink{classKmer_afeabfe32515eb278bdab47d5434e8a92}{write} (std\+::ostream \&stream\+\_\+out) const
+\begin{DoxyCompactList}\small\item\em Write a k-\/mer (binary) to a stream. \end{DoxyCompactList}\item 
+bool \hyperlink{classKmer_ad7e63cd4337067ac247a52f4b8235204}{read} (std\+::istream \&stream\+\_\+in)
+\begin{DoxyCompactList}\small\item\em Read a k-\/mer (binary) from a stream. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static void \hyperlink{classKmer_ae76504dbc6fe791fadc50667852a62c8}{set\+\_\+k} (const unsigned int \+\_\+k)
+\begin{DoxyCompactList}\small\item\em Set the length of k-\/mers. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Interface to store and manipulate k-\/mers. 
+
+The default maximum supported k-\/mer size is 31. To work with larger k, you must replace the macro defined M\+A\+X\+\_\+\+K\+M\+E\+R\+\_\+\+S\+I\+ZE with a larger number which is a multiple of 32. For such a number K, the available maximum supported k-\/mer size will be K-\/1. For example, if M\+A\+X\+\_\+\+K\+M\+E\+R\+\_\+\+S\+I\+ZE is defined as 64, the maximum k allowed is 63. Keep in mind that increasing M\+A\+X\+\_\+\+K\+M\+E\+R\+\_\+\+S\+I\+ZE increases memory usage (k=31 uses 8 bytes of memory per k-\/mer while k=63 uses 16 bytes of memory per k-\/mer). 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classKmer_a8b6222680b4b2c7ba854f59bdbddc5b6}\label{classKmer_a8b6222680b4b2c7ba854f59bdbddc5b6}} 
+\index{Kmer@{Kmer}!Kmer@{Kmer}}
+\index{Kmer@{Kmer}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{Kmer()}{Kmer()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Kmer\+::\+Kmer (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor (copy a k-\/mer). 
+
+After the call to this function, the same k-\/mer exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the k-\/mer to copy \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classKmer_a1fb825d0a9444de791c5bba652d69f1d}\label{classKmer_a1fb825d0a9444de791c5bba652d69f1d}} 
+\index{Kmer@{Kmer}!Kmer@{Kmer}}
+\index{Kmer@{Kmer}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{Kmer()}{Kmer()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Kmer\+::\+Kmer (\begin{DoxyParamCaption}\item[{const char $\ast$}]{s }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Constructor. 
+
+Initialize a k-\/mer from a string of characters. 
+\begin{DoxyParams}{Parameters}
+{\em s} & is a constant pointer to an array of characters. The array of characters must contain valid D\+NA characters (\textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{}, \textquotesingle{}T\textquotesingle{}) and be of length at least k. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classKmer_a7670003b3027c3401454dc700ca5b3c5}\label{classKmer_a7670003b3027c3401454dc700ca5b3c5}} 
+\index{Kmer@{Kmer}!backward\+Base@{backward\+Base}}
+\index{backward\+Base@{backward\+Base}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{backward\+Base()}{backwardBase()}}
+{\footnotesize\ttfamily \hyperlink{classKmer}{Kmer} Kmer\+::backward\+Base (\begin{DoxyParamCaption}\item[{const char}]{b }\end{DoxyParamCaption}) const}
+
+
+
+Get a new k-\/mer which is the shift of the current k-\/mer of one base on the right with one new character on the left. 
+
+For a k-\/mer km of length k, km.\+backward\+Base(b) = b + km\mbox{[}0..k-\/2\mbox{]}. 
+\begin{DoxyParams}{Parameters}
+{\em b} & is a new character to add on the left of the shifted k-\/mer (as a first character). It must be either \textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{} or \textquotesingle{}T\textquotesingle{}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a new k-\/mer which is the shifted k-\/mer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_ad21155c7aa0e25973bc8c95047cee78d}\label{classKmer_ad21155c7aa0e25973bc8c95047cee78d}} 
+\index{Kmer@{Kmer}!forward\+Base@{forward\+Base}}
+\index{forward\+Base@{forward\+Base}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{forward\+Base()}{forwardBase()}}
+{\footnotesize\ttfamily \hyperlink{classKmer}{Kmer} Kmer\+::forward\+Base (\begin{DoxyParamCaption}\item[{const char}]{b }\end{DoxyParamCaption}) const}
+
+
+
+Get a new k-\/mer which is the shift of the current k-\/mer of one base on the left with one new character on the right. 
+
+For a k-\/mer km of length k, km.\+forward\+Base(b) = km\mbox{[}1..k-\/1\mbox{]} + b. 
+\begin{DoxyParams}{Parameters}
+{\em b} & is a new character to add on the right of the shifted k-\/mer (as a last character). It must be either \textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{} or \textquotesingle{}T\textquotesingle{}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a new k-\/mer which is the shifted k-\/mer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_af23c636ad07801e49b09565513da451c}\label{classKmer_af23c636ad07801e49b09565513da451c}} 
+\index{Kmer@{Kmer}!get\+Char@{get\+Char}}
+\index{get\+Char@{get\+Char}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{get\+Char()}{getChar()}}
+{\footnotesize\ttfamily char Kmer\+::get\+Char (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{offset }\end{DoxyParamCaption}) const}
+
+
+
+Get the character at a given position in a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em offset} & is the position of the character to get in the k-\/mer. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the character to get in the k-\/mer 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a11645c016419fec967ab50743cf4c83e}\label{classKmer_a11645c016419fec967ab50743cf4c83e}} 
+\index{Kmer@{Kmer}!hash@{hash}}
+\index{hash@{hash}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{hash()}{hash()}}
+{\footnotesize\ttfamily uint64\+\_\+t Kmer\+::hash (\begin{DoxyParamCaption}\item[{const uint64\+\_\+t}]{seed = {\ttfamily 0} }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the hash of a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em seed} & is a seed number for the hash function (0 by default). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a hash of the k-\/mer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_ab859842b0a779eae64aace119eec9244}\label{classKmer_ab859842b0a779eae64aace119eec9244}} 
+\index{Kmer@{Kmer}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily bool Kmer\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality comparison operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the k-\/mer to compare to. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two k-\/mers are the different (true), including their \char`\"{}empty\char`\"{} and \char`\"{}deleted\char`\"{} flags, or not (false). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a56dc01450914c70b999ff95893a1df2c}\label{classKmer_a56dc01450914c70b999ff95893a1df2c}} 
+\index{Kmer@{Kmer}!operator=@{operator=}}
+\index{operator=@{operator=}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \hyperlink{classKmer}{Kmer}\& Kmer\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy assignment operator (copy a k-\/mer). 
+
+After the call to this function, the same k-\/mer exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the k-\/mer to copy \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classKmer_a7d0f2060f9bda7c9b29a40e1b991ce85}\label{classKmer_a7d0f2060f9bda7c9b29a40e1b991ce85}} 
+\index{Kmer@{Kmer}!operator==@{operator==}}
+\index{operator==@{operator==}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily bool Kmer\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality comparison operator. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the k-\/mer to compare to. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two k-\/mers are the same (true), including their \char`\"{}empty\char`\"{} and \char`\"{}deleted\char`\"{} flags, or not (false). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_ad7e63cd4337067ac247a52f4b8235204}\label{classKmer_ad7e63cd4337067ac247a52f4b8235204}} 
+\index{Kmer@{Kmer}!read@{read}}
+\index{read@{read}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily bool Kmer\+::read (\begin{DoxyParamCaption}\item[{std\+::istream \&}]{stream\+\_\+in }\end{DoxyParamCaption})}
+
+
+
+Read a k-\/mer (binary) from a stream. 
+
+The stream must be opened prior to this function call and it won\textquotesingle{}t be closed by this function. 
+\begin{DoxyParams}{Parameters}
+{\em stream\+\_\+in} & is an in stream from which the k-\/mer must be read. The stream must be opened prior to this function call and it won\textquotesingle{}t be closed by this function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the reading was successful (true) or not. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a2b86fe792388a910a073d9fc4a811779}\label{classKmer_a2b86fe792388a910a073d9fc4a811779}} 
+\index{Kmer@{Kmer}!rep@{rep}}
+\index{rep@{rep}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{rep()}{rep()}}
+{\footnotesize\ttfamily \hyperlink{classKmer}{Kmer} Kmer\+::rep (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the canonical k-\/mer (lexicographically smallest between a k-\/mer and its reverse-\/complement). 
+
+\begin{DoxyReturn}{Returns}
+a new k-\/mer which is the canonical k-\/mer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a605ec250880652507ae279f348046936}\label{classKmer_a605ec250880652507ae279f348046936}} 
+\index{Kmer@{Kmer}!self\+Forward\+Base@{self\+Forward\+Base}}
+\index{self\+Forward\+Base@{self\+Forward\+Base}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{self\+Forward\+Base()}{selfForwardBase()}}
+{\footnotesize\ttfamily void Kmer\+::self\+Forward\+Base (\begin{DoxyParamCaption}\item[{const char}]{b }\end{DoxyParamCaption})}
+
+
+
+Shift the current k-\/mer of one base on the left with one new character on the right. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em b} & is a new character to add on the right (as a last character) after shifting the current k-\/mer. It must be either \textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{} or \textquotesingle{}T\textquotesingle{}. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classKmer_ae76504dbc6fe791fadc50667852a62c8}\label{classKmer_ae76504dbc6fe791fadc50667852a62c8}} 
+\index{Kmer@{Kmer}!set\+\_\+k@{set\+\_\+k}}
+\index{set\+\_\+k@{set\+\_\+k}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{set\+\_\+k()}{set\_k()}}
+{\footnotesize\ttfamily static void Kmer\+::set\+\_\+k (\begin{DoxyParamCaption}\item[{const unsigned int}]{\+\_\+k }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Set the length of k-\/mers. 
+
+After this function call, all \hyperlink{classKmer}{Kmer} functions considers \+\_\+k to be the k-\/mer length. 
+\begin{DoxyParams}{Parameters}
+{\em \+\_\+k} & is the k-\/mer length to set. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classKmer_acd1e99defb65ea71c7cf804d3f1e3dc4}\label{classKmer_acd1e99defb65ea71c7cf804d3f1e3dc4}} 
+\index{Kmer@{Kmer}!set\+Char@{set\+Char}}
+\index{set\+Char@{set\+Char}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{set\+Char()}{setChar()}}
+{\footnotesize\ttfamily bool Kmer\+::set\+Char (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{offset,  }\item[{const char}]{b }\end{DoxyParamCaption})}
+
+
+
+Set a character at a given position in a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em offset} & is the position of the character to set in the k-\/mer. \\
+\hline
+{\em b} & is the character to set. It must be either \textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{} or \textquotesingle{}T\textquotesingle{}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the character was succesfully set. The boolean will be equal to false if offset $>$ k-\/mer length or if the character to set is not \textquotesingle{}A\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}G\textquotesingle{} or \textquotesingle{}T\textquotesingle{}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a69125d95f234312a670b970cd14d9ef3}\label{classKmer_a69125d95f234312a670b970cd14d9ef3}} 
+\index{Kmer@{Kmer}!to\+String@{to\+String}}
+\index{to\+String@{to\+String}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{to\+String()}{toString()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily void Kmer\+::to\+String (\begin{DoxyParamCaption}\item[{char $\ast$}]{s }\end{DoxyParamCaption}) const}
+
+
+
+Get the string of a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em s} & is a pointer to an array of characters that will be set with the string of a k-\/mer. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classKmer_ae394adf5587405c5204a07df6b95cebb}\label{classKmer_ae394adf5587405c5204a07df6b95cebb}} 
+\index{Kmer@{Kmer}!to\+String@{to\+String}}
+\index{to\+String@{to\+String}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{to\+String()}{toString()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily std\+::string Kmer\+::to\+String (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the string of a k-\/mer. 
+
+\begin{DoxyReturn}{Returns}
+the string of a k-\/mer. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_a82924425f6f6bd3e1d746f600936781c}\label{classKmer_a82924425f6f6bd3e1d746f600936781c}} 
+\index{Kmer@{Kmer}!twin@{twin}}
+\index{twin@{twin}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{twin()}{twin()}}
+{\footnotesize\ttfamily \hyperlink{classKmer}{Kmer} Kmer\+::twin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the reverse-\/complement of a k-\/mer. 
+
+\begin{DoxyReturn}{Returns}
+a new k-\/mer which is the reverse-\/complement. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classKmer_afeabfe32515eb278bdab47d5434e8a92}\label{classKmer_afeabfe32515eb278bdab47d5434e8a92}} 
+\index{Kmer@{Kmer}!write@{write}}
+\index{write@{write}!Kmer@{Kmer}}
+\subsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily bool Kmer\+::write (\begin{DoxyParamCaption}\item[{std\+::ostream \&}]{stream\+\_\+out }\end{DoxyParamCaption}) const}
+
+
+
+Write a k-\/mer (binary) to a stream. 
+
+The stream must be opened prior to this function call and it won\textquotesingle{}t be closed by this function. 
+\begin{DoxyParams}{Parameters}
+{\em stream\+\_\+out} & is an out stream to which the k-\/mer must be written to. The stream must be opened prior to this function call and it won\textquotesingle{}t be closed by this function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the writing was successful (true) or not. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{Kmer_8hpp}{Kmer.\+hpp}\end{DoxyCompactItemize}

@@ -20,4 +20,8 @@ release/
 .vscode/
 ext/htslib/src/htslib-stamp
 ext/htslib/tmp/
+ext/bifrost/tmp/
+ext/bifrost/build/
 .snakemake
+*.swp
+*.swo

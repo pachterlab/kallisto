@@ -1,0 +1,690 @@
+\hypertarget{classCompactedDBG}{}\section{Compacted\+D\+BG$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ Class Template Reference}
+\label{classCompactedDBG}\index{Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$@{Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}}
+
+
+Represent a Compacted de Bruijn graph.  
+
+
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ U, G, false $>$ \hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator}
+\begin{DoxyCompactList}\small\item\em An iterator for the unitigs of the graph. \end{DoxyCompactList}\item 
+typedef \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ U, G, true $>$ \hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator}
+\begin{DoxyCompactList}\small\item\em A constant iterator for the unitigs of the graph. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classCompactedDBG_ad6584f016b02651312c69ac444349bfe}{Compacted\+D\+BG} (const int kmer\+\_\+length=31, const int minimizer\+\_\+length=23)
+\begin{DoxyCompactList}\small\item\em Constructor (set up an empty compacted d\+BG). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_a84fbb8da0cf47e8cdf9cb60fb2eab0f0}{Compacted\+D\+BG} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor (copy a compacted de Bruijn graph). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_ac93c3355910670b8244741b22baca929}{Compacted\+D\+BG} (\hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move constructor (move a compacted de Bruijn graph). \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCompactedDBG_a64299c748d198a2596facfd39c2bd280}\label{classCompactedDBG_a64299c748d198a2596facfd39c2bd280}} 
+virtual \hyperlink{classCompactedDBG_a64299c748d198a2596facfd39c2bd280}{$\sim$\+Compacted\+D\+BG} ()
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ U, G $>$ \& \hyperlink{classCompactedDBG_a0c7e50223cdcb178110aa49e983e4ec2}{operator=} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Copy assignment operator (copy a compacted de Bruijn graph). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ U, G $>$ \& \hyperlink{classCompactedDBG_a191a4cce892c9a6ceea7bfdfbf41e494}{operator=} (\hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move assignment operator (move a compacted de Bruijn graph). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ U, G $>$ \& \hyperlink{classCompactedDBG_af689cbbbe9328a0bd4f80eb8c0547e3c}{operator+=} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Addition assignment operator (merge a compacted de Bruijn graph). \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a59b674356405c7c80bfbd7751d0d1aff}{operator==} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_ae3039c04c5f7234281f4e8c04fffd0bc}{operator!=} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCompactedDBG_ac85b803c8f7527ed3c68054b77224d6d}\label{classCompactedDBG_ac85b803c8f7527ed3c68054b77224d6d}} 
+void \hyperlink{classCompactedDBG_ac85b803c8f7527ed3c68054b77224d6d}{clear} ()
+\begin{DoxyCompactList}\small\item\em Clear the graph\+: empty the graph and reset its parameters. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a6021ad2fe7b11998b886bc5fd9e1a4ba}{build} (\hyperlink{structCDBG__Build__opt}{C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&opt)
+\begin{DoxyCompactList}\small\item\em Build the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_aa8c574863bed96d2a9415cbe3d154de6}{simplify} (const bool delete\+\_\+short\+\_\+isolated\+\_\+unitigs=true, const bool clip\+\_\+short\+\_\+tips=true, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Simplify the Compacted de Bruijn graph\+: clip short ($<$ 2k length) tips and/or delete short ($<$ 2k length) isolated unitigs. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a15707e8624006d247e58e4c67718a677}{write} (const string \&output\+\_\+filename, const size\+\_\+t nb\+\_\+threads=1, const bool G\+F\+A\+\_\+output=true, const bool verbose=false) const
+\begin{DoxyCompactList}\small\item\em Write the Compacted de Bruijn graph to disk (G\+F\+A1 format). \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a0930cb63a158caa70f4dcd425a088fb4}{read} (const string \&input\+\_\+filename, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Read a Compacted de Bruijn graph from disk (G\+F\+A1 or F\+A\+S\+TA format). \end{DoxyCompactList}\item 
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G $>$ \hyperlink{classCompactedDBG_ad7c880affe4d79ec249f9384da1d3d65}{find} (const \hyperlink{classKmer}{Kmer} \&km, const bool extremities\+\_\+only=false)
+\begin{DoxyCompactList}\small\item\em Find the unitig containing the queried k-\/mer in the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+\hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map}$<$ U, G $>$ \hyperlink{classCompactedDBG_acca2582e9bf7abd1f2fdd15223d5b80a}{find} (const \hyperlink{classKmer}{Kmer} \&km, const bool extremities\+\_\+only=false) const
+\begin{DoxyCompactList}\small\item\em Find the unitig containing the queried k-\/mer in the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G $>$ \hyperlink{classCompactedDBG_ac28279d78c552001464ac76587359445}{find\+Unitig} (const char $\ast$s, const size\+\_\+t pos, const size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Find the unitig containing the k-\/mer starting at a given position in a query sequence and extends the mapping (if the k-\/mer is found, the function extends the mapping from the k-\/mer as long as the query sequence and the unitig matches). \end{DoxyCompactList}\item 
+vector$<$ pair$<$ size\+\_\+t, \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G $>$ $>$ $>$ \hyperlink{classCompactedDBG_af27c7bcb26d05371bdcc12075b4724eb}{search\+Sequence} (const string \&seq, const bool exact, const bool insertion, const bool deletion, const bool substitution, const bool or\+\_\+exclusive\+\_\+match=false) const
+\begin{DoxyCompactList}\small\item\em Performs exact and/or inexact search of the k-\/mers of a sequence query in the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a3c884106eb285d837918ddf53ca422bf}{add} (const string \&seq, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Add a sequence to the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_aa8e901dc6f1cf0adcc91608a6b34e999}{remove} (const \hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map}$<$ U, G $>$ \&um, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Remove a unitig from the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{merge} (const \hyperlink{classCompactedDBG}{Compacted\+D\+BG} \&o, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge a compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_ad71daf96811e96c97be70762d1cba7d8}{merge} (const vector$<$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG} $>$ \&v, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge multiple compacted de Bruijn graphs. \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator} \hyperlink{classCompactedDBG_aafac845b848ae5cf79f1f818db6c2ecc}{begin} ()
+\begin{DoxyCompactList}\small\item\em Create an iterator to the first unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator} \hyperlink{classCompactedDBG_ab2768195113d859b806e77b56c9b3c2f}{begin} () const
+\begin{DoxyCompactList}\small\item\em Create an constant iterator to the first unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator} \hyperlink{classCompactedDBG_ad8629de8e7d29ba9bca59c1179b1f88f}{end} ()
+\begin{DoxyCompactList}\small\item\em Create an iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). \end{DoxyCompactList}\item 
+\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator} \hyperlink{classCompactedDBG_a9145ad4ca08f9be984cb85a1ab6477f3}{end} () const
+\begin{DoxyCompactList}\small\item\em Create a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classCompactedDBG_a9f10000ce74e3b3cc6e9cc394cbaba3c}{length} () const
+\begin{DoxyCompactList}\small\item\em Return the sum of the unitigs length. \end{DoxyCompactList}\item 
+bool \hyperlink{classCompactedDBG_a5c2e72fe85306aa4ac190ae9b3e9b3a7}{is\+Invalid} () const
+\begin{DoxyCompactList}\small\item\em Return a boolean indicating if the graph is invalid (wrong input parameters/files, error occurring during a method, etc.). \end{DoxyCompactList}\item 
+int \hyperlink{classCompactedDBG_adbc36fa6e978151d41b259d09443cf97}{getK} () const
+\begin{DoxyCompactList}\small\item\em Return the length of k-\/mers of the graph. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classCompactedDBG_ad0c9c06a0d88cd230eabf889900ecd17}{size} () const
+\begin{DoxyCompactList}\small\item\em Return the number of unitigs in the graph. \end{DoxyCompactList}\item 
+G $\ast$ \hyperlink{classCompactedDBG_a5d1471d870115ea46f86e5543fb02f9a}{get\+Data} ()
+\begin{DoxyCompactList}\small\item\em Return a pointer to the graph data. \end{DoxyCompactList}\item 
+const G $\ast$ \hyperlink{classCompactedDBG_a36e0f2f8e4f46b4da147550a45bb4247}{get\+Data} () const
+\begin{DoxyCompactList}\small\item\em Return a constant pointer to the graph data. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$\newline
+class Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}
+
+Represent a Compacted de Bruijn graph. 
+
+The two template parameters of this class corresponds to the type of data to associate with the unitigs of the graph (unitig data) and the type of data to associate with the graph (graph data). If no template parameters are specified or if the types are void, no data are associated with the unitigs nor the graph and no memory will be allocated for such data. 
+\begin{DoxyCode}
+\hyperlink{classCompactedDBG}{CompactedDBG<>} cdbg\_1; \textcolor{comment}{// No unitig data, no graph data}
+\hyperlink{classCompactedDBG}{CompactedDBG<void>} cdbg\_2; \textcolor{comment}{// Equivalent to previous notation}
+\hyperlink{classCompactedDBG}{CompactedDBG<void, void>} cdbg\_3; \textcolor{comment}{// Equivalent to previous notation}
+\hyperlink{classCompactedDBG}{CompactedDBG<MyUnitigData>} cdbg\_4; \textcolor{comment}{// An object of type MyUnitigData will be
+       associated with each unitig, no graph data}
+\hyperlink{classCompactedDBG}{CompactedDBG<MyUnitigData, void>} cdbg\_5; \textcolor{comment}{// Equivalent to previous notation}
+\hyperlink{classCompactedDBG}{CompactedDBG<void, MyGraphData>} cdbg\_6; \textcolor{comment}{// No unitig data, an object of type
+       MyGraphData will be associated with the graph}
+\hyperlink{classCompactedDBG}{CompactedDBG<MyUnitigData, MyGraphData>} cdbg\_7; \textcolor{comment}{// Unitig data of
+       type MyUnitigData for each unitig, graph data of type MyGraphData}
+\end{DoxyCode}
+ If data are to be associated with the unitigs, these data must be wrapped into a class that inherits from the abstract class \hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t}, such as in\+: 
+\begin{DoxyCode}
+\textcolor{keyword}{class }MyUnitigData : \textcolor{keyword}{public} \hyperlink{classCDBG__Data__t}{CDBG\_Data\_t}<MyUnitigData> \{ ... \};
+\hyperlink{classCompactedDBG}{CompactedDBG<MyUnitigData>} cdbg;
+\end{DoxyCode}
+ Because \hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t} is an abstract class, all the methods from the base class (\hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t}) must be implemented in your wrapper (the derived class, aka My\+Unitig\+Data in this example). I\+M\+P\+O\+R\+T\+A\+NT\+: If you do not implement those methods in your class, default ones that have no effect will be applied. 
+
+\subsection{Member Typedef Documentation}
+\mbox{\Hypertarget{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}\label{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!const\+\_\+iterator@{const\+\_\+iterator}}
+\index{const\+\_\+iterator@{const\+\_\+iterator}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{const\+\_\+iterator}{const\_iterator}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+typedef \hyperlink{classunitigIterator}{unitig\+Iterator}$<$U, G, true$>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator}}
+
+
+
+A constant iterator for the unitigs of the graph. 
+
+No specific order is assumed. \mbox{\Hypertarget{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}\label{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!iterator@{iterator}}
+\index{iterator@{iterator}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{iterator}{iterator}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+typedef \hyperlink{classunitigIterator}{unitig\+Iterator}$<$U, G, false$>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator}}
+
+
+
+An iterator for the unitigs of the graph. 
+
+No specific order is assumed. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classCompactedDBG_ad6584f016b02651312c69ac444349bfe}\label{classCompactedDBG_ad6584f016b02651312c69ac444349bfe}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{Compacted\+D\+B\+G()}{CompactedDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::\hyperlink{classCompactedDBG}{Compacted\+D\+BG} (\begin{DoxyParamCaption}\item[{const int}]{kmer\+\_\+length = {\ttfamily 31},  }\item[{const int}]{minimizer\+\_\+length = {\ttfamily 23} }\end{DoxyParamCaption})}
+
+
+
+Constructor (set up an empty compacted d\+BG). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer\+\_\+length} & is the length k of k-\/mers used in the graph (each unitig is of length at least k). \\
+\hline
+{\em minimizer\+\_\+length} & is the length g of minimizers (g $<$ k) used in the graph. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCompactedDBG_a84fbb8da0cf47e8cdf9cb60fb2eab0f0}\label{classCompactedDBG_a84fbb8da0cf47e8cdf9cb60fb2eab0f0}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{Compacted\+D\+B\+G()}{CompactedDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::\hyperlink{classCompactedDBG}{Compacted\+D\+BG} (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor (copy a compacted de Bruijn graph). 
+
+This function is expensive in terms of time and memory as the content of a compacted de Bruijn graph is copied. After the call to this function, the same graph exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the compacted de Bruijn graph to copy. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCompactedDBG_ac93c3355910670b8244741b22baca929}\label{classCompactedDBG_ac93c3355910670b8244741b22baca929}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{Compacted\+D\+B\+G()}{CompactedDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::\hyperlink{classCompactedDBG}{Compacted\+D\+BG} (\begin{DoxyParamCaption}\item[{\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move constructor (move a compacted de Bruijn graph). 
+
+The content of o is moved (\char`\"{}transfered\char`\"{}) to a new compacted de Bruijn graph. The compacted de Bruijn graph referenced by o will be empty after the call to this constructor. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a reference on a reference to the compacted de Bruijn graph to move. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classCompactedDBG_a3c884106eb285d837918ddf53ca422bf}\label{classCompactedDBG_a3c884106eb285d837918ddf53ca422bf}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!add@{add}}
+\index{add@{add}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{add()}{add()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::add (\begin{DoxyParamCaption}\item[{const string \&}]{seq,  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Add a sequence to the Compacted de Bruijn graph. 
+
+Non-\/\{A,C,G,T\} characters such as Ns are discarded. The function automatically breaks the sequence into unitig(s). Those unitigs can be stored as the reverse-\/complement of the input sequence. 
+\begin{DoxyParams}{Parameters}
+{\em seq} & is a string containing the sequence to insert. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the function execution. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the sequence was successfully inserted in the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_aafac845b848ae5cf79f1f818db6c2ecc}\label{classCompactedDBG_aafac845b848ae5cf79f1f818db6c2ecc}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!begin@{begin}}
+\index{begin@{begin}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{begin()}{begin()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator} \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Create an iterator to the first unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). 
+
+\begin{DoxyReturn}{Returns}
+an iterator to the first unitig of the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ab2768195113d859b806e77b56c9b3c2f}\label{classCompactedDBG_ab2768195113d859b806e77b56c9b3c2f}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!begin@{begin}}
+\index{begin@{begin}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{begin()}{begin()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator} \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create an constant iterator to the first unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). 
+
+\begin{DoxyReturn}{Returns}
+a constant iterator to the first unitig of the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a6021ad2fe7b11998b886bc5fd9e1a4ba}\label{classCompactedDBG_a6021ad2fe7b11998b886bc5fd9e1a4ba}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!build@{build}}
+\index{build@{build}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{build()}{build()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::build (\begin{DoxyParamCaption}\item[{\hyperlink{structCDBG__Build__opt}{C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&}]{opt }\end{DoxyParamCaption})}
+
+
+
+Build the Compacted de Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em opt} & is a structure from which the members are parameters of this function. See \hyperlink{structCDBG__Build__opt}{C\+D\+B\+G\+\_\+\+Build\+\_\+opt}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the graph has been built successfully. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ad8629de8e7d29ba9bca59c1179b1f88f}\label{classCompactedDBG_ad8629de8e7d29ba9bca59c1179b1f88f}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!end@{end}}
+\index{end@{end}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{end()}{end()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator} \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Create an iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). 
+
+\begin{DoxyReturn}{Returns}
+an iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a9145ad4ca08f9be984cb85a1ab6477f3}\label{classCompactedDBG_a9145ad4ca08f9be984cb85a1ab6477f3}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!end@{end}}
+\index{end@{end}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{end()}{end()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\+\_\+iterator} \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the Compacted de Bruijn graph (unitigs are N\+OT sorted lexicographically). 
+
+\begin{DoxyReturn}{Returns}
+a constant iterator to the \char`\"{}past-\/the-\/last\char`\"{} unitig of the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ad7c880affe4d79ec249f9384da1d3d65}\label{classCompactedDBG_ad7c880affe4d79ec249f9384da1d3d65}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!find@{find}}
+\index{find@{find}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{find()}{find()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G$>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::find (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{km,  }\item[{const bool}]{extremities\+\_\+only = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Find the unitig containing the queried k-\/mer in the Compacted de Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em km} & is the queried k-\/mer (see \hyperlink{classKmer}{Kmer} class). It does not need to be a canonical k-\/mer. \\
+\hline
+{\em extremities\+\_\+only} & is a boolean indicating if the k-\/mer must be searched only in the unitig heads and tails (extremities\+\_\+only = true). By default, the k-\/mer is searched everywhere (extremities\+\_\+only = false) but is is slightly slower than looking only in the unitig heads and tails. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Unitig\+Map$<$\+U, G$>$ object containing the k-\/mer mapping information to the unitig containing the queried k-\/mer (if present). If the queried k-\/mer is not found, \hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true (see \hyperlink{classUnitigMap}{Unitig\+Map} class). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_acca2582e9bf7abd1f2fdd15223d5b80a}\label{classCompactedDBG_acca2582e9bf7abd1f2fdd15223d5b80a}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!find@{find}}
+\index{find@{find}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{find()}{find()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map}$<$U, G$>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::find (\begin{DoxyParamCaption}\item[{const \hyperlink{classKmer}{Kmer} \&}]{km,  }\item[{const bool}]{extremities\+\_\+only = {\ttfamily false} }\end{DoxyParamCaption}) const}
+
+
+
+Find the unitig containing the queried k-\/mer in the Compacted de Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em km} & is the queried k-\/mer (see \hyperlink{classKmer}{Kmer} class). It does not need to be a canonical k-\/mer. \\
+\hline
+{\em extremities\+\_\+only} & is a boolean indicating if the k-\/mer must be searched only in the unitig heads and tails (extremities\+\_\+only = true). By default, the k-\/mer is searched everywhere (extremities\+\_\+only = false) but is is slightly slower than looking only in the unitig heads and tails. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+const\+\_\+\+Unitig\+Map$<$\+U, G$>$ object containing the k-\/mer mapping information to the unitig having the queried k-\/mer (if present). If the k-\/mer is not found, \hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{const\+\_\+\+Unitig\+Map\+::is\+Empty} = true (see \hyperlink{classUnitigMap}{Unitig\+Map} class). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ac28279d78c552001464ac76587359445}\label{classCompactedDBG_ac28279d78c552001464ac76587359445}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!find\+Unitig@{find\+Unitig}}
+\index{find\+Unitig@{find\+Unitig}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{find\+Unitig()}{findUnitig()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G$>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::find\+Unitig (\begin{DoxyParamCaption}\item[{const char $\ast$}]{s,  }\item[{const size\+\_\+t}]{pos,  }\item[{const size\+\_\+t}]{len }\end{DoxyParamCaption})}
+
+
+
+Find the unitig containing the k-\/mer starting at a given position in a query sequence and extends the mapping (if the k-\/mer is found, the function extends the mapping from the k-\/mer as long as the query sequence and the unitig matches). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em s} & is a pointer to an array of character containing the sequence to query. \\
+\hline
+{\em pos} & is the position of the first k-\/mer to find in the sequence to query. \\
+\hline
+{\em len} & is the length of s. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Unitig\+Map$<$\+U, G$>$ object containing the mapping information to the unitig having the queried k-\/mer (if present). If the k-\/mer is found, the function extends the mapping from the k-\/mer as long as the query sequence and the unitig matches (um.\+len $>$= 1). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a5d1471d870115ea46f86e5543fb02f9a}\label{classCompactedDBG_a5d1471d870115ea46f86e5543fb02f9a}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+G$\ast$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::get\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Return a pointer to the graph data. 
+
+Pointer is nullptr if type of graph data is void. \begin{DoxyReturn}{Returns}
+A pointer to the graph data. Pointer is nullptr if type of graph data is void. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a36e0f2f8e4f46b4da147550a45bb4247}\label{classCompactedDBG_a36e0f2f8e4f46b4da147550a45bb4247}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+const G$\ast$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::get\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Return a constant pointer to the graph data. 
+
+Pointer is nullptr if type of graph data is void. \begin{DoxyReturn}{Returns}
+A constant pointer to the graph data. Pointer is nullptr if type of graph data is void. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_adbc36fa6e978151d41b259d09443cf97}\label{classCompactedDBG_adbc36fa6e978151d41b259d09443cf97}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!getK@{getK}}
+\index{getK@{getK}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+K()}{getK()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+int \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::getK (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Return the length of k-\/mers of the graph. 
+
+\begin{DoxyReturn}{Returns}
+Length of k-\/mers of the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a5c2e72fe85306aa4ac190ae9b3e9b3a7}\label{classCompactedDBG_a5c2e72fe85306aa4ac190ae9b3e9b3a7}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!is\+Invalid@{is\+Invalid}}
+\index{is\+Invalid@{is\+Invalid}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{is\+Invalid()}{isInvalid()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::is\+Invalid (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Return a boolean indicating if the graph is invalid (wrong input parameters/files, error occurring during a method, etc.). 
+
+\begin{DoxyReturn}{Returns}
+A boolean indicating if the graph is invalid. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a9f10000ce74e3b3cc6e9cc394cbaba3c}\label{classCompactedDBG_a9f10000ce74e3b3cc6e9cc394cbaba3c}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!length@{length}}
+\index{length@{length}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{length()}{length()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+size\+\_\+t \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::length (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return the sum of the unitigs length. 
+
+\begin{DoxyReturn}{Returns}
+An integer which corresponds to the sum of the unitigs length. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}\label{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge a compacted de Bruijn graph. 
+
+After merging, all unitigs of o have been added to and compacted with the current compacted de Bruijn graph (this). If the unitigs of o had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. Note that if multiple compacted de Bruijn graphs have to be merged, it is more efficient to call \hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{Compacted\+D\+B\+G\+::merge} with a vector of \hyperlink{classCompactedDBG}{Compacted\+D\+BG} as input. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the compacted de Bruijn graph to merge. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graph has been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ad71daf96811e96c97be70762d1cba7d8}\label{classCompactedDBG_ad71daf96811e96c97be70762d1cba7d8}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const vector$<$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ $>$ \&}]{v,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge multiple compacted de Bruijn graphs. 
+
+After merging, all unitigs of the compacted de Bruijn graphs have been added to and compacted with the current compacted de Bruijn graph (this). If the unitigs had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. 
+\begin{DoxyParams}{Parameters}
+{\em v} & is a constant reference to a vector of colored and compacted de Bruijn graphs to merge. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graphs have been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ae3039c04c5f7234281f4e8c04fffd0bc}\label{classCompactedDBG_ae3039c04c5f7234281f4e8c04fffd0bc}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Inequality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two compacted de Bruijn graphs have different unitigs (does not compare the data associated with the unitigs). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_af689cbbbe9328a0bd4f80eb8c0547e3c}\label{classCompactedDBG_af689cbbbe9328a0bd4f80eb8c0547e3c}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$U, G$>$\& \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::operator+= (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Addition assignment operator (merge a compacted de Bruijn graph). 
+
+After merging, all unitigs of o have been added to and compacted with the current compacted de Bruijn graph (this). If the unitigs of o had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are in base class C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. This function is similar to \hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{Compacted\+D\+B\+G\+::merge} except that it uses only one thread while \hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{Compacted\+D\+B\+G\+::merge} can work with multiple threads (number of threads provided as a parameter). Note that if multiple compacted de Bruijn graphs have to be merged, it is more efficient to call \hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{Compacted\+D\+B\+G\+::merge} with a vector of \hyperlink{classCompactedDBG}{Compacted\+D\+BG} as input. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the compacted de Bruijn graph to merge. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current compacted de Bruijn after merging. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a0c7e50223cdcb178110aa49e983e4ec2}\label{classCompactedDBG_a0c7e50223cdcb178110aa49e983e4ec2}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!operator=@{operator=}}
+\index{operator=@{operator=}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$U, G$>$\& \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy assignment operator (copy a compacted de Bruijn graph). 
+
+This function is expensive in terms of time and memory as the content of a compacted de Bruijn graph is copied. After the call to this function, the same graph exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the compacted de Bruijn graph to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the compacted de Bruijn which is the copy. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a191a4cce892c9a6ceea7bfdfbf41e494}\label{classCompactedDBG_a191a4cce892c9a6ceea7bfdfbf41e494}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!operator=@{operator=}}
+\index{operator=@{operator=}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$U, G$>$\& \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::operator= (\begin{DoxyParamCaption}\item[{\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move assignment operator (move a compacted de Bruijn graph). 
+
+The content of o is moved (\char`\"{}transfered\char`\"{}) to a new compacted de Bruijn graph. The compacted de Bruijn graph referenced by o will be empty after the call to this operator. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a reference on a reference to the compacted de Bruijn graph to move. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the compacted de Bruijn which has (and owns) the content of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a59b674356405c7c80bfbd7751d0d1aff}\label{classCompactedDBG_a59b674356405c7c80bfbd7751d0d1aff}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!operator==@{operator==}}
+\index{operator==@{operator==}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two compacted de Bruijn graphs have the same unitigs (does not compare the data associated with the unitigs). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a0930cb63a158caa70f4dcd425a088fb4}\label{classCompactedDBG_a0930cb63a158caa70f4dcd425a088fb4}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!read@{read}}
+\index{read@{read}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::read (\begin{DoxyParamCaption}\item[{const string \&}]{input\+\_\+filename,  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Read a Compacted de Bruijn graph from disk (G\+F\+A1 or F\+A\+S\+TA format). 
+
+If the input G\+FA file has not been built by Bifrost or if the input is F\+A\+S\+TA format, it is your responsibility to make sure that the graph is correctly compacted and to set correctly the parameters of the graph (such as the k-\/mer length) before the call to this function. 
+\begin{DoxyParams}{Parameters}
+{\em input\+\_\+filename} & is a string containing the name of the file from which the graph will be read. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the function execution. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the graph has been read successfully. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_aa8e901dc6f1cf0adcc91608a6b34e999}\label{classCompactedDBG_aa8e901dc6f1cf0adcc91608a6b34e999}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!remove@{remove}}
+\index{remove@{remove}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{remove()}{remove()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::remove (\begin{DoxyParamCaption}\item[{const \hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map}$<$ U, G $>$ \&}]{um,  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Remove a unitig from the Compacted de Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{classUnitigMap}{Unitig\+Map} object containing the information of the unitig to remove from the graph. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the unitig was successfully removed from the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_af27c7bcb26d05371bdcc12075b4724eb}\label{classCompactedDBG_af27c7bcb26d05371bdcc12075b4724eb}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!search\+Sequence@{search\+Sequence}}
+\index{search\+Sequence@{search\+Sequence}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{search\+Sequence()}{searchSequence()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+vector$<$pair$<$size\+\_\+t, \hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G$>$ $>$ $>$ \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::search\+Sequence (\begin{DoxyParamCaption}\item[{const string \&}]{seq,  }\item[{const bool}]{exact,  }\item[{const bool}]{insertion,  }\item[{const bool}]{deletion,  }\item[{const bool}]{substitution,  }\item[{const bool}]{or\+\_\+exclusive\+\_\+match = {\ttfamily false} }\end{DoxyParamCaption}) const}
+
+
+
+Performs exact and/or inexact search of the k-\/mers of a sequence query in the Compacted de Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em seq} & is a string representing the sequence to be searched (the query). \\
+\hline
+{\em exact} & is a boolean indicating if the exact k-\/mers of string seq must be searched. \\
+\hline
+{\em insertion} & is a boolean indicating if the inexact k-\/mers of string seq, with one insertion, must be searched. \\
+\hline
+{\em deletion} & is a boolean indicating if the inexact k-\/mers of string seq, with one deletion, must be searched. \\
+\hline
+{\em substitution} & is a boolean indicating if the inexact k-\/mers of string seq, with one substitution, must be searched. \\
+\hline
+{\em or\+\_\+exclusive\+\_\+match} & is a boolean indicating to N\+OT search for the inexact k-\/mers at any given position in seq if the exact corresponding k-\/mer at that position is found in the graph. This option might lead to a substantial running time decrease. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a vector of pair$<$size\+\_\+t, Unitig\+Map$<$\+U, G$>$$>$ objects. Each such pair has two elements\+: the position of the k-\/mer match in sequence seq and the corresponding k-\/mer match in the graph. Note that no information is given on whether the match is exact or inexact, nor on what edit operation makes the match to be inexact or at what position the edit operation takes place. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_aa8c574863bed96d2a9415cbe3d154de6}\label{classCompactedDBG_aa8c574863bed96d2a9415cbe3d154de6}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!simplify@{simplify}}
+\index{simplify@{simplify}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{simplify()}{simplify()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::simplify (\begin{DoxyParamCaption}\item[{const bool}]{delete\+\_\+short\+\_\+isolated\+\_\+unitigs = {\ttfamily true},  }\item[{const bool}]{clip\+\_\+short\+\_\+tips = {\ttfamily true},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Simplify the Compacted de Bruijn graph\+: clip short ($<$ 2k length) tips and/or delete short ($<$ 2k length) isolated unitigs. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em delete\+\_\+short\+\_\+isolated\+\_\+unitigs} & is a boolean indicating short isolated unitigs must be removed. \\
+\hline
+{\em clip\+\_\+short\+\_\+tips} & is a boolean indicating short tips must be clipped. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the function execution. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the graph has been simplified successfully. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_ad0c9c06a0d88cd230eabf889900ecd17}\label{classCompactedDBG_ad0c9c06a0d88cd230eabf889900ecd17}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!size@{size}}
+\index{size@{size}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{size()}{size()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+size\+\_\+t \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Return the number of unitigs in the graph. 
+
+\begin{DoxyReturn}{Returns}
+Number of unitigs in the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classCompactedDBG_a15707e8624006d247e58e4c67718a677}\label{classCompactedDBG_a15707e8624006d247e58e4c67718a677}} 
+\index{Compacted\+D\+BG@{Compacted\+D\+BG}!write@{write}}
+\index{write@{write}!Compacted\+D\+BG@{Compacted\+D\+BG}}
+\subsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$\+::write (\begin{DoxyParamCaption}\item[{const string \&}]{output\+\_\+filename,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{G\+F\+A\+\_\+output = {\ttfamily true},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption}) const}
+
+
+
+Write the Compacted de Bruijn graph to disk (G\+F\+A1 format). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em output\+\_\+filename} & is a string containing the name of the file in which the graph will be written. \\
+\hline
+{\em nb\+\_\+threads} & is a number indicating how many threads can be used to write the graph to disk. \\
+\hline
+{\em G\+F\+A\+\_\+output} & indicates if the graph will be output in G\+FA format (true) or F\+A\+S\+TA format (false). \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the function execution. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the graph has been written successfully. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{CompactedDBG_8hpp}{Compacted\+D\+B\+G.\+hpp}\end{DoxyCompactItemize}

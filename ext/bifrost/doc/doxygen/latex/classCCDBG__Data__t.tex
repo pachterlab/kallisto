@@ -1,0 +1,133 @@
+\hypertarget{classCCDBG__Data__t}{}\section{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Unitig\+\_\+data\+\_\+t $>$ Class Template Reference}
+\label{classCCDBG__Data__t}\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Unitig\+\_\+data\+\_\+t $>$@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Unitig\+\_\+data\+\_\+t $>$}}
+
+
+If data are to be associated with the unitigs of the colored and compacted de Bruijn graph, those data must be wrapped into a class that inherits from the abstract class \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}.  
+
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{classCCDBG__Data__t_adcdd42b81067d6095534f53b09c24aac}{clear} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+dest)
+\begin{DoxyCompactList}\small\item\em Clear the data associated with a unitig. \end{DoxyCompactList}\item 
+void \hyperlink{classCCDBG__Data__t_a0ce6821deb4441f8a7dd3d270ed8b3a6}{concat} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+dest, const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Join data of two unitigs which are going to be concatenated. \end{DoxyCompactList}\item 
+void \hyperlink{classCCDBG__Data__t_af358cb00cd1aa29b90780d8c065954e8}{merge} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+dest, const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Merge the data of a sub-\/unitig B to the data of a sub-\/unitig A. \end{DoxyCompactList}\item 
+void \hyperlink{classCCDBG__Data__t_a45794343781dc4e482537125f26ef61f}{extract} (const \hyperlink{classUnitigColors}{Unitig\+Colors} $\ast$uc\+\_\+dest, const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src, const bool last\+\_\+extraction)
+\begin{DoxyCompactList}\small\item\em Extract data corresponding to a sub-\/unitig of a unitig A. \end{DoxyCompactList}\item 
+string \hyperlink{classCCDBG__Data__t_ab29386cdf5ae12239c0a87d510f7aa40}{serialize} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src) const
+\begin{DoxyCompactList}\small\item\em Serialize the data to a G\+F\+A-\/formatted string. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t$>$\newline
+class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Unitig\+\_\+data\+\_\+t $>$}
+
+If data are to be associated with the unitigs of the colored and compacted de Bruijn graph, those data must be wrapped into a class that inherits from the abstract class \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}. 
+
+To associate data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} to unitigs, class My\+Unitig\+Data must be declared as follows\+: 
+\begin{DoxyCode}
+\textcolor{keyword}{class }MyUnitigData : \textcolor{keyword}{public} \hyperlink{classCCDBG__Data__t}{CCDBG\_Data\_t}<MyUnitigData> \{ ... \};
+...
+ColoredCDBG<MyUnitigData> ccdbg;
+\end{DoxyCode}
+ An object of type My\+Unitig\+Data represents an instanciation of user data associated to one unitig of the graph. \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t} has one template parameter\+: the type of unitig data (\char`\"{}\+My\+Unitig\+Data\char`\"{}). Because \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t} is an abstract class, all the methods of the base class (\hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}) must be implemented in your wrapper (the derived class, aka My\+Unitig\+Data in this example). I\+M\+P\+O\+R\+T\+A\+NT\+: If you do not implement those methods, default ones that have no effects will be applied. Do not forget to implement copy and move constructors/destructors as well as copy and move assignment operators. An example of using such a structure is shown in snippets/test.\+cpp. 
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classCCDBG__Data__t_adcdd42b81067d6095534f53b09c24aac}\label{classCCDBG__Data__t_adcdd42b81067d6095534f53b09c24aac}} 
+\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}!clear@{clear}}
+\index{clear@{clear}!C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}}
+\subsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t $>$ \\
+void \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}$<$ Unitig\+\_\+data\+\_\+t $>$\+::clear (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+dest }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Clear the data associated with a unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+dest} & is a Unitig\+Color\+Map object representing a unitig (the reference sequence of um\+\_\+dest) for which the data must be cleared. The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCCDBG__Data__t_a0ce6821deb4441f8a7dd3d270ed8b3a6}\label{classCCDBG__Data__t_a0ce6821deb4441f8a7dd3d270ed8b3a6}} 
+\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}!concat@{concat}}
+\index{concat@{concat}!C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}}
+\subsubsection{\texorpdfstring{concat()}{concat()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t $>$ \\
+void \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}$<$ Unitig\+\_\+data\+\_\+t $>$\+::concat (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+dest,  }\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Join data of two unitigs which are going to be concatenated. 
+
+Specifically, if A is the reference unitig of the Unitig\+Color\+Map um\+\_\+dest and B is the reference unitig of the Unitig\+Color\+Map um\+\_\+src, then after the call to this function, unitigs A and B will be removed and a unitig C = AB will be added to the graph. The object calling this function represents the data to associate with the new unitig C = AB. If um\+\_\+dest.\+strand = false, then the reverse-\/complement of A is going to be used in the concatenation. Reciprocally, if um\+\_\+src.\+strand = false, then the reverse-\/complement of B is going to be used in the concatenation. The data of each unitig can be accessed through the method \hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{Unitig\+Color\+Map\+::get\+Data()}. The two unitigs A and B are guaranteed to be from the same graph. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+dest} & is a Unitig\+Color\+Map object representing a unitig (the reference sequence of the mapping) to which another unitig is going to be appended. The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. \\
+\hline
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing a unitig (and its data) that will be appended at the end of the unitig represented by parameter um\+\_\+dest. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCCDBG__Data__t_a45794343781dc4e482537125f26ef61f}\label{classCCDBG__Data__t_a45794343781dc4e482537125f26ef61f}} 
+\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}!extract@{extract}}
+\index{extract@{extract}!C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}}
+\subsubsection{\texorpdfstring{extract()}{extract()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t $>$ \\
+void \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}$<$ Unitig\+\_\+data\+\_\+t $>$\+::extract (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors}{Unitig\+Colors} $\ast$}]{uc\+\_\+dest,  }\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src,  }\item[{const bool}]{last\+\_\+extraction }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Extract data corresponding to a sub-\/unitig of a unitig A. 
+
+The extracted sub-\/unitig, called B in the following, is defined as a mapping to A given by the input Unitig\+Color\+Map object um\+\_\+src. Hence, B = A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]}) if um\+\_\+src.\+strand == false (B is reverse-\/complemented). After this function returns, unitig A is deleted from the graph and B is inserted in the graph (along with their data and colors) IF the input parameter last\+\_\+extraction == true. The object calling this function represents the data associated with sub-\/unitig B. 
+\begin{DoxyParams}{Parameters}
+{\em uc\+\_\+dest} & is a constant pointer to a \hyperlink{classUnitigColors}{Unitig\+Colors} object representing the k-\/mer color sets of colored unitig B. If uc\+\_\+dest == nullptr, no \hyperlink{classUnitigColors}{Unitig\+Colors} object will be associated with unitig B. \\
+\hline
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing the mapping to a colored unitig A from which a new colored unitig B will be extracted, i.\+e, B = A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]}) if um\+\_\+src.\+strand == false. \\
+\hline
+{\em last\+\_\+extraction} & is a boolean indicating if this is the last call to this function on the reference unitig A used for the mapping given by um\+\_\+src. If last\+\_\+extraction is true, the reference unitig A of um\+\_\+src will be removed from the graph right after this function returns. Also, all unitigs B extracted from the reference unitig A, along with their data and colors, will be inserted in the graph. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCCDBG__Data__t_af358cb00cd1aa29b90780d8c065954e8}\label{classCCDBG__Data__t_af358cb00cd1aa29b90780d8c065954e8}} 
+\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}!merge@{merge}}
+\index{merge@{merge}!C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}}
+\subsubsection{\texorpdfstring{merge()}{merge()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t $>$ \\
+void \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+dest,  }\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Merge the data of a sub-\/unitig B to the data of a sub-\/unitig A. 
+
+The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. The two unitigs A and B are N\+OT guaranteed to be from the same graph. The data of each unitig can be accessed through the \hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{Unitig\+Map\+::get\+Data}. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+dest} & is a Unitig\+Color\+Map object representing a sub-\/unitig (the mapped sequence of the mapping) A. The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. \\
+\hline
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing a sub-\/unitig (the mapped sequence of the mapping) for which the data must be merged with the data of sub-\/unitig B (given by parameter um\+\_\+dest). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classCCDBG__Data__t_ab29386cdf5ae12239c0a87d510f7aa40}\label{classCCDBG__Data__t_ab29386cdf5ae12239c0a87d510f7aa40}} 
+\index{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}!serialize@{serialize}}
+\index{serialize@{serialize}!C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t@{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}}
+\subsubsection{\texorpdfstring{serialize()}{serialize()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t $>$ \\
+string \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}$<$ Unitig\+\_\+data\+\_\+t $>$\+::serialize (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Serialize the data to a G\+F\+A-\/formatted string. 
+
+This function is used when the graph is written to disk in G\+FA format. If the returned string is not empty, the string is appended as an optional field to the Segment line matching the unitig to which this data is associated. Note that it is your responsability to add G\+F\+A-\/compatible tags matching your data in the string. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+src} & is a const\+\_\+\+Unitig\+Color\+Map object representing the (reference) unitig to which the data to serialize is associated. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a string which is the serialization of the data. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColoredCDBG_8hpp}{Colored\+C\+D\+B\+G.\+hpp}\end{DoxyCompactItemize}

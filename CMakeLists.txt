@@ -53,7 +53,17 @@ ExternalProject_Add(htslib
     INSTALL_COMMAND ""
 )
 
+ExternalProject_Add(bifrost
+    PREFIX ${PROJECT_SOURCE_DIR}/ext/bifrost
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/bifrost
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    BUILD_COMMAND cd build && make
+    INSTALL_COMMAND ""
+)
+
 include_directories(${htslib_PREFIX}/src/htslib)
+include_directories(${bifrost_PREFIX}/src/bifrost)
 
 
 
