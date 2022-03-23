@@ -14,6 +14,8 @@
 
 #include <zlib.h>
 
+#include <CompactedDBG.hpp>
+
 #include "common.h"
 #include "ProcessReads.h"
 #include "KmerIndex.h"
@@ -2599,7 +2601,6 @@ int main(int argc, char *argv[]) {
   std::cout.sync_with_stdio(false);
   setvbuf(stdout, NULL, _IOFBF, 1048576);
 
-
   if (argc < 2) {
     usage();
     exit(1);
@@ -2624,7 +2625,8 @@ int main(int argc, char *argv[]) {
       } else {
         // create an index
         Kmer::set_k(opt.k);
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.BuildTranscripts(opt);
         index.write(opt.index);
       }
@@ -2639,7 +2641,8 @@ int main(int argc, char *argv[]) {
         usageInspect();
         exit(1);
       } else {
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt);
         InspectIndex(index,opt);
       }
@@ -2654,7 +2657,8 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else if (opt.batch_mode) { // kallisto pseudo
         // pseudoalign the reads
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt);
         
         MinCollector collection(index, opt);
@@ -2768,7 +2772,8 @@ int main(int argc, char *argv[]) {
 
         opt.bus_mode = true;
         opt.single_end = false;
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt);
 
 
@@ -2942,7 +2947,8 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // run the em algorithm
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt);
         if (opt.fusion) {
           // need full transcript sequences
@@ -3124,7 +3130,8 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // run the em algorithm
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
@@ -3256,7 +3263,8 @@ int main(int argc, char *argv[]) {
         usageTCCQuant();
         exit(1);
       } else {
-        KmerIndex index(opt);
+        // TODO:
+        //KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         size_t num_ecs = index.ecmap.size();
         MinCollector collection(index, opt);
