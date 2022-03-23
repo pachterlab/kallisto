@@ -63,7 +63,9 @@ ExternalProject_Add(bifrost
 )
 
 include_directories(${htslib_PREFIX}/src/htslib)
-include_directories(${bifrost_PREFIX}/src/bifrost)
+
+ExternalProject_Get_Property(bifrost install_dir)
+include_directories(${install_dir}/src)
 
 
 
