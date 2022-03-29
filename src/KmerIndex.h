@@ -1,23 +1,17 @@
 #ifndef KALLISTO_KMERINDEX_H
 #define KALLISTO_KMERINDEX_H
 
-
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
 #include <ostream>
-//#include <map>
-
 
 #include "common.h"
 #include "Kmer.hpp"
-#include "KmerIterator.hpp"
-
-#include "KmerHashTable.h"
-
 #include "hash.hpp"
+#include "CompactedDBG.hpp"
 
 std::string revcomp(const std::string s);
 
@@ -133,7 +127,8 @@ struct KmerIndex {
   int num_trans; // number of targets
   int skip;
 
-  KmerHashTable<KmerEntry, KmerHash> kmap;
+  //KmerHashTable<KmerEntry, KmerHash> kmap;
+  KmerHashTable<KmerEntry> kmap;
   EcMap ecmap;
   DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;

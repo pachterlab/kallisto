@@ -117,7 +117,11 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
 }
 
 void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
+  // TODO:
+  // There are some nasty, crufty inline block comments in this function.
+  // Probably remove those?
 
+  /*
   std::string gfa = opt.gfa;
   std::string bed = opt.bedFile;
 
@@ -267,9 +271,14 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
         }
 
         KmerEntry val = search->second;
-        if (val.contig != i /*|| val.ec != index.dbGraph.ecs[i]*/ || val.contig_length != c.length || val.getPos() != kit->second || val.isFw() != (x==xr)) {
+
+        // TODO:
+        // Check source on github and look at inline block comment there
+        if (val.contig != i  || val.contig_length != c.length || val.getPos() != kit->second || val.isFw() != (x==xr)) {
           cerr << "mismatch " << x.toString() << " in map " << endl << "id = " << i << ", ec = " << index.dbGraph.ecs[i] << ", length = " << c.length << ", seq = " << c.seq << ", pos = " << kit->second << endl;
-          cerr << "val = " << val.contig << /* ", ec = " << val.ec << */ ", length = " << val.contig_length << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
+          // TODO:
+          // Check source on github and look at inline block comment there
+          cerr << "val = " << val.contig <<  ", length = " << val.contig_length << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
           exit(1);
         }
       }
@@ -473,6 +482,7 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
       }
     }
   }
+  */
 }
 
 #endif // KALLISTO_INSPECTINDEX_H

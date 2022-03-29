@@ -1,4 +1,3 @@
-#include "KmerIndex.h"
 #include <algorithm>
 #include <random>
 #include <sstream>
@@ -6,6 +5,7 @@
 #include <zlib.h>
 #include <unordered_set>
 #include "kseq.h"
+#include "KmerIndex.h"
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -69,6 +69,7 @@ std::string revcomp(const std::string s) {
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
+  /*
   std::unordered_set<std::string> unique_names;
   int k = opt.k;
   for (auto& fasta : opt.transfasta) {
@@ -178,11 +179,12 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   BuildEquivalenceClasses(opt, seqs);
   //BuildEdges(opt);
 
+  */
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
-  
 
+  /*
   std::cerr << "[build] counting k-mers ... "; std::cerr.flush();
   // gather all k-mers
   for (int i = 0; i < seqs.size(); i++) {
@@ -284,9 +286,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   }
   std::cerr << " done " << std::endl;
 
+  */
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
+  /*
   std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
   std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
@@ -304,8 +308,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       KmerEntry val = search->second;
       std::vector<TRInfo>& trinfo = trinfos[val.contig];
       Contig& contig = dbGraph.contigs[val.contig];
-
-      
 
       TRInfo tr;
       tr.trid = i;
@@ -411,14 +413,15 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
     // record the transc
     Contig& contig = dbGraph.contigs[i];
     contig.ec = ec;
+    // ATTN:
+    // This was allready commented out.
+    // Consider removing as cruft
     // correct ec of all k-mers in contig
-    /*
-    KmerIterator kit(contig.seq.c_str()), kit_end;
-    for (; kit != kit_end; ++kit) {
-      auto ksearch = kmap.find(kit->first.rep());
+    //KmerIterator kit(contig.seq.c_str()), kit_end;
+    //for (; kit != kit_end; ++kit) {
+      //auto ksearch = kmap.find(kit->first.rep());
       //ksearch->second.ec = ec;
-    }
-    */
+    //}
   }
 
   // map transcripts to contigs
@@ -488,9 +491,9 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       kit.jumpTo(jump);
     }
     if (seqlen > 0 && seqs[i] != stmp) {
-      /*std::cout << ">" << target_names_[i] << std::endl
-                << seqs[i] << std::endl
-                << stmp << std::endl;*/
+      //std::cout << ">" << target_names_[i] << std::endl
+                //<< seqs[i] << std::endl
+                //<< stmp << std::endl;
       assert(false);
       
     }
@@ -512,15 +515,11 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   
   std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " k-mers " << std::endl;
-
-
-  
-
-  
+  */
 }
 
 void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos) {
-
+  /*
   int perftr = 0;
   int orig_size = trinfos.size();
 
@@ -615,13 +614,14 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
 
   //std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
 
-  
+  */
 }
 
 
 
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
+  /*
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
 
@@ -735,9 +735,11 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
 
   out.flush();
   out.close();
+  */
 }
 
 bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
+  /*
   int j = -1;
   int fw_count = 0;
   for (int i = 0; i < 4; i++) {
@@ -779,10 +781,13 @@ bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
       return false;
     }
   }
-
+  */
+  // TODO: Remove
+  return false;
 }
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
+  /*
   if (opt.index.empty() && !loadKmerTable) {
     // Make an index from transcript and EC files
     loadTranscriptsFromFile(opt);
@@ -918,7 +923,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
 
-    /* std::string tmp_targ_id( buffer ); */
+    //std::string tmp_targ_id( buffer );
     target_names_.push_back(std::string( buffer ));
   }
 
@@ -978,9 +983,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
+  */
 }
 
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
+  /*
   ecmap.clear();
   ecmapinv.clear();
   int i = 0;
@@ -1020,9 +1027,11 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
   }
   std::cerr << "[index] number of equivalence classes loaded from file: "
             << pretty_num(ecmap.size()) << std::endl;
+  */
 }
 
 void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
+  /*
   target_names_.clear();
   int i = 0;
   std::ifstream in((opt.transcriptsFile));
@@ -1040,9 +1049,11 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
   target_lens_.assign(num_trans, 0);
   std::cerr << "[index] number of targets loaded from file: "
             << pretty_num(num_trans) << std::endl;
+  */
 }
 
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
+  /*
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
@@ -1123,13 +1134,16 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   } else {
     return p2-p1;
   }
-
+  */
+  // TODO: Remove
+  return 0;
 }
 
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
 void KmerIndex::match(const char *s, int l, std::vector<std::pair<KmerEntry, int>>& v) const {
+  /*
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
@@ -1260,9 +1274,11 @@ donejumping:
       }
     }
   }
+  */
 }
 
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+  /*
   auto it = kmap.find(km.rep());
   if (it != kmap.end()) {
     KmerEntry val = it->second;
@@ -1270,6 +1286,9 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
   } else {
     return {-1,true};
   }
+  */
+  // TODO: Remove
+  return {0, false};
 }
 
 //use:  (pos,sense) = index.findPosition(tr,km,val,p)
@@ -1278,6 +1297,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, KmerEntry val, int p) const {
+  /*
   bool fw = (km == km.rep());
   bool csense = (fw == val.isFw());
 
@@ -1313,8 +1333,14 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, KmerEntry val, int 
       return {trpos + (c.length - val.getPos())  - p, !csense}; // 1-based, case II
     }
   }
+  */
+  // TODO: Remove
+  return {0, false};
 }
 
+// ATTN:
+// THIS WAS ALREADY COMMENTED OUT
+// CONSIDER REMOVING THIS AS CRUFT
 /*
 // use:  r = matchEnd(s,l,v,p)
 // pre:  v is initialized, p>=0
@@ -1407,6 +1433,7 @@ bool KmerIndex::matchEnd(const char *s, int l, std::vector<std::pair<int,int>> &
 //       res is empty if ec is not in ecma
 std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
   std::vector<int> res;
+  /*
   //auto search = ecmap.find(ec);
   if (ec < ecmap.size()) {
     //if (search != ecmap.end()) {
@@ -1430,11 +1457,13 @@ std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
       }
     }
   }
+  */
   return res;
 }
 
 
 void KmerIndex::loadTranscriptSequences() const {
+  /*
   if (target_seqs_loaded) {
     return;
   }
@@ -1475,9 +1504,11 @@ void KmerIndex::loadTranscriptSequences() const {
   bool &t = const_cast<bool&>(target_seqs_loaded);
   t = true;//target_seqs_loaded = true;
   return;
+  */
 }
 
 void KmerIndex::clear() {
+  /*
   kmap.clear_table();
   ecmap.resize(0);
   dbGraph.ecs.resize(0);
@@ -1490,9 +1521,11 @@ void KmerIndex::clear() {
   target_lens_.resize(0);
   target_names_.resize(0);
   target_seqs_.resize(0);
+  */
 }
 
 void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
+  /*
   // write out header
   o << "@HD\tVN:1.0\n";
   for (int i = 0; i < num_trans; i++) {
@@ -1500,4 +1533,5 @@ void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
   }
   o << "@PG\tID:kallisto\tPN:kallisto\tVN:"<< KALLISTO_VERSION << "\n";
   o.flush();
+  */
 }

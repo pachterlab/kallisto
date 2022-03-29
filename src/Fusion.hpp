@@ -158,9 +158,11 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
 }
 
 // returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
-bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2, std::pair<int,int> &p1, std::pair<int,int> &p2) { 
+bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2, std::pair<int,int> &p1, std::pair<int,int> &p2) {
 //const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
   
+  // TODO:
+  /*
   std::set<int> su1,su2;
   
   auto union_set = [&](const std::string &s, std::pair<int,int> &p) {
@@ -189,21 +191,22 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
       }
     }
     
-    /*
-    int ec = index.dbGraph.ecs[v[0].first.contig];
-    int lastEC = ec;
-    //const std::vector<int> &u = index.ecmap[ec];
-    s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
-    for (int i = 1; i < v.size(); i++) {
-      if (v[i].first.contig != v[i-1].first.contig) {
-        ec = index.dbGraph.ecs[v[i].first.contig];
-        if (ec != lastEC) {
-          s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
-          lastEC = ec;
-        }
-      }
-    }
-    */
+    // ATTN:
+    // This was already commented out
+    // Consider removing as cruft
+    //int ec = index.dbGraph.ecs[v[0].first.contig];
+    //int lastEC = ec;
+    ////const std::vector<int> &u = index.ecmap[ec];
+    //s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+    //for (int i = 1; i < v.size(); i++) {
+      //if (v[i].first.contig != v[i-1].first.contig) {
+        //ec = index.dbGraph.ecs[v[i].first.contig];
+        //if (ec != lastEC) {
+          //s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+          //lastEC = ec;
+        //}
+      //}
+    //}
     return su;
   };
 
@@ -223,6 +226,8 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
     }
   }
   return true;
+  */
+  return false;
 }
 
 

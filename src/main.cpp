@@ -19,7 +19,6 @@
 #include "common.h"
 #include "ProcessReads.h"
 #include "KmerIndex.h"
-#include "Kmer.hpp"
 #include "MinCollector.h"
 #include "EMAlgorithm.h"
 #include "weights.h"
@@ -30,12 +29,10 @@
 #include "GeneModel.h"
 #include "Merge.h"
 
-
 //#define ERROR_STR "\033[1mError:\033[0m"
 #define ERROR_STR "Error:"
 
 using namespace std;
-
 
 int my_mkdir(const char *path, mode_t mode) {
   #ifdef _WIN64
@@ -103,7 +100,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
-
   const char *opt_string = "G:g:b:";
 
   int para_flag = 0;
@@ -149,8 +145,6 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     opt.inspect_thorough = true;
   }
 }
-
-
 
 void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
@@ -282,7 +276,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::FR;
   }
-  
+
   if (strand_RF_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::RF;
@@ -298,7 +292,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
   if (gbam_flag) {
     opt.pseudobam = true;
-    opt.genomebam = true;    
+    opt.genomebam = true;
   }
 
   if (fusion_flag) {
@@ -403,11 +397,11 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   int option_index = 0;
   while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
-    
+
     if (c == -1) {
       break;
     }
-    
+
     switch (c) {
     case 0:
       break;
@@ -553,12 +547,12 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     default: break;
     }
   }
-  
+
   if (umi_flag) {
     opt.umi = true;
     opt.single_end = true; // UMI implies single-end reads
   }
-  
+
   if (bus_flag) {
     if (!opt.num) {
       opt.batch_bus_write = true;
@@ -571,7 +565,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
   }
- 
+
   if (verbose_flag) {
     opt.verbose = true;
   }
@@ -580,7 +574,7 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = true;
     opt.single_overhang = true;
   }
-  
+
   if (quant_flag) {
     opt.pseudo_quant = true;
   }
@@ -588,12 +582,12 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
   if (strand_flag) {
     opt.strand_specific = true;
   }
-  
+
   if (strand_FR_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::FR;
   }
-  
+
   if (strand_RF_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::RF;
@@ -603,7 +597,6 @@ void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
     opt.pseudobam = true;
   }
 }
-
 
 void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
 
@@ -624,7 +617,7 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
 
     switch (c) {
     case 0:
-      break;    
+      break;
     case 'i': {
       opt.index = optarg;
       break;
@@ -636,17 +629,16 @@ void ParseOptionsMerge(int argc, char **argv, ProgramOptions& opt) {
     default: break;
     }
   }
-  
+
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
   }
- 
 }
 
 void ListSingleCellTechnologies() {
   //todo, figure this out
-  cout << "List of supported single-cell technologies" << endl << endl 
+  cout << "List of supported single-cell technologies" << endl << endl
   << "short name       description" << endl
   << "----------       -----------" << endl
   << "10xv1            10x version 1 chemistry" << endl
@@ -710,7 +702,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
 
     switch (c) {
     case 0:
-      break;    
+      break;
     case 'i': {
       opt.index = optarg;
       break;
@@ -765,14 +757,14 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     ListSingleCellTechnologies();
     exit(1);
   }
-  
+
   if (verbose_flag) {
     opt.verbose = true;
   }
 
   if (gbam_flag) {
     opt.pseudobam = true;
-    opt.genomebam = true;    
+    opt.genomebam = true;
   }
 
   if (strand_FR_flag) {
@@ -784,7 +776,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::RF;
   }
-  
+
   if (unstranded_flag) {
     opt.strand_specific = true;
     opt.strand = ProgramOptions::StrandType::None;
@@ -795,35 +787,32 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   } else {
     opt.single_end = true;
   }
-  
+
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
   }
- 
 }
 
 bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector<std::string> &errorList) {
   auto i1 = techstr.find(':');
   if (i1 == std::string::npos) {
-    errorList.push_back("Error: technology string must contain two colons (:), none found: \"" + techstr + "\"");    
+    errorList.push_back("Error: technology string must contain two colons (:), none found: \"" + techstr + "\"");
     return false;
   }
   auto i2 = techstr.find(':', i1+1);
   if (i2 == std::string::npos) {
-    errorList.push_back("Error: technology string must contain two colons (:), only one found: \"" + techstr + "\"");    
+    errorList.push_back("Error: technology string must contain two colons (:), only one found: \"" + techstr + "\"");
     return false;
   }
   auto ip = techstr.find(':', i2+1);
   if (ip != std::string::npos) {
-    errorList.push_back("Error: technology string must contain two colons (:), three found: \"" + techstr + "\"");    
+    errorList.push_back("Error: technology string must contain two colons (:), three found: \"" + techstr + "\"");
     return false;
   }
   auto bcstr = techstr.substr(0, i1);
   auto umistr = techstr.substr(i1+1,i2-i1-1);
   auto seqstr = techstr.substr(i2+1);
-  
-
 
   int maxnf = 0;
 
@@ -871,8 +860,6 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
     return true;
   };
 
-  
-
   std::vector<BUSOptionSubstr> v;
   if (!convert_commas_to_vector(bcstr,v)) {
     return false;
@@ -892,7 +879,6 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
   }
   busopt.umi = std::move(v);
 
-
   if (!convert_commas_to_vector(seqstr, v)) {
     return false;
   }
@@ -905,8 +891,6 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
 
   return true;
 }
-
-
 
 void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
   int peek_flag = 0;
@@ -993,7 +977,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       if (!S_ISDIR(stFileInfo.st_mode)) {
         cerr << "Error: file " << opt.output << " exists and is not a directory" << endl;
         ret = false;
-      } 
+      }
     } else {
       // create directory
       if (my_mkdir(opt.output.c_str(), 0777) == -1) {
@@ -1011,7 +995,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     if (n != 0 && n < opt.threads) {
       cerr << "Warning: you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
-    }    
+    }
   }
   if (!opt.technology.empty() && opt.batch_mode) {
     cerr << "Error: cannot specify both -x and --batch" << endl;
@@ -1180,7 +1164,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     return ret;
   } else {
     auto& busopt = opt.busOptions;
-   
+
     if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;
       busopt.paired = false;
@@ -1207,13 +1191,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,42,48));
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(0,30,38));  
+        busopt.bc.push_back(BUSOptionSubstr(0,30,38));
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(0,0,0));
         busopt.umi.push_back(BUSOptionSubstr(1,42,48));
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(1,30,38));  
+        busopt.bc.push_back(BUSOptionSubstr(1,30,38));
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
@@ -1278,14 +1262,14 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         vector<std::string> errorList;
         //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
         bool valid = ParseTechnology(opt.technology, busopt, errorList);
-        
+
         if (busopt.seq.size() == 2 && !opt.single_end) {
           busopt.paired = true;
         }
-        
+
         if(!valid) {
           /*
-          busopt.nfiles = files.size(); 
+          busopt.nfiles = files.size();
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
@@ -1344,13 +1328,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,42,48));
         busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(0,30,38)); 
+        busopt.bc.push_back(BUSOptionSubstr(0,30,38));
       } else if (opt.technology == "INDROPSV2") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(0,0,0));
         busopt.umi.push_back(BUSOptionSubstr(1,42,48));
         busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(1,30,38)); 
+        busopt.bc.push_back(BUSOptionSubstr(1,30,38));
       } else if (opt.technology == "INDROPSV3") {
         busopt.nfiles = 3;
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
@@ -1415,17 +1399,17 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         vector<int> files;
         vector<BUSOptionSubstr> values;
         vector<BUSOptionSubstr> bcValues;
-        vector<std::string> errorList;        
+        vector<std::string> errorList;
         //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
         bool valid = ParseTechnology(opt.technology, busopt, errorList);
-        
+
         if (busopt.seq.size() == 2 && !opt.single_end) {
           busopt.paired = true;
         }
-        
+
         if(valid) {
           /*
-          busopt.nfiles = files.size(); 
+          busopt.nfiles = files.size();
           for(int i = 0; i < bcValues.size(); i++) {
             busopt.bc.push_back(bcValues[i]);
           }
@@ -1442,12 +1426,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       }
     }
   }
-  
+
   if (opt.tagsequence.empty() && (opt.technology == "SMARTSEQ3")) {
     opt.tagsequence = "ATTGCGCAATG";
     cerr << "[bus] Using " <<  opt.tagsequence << " as UMI tag sequence" << endl;
   }
-  
+
   if (opt.strand_specific && opt.strand == ProgramOptions::StrandType::None) {
     opt.strand_specific = false; // User specified --unstranded
   } else if (!opt.strand_specific && ret) {
@@ -1462,7 +1446,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       cerr << "[bus] Note: Strand option was not specified; setting it to --unstranded for specified technology" << endl;
     }
   }
-  
+
   if (!opt.tagsequence.empty()) {
     opt.busOptions.umi[0].start += opt.tagsequence.length();
     if (opt.busOptions.umi[0].start >= opt.busOptions.umi[0].stop) {
@@ -1470,7 +1454,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (!opt.single_end && !opt.busOptions.paired) {
       cerr << "Error: Paired reads are not compatible with the specified technology" << endl;
       ret = false;
@@ -1505,8 +1489,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
   }
 
-  
-
   if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
@@ -1524,8 +1506,8 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 
   bool ret = true;
 
-  if (opt.k <= 1 || opt.k >= Kmer::MAX_K) {
-    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and  maximum is " << (Kmer::MAX_K -1) << endl;
+  if (opt.k <= 1 || opt.k >= MAX_KMER_SIZE) {
+    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and  maximum is " << (MAX_KMER_SIZE -1) << endl;
     ret = false;
   }
 
@@ -1606,7 +1588,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
             << "       (use --single for processing single-end reads)" << endl;
         ret = false;
       }
-    }    
+    }
   }
 
   if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
@@ -1650,7 +1632,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     cerr << "Error: invalid value for minimum range " << opt.min_range << endl;
     ret = false;
   }
-  
+
   if (opt.genomebam) {
     if (!opt.gtfFile.empty()) {
       struct stat stFileInfo;
@@ -1672,9 +1654,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
         ret = false;
       }
     }
-    
   }
-
 
   if (opt.output.empty()) {
     cerr << "Error: need to specify output directory " << opt.output << endl;
@@ -1739,7 +1719,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
     ret = false;
   }
 
-  #ifndef USE_HDF5  
+  #ifndef USE_HDF5
   if (opt.bootstrap > 0 && !opt.plaintext) {
     cerr << "Warning: kallisto was not compiled with HDF5 support so no bootstrapping" << endl
          << "will be performed. Run quant with --plaintext option or recompile with" << endl
@@ -1751,9 +1731,9 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 }
 
 bool CheckOptionsTCCQuant(ProgramOptions& opt) {
-  
+
   bool ret = true;
-  
+
   cerr << endl;
   // check for index
   if (opt.index.empty() && opt.transcriptsFile.empty()) {
@@ -1789,7 +1769,7 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (opt.ecFile.empty() && !opt.transcriptsFile.empty()) {
     cerr << ERROR_STR << " equivalence class file must be supplied if transcripts file is supplied " << opt.tccFile << endl;
     ret = false;
@@ -1803,7 +1783,7 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (!opt.fldFile.empty()) {
     struct stat stFileInfo;
     auto intStat = stat(opt.fldFile.c_str(), &stFileInfo);
@@ -1812,12 +1792,12 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (!opt.genemap.empty() && !opt.gtfFile.empty()) {
     cerr << ERROR_STR << " Cannot supply both --genemap and --gtf" << endl;
     ret = false;
   }
-  
+
   if (!opt.gtfFile.empty()) {
     struct stat stFileInfo;
     auto intStat = stat(opt.gtfFile.c_str(), &stFileInfo);
@@ -1826,7 +1806,7 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (!opt.genemap.empty()) {
     struct stat stFileInfo;
     auto intStat = stat(opt.genemap.c_str(), &stFileInfo);
@@ -1835,32 +1815,32 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if ((opt.fld != 0.0 || opt.sd != 0.0) && !opt.fldFile.empty()) {
     cerr << ERROR_STR <<" cannot supply mean or sd while also supplying a fragment length distribution file" << endl;
     ret = false;
   }
-  
+
   if ((opt.fld != 0.0 && opt.sd == 0.0) || (opt.sd != 0.0 && opt.fld == 0.0)) {
     cerr << ERROR_STR << " cannot supply mean/sd without supplying both -l and -s" << endl;
     ret = false;
   }
-  
+
   if (opt.index.empty() && (!opt.fldFile.empty() || opt.fld != 0.0 || opt.sd != 0.0)) {
     cerr << ERROR_STR << " cannot supply fragment length information unless a kallisto index is provided" << endl;
     ret = false;
   }
-  
+
   if (ret && opt.fld > 0.0 && opt.sd > 0.0) {
     cerr << "[tcc] fragment length distribution is truncated gaussian with mean = " <<
       opt.fld << ", sd = " << opt.sd << endl;
   }
-  
+
   if (opt.fld < 0.0) {
     cerr << ERROR_STR << " invalid value for mean fragment length " << opt.fld << endl;
     ret = false;
   }
-  
+
   if (opt.sd < 0.0) {
     cerr << ERROR_STR << " invalid value for fragment length standard deviation " << opt.sd << endl;
     ret = false;
@@ -1897,7 +1877,7 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
            << ", but only " << n << " cores on the machine" << endl;
     }
   }
-  
+
   if (opt.bootstrap < 0) {
     cerr << "Error: number of bootstrap samples must be a non-negative integer." << endl;
     ret = false;
@@ -1924,13 +1904,12 @@ bool CheckOptionsMerge(ProgramOptions& opt) {
     }
   }
 
-    
   if (opt.files.size() == 0) {
     cerr << ERROR_STR << " Missing input directory to merge" << endl;
     ret = false;
   } else {
-    struct stat stFileInfo;      
-    for (auto& fn : opt.files) {        
+    struct stat stFileInfo;
+    for (auto& fn : opt.files) {
       auto intStat = stat(fn.c_str(), &stFileInfo);
       if (intStat != 0) {
         cerr << ERROR_STR << " input directory not found " << fn << endl;
@@ -1941,7 +1920,7 @@ bool CheckOptionsMerge(ProgramOptions& opt) {
           ret = false;
         }
 
-        
+
         if (!checkFileExists(fn + "/matrix.ec")) {
           cerr << "Error: file " << fn << "/matrix.ec was not found, check that it was run in batch mode" << endl;
           ret = false;
@@ -1986,7 +1965,7 @@ bool CheckOptionsMerge(ProgramOptions& opt) {
     }
   }
 
-  
+
   return ret;
 }
 
@@ -2007,7 +1986,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   assert(!(opt.batch_bus && opt.batch_bus_write));
   bool opt_bus_mode = opt.batch_bus || opt.batch_bus_write;
 
@@ -2021,17 +2000,17 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (opt_bus_mode && opt.umi) {
     cerr << ERROR_STR << " UMI cannot be run with --bus" << endl;
-    ret = false;   
+    ret = false;
   }
 
   // check for read files
   if (!opt.batch_mode) {
     if (opt.umi) {
       cerr << ERROR_STR << " UMI must be run in batch mode, use --batch option" << endl;
-      ret = false;      
+      ret = false;
     }
     if (opt_bus_mode && ret) {
       cerr << "--bus specified; will try running read files in batch mode" << endl;
@@ -2075,8 +2054,8 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       cerr << ERROR_STR << " Missing read files" << endl;
       ret = false;
     } else {
-      struct stat stFileInfo;      
-      for (auto& fn : opt.files) {        
+      struct stat stFileInfo;
+      for (auto& fn : opt.files) {
         auto intStat = stat(fn.c_str(), &stFileInfo);
         if (intStat != 0) {
           cerr << ERROR_STR << " file not found " << fn << endl;
@@ -2157,7 +2136,7 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
       ret = false;
     }
   }
-  
+
   if (opt.umi) {
     opt.single_end = true;
     if (opt.fld != 0.0 || opt.sd != 0.0) {
@@ -2243,11 +2222,11 @@ bool CheckOptionsPseudo(ProgramOptions& opt) {
     cerr << "Error: Pseudobam not supported yet in pseudo mode, use quant mode to obtain BAM files" << endl;
     ret = false;
   }
-  
+
   if (!opt_bus_mode && opt.num) {
     cerr << "Warning: --bus option was not used, so --num option will be ignored" << endl;
   }
-  
+
   if (opt_bus_mode && ret) { // Set up BUS options
     auto& busopt = opt.busOptions;
     busopt.seq.push_back(BUSOptionSubstr(0,0,0));
@@ -2285,7 +2264,7 @@ bool CheckOptionsInspect(ProgramOptions& opt) {
 
   if (!opt.bedFile.empty() || !opt.gtfFile.empty()) {
     opt.pseudobam = true;
-    opt.genomebam = true;    
+    opt.genomebam = true;
   }
 
   if (opt.genomebam) {
@@ -2382,7 +2361,7 @@ void usage() {
        << "    bus           Generate BUS files for single-cell data " << endl
        << "    merge         Merges several batch runs " << endl
        << "    h5dump        Converts HDF5-formatted results to plaintext" << endl
-       << "    inspect       Inspects and gives information about an index" << endl 
+       << "    inspect       Inspects and gives information about an index" << endl
        << "    version       Prints version information" << endl
        << "    cite          Prints citation information" << endl << endl
        << "Running kallisto <CMD> without arguments prints usage information for <CMD>"<< endl << endl;
@@ -2423,7 +2402,7 @@ void usageIndex() {
        << "Required argument:" << endl
        << "-i, --index=STRING          Filename for the kallisto index to be constructed " << endl << endl
        << "Optional argument:" << endl
-       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (Kmer::MAX_K-1) << ")" << endl
+       << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (MAX_KMER_SIZE-1) << ")" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << endl;
 
@@ -2444,7 +2423,6 @@ void usageInspect() {
        << "-G, --gfa=STRING        Filename for GFA output of T-DBG" << endl
        << "-g, --gtf=STRING        Filename for GTF file" << endl
        << "-b, --bed=STRING        Filename for BED output (default: index + \".bed\")" << endl << endl;
- 
 }
 
 void usageEM(bool valid_input = true) {
@@ -2546,7 +2524,7 @@ void usageTCCQuant(bool valid_input = true) {
     cout << "kallisto " << KALLISTO_VERSION << endl
          << "Quantifies abundance from pre-computed transcript-compatibility counts" << endl << endl;
   }
-  
+
   cout << "Usage: kallisto quant-tcc [arguments] transcript-compatibility-counts-file" << endl << endl
        << "Required arguments:" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
@@ -2627,8 +2605,8 @@ int main(int argc, char *argv[]) {
         Kmer::set_k(opt.k);
         // TODO:
         //KmerIndex index(opt);
-        index.BuildTranscripts(opt);
-        index.write(opt.index);
+        //index.BuildTranscripts(opt);
+        //index.write(opt.index);
       }
       cerr << endl;
     } else if (cmd == "inspect") {
@@ -2643,12 +2621,12 @@ int main(int argc, char *argv[]) {
       } else {
         // TODO:
         //KmerIndex index(opt);
-        index.load(opt);
-        InspectIndex(index,opt);
+        //index.load(opt);
+        //InspectIndex(index,opt);
       }
     } else if (cmd == "bus") {
       if (argc ==2) {
-        usageBus();        
+        usageBus();
         return 0;
       }
       ParseOptionsBus(argc-1, argv+1,opt);
@@ -2658,28 +2636,29 @@ int main(int argc, char *argv[]) {
       } else if (opt.batch_mode) { // kallisto pseudo
         // pseudoalign the reads
         // TODO:
-        //KmerIndex index(opt);
+        /*
+        KmerIndex index(opt);
         index.load(opt);
-        
+
         MinCollector collection(index, opt);
         int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
-        
+
         Transcriptome model; // empty model
-        if (!opt.gtfFile.empty()) {          
+        if (!opt.gtfFile.empty()) {
           model.parseGTF(opt.gtfFile, index, opt, true);
         }
         MasterProcessor MP(index, opt, collection, model);
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
-        } else {          
+        } else {
           num_processed = ProcessBatchReads(MP,opt);
         }
-        
+
         std::string call = argv_to_string(argc, argv);
-        
+
         if (!opt.batch_bus) {
           for (int id = 0; id < MP.batchCounts.size(); id++) {
             const auto &cc = MP.batchCounts[id];
@@ -2692,19 +2671,19 @@ int main(int argc, char *argv[]) {
           }
         } else {
           for (int i = 0; i < index.num_trans; i++) {
-            num_unique += collection.counts[i];          
+            num_unique += collection.counts[i];
           }
           for (int i = 0; i < collection.counts.size(); i++) {
             num_pseudoaligned += collection.counts[i];
           }
         }
-        
+
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
         for (const auto &t : index.target_names_) {
           transout_f << t << "\n";
         }
         transout_f.close();
-        
+
         plaintext_aux(
           opt.output + "/run_info.json",
           std::string(std::to_string(index.num_trans)),
@@ -2718,7 +2697,7 @@ int main(int argc, char *argv[]) {
           call);
 
         cerr << endl;
-        
+
         std::string prefix = opt.output + "/matrix";
         std::string ecfilename = prefix + ".ec";
         std::string tccfilename = prefix + ".tcc.mtx";
@@ -2726,7 +2705,7 @@ int main(int argc, char *argv[]) {
         std::string genelistname = prefix + ".genelist.txt";
         std::string busbarcodelistname = prefix + ".barcodes";
         std::string busoutputname = opt.output + "/output.bus";
-        
+
         writeECList(ecfilename, index);
         writeCellIds(cellnamesfilename, opt.batch_ids);
         if (opt.batch_bus || opt.batch_bus_write) {
@@ -2764,6 +2743,7 @@ int main(int argc, char *argv[]) {
           // write out gene info
           writeGeneList(genelistname, model);
         }
+        */
       } else { // kallisto bus -x
         int num_trans, index_version;
         int64_t num_processed = 0;
@@ -2773,9 +2753,9 @@ int main(int argc, char *argv[]) {
         opt.bus_mode = true;
         opt.single_end = false;
         // TODO:
-        //KmerIndex index(opt);
+        /*
+        KmerIndex index(opt);
         index.load(opt);
-
 
         bool guessChromosomes = false;
         Transcriptome model; // empty
@@ -2788,8 +2768,7 @@ int main(int argc, char *argv[]) {
           model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
         }
 
-
-        MinCollector collection(index, opt); 
+        MinCollector collection(index, opt);
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessBUSReads(MP, opt);
 
@@ -2821,9 +2800,8 @@ int main(int argc, char *argv[]) {
         } else {
           umilen = opt.busOptions.getUMILength();
         }
-        
-        
-        if (write) {          
+
+        if (write) {
           std::FILE* fp = std::fopen((opt.output + "/output.bus").c_str(), "r+b");
           if (fp != nullptr) {
             std::fseek(fp,8,SEEK_SET); // skip magic string and version
@@ -2835,7 +2813,6 @@ int main(int argc, char *argv[]) {
           }
         }
 
-
         writeECList(opt.output + "/matrix.ec", index);
 
         // write transcript names
@@ -2844,7 +2821,7 @@ int main(int argc, char *argv[]) {
           transout_f << t << "\n";
         }
         transout_f.close();
-        
+
         std::vector<int> fld;
         if (opt.busOptions.paired) {
           fld = collection.flens; // copy
@@ -2869,13 +2846,13 @@ int main(int argc, char *argv[]) {
         // gather stats
         num_unique = 0;
         for (int i = 0; i < index.num_trans; i++) {
-          num_unique += collection.counts[i];          
+          num_unique += collection.counts[i];
         }
         num_pseudoaligned = 0;
         for (int i = 0; i < collection.counts.size(); i++) {
           num_pseudoaligned += collection.counts[i];
         }
-        
+
         // write json file
         std::string call = argv_to_string(argc, argv);
         plaintext_aux(
@@ -2896,11 +2873,11 @@ int main(int argc, char *argv[]) {
           MP.processAln(em, false);
         }
 
-
         cerr << endl;
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
+        */
       }
     } else if (cmd == "merge") {
       if (argc == 2) {
@@ -2910,12 +2887,12 @@ int main(int argc, char *argv[]) {
       ParseOptionsMerge(argc -1, argv + 1, opt);
       if (!CheckOptionsMerge(opt)) {
         usageMerge();
-        exit(1);        
+        exit(1);
       } else {
         int num_trans, index_version;
         int64_t num_processed, num_pseudoaligned, num_unique;
-  
-        bool b = MergeBatchDirectories(opt, num_trans, num_processed, num_pseudoaligned, num_unique, index_version);        
+
+        bool b = MergeBatchDirectories(opt, num_trans, num_processed, num_pseudoaligned, num_unique, index_version);
         if (!b) {
           exit(1);
         }
@@ -2947,8 +2924,9 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // run the em algorithm
-        // TODO:
-        //KmerIndex index(opt);
+        // TODO: Let's do this first
+        /*
+        KmerIndex index(opt);
         index.load(opt);
         if (opt.fusion) {
           // need full transcript sequences
@@ -2957,24 +2935,21 @@ int main(int argc, char *argv[]) {
 
         bool guessChromosomes = false;
         Transcriptome model;
-        if (opt.genomebam) {          
+        if (opt.genomebam) {
           if (!opt.chromFile.empty()) {
             model.loadChromosomes(opt.chromFile);
           } else {
             guessChromosomes = true;
-          }          
+          }
           model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
           //model.loadTranscriptome(index, in, opt);
         }
 
-
-        
         int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
 
-      
-        MinCollector collection(index, opt);        
+        MinCollector collection(index, opt);
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessReads(MP, opt);
 
@@ -3007,15 +2982,14 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-        /*for (int i = 0; i < collection.bias3.size(); i++) {
-          std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
-          }*/
+        //for (int i = 0; i < collection.bias3.size(); i++) {
+          //std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
+        //}
 
         EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
-
 
         #ifdef USE_HDF5
         H5Writer writer;
@@ -3027,7 +3001,7 @@ int main(int argc, char *argv[]) {
         #endif // USE_HDF5
 
         for (int i = 0; i < index.num_trans; i++) {
-          num_unique += collection.counts[i];          
+          num_unique += collection.counts[i];
         }
         for (int i = 0; i < collection.counts.size(); i++) {
           num_pseudoaligned += collection.counts[i];
@@ -3084,7 +3058,7 @@ int main(int argc, char *argv[]) {
                 << opt.bootstrap << endl;
               n_threads = opt.bootstrap;
             }
-            #ifdef USE_HDF5            
+            #ifdef USE_HDF5
             BootstrapThreadPool pool(opt.threads, seeds, collection.counts, index,
                 collection, em.eff_lens_, opt, &writer, fl_means);
             #endif
@@ -3109,21 +3083,22 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.pseudobam) {
-        
           MP.processAln(em, true);
         }
-        
 
         cerr << endl;
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
+        */
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {
         usageEMOnly();
         return 0;
       }
+      // TODO:
+      /*
       ParseOptionsEMOnly(argc-1,argv+1,opt);
       if (!CheckOptionsEM(opt, true)) {
         usageEMOnly();
@@ -3131,7 +3106,7 @@ int main(int argc, char *argv[]) {
       } else {
         // run the em algorithm
         // TODO:
-        //KmerIndex index(opt);
+        KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         MinCollector collection(index, opt);
         collection.loadCounts(opt);
@@ -3169,9 +3144,9 @@ int main(int argc, char *argv[]) {
 
         if (!opt.plaintext) {
           // setting num_processed to 0 because quant-only is for debugging/special ops
-          /* writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
+          //writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.target_lens_);*/
+          //writer.write_main(em, index.target_names_, index.target_lens_);
         } else {
           plaintext_aux(
               opt.output + "/run_info.json",
@@ -3230,8 +3205,8 @@ int main(int argc, char *argv[]) {
               n_threads = opt.bootstrap;
             }
 
-            /*BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
-                collection, em.eff_lens_, opt, writer, fl_means);*/
+            //BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
+            //    collection, em.eff_lens_, opt, writer, fl_means);
           } else {
             for (auto b = 0; b < B; ++b) {
               Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
@@ -3253,11 +3228,14 @@ int main(int argc, char *argv[]) {
           exit(1);
         }
       }
+      */
     } else if (cmd == "quant-tcc") {
       if (argc==2) {
         usageTCCQuant();
         return 0;
       }
+      // TODO
+      /*
       ParseOptionsTCCQuant(argc-1,argv+1,opt);
       if (!CheckOptionsTCCQuant(opt)) {
         usageTCCQuant();
@@ -3308,7 +3286,7 @@ int main(int argc, char *argv[]) {
               }
               ss >> row >> col >> val;
               if (row > nrow || col > ncol) {
-                std::cerr << "Error: TCC matrix file is malformed; " 
+                std::cerr << "Error: TCC matrix file is malformed; "
                           << "row numbers or column numbers exceed the dimensions of the matrix." << std::endl;
                 exit(1);
               }
@@ -3349,7 +3327,7 @@ int main(int argc, char *argv[]) {
                     << pretty_num(ncol) << ", expected " << pretty_num(num_ecs) << std::endl;
           exit(1);
         }
-        
+
         std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
         Abundance_mat.resize(nrow, {});
         Abundance_mat_gene.resize(nrow, {});
@@ -3391,21 +3369,21 @@ int main(int argc, char *argv[]) {
                 getline(ss, tmp_val, ' ');
                 int tmp_val_num = std::atoi(tmp_val.c_str());
                 if (tmp_val_num < 0) {
-                  std::cerr << "Error: Fragment length distribution file contains invalid value: " 
+                  std::cerr << "Error: Fragment length distribution file contains invalid value: "
                             << tmp_val_num << std::endl;
                   exit(1);
                 }
                 tmp_vec.push_back(tmp_val_num);
               }
               if (tmp_vec.size() != MAX_FRAG_LEN) {
-                std::cerr << "Error: Fragment length distribution file contains a line with " 
+                std::cerr << "Error: Fragment length distribution file contains a line with "
                           << tmp_vec.size() << " values; expected: " << MAX_FRAG_LEN << std::endl;
                 exit(1);
               }
               FLDs.push_back(tmp_vec);
             }
             if (FLDs.size() != 1 && FLDs.size() != nrow) {
-              std::cerr << "Error: Fragment length distribution file contains " 
+              std::cerr << "Error: Fragment length distribution file contains "
                         << FLDs.size() << " valid lines; expected: " << nrow << std::endl;
               exit(1);
             }
@@ -3430,7 +3408,7 @@ int main(int argc, char *argv[]) {
           for (const auto &p : bc) {
             collection.counts[p.first] = p.second;
           }
-          
+
           std::vector<double> fl_means;
           if (calcEffLen) {
             if (opt.fld != 0.0) {
@@ -3455,7 +3433,7 @@ int main(int argc, char *argv[]) {
 
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
           em.run(10000, 50, false, false);
-          
+
           if (isMatrixFile) { // Update abundances matrix
             auto &ab_m = Abundance_mat[id];
             auto &tpm_m = TPM_mat[id];
@@ -3497,7 +3475,7 @@ int main(int argc, char *argv[]) {
                                      em.alpha_, em.eff_lens_, model);
             }
           }
-          
+
           if (opt.bootstrap > 0 && !isMatrixFile) {
             auto B = opt.bootstrap;
             std::mt19937_64 rand;
@@ -3517,7 +3495,7 @@ int main(int argc, char *argv[]) {
             cerr << endl;
           }
         }; // end of EM_lambda
-        
+
         std::vector<std::thread> workers;
         int num_ids = nrow;
         int id = 0;
@@ -3533,9 +3511,8 @@ int main(int argc, char *argv[]) {
           }
         }
         std::cerr << " done" << std::endl;
-        
+
         cerr << endl;
-        
 
         if (isMatrixFile) {
           writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
@@ -3550,6 +3527,7 @@ int main(int argc, char *argv[]) {
           writeFLD(fldfilename, FLD_mat);
         }
       }
+      */
     } else if (cmd == "pseudo") {
       if (argc==2) {
         usagePseudo();
@@ -3561,6 +3539,8 @@ int main(int argc, char *argv[]) {
         usagePseudo(false);
         exit(1);
       } else {
+        // TODO:
+        /*
         // pseudoalign the reads
         KmerIndex index(opt);
         index.load(opt);
@@ -3571,14 +3551,14 @@ int main(int argc, char *argv[]) {
         int64_t num_unique = 0;
 
         Transcriptome model; // empty model
-        if (!opt.gtfFile.empty()) {          
+        if (!opt.gtfFile.empty()) {
           model.parseGTF(opt.gtfFile, index, opt, true);
         }
         MasterProcessor MP(index, opt, collection, model);
         if (!opt.batch_mode) {
           num_processed = ProcessReads(MP, opt);
           collection.write((opt.output + "/pseudoalignments"));
-        } else {          
+        } else {
           num_processed = ProcessBatchReads(MP,opt);
         }
 
@@ -3596,13 +3576,13 @@ int main(int argc, char *argv[]) {
           }
         } else {
           for (int i = 0; i < index.num_trans; i++) {
-            num_unique += collection.counts[i];          
+            num_unique += collection.counts[i];
           }
           for (int i = 0; i < collection.counts.size(); i++) {
             num_pseudoaligned += collection.counts[i];
           }
         }
-        
+
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
         for (const auto &t : index.target_names_) {
           transout_f << t << "\n";
@@ -3621,19 +3601,17 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
-        
-        
         std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
         std::vector<std::pair<double, double>> FLD_mat;
-          
+
         if (opt.pseudo_quant) {
           int n_batch_files = opt.batch_files.size();
           Abundance_mat.resize(n_batch_files, {});
           FLD_mat.resize(n_batch_files, {});
 
           std::cerr << "[quant] Running EM algorithm for each cell .."; std::cerr.flush();
-          
-          auto EM_lambda = [&](int id) {          
+
+          auto EM_lambda = [&](int id) {
             MinCollector collection(index, opt);
             collection.flens = MP.batchFlens[id];
             collection.counts.assign(index.ecmap.size(), 0);
@@ -3689,14 +3667,13 @@ int main(int argc, char *argv[]) {
               workers.emplace_back(std::thread(EM_lambda, id));
               //workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
             }
-            
+
             for (int i = 0; i < nt; i++) {
               workers[i].join();
             }
           }
 
           std::cerr << " done" << std::endl;
-
 
         }
         cerr << endl;
@@ -3755,7 +3732,7 @@ int main(int argc, char *argv[]) {
           // write out gene info
           std::vector<std::vector<std::pair<int32_t, double>>> geneCounts;
           geneCounts.assign(MP.batchCounts.size(), {});
-          
+
           std::unordered_set<int> gene_ids;
           gene_ids.reserve(100);
           int n_batch_files = opt.batch_files.size();
@@ -3763,12 +3740,12 @@ int main(int argc, char *argv[]) {
 
           for (int id = 0; id < n_batch_files; id++) {
             auto& sgc = geneCounts[id];
-            gc.assign(model.genes.size(), 0.0);  
+            gc.assign(model.genes.size(), 0.0);
             const auto& bc = MP.batchCounts[id];
             for (auto &p : bc) {
               int ec = p.first;
               if (ec < 0) {
-                continue; 
+                continue;
               }
               if (ec < index.num_trans) {
                 int g_id = model.transcripts[ec].gene_id;
@@ -3794,27 +3771,23 @@ int main(int argc, char *argv[]) {
 
             for (int j = 0; j < gc.size(); j++) {
               if (gc[j] > 0.0) {
-                sgc.push_back({j, gc[j]});                
+                sgc.push_back({j, gc[j]});
               }
             }
           }
-
-
-         
 
           writeGeneList(genelistname, model);
           writeSparseBatchMatrix(genecountname, geneCounts, model.genes.size());
         }
 
-
-        if (opt.pseudobam) {       
+        if (opt.pseudobam) {
           std::vector<double> fl_means(index.target_lens_.size(),0.0);
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
           MP.processAln(em, false);
         }
+        */
       }
 
-      
     } else if (cmd == "h5dump") {
 
       if (argc == 2) {

@@ -1959,6 +1959,10 @@ void AlnProcessor::operator()() {
 
 void AlnProcessor::processBufferTrans() {
   /* something simple where we can construct the bam records */
+
+  // TODO:
+  // Fix this for use with Bifrost
+  /*
   std::vector<bam1_t> bv;
 
 
@@ -2355,11 +2359,16 @@ void AlnProcessor::processBufferTrans() {
      delete[] b.data;
   }
   bv.clear();
+  */
 }
 
 
 void AlnProcessor::processBufferGenome() {
   /* something simple where we can construct the bam records */
+
+  // TODO:
+  // Fix this for use with Bifrost
+  /*
   std::vector<bam1_t> bv;
   int idnum = 0;
 
@@ -2868,11 +2877,11 @@ void AlnProcessor::processBufferGenome() {
       // invariant bp[i-1].pos <= b.pos < bp[j].pos
       for (int r = 0; r <= logk; r++) {
         int m = (i+j)/2;
-        /*assert(i <= j);
-        assert(i == 0 || bp[i-1] <= pos);
-        assert(j == k || bp[j] > pos);         
-        assert(i <= m);
-        assert(m <= j);*/
+        //assert(i <= j);
+        //assert(i == 0 || bp[i-1] <= pos);
+        //assert(j == k || bp[j] > pos);         
+        //assert(i <= m);
+        //assert(m <= j);
         if (pos < bp[m]) {
           j = m;
         } else {
@@ -2892,8 +2901,9 @@ void AlnProcessor::processBufferGenome() {
   for (auto &b : bv) {
     delete[] b.data;
     // std::cerr << "deleting" << b.id  << std::endl;
-  }  
-  bv.clear();  
+  }
+  bv.clear();
+  */
 }
 
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
