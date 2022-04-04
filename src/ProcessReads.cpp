@@ -25,6 +25,7 @@
 #include "Fusion.hpp"
 #include "BUSData.h"
 #include "BUSTools.h"
+#include "Node.hpp"
 #include <htslib/kstring.h>
 #include <unordered_set>
 
@@ -59,14 +60,14 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
-int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val) {
+int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>&, int>> &v, UnitigMap<Node>& um) {
   int p = -1;
   if (!v.empty()) {
     val = v[0].first;
     p = v[0].second;
     for (auto &x : v) {
       if (x.second < p) {
-        val = x.first;
+        um = x.first;
         p = x.second;
       }
     }
@@ -1078,7 +1079,7 @@ void ReadProcessor::operator()() {
 
 void ReadProcessor::processBuffer() {
   // set up thread variables  
-  std::vector<std::pair<KmerEntry,int>> v1, v2;
+  std::vector<std::pair<UnitigMap<Node>&, int>> v1, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
 
@@ -1141,17 +1142,19 @@ void ReadProcessor::processBuffer() {
     u.clear();
 
     // process read
-    index.match(s1,l1, v1);
+    index.match(s1, l1, v1);
     if (paired) {
-      index.match(s2,l2, v2);
+      index.match(s2, l2, v2);
     }
 
     // collect the target information
     int ec = -1;
-    int r = tc.intersectKmers(v1, v2, !paired,u);
+    int r = tc.intersectKmers(v1, v2, !paired, u);
     if (u.empty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
-        searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
+        std:cerr << "TODO: Implement fusion" << std::endl;
+        exit(1);
+        //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
     } else {
       ec = tc.findEC(u);
@@ -1167,21 +1170,21 @@ void ReadProcessor::processBuffer() {
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
       int p = -1;
-      KmerEntry val;
+      UnitigMap<Node> um;
       Kmer km;
 
       if (!v1.empty()) {
-        p = findFirstMappingKmer(v1,val);
-        km = Kmer((s1+p));
+        p = findFirstMappingKmer(v1, um);
+        km = um.getMappedHead();
       }
       if (!v2.empty()) {
-        p = findFirstMappingKmer(v2,val);
-        km = Kmer((s2+p));
+        p = findFirstMappingKmer(v2, um);
+        km = um.getMappedHead();
       }
 
       // for each transcript in the pseudoalignment
       for (auto tr : u) {
-        auto x = index.findPosition(tr, km, val, p);
+        auto x = index.findPosition(tr, km, um, p);
         // if the fragment is within bounds for this transcript, keep it
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
           vtmp.push_back(tr);

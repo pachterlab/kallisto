@@ -2925,7 +2925,6 @@ int main(int argc, char *argv[]) {
       } else {
         // run the em algorithm
         // TODO: Let's do this first
-        /*
         KmerIndex index(opt);
         index.load(opt);
         if (opt.fusion) {
@@ -2942,7 +2941,6 @@ int main(int argc, char *argv[]) {
             guessChromosomes = true;
           }
           model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
-          //model.loadTranscriptome(index, in, opt);
         }
 
         int64_t num_processed = 0;
@@ -2952,6 +2950,7 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessReads(MP, opt);
+        /*
 
         // save modified index for future use
         if (opt.write_index) {

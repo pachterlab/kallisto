@@ -5,7 +5,7 @@
 #include <zlib.h>
 
 char strandToChar(bool s) {
-  return (s) ? '+' : '-';  
+  return (s) ? '+' : '-';
 }
 
 bool charToStrand(char c) {
@@ -21,14 +21,14 @@ bool charToStrand(char c) {
 
 int chrLookup(const Transcriptome& model, const std::string chr) {
   auto cit = model.chrNameToId.find(chr);
-  if (cit != model.chrNameToId.end()) {      
+  if (cit != model.chrNameToId.end()) {
     int c = cit->second;
     assert(c >= 0);
     //assert(c < chr.size());
     return c;
   } else {
     return -1;
-  }  
+  }
 };
 
 bool Transcriptome::translateTrPosition(const int tr, const int pos, const int rlen, bool strand, TranscriptAlignment &aln) const {
@@ -39,17 +39,17 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
   aln.chr = model.chr;
   aln.cigar.clear();
   aln.chrpos = -1;
-  
+
 
   aln.strand = (strand == model.strand);
   int trpos;
   int rpos = 0; // how many bp of read have been matched
 
   int n_exons = model.exons.size();
-  
+
   if (model.strand) {
     trpos = pos;
-    if (trpos < 0) { 
+    if (trpos < 0) {
       // read starts a bit before the transcript, softclip to fit
       int softclip = -trpos;
       aln.cigar.push_back((softclip << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP);
@@ -58,21 +58,21 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
     }
     for (int i = 0; i < n_exons; i++) {
       auto& exon = model.exons[i];
-      int len = exon.stop - exon.start;      
+      int len = exon.stop - exon.start;
       if (trpos < len) {
         if (rpos == 0) {
           aln.chrpos = exon.start + trpos; // left-most position
         }
-        if (trpos + rlen <= len) {          
+        if (trpos + rlen <= len) {
           aln.cigar.push_back(((rlen-rpos)<< BAM_CIGAR_SHIFT) | BAM_CMATCH); // rlen-trpos of M
           rpos = rlen;
           break; // end of the read
         } else {
           int mlen = 0;
           if (trpos < 0) { // match begins before this exon, extends over it
-            mlen = len;            
-          } else {     
-            mlen = len - trpos;     
+            mlen = len;
+          } else {
+            mlen = len - trpos;
           }
           aln.cigar.push_back((mlen << BAM_CIGAR_SHIFT) | BAM_CMATCH);
           if (i +1 < n_exons) {
@@ -89,7 +89,7 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
   } else {
     trpos = model.length - pos - rlen; // counting from back from right most transcript position
     if (trpos < 0) {
-      int softclip = -trpos;      
+      int softclip = -trpos;
       aln.cigar.push_back((softclip << BAM_CIGAR_SHIFT) | BAM_CSOFT_CLIP); // soft clip
       rpos += softclip;
       aln.chrpos = model.start;
@@ -108,9 +108,9 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
         } else {
           int mlen = 0;
           if (trpos < 0) { // match begins before this exon, extends over it
-            mlen = len;            
-          } else {     
-            mlen = len - trpos;     
+            mlen = len;
+          } else {
+            mlen = len - trpos;
           }
           aln.cigar.push_back((mlen << BAM_CIGAR_SHIFT) | BAM_CMATCH);
           if (i > 0) {
@@ -135,14 +135,14 @@ void Transcriptome::loadChromosomes(const std::string &chrom_fn) {
   std::string type;
   while (in.good()) {
     int id = chr.size();
-    Chromosome c;      
+    Chromosome c;
     c.len = -1;
     in >> c.name >> c.len;
     if (!c.name.empty() && c.len >= 0) {
       chr.push_back(c);
       chrNameToId.insert({c.name,id});
     }
-    std::getline(in,type); // clear end of line   
+    std::getline(in,type); // clear end of line
   }
 }
 
@@ -154,7 +154,6 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
   std::string gtype, ttype;
   std::string gene_id, tr_id, chr_id;
 
-  
   for (int i = 0; i < index.num_trans; i++) {
     TranscriptModel tr;
     tr.id = i;
@@ -165,9 +164,6 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
     transcripts.push_back(std::move(tr));
     trNameToId.insert({index.target_names_[i], i});
   }
-
-
-  
 
   int tr_extras = 0;
   //std::unordered_map<std::string,int>
@@ -181,37 +177,37 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       if (model.chr == -1) {
         std::cerr << "Error: chromosome " << chr_id << " not defined before reference" << std::endl;
         assert(false);
-      }      
+      }
       model.id =  genes.size();
       model.strand = charToStrand(strand);
-      
+
       geneNameToId.insert({model.name, model.id});
       in >> line; // rest of transcripts, ignore for now
       genes.push_back(model);
-      
+
     } else if (type == "TRANSCRIPT") {
       TranscriptModel model;
       char strand = '?';
       in >> tr_id >> gene_id >> chr_id >> ttype >> strand >> model.start >> model.stop;
       auto it = trNameToId.find(tr_id);
       if (it != trNameToId.end()) {
-        model.id = it->second;        
+        model.id = it->second;
       } else {
         tr_extras++;
         //std::cerr << "Warning: transcript " << tr_id << " is defined in GTF but not in FASTA" << std::endl;
         std::getline(in,line);
-        continue;        
+        continue;
       }
 
       model.chr = chrLookup(*this, chr_id);
       if (model.chr == -1) {
-        std::cerr << "Error: chromosome " << chr_id << " not definede before reference" << std::endl;        
+        std::cerr << "Error: chromosome " << chr_id << " not definede before reference" << std::endl;
         assert(false);
-      }      
+      }
 
-      model.strand = charToStrand(strand);    
+      model.strand = charToStrand(strand);
       model.name = tr_id;
-      
+
       in >> line;
       std::stringstream strline(line);
       while (std::getline(strline, segment, ';')) {
@@ -227,15 +223,15 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
       for (auto & exon : model.exons) {
         model.length += exon.stop - exon.start;
       }
-      std::getline(in, line); 
+      std::getline(in, line);
       int id = model.id;
       if (transcripts[id].chr == -1) {
         transcripts[id] = std::move(model);
       }
 
-    } else if (type == "CHROMOSOME") { 
+    } else if (type == "CHROMOSOME") {
       int id = chr.size();
-      Chromosome c;      
+      Chromosome c;
       in >> c.name >> c.len;
       chr.push_back(c);
       chrNameToId.insert({c.name,id});
@@ -257,7 +253,7 @@ void Transcriptome::loadTranscriptome(const KmerIndex& index, std::istream &in, 
     }
   }
   if (tr_bad > 0) {
-    std::cerr << "Warning: there were " << tr_bad << " transcripts out of " 
+    std::cerr << "Warning: there were " << tr_bad << " transcripts out of "
               << index.num_trans << " that are missing in the GTF file " << std::endl;
   }
 
@@ -270,7 +266,7 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
   if(line.empty() || line[0] == '#') {
     return 0;
   }
-  int p = 0, t=0; 
+  int p = 0, t=0;
   // read chr
   std::string schr;
   t = line.find('\t',p);
@@ -332,13 +328,13 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
     gmodel.chr = ichr;
     gmodel.start = start;
     gmodel.stop = stop;
-    gmodel.strand = (strand == '+') ? true : false;    
+    gmodel.strand = (strand == '+') ? true : false;
   } else if (type == Type::TRANSCRIPT) {
     tmodel.chr = ichr;
     tmodel.start = start;
     tmodel.stop = stop;
-    tmodel.strand = (strand == '+') ? true : false;    
-    tmodel.gene_id = -1;    
+    tmodel.strand = (strand == '+') ? true : false;
+    tmodel.gene_id = -1;
   } else if (type == Type::EXON) {
     emodel.chr = ichr;
     emodel.start = start;
@@ -353,13 +349,13 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
   std::string key,value;
   int keycount = 0;
   std::string gversion, tversion, gene_name, transcript_name;
-  while (p != std::string::npos) {    
+  while (p != std::string::npos) {
     if ((t = line.find('"',p))== std::string::npos) {
       break;
     }
     if ((s = line.find('"',t+1)) == std::string::npos) {
       break;
-    }  
+    }
     assert(line[t-1] == ' ');
     key.assign(line.substr(p,t-p-1));
     assert(s > t);
@@ -385,13 +381,13 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
         break;
       }
     } else {
-      if (key == "transcript_id") { 
+      if (key == "transcript_id") {
         keycount++;
-        transcript_name = std::move(value);        
+        transcript_name = std::move(value);
       } else if (key == "transcript_version") {
         keycount++;
         tversion = std::move(value);
-      } 
+      }
 
       if (type == Type::TRANSCRIPT) {
         if (keycount == 4) {
@@ -411,10 +407,10 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       if (p >= line.size()) {
         break;
       }
-    }    
+    }
   }
 
-  if (type == Type::GENE) {    
+  if (type == Type::GENE) {
     gmodel.name = gene_name;
     assert(!gmodel.name.empty());
     if (!gversion.empty() && gmodel.name.find('.') == std::string::npos) {
@@ -426,18 +422,18 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
   } else if (type == Type::TRANSCRIPT) {
     tmodel.name = transcript_name;
     assert(!tmodel.name.empty());
-    
+
     // canonical name includes version number
     if (!tversion.empty() && tmodel.name.find('.') == std::string::npos) {
       tmodel.name += "." + tversion;
     }
-    auto it2 = trNameToId.find(tmodel.name); 
+    auto it2 = trNameToId.find(tmodel.name);
     if (it2 == trNameToId.end()) {
       tmodel.name = transcript_name; // try without version number
       it2 = trNameToId.find(tmodel.name);
     }
-    
-    
+
+
     if (it2 != trNameToId.end()) {
       tmodel.id = it2->second;
       tmodel.length = index.target_lens_[tmodel.id];
@@ -483,9 +479,6 @@ int Transcriptome::addGTFLine(const std::string &line, const KmerIndex& index, b
       }
     }
   }
-  
-
-
   return 0;
 }
 
@@ -513,10 +506,10 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
   gzFile file = gzopen(gtf_fn.c_str(), "r");
   std::string line;
   if (!file) {
-    std::cerr << "Error: could not open file " << gtf_fn << std::endl;    
+    std::cerr << "Error: could not open file " << gtf_fn << std::endl;
     return;
   }
-  
+
   bool done_reading = false;
   while (!done_reading) {
     // buf[0:pos] contains a previously unprocessed line
@@ -553,9 +546,9 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
       assert(0 <= pos);
       assert(pos < buf_size);
     }
-    
+
     // buf[pos:bufend] contains now new line,
-    if (done_reading) { 
+    if (done_reading) {
       break;
     }
     int leftover = buf_end - pos;
@@ -568,15 +561,13 @@ void Transcriptome::parseGTF(const std::string &gtf_fn, const KmerIndex& index, 
     pos = 0;
 
   }
-  
 
-  
   delete[] buf;
   gzclose(file);
 
   if (num_chrom_missing > 0) {
     std::cerr << "Warning: could not find chromosomes for " << num_chrom_missing << " transcripts" << std::endl;
-  } 
+  }
   if (num_trans_missing > 0) {
     std::cerr << "Warning: " << num_trans_missing << " transcripts were defined in GTF file, but not in the index" << std::endl;
   }
@@ -592,7 +583,7 @@ void Transcriptome::parseGeneMap(const std::string &genemap_fn, const KmerIndex&
     transcripts.push_back(std::move(tr));
     trNameToId.insert({index.target_names_[i], i});
   }
-  
+
   std::ifstream ingenemap((genemap_fn));
   if (ingenemap.is_open()) {
     std::string line;

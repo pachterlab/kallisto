@@ -12,6 +12,7 @@
 #include "Kmer.hpp"
 #include "hash.hpp"
 #include "CompactedDBG.hpp"
+#include "Node.hpp"
 
 std::string revcomp(const std::string s);
 
@@ -128,7 +129,7 @@ struct KmerIndex {
   int skip;
 
   //KmerHashTable<KmerEntry, KmerHash> kmap;
-  KmerHashTable<KmerEntry> kmap;
+  CompactedDBG<Node> dbg;
   EcMap ecmap;
   DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;

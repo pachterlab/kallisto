@@ -10,6 +10,7 @@
 
 #include "KmerIndex.h"
 #include "weights.h"
+#include "Node.hpp"
 
 const int MAX_FRAG_LEN = 1000;
 
@@ -48,9 +49,9 @@ struct MinCollector {
   int increaseCount(const std::vector<int>& u);
   int decreaseCount(const int ec);
 
-  std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
-  int intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
-                    std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const;
+  std::vector<int> intersectECs(std::vector<std::pair<Node*,int>>& v) const;
+  int intersectKmers(std::vector<std::pair<Node*,int>>& v1,
+                    std::vector<std::pair<Node*,int>>& v2, bool nonpaired, std::vector<int> &u) const;
   int findEC(const std::vector<int>& u) const;
 
 

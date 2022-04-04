@@ -34,8 +34,8 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const {
+int MinCollector::intersectKmers(std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
+                          std::vector<std::pair<UnitigMap<Node>&, int>>& v2, bool nonpaired, std::vector<int> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
 
@@ -146,27 +146,28 @@ struct ComparePairsBySecond {
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const {
+std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node>&,int>>& v) const {
   if (v.empty()) {
     return {};
   }
-  sort(v.begin(), v.end(), [&](std::pair<KmerEntry, int> a, std::pair<KmerEntry, int> b)
+  sort(v.begin(), v.end(), [&](std::pair<UnitigMap<Node>&, int> a, std::pair<UnitigMap<Node>&, int> b)
        {
-         if (a.first.contig==b.first.contig) {
+         if (a.first.isSameReferenceUnitig(b.first)) {
            return a.second < b.second;
          } else {
-           return a.first.contig < b.first.contig;
+           return a.first.getData()->id < b.first.getData()->id;
          }
        }); // sort by contig, and then first position
 
 
-  int ec = index.dbGraph.ecs[v[0].first.contig];
+  //int ec = index.dbGraph.ecs[v[0].first.contig];
+  int ec = v[0].first.getData()->ec;
   int lastEC = ec;
   std::vector<int> u = index.ecmap[ec];
 
   for (int i = 1; i < v.size(); i++) {
-    if (v[i].first.contig != v[i-1].first.contig) {
-      ec = index.dbGraph.ecs[v[i].first.contig];
+    if (!v[i].first.isSameReferenceUnitig(v[i-1].first)) {
+      ec = v[i].first.getData()->ec;
       if (ec != lastEC) {
         u = index.intersect(ec, u);
         lastEC = ec;
