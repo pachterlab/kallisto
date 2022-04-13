@@ -983,7 +983,14 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     um = dbg.find(unitig_order[i]);
     data = um.getData();
     data->ec = tmp_ec;
+    // Transcript sense denotes whether unitig and transcript have the same
+    // strandedness. We cannot guarantee the persistence of the strandedness
+    // of the contigs in the graph, so we need to reassess trsense each time
+    // we load a DBG.
     data->transcripts = transcripts[i];
+    for (auto& tr : data->transcripts) {
+        // TODO
+    }
   }
 
   // delete the buffer
@@ -1327,13 +1334,13 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um
   // Check whether um.dist does the same thing as KmerEntry.getPos();
   if (trsense) {
     if (csense) {
-      return {trpos + um.dist + 1, csense}; // 1-based, case I
+      return {trpos + um.dist - p + 1, csense}; // 1-based, case I
     } else {
-      return {trpos + um.dist + k, csense}; // 1-based, case III
+      return {trpos + um.dist + k + p, csense}; // 1-based, case III
     }
   } else {
     if (csense) {
-      return {trpos + (um.len - um.dist - 1), !csense};  // 1-based, case IV
+      return {trpos + (um.len - um.dist - 1) + k + p, !csense};  // 1-based, case IV
     } else {
       return {trpos + (um.len - um.dist) - p, !csense}; // 1-based, case II
     }
