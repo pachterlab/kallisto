@@ -16,7 +16,6 @@
 
 std::string revcomp(const std::string s);
 
-
 struct TRInfo {
   int trid;
   int start;
@@ -67,8 +66,8 @@ struct KmerEntry {
 
 struct ContigToTranscript {
   int trid;
-  int pos; 
-  bool sense; // true for sense, 
+  int pos;
+  bool sense; // true for sense,
 };
 
 struct Contig {
@@ -85,8 +84,6 @@ struct DBGraph {
 //  std::vector<pair<int, bool>> edges; // contig id -> edges
 };
 
-
-
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
@@ -98,9 +95,6 @@ struct KmerIndex {
 //  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
   int mapPair(const char *s1, int l1, const char *s2, int l2, int ec) /*const*/;
   std::vector<int> intersect(int ec, const std::vector<int>& v) const;
-
-
-
 
   void BuildTranscripts(const ProgramOptions& opt);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
@@ -140,15 +134,6 @@ struct KmerIndex {
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
   bool target_seqs_loaded;
-
-
 };
-
-
-
-
-
-
-
 
 #endif // KALLISTO_KMERINDEX_H

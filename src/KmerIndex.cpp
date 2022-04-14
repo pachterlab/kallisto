@@ -966,6 +966,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     unitig_order.push_back(kmer);
     um = dbg.find(kmer);
     data = um.getData();
+    data->initialize_ec(um.size);
     data->id = c_id;
     data->len = c_len;
 
@@ -987,7 +988,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
     um = dbg.find(unitig_order[i]);
     data = um.getData();
-    data->ec = tmp_ec;
+    for (size_t i = um.dist; i < um.size; ++i) {
+        if (data->ec[i] >= 0) continue;
+        data->ec[i] = tmp_ec;
+    }
     data->transcripts = transcripts[i];
   }
 
@@ -1340,9 +1344,10 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um
     }
   } else {
     if (csense) {
-      return {trpos + (um.len - um.dist - 1) + k + p, !csense};  // 1-based, case IV
+      // UnitigMapBase.size is the length in base pairs
+      return {trpos + (um.size - um.dist - 1) + k + p, !csense};  // 1-based, case IV
     } else {
-      return {trpos + (um.len - um.dist) - p, !csense}; // 1-based, case II
+      return {trpos + (um.size - um.dist) - p, !csense}; // 1-based, case II
     }
   }
 }

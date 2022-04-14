@@ -112,9 +112,9 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
       }
     }
   }
-  
+
   std::cerr << "[quant] finding pseudoalignments for all files ..."; std::cerr.flush();
-  
+
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -178,7 +178,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     index.writePseudoBamHeader(std::cout);
   }*/
 
-  
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -298,10 +297,6 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     */
   }
 
-
-
-
-  
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -327,7 +322,6 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
 /** -- read processors -- **/
 
 void MasterProcessor::processReads() {
-  
 
   // start worker threads
   if (!opt.batch_mode && !opt.bus_mode) {
@@ -335,7 +329,7 @@ void MasterProcessor::processReads() {
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
     }
-    
+
     // let the workers do their thing
     for (int i = 0; i < opt.threads; i++) {
       workers[i].join(); //wait for them to finish
@@ -430,11 +424,11 @@ void MasterProcessor::processReads() {
       if (it->second != ec) {
         std::cout << "Error" << std::endl;
         exit(1);
-      }      
+      }
       index.ecmapinv.insert({u,ec});
       index.ecmap.push_back(u);
     }
-  } else if (opt.batch_mode) {    
+  } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
     int id =0;
@@ -446,7 +440,7 @@ void MasterProcessor::processReads() {
       int first_id = id;
       if (opt.pseudo_read_files_supplied) {
         for (int i = 0; i < opt.threads; i++) {
-          tmp_bc[i].assign(tc.counts.size(), 0);     
+          tmp_bc[i].assign(tc.counts.size(), 0);
           workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, 0)));
         }
         for (int i = 0; i < opt.threads; i++) {
@@ -463,7 +457,7 @@ void MasterProcessor::processReads() {
           workers[i].join();
         }
       }
-      
+
       if (!opt.umi) {
         for (int i = 0; i < nt; i++) {
           auto &bc = batchCounts[first_id+i];
@@ -823,7 +817,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
       for (auto &t : ec_umi) {
         batchUmis[id].push_back(std::move(t));
       }
-    }    
+    }
   }
 
   if (!opt.batch_mode || opt.batch_bus) {
@@ -846,8 +840,6 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
   } else {
     nummapped += new_ec_umi.size();
   }
-  
-  
 
   if (!flens.empty()) {
     if (opt.batch_mode) {
@@ -887,14 +879,14 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
       auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(), 
       [](const PseudoAlignmentBatch &p1, const PseudoAlignmentBatch &p2) -> bool {
         return p1.batch_id < p2.batch_id;
-      });      
+      });
       if ((last_pseudobatch_id + 1) != min_it->batch_id) {
         break;
       }
       // if it is in sequence, write it out
       writePseudoAlignmentBatch(pseudobatchf_out, *min_it);
       // remove from processing
-      pseudobatch_stragglers.erase(min_it); 
+      pseudobatch_stragglers.erase(min_it);
       last_pseudobatch_id += 1;
     }
   }
@@ -1113,7 +1105,6 @@ void ReadProcessor::processBuffer() {
   int maxBiasCount = 0;
   bool findBias = mp.opt.bias && (mp.biasCount < mp.maxBiasCount);
 
-
   int biasgoal  = 0;
   bias5.clear();
   if (findBias) {
@@ -1124,7 +1115,6 @@ void ReadProcessor::processBuffer() {
       bias5.resize(tc.bias5.size(),0);
     }
   }
-
 
   // actually process the sequences
   for (int i = 0; i < seqs.size(); i++) {

@@ -24,27 +24,39 @@ class Node: public CDBG_Data_t<Node> {
         // Length of unitig
         int len;
         // Equivalence class of unitig
-        int ec;
+        std::vector<int> ec;
         std::vector<u2t> transcripts;
 
-        /*
-        inline int get_pos() const {
-            return (_pos & 0x0FFFFFFF);
-        }
+    void initialize_ec(int len) {
+        ec = std::vector<int>(len, -1);
+    }
 
-        inline int is_fw() const {
-            return (_pos & 0xF0000000) == 0;
-        }
+    void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
+        Node* data_dest = um_dest.getData();
+        Node* data_src = um_src.getData();
 
-        inline int get_dist(bool fwd) const {
-            if (is_fw() == fwd) {
-                return (len - 1 - get_pos());
-            }
-            return get_pos();
+        ec.clear();
+        ec = data_dest->ec;
+        ec.reserve(um_dest.size + um_src.size);
+        for (const auto& e : data_src->ec) {
+            ec.push_back(e);
         }
-        */
+    }
 
+    void clear(const UnitigMap<Node>& um_dest) {
+        ec.clear();
+        transcripts.clear();
+    }
+
+    void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
+        ec.clear();
+        ec.reserve(um_src.size);
+
+        Node* data = um_src.getData();
+        for (size_t i = um_src.dist; i < um_src.size; ++i) {
+            ec.push_back(data->ec[i]);
+        }
+    }
 };
-
 
 #endif

@@ -161,13 +161,13 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node
 
 
   //int ec = index.dbGraph.ecs[v[0].first.contig];
-  int ec = v[0].first.getData()->ec;
+  int ec = v[0].first.getData()->ec[0];
   int lastEC = ec;
   std::vector<int> u = index.ecmap[ec];
 
   for (int i = 1; i < v.size(); i++) {
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first)) {
-      ec = v[i].first.getData()->ec;
+      ec = v[i].first.getData()->ec[0];
       if (ec != lastEC) {
         u = index.intersect(ec, u);
         lastEC = ec;
