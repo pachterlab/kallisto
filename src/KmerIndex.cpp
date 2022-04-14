@@ -941,6 +941,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::vector<std::vector<u2t> > transcripts(contig_size);
   Kmer kmer;
   Node* data;
+  // Keep track of the original strandedness of the contig in order to fix
+  // transcript.sense if the strandedness changes.
+  std::vector<std::string> canonical_contigs();
+  canonical_contigs.reserve(contig_size);
   for (size_t i = 0; i < contig_size; ++i) {
     in.read((char *)&c_id, sizeof(c_id));
     in.read((char *)&c_len, sizeof(c_len));
@@ -955,6 +959,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     memset(buffer,0,bufsz);
     in.read(buffer, tmp_size);
     c_seq = std::string(buffer); // copy
+    canonical_contigs.push_back(c_seq);
 
     dbg.add(c_seq, false);
     kmer = Kmer(c_seq.substr(0, k).c_str());
@@ -983,13 +988,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     um = dbg.find(unitig_order[i]);
     data = um.getData();
     data->ec = tmp_ec;
-    // Transcript sense denotes whether unitig and transcript have the same
-    // strandedness. We cannot guarantee the persistence of the strandedness
-    // of the contigs in the graph, so we need to reassess trsense each time
-    // we load a DBG.
     data->transcripts = transcripts[i];
-    for (auto& tr : data->transcripts) {
-        // TODO
+  }
+
+  // With Bifrost we have no control over the strandedness of the contigs.
+  // We iterate over all the contigs we read from the index and check whether
+  // the corresponding Bifrost unitig has the same strandedness. If not, we
+  // flip the transcript.sense for all transcripts belonging to that unitig.
+  std::set<Kmer> kmer_set;
+  for (const auto& seq : canonical_contigs) {
+    kmer = Kmer(seq.substr(0, k).c_str());
+    um = dbg.find(kmer);
+    // If the canonical contig sequence is not a substring of the found unitig
+    // sequence, and we haven't flipped the sense in this unitig before.
+    if (!um.isEmpty &&
+        !um.strand &&
+        kmer_set.find(kmer) == kmer_set.end) {
+      for (auto& tr : um.getData()->transcripts) {
+        tr.sense != tr.sense;
+      }
+      kmer_set.insert(kmer);
     }
   }
 
@@ -1067,7 +1085,6 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
 }
 
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
-  /*
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
@@ -1075,25 +1092,21 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   int c1 = -1;
   int c2 = -1;
 
-
   KmerIterator kit1(s1), kit_end;
+  UnitigMap<Node> um1, um2;
 
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
     Kmer x = kit1->first;
-    Kmer xr = x.rep();
-    auto search = kmap.find(xr);
-    bool forward = (x==xr);
+    um1 = dbg.find(x);
 
-    if (search != kmap.end()) {
+    if (!um1.isEmpty) {
       found1 = true;
-      KmerEntry val = search->second;
-      c1 = val.contig;
-      if (forward == val.isFw()) {
-        p1 = val.getPos() - kit1->second;
+      if (um1.strand) {
+        p1 = um1.dist - kit1->second;
         d1 = true;
       } else {
-        p1 = val.getPos() + k + kit1->second;
+        p1 = um1.dist + k + kit1->second;
         d1 = false;
       }
       break;
@@ -1104,26 +1117,20 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     return -1;
   }
 
-  
-
   KmerIterator kit2(s2);
   bool found2 = false;
 
   for (; kit2 != kit_end; ++kit2) {
     Kmer x = kit2->first;
-    Kmer xr = x.rep();
-    auto search = kmap.find(xr);
-    bool forward = (x==xr);
+    um2 = dbg.find(x);
 
-    if (search != kmap.end()) {
+    if (!um2.isEmpty) {
       found2 = true;
-      KmerEntry val = search->second;
-      c2 = val.contig;
-      if (forward== val.isFw()) {
-        p2 = val.getPos() - kit2->second;
+      if (um2.strand) {
+        p2 = um2.dist - kit2->second;
         d2 = true;
       } else {
-        p2 = val.getPos() + k + kit2->second;
+        p2 = um2.dist + k + kit2->second;
         d2 = false;
       }
       break;
@@ -1148,9 +1155,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   } else {
     return p2-p1;
   }
-  */
-  // TODO: Remove
-  return 0;
 }
 
 // use:  match(s,l,v)
@@ -1332,6 +1336,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um
 
   // TODO:
   // Check whether um.dist does the same thing as KmerEntry.getPos();
+  // If something doesn't work, it's most likely this!
   if (trsense) {
     if (csense) {
       return {trpos + um.dist - p + 1, csense}; // 1-based, case I
