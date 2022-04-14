@@ -36,7 +36,7 @@ class MasterProcessor;
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
 int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
 int64_t ProcessBUSReads(MasterProcessor& MP, const ProgramOptions& opt);
-int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
+int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>&, int>> &v, UnitigMap<Node>& um);
 
 class SequenceReader {
 public:
@@ -200,7 +200,7 @@ public:
         memset(&bus_bc_len[0],0,sizeof(bus_bc_len));
         memset(&bus_umi_len[0],0,sizeof(bus_umi_len));
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
-        
+
         if (opt.batch_bus) {
           writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
         } else {
@@ -226,7 +226,7 @@ public:
     if (bamh) {
       bam_hdr_destroy(bamh);
       bamh = nullptr;
-    }    
+    }
     delete SR;
   }
 
@@ -288,7 +288,7 @@ public:
 
 class ReadProcessor {
 public:
-  ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
+  ReadProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
@@ -298,7 +298,7 @@ public:
   const MinCollector& tc;
   std::vector<std::pair<int, std::string>> ec_umi;
   std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
-  const KmerIndex& index;
+  /*const*/ KmerIndex& index;
   MasterProcessor& mp;
   FastqSequenceReader batchSR;
   int64_t numreads;
@@ -326,7 +326,7 @@ public:
 
 class BUSProcessor {
 public:
-  BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
+  BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   BUSProcessor(BUSProcessor && o);
   ~BUSProcessor();
   char *buffer;
@@ -336,7 +336,7 @@ public:
   bool bam;
   bool num;
   const MinCollector& tc;
-  const KmerIndex& index;
+  /*const */KmerIndex& index;
   MasterProcessor& mp;
   int64_t numreads;
   int id;

@@ -54,9 +54,9 @@ void createBamRecord(const KmerIndex, const KmerIndex &index, const std::vector<
 
 
 
-void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
-    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<KmerEntry,int>>& v1,
-    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<KmerEntry,int>>& v2,
+void outputPseudoBam(/*const*/ KmerIndex &index, const std::vector<int> &u,
+    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
+    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<UnitigMap<Node>&, int>>& v2,
     bool paired, bam_hdr_t *h, samFile *fp) {
 
   static char buf1[32768];
@@ -153,16 +153,16 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
 
       int p1 = -1, p2 = -1;
-      KmerEntry val1, val2;
+      UnitigMap<Node> um1, um2;
       int nmap = u.size();//index.ecmap[ec].size();
       Kmer km1, km2;
 
       if (!v1.empty()) {
-        val1 = v1[0].first;
+        um1 = v1[0].first;
         p1 = v1[0].second;
         for (auto &x : v1) {
           if (x.second < p1) {
-            val1 = x.first;
+            um1 = x.first;
             p1 = x.second;
           }
         }
@@ -170,11 +170,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       }
 
       if (!v2.empty()) {
-        val2 = v2[0].first;
+        um2 = v2[0].first;
         p2 = v2[0].second;
         for (auto &x : v2) {
           if (x.second < p2) {
-            val2 = x.first;
+            um2 = x.first;
             p2 = x.second;
           }
         }
@@ -191,7 +191,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
+          x1 = index.findPosition(tr, km1, um1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -207,7 +207,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           f1 += 0x100; // secondary alignment
         }
         if (p2 != -1) {
-          x2 = index.findPosition(tr, km2 , val2, p2);
+          x2 = index.findPosition(tr, km2 , um2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -246,7 +246,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
+          x1 = index.findPosition(tr, km1, um1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -255,7 +255,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           }
         }
         if (p2 != -1) {
-          x2 = index.findPosition(tr, km2, val2, p2);
+          x2 = index.findPosition(tr, km2, um2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -298,11 +298,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
     } else {
       // single end
       int nmap = (int) u.size();
-      KmerEntry val1 = v1[0].first;
+      UnitigMap<Node> um = v1[0].first;
       int p1 = v1[0].second;
       for (auto &x : v1) {
         if (x.second < p1) {
-          val1 = x.first;
+          um = x.first;
           p1 = x.second;
         }
       }
@@ -312,7 +312,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       bool firstTr = true;
       for (auto tr : u) {
         int f1 = 0;
-        auto x1 = index.findPosition(tr, km1, val1, p1);
+        auto x1 = index.findPosition(tr, km1, um, p1);
 
         if (!x1.second) {
           f1 += 0x10;

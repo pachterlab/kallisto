@@ -943,7 +943,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   Node* data;
   // Keep track of the original strandedness of the contig in order to fix
   // transcript.sense if the strandedness changes.
-  std::vector<std::string> canonical_contigs();
+  std::vector<std::string> canonical_contigs;
   canonical_contigs.reserve(contig_size);
   for (size_t i = 0; i < contig_size; ++i) {
     in.read((char *)&c_id, sizeof(c_id));
@@ -1001,11 +1001,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     um = dbg.find(kmer);
     // If the canonical contig sequence is not a substring of the found unitig
     // sequence, and we haven't flipped the sense in this unitig before.
-    if (!um.isEmpty &&
-        !um.strand &&
-        kmer_set.find(kmer) == kmer_set.end) {
+    if (!um.isEmpty && !um.strand && kmer_set.find(kmer) == kmer_set.end()) {
       for (auto& tr : um.getData()->transcripts) {
-        tr.sense != tr.sense;
+        tr.sense = !tr.sense;
       }
       kmer_set.insert(kmer);
     }
@@ -1084,7 +1082,7 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
-int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
+int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
@@ -1141,7 +1139,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     return -1;
   }
 
-  if (c1 != c2) {
+  if (!um1.isSameReferenceUnitig(um2)) {
     return -1;
   }
 
@@ -1160,7 +1158,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>&, int>>& v) const {
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>&, int>>& v) /*const*/{
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
@@ -1233,10 +1231,8 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
               KmerEntry val3;
               if (kit3 != kit_end) {
                 Kmer rep3 = kit3->first;
-                auto search3 = kmap.find(rep3);
                 UnitigMap<Node> um3 = dbg.find(rep3);
                 if (!um3.isEmpty) {
-                  middleContig = search3->second.contig;
                   if (um3.isSameReferenceUnitig(um)) {
                     foundMiddle = true;
                     found3pos = middlePos;
@@ -1257,7 +1253,6 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
                 }
               }
             }
-
 
             if (!foundMiddle) {
               ++kit;
@@ -1300,7 +1295,7 @@ donejumping:
   }
 }
 
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) /*const*/{
   UnitigMap<Node> um = dbg.find(km);
   if (!um.isEmpty) {
     return findPosition(tr, km, um, p);
@@ -1314,7 +1309,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
 //      km is the p-th k-mer of a read
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um, int p) const {
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um, int p) /*const*/{
   bool csense = um.strand;
 
   int trpos = -1;
@@ -1392,7 +1387,7 @@ void KmerIndex::loadTranscriptSequences() const {
   }
 
   std::vector<std::vector<std::pair<std::string, u2t>>> trans_contigs(num_trans);
-  for (const auto& um : dbg) {
+  for (auto& um : dbg) {
     std::cout << um.referenceUnitigToString() << std::endl;
     const Node* data = um.getData();
     std::string um_seq = um.mappedSequenceToString();

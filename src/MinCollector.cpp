@@ -66,8 +66,8 @@ int MinCollector::intersectKmers(std::vector<std::pair<UnitigMap<Node>&, int>>& 
   return 1;
 }
 
-int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
+int MinCollector::collect(std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
+                          std::vector<std::pair<UnitigMap<Node>&, int>>& v2, bool nonpaired) {
   std::vector<int> u;
   int r = intersectKmers(v1, v2, nonpaired, u);
   if (r != -1) {

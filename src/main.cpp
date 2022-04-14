@@ -2952,10 +2952,12 @@ int main(int argc, char *argv[]) {
         num_processed = ProcessReads(MP, opt);
         /*
 
+        // TODO:
         // save modified index for future use
         if (opt.write_index) {
           index.write((opt.output + "/index.saved"), false);
         }
+        */
 
         // if mean FL not provided, estimate
         std::vector<int> fld;
@@ -2974,10 +2976,17 @@ int main(int argc, char *argv[]) {
           // }
         }
 
+        // TODO: implement bias
+        // ==============================================
+        std::cout << "TODO: implement bias" << std::endl;
+        exit(1);
+        // ==============================================
+        /*
         std::vector<int> preBias(4096,1);
         if (opt.bias) {
           preBias = collection.bias5; // copy
         }
+        */
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
@@ -3089,7 +3098,6 @@ int main(int argc, char *argv[]) {
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
-        */
       }
     } else if (cmd == "quant-only") {
       if (argc==2) {

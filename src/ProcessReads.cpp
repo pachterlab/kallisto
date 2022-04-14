@@ -987,7 +987,7 @@ void MasterProcessor::outputFusion(const std::stringstream &o) {
 }
 
 
-ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
+ReadProcessor::ReadProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
    // initialize buffer
    bufsize = mp.bufsize;
@@ -1078,7 +1078,7 @@ void ReadProcessor::operator()() {
 }
 
 void ReadProcessor::processBuffer() {
-  // set up thread variables  
+  // set up thread variables
   std::vector<std::pair<UnitigMap<Node>&, int>> v1, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
@@ -1214,7 +1214,7 @@ void ReadProcessor::processBuffer() {
         // might need to optimize this
         for (const auto& tr : u) {
           for (const auto& ctx : um.getData()->transcripts) {
-            if (tr == ctx.trid) {
+            if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == firstStrand) {
                 // swap out
                 vtmp.push_back(tr);
@@ -1236,7 +1236,7 @@ void ReadProcessor::processBuffer() {
         // might need to optimize this
         for (const auto& tr : u) {
           for (const auto& ctx : um.getData()->transcripts) {
-            if (tr == ctx.trid) {
+            if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == secondStrand) {
                 // swap out
                 vtmp.push_back(tr);
@@ -1282,9 +1282,9 @@ void ReadProcessor::processBuffer() {
         std::cout << "TODO: Implement countBias" << std::endl;
         exit(1);
         // ===================================================
-        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
-          biasgoal--;
-        }
+        //if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+          //biasgoal--;
+        //}
       }
 
       // collect fragment length info
@@ -1334,7 +1334,7 @@ void ReadProcessor::processBuffer() {
       */
     }
 
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
+    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
       int nmap = mp.nummapped;
       for (int i = 0; i < counts.size(); i++) {
         nmap += counts[i];
@@ -1360,7 +1360,7 @@ void ReadProcessor::clear() {
 
 
 
-BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
+BUSProcessor::BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
  paired(!opt.single_end), bam(opt.bam), num(opt.num), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id), numreads(0) {
    // initialize buffer
    bufsize = mp.bufsize;
@@ -1473,11 +1473,11 @@ void BUSProcessor::operator()() {
 }
 
 void BUSProcessor::processBuffer() {
-  // set up thread variables  
-  std::vector<std::pair<KmerEntry,int>> v,v2;
+  // set up thread variables
+  std::vector<std::pair<UnitigMap<Node>&, int>> v, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
-  
+
   u.reserve(1000);
   v.reserve(1000);
   v2.reserve(1000);
@@ -1488,7 +1488,7 @@ void BUSProcessor::processBuffer() {
 
   const BUSOptions& busopt = mp.opt.busOptions;
   bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
-  
+
   auto &tcount = mp.tlencount;
   if (mp.opt.batch_bus) {
     tcount = mp.tlencounts[id];
@@ -1506,7 +1506,6 @@ void BUSProcessor::processBuffer() {
     }
   }
 
- 
   char buffer[100];
   memset(buffer, 0, 100);
   char *umi = &(buffer[50]);
@@ -1514,9 +1513,9 @@ void BUSProcessor::processBuffer() {
   //char *seqbuffer[1000];
   std::string seqbuffer;
   seqbuffer.reserve(1000);
-  
+
   // actually process the sequence
-  
+
   int incf, jmax;
   if (bam) {
     incf = 1;
@@ -1547,16 +1546,16 @@ void BUSProcessor::processBuffer() {
   for (int i = 0; i + incf < seqs.size(); i++) {
     for (int j = 0; j < jmax /*(bam) ? 2 : busopt.nfiles*/; j++) {
       s[j] = seqs[i+j].first;
-      l[j] = seqs[i+j].second;      
+      l[j] = seqs[i+j].second;
     }
     i += incf;
-    
+
     // find where the sequence is
     const char *seq = nullptr;
     const char *seq2 = nullptr;
-    
+
     bool ignore_umi = false;
-    
+
     // copy the umi
     int ulen = 0;
     bool bad_umi = false;
@@ -1605,7 +1604,7 @@ void BUSProcessor::processBuffer() {
         umi_len[ulen]++;
       }
     }
-    
+
     size_t seqlen = 0;
     size_t seqlen2 = 0;
     if (singleSeq) {
@@ -1637,7 +1636,6 @@ void BUSProcessor::processBuffer() {
       seqlen = seqbuffer.size();
     }
 
-    
 //    auto &bcc = busopt.bc[0];
     int blen = 0;
     bool bad_bc = false;
@@ -1683,32 +1681,33 @@ void BUSProcessor::processBuffer() {
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v, v2, !busopt.paired,u);
-    if (!u.empty()) {      
+    if (!u.empty()) {
       ec = tc.findEC(u);
     }
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
       int p = -1;
       Kmer km;
-      KmerEntry val;
+      UnitigMap<Node> um;
+      // This is copied verbatim from ReadProcessor::processBuffer()
+      // Is there a reason it's not offloaded into a function that both
+      // BUSProcessor::processBuffer() and ReadProcessor::processBuffer() call?
       if (!v.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        p = findFirstMappingKmer(v,val);
+        p = findFirstMappingKmer(v, um);
         km = Kmer((seq+p));
-        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
         // might need to optimize this
-        const auto &c = index.dbGraph.contigs[val.contig];
         for (auto tr : u) {
-          for (auto ctx : c.transcripts) {
-            if (tr == ctx.trid) {
-              if ((strand == ctx.sense) == firstStrand) {
-                // swap out 
+          for (auto ctx : um.getData()->transcripts) {
+            if (tr == ctx.tr_id) {
+              if ((um.strand == ctx.sense) == firstStrand) {
+                // swap out
                 vtmp.push_back(tr);
-              } 
+              }
               break;
             }
-          }          
+          }
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1717,21 +1716,19 @@ void BUSProcessor::processBuffer() {
       if (!v2.empty()) {
         vtmp.clear();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        p = findFirstMappingKmer(v2,val);
+        p = findFirstMappingKmer(v2, um);
         km = Kmer((seq2+p));
-        bool strand = (val.isFw() == (km == km.rep())); // k-mer maps to fw strand?
         // might need to optimize this
-        const auto &c = index.dbGraph.contigs[val.contig];
         for (auto tr : u) {
-          for (auto ctx : c.transcripts) {
-            if (tr == ctx.trid) {
-              if ((strand == ctx.sense) == secondStrand) {
-                // swap out 
+          for (auto ctx : um.getData()->transcripts) {
+            if (tr == ctx.tr_id) {
+              if ((um.strand == ctx.sense) == secondStrand) {
+                // swap out
                 vtmp.push_back(tr);
-              } 
+              }
               break;
             }
-          }          
+          }
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1745,7 +1742,7 @@ void BUSProcessor::processBuffer() {
 
     // find the ec
     if (!u.empty()) {
-      BUSData b;      
+      BUSData b;
       uint32_t f = 0;
       b.flags = 0;
       b.barcode = stringToBinary(bc, blen, f);
@@ -1757,7 +1754,7 @@ void BUSProcessor::processBuffer() {
       if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }
-      
+
       //ec = tc.findEC(u);
 
       if (busopt.paired && ignore_umi) {
@@ -1770,7 +1767,7 @@ void BUSProcessor::processBuffer() {
           }
         }
       }
-      
+
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
         // something we haven't seen before
@@ -1782,7 +1779,7 @@ void BUSProcessor::processBuffer() {
         // push back BUS record
         b.ec = ec;
         bv.push_back(b);
-      }      
+      }
     }
 
     if (mp.opt.pseudobam) {
@@ -1794,14 +1791,14 @@ void BUSProcessor::processBuffer() {
       info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
       if (!u.empty()) {
         info.r1empty = v.empty();
-        KmerEntry val;
-        info.k1pos = findFirstMappingKmer(v,val);
+        UnitigMap<Node> um;
+        info.k1pos = findFirstMappingKmer(v, um);
         info.k2pos = -1;
         if (busopt.paired) {
           info.r2empty = v2.empty();
-          info.k2pos = findFirstMappingKmer(v2,val);
+          info.k2pos = findFirstMappingKmer(v2, um);
         }
-                
+
         if (ec != -1) {
           info.ec_id = ec;
         } else {
@@ -1812,7 +1809,7 @@ void BUSProcessor::processBuffer() {
       pseudobatch.aln.push_back(std::move(info));
     }
 
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
+    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
         int nmap = mp.nummapped;
         for (int i = 0; i < counts.size(); i++) {
           nmap += counts[i];
