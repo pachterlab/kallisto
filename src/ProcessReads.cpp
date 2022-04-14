@@ -63,7 +63,7 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>&, int>> &v, UnitigMap<Node>& um) {
   int p = -1;
   if (!v.empty()) {
-    val = v[0].first;
+    um = v[0].first;
     p = v[0].second;
     for (auto &x : v) {
       if (x.second < p) {
@@ -1202,11 +1202,11 @@ void ReadProcessor::processBuffer() {
         u = vtmp; // copy
       }
     }
-    
+
     if (mp.opt.strand_specific && !u.empty()) {
       int p = -1;
       Kmer km;
-      KmerEntry val;
+      UnitigMap<Node> val;
       if (!v1.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
@@ -1219,18 +1219,18 @@ void ReadProcessor::processBuffer() {
           for (auto ctx : c.transcripts) {
             if (tr == ctx.trid) {
               if ((strand == ctx.sense) == firstStrand) {
-                // swap out 
+                // swap out
                 vtmp.push_back(tr);
-              } 
+              }
               break;
             }
-          }          
+          }
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
         }
       }
-      
+
       if (!v2.empty()) {
         vtmp.clear();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
@@ -1243,12 +1243,12 @@ void ReadProcessor::processBuffer() {
           for (auto ctx : c.transcripts) {
             if (tr == ctx.trid) {
               if ((strand == ctx.sense) == secondStrand) {
-                // swap out 
+                // swap out
                 vtmp.push_back(tr);
-              } 
+              }
               break;
             }
-          }          
+          }
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1269,9 +1269,9 @@ void ReadProcessor::processBuffer() {
           // add to count vector
           ++counts[ec];
         }
-      } else {       
+      } else {
         if (ec == -1 || ec >= counts.size()) {
-          new_ec_umi.emplace_back(u, std::move(umis[i]));          
+          new_ec_umi.emplace_back(u, std::move(umis[i]));
         } else {
           ec_umi.emplace_back(ec, std::move(umis[i]));
         }
@@ -1298,7 +1298,7 @@ void ReadProcessor::processBuffer() {
     }
 
     // pseudobam
-    
+
     if (mp.opt.pseudobam) {
       PseudoAlignmentInfo info;
       info.id = (paired) ? (i/2) : i; // read id
@@ -1309,8 +1309,7 @@ void ReadProcessor::processBuffer() {
         KmerEntry val;
         info.k1pos = (!info.r1empty) ? findFirstMappingKmer(v1,val) : -1;
         info.k2pos = (!info.r2empty) ? findFirstMappingKmer(v2,val) : -1;
-        
-        
+
         if (ec != -1) {
           info.ec_id = ec;
         } else {
@@ -1333,7 +1332,7 @@ void ReadProcessor::processBuffer() {
       }
       */
     }
-    
+
     if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {   
       int nmap = mp.nummapped;
       for (int i = 0; i < counts.size(); i++) {
@@ -1346,7 +1345,6 @@ void ReadProcessor::processBuffer() {
         << "% pseudoaligned)"; std::cerr.flush();
     }
   }
-
 }
 
 void ReadProcessor::clear() {
@@ -1365,7 +1363,7 @@ BUSProcessor::BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, co
  paired(!opt.single_end), bam(opt.bam), num(opt.num), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id), numreads(0) {
    // initialize buffer
    bufsize = mp.bufsize;
-   buffer = new char[bufsize];  
+   buffer = new char[bufsize];
    if (opt.batch_mode) {
      assert(id != -1);
      batchSR.files = opt.batch_files[id];
