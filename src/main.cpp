@@ -2976,17 +2976,17 @@ int main(int argc, char *argv[]) {
           // }
         }
 
-        // TODO: implement bias
-        // ==============================================
-        std::cout << "TODO: implement bias" << std::endl;
-        exit(1);
-        // ==============================================
-        /*
         std::vector<int> preBias(4096,1);
         if (opt.bias) {
-          preBias = collection.bias5; // copy
+         // TODO: implement bias
+         // ==============================================
+         
+         // ==============================================
+         std::cout << "TODO: implement bias" << std::endl;
+         exit(1);
+          //preBias = collection.bias5; // copy
         }
-        */
+        
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
