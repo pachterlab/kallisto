@@ -43,6 +43,15 @@ class Node: public CDBG_Data_t<Node> {
         }
     }
 
+    void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
+        Node* data_src = um_src.getData();
+
+        ec.reserve(um_dest.size + um_src.size);
+        for (const auto& e : data_src->ec) {
+            ec.push_back(e);
+        }
+    }
+
     void clear(const UnitigMap<Node>& um_dest) {
         ec.clear();
         transcripts.clear();
