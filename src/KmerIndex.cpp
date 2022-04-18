@@ -1186,7 +1186,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
       // bring thisback later
       // TODO: Verify that this is correct
       int dist = um.dist;
-
+      if (!um.strand) dist = um.size - 1 - um.dist;
 
       //const int lastbp = 10;
       if (dist >= 2) {
