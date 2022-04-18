@@ -161,7 +161,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node
        }); // sort by contig, and then first position
 
   //int ec = index.dbGraph.ecs[v[0].first.contig];
-  int ec = v[0].first.getData()->ec[0];
+  int ec = v[0].first.getData()->ec[v[0].first.dist];
   int lastEC = ec;
   std::vector<int> u = index.ecmap[ec];
   std::cout << "YYY" << v.size() << " " << ec << " " << u.size() << " : " << v[0].first.getData()->ec.size() << " - ";
@@ -176,7 +176,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node
 
   for (int i = 1; i < v.size(); i++) {
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first)) {
-      ec = v[i].first.getData()->ec[0];
+      ec = v[i].first.getData()->ec[v[i].first.dist];
       if (ec != lastEC) {
         u = index.intersect(ec, u);
         lastEC = ec;
