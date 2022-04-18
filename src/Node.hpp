@@ -27,8 +27,11 @@ class Node: public CDBG_Data_t<Node> {
         std::vector<int> ec;
         std::vector<u2t> transcripts;
 
-    void initialize_ec(int len) {
-        ec = std::vector<int>(len, -1);
+    void initialize_ec(int start, int len, int val) {
+        ec.reserve(start+len);
+        for (int i = start; i < start+len; ++i) {
+            ec[i] = val;
+        }
     }
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
