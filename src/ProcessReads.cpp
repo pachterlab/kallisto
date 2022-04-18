@@ -60,7 +60,7 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
-int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>&, int>> &v, UnitigMap<Node>& um) {
+int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>, int>> &v, UnitigMap<Node> um) {
   int p = -1;
   if (!v.empty()) {
     um = v[0].first;
@@ -329,14 +329,17 @@ void MasterProcessor::processReads() {
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
     }
+    
 
     // let the workers do their thing
     for (int i = 0; i < opt.threads; i++) {
       workers[i].join(); //wait for them to finish
     }
+    
 
     // now handle the modification of the mincollector
     for (auto &t : newECcount) {
+      
       if (t.second <= 0) {
         continue;
       }
@@ -1055,6 +1058,7 @@ void ReadProcessor::operator()() {
         // get new sequences
         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
+      
       // release the reader lock
     }
     pseudobatch.aln.clear();
@@ -1070,8 +1074,9 @@ void ReadProcessor::operator()() {
 }
 
 void ReadProcessor::processBuffer() {
+  
   // set up thread variables
-  std::vector<std::pair<UnitigMap<Node>&, int>> v1, v2;
+  std::vector<std::pair<UnitigMap<Node>, int>> v1, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
 
@@ -1089,7 +1094,7 @@ void ReadProcessor::processBuffer() {
   if (mp.opt.batch_mode) {
     findFragmentLength = (mp.opt.fld == 0) && (mp.tlencounts[id] < 10000);
   }
-
+  
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
@@ -1101,7 +1106,7 @@ void ReadProcessor::processBuffer() {
       flens.resize(tc.flens.size(), 0);
     }
   }
-
+  
   int maxBiasCount = 0;
   bool findBias = mp.opt.bias && (mp.biasCount < mp.maxBiasCount);
 
@@ -1115,9 +1120,10 @@ void ReadProcessor::processBuffer() {
       bias5.resize(tc.bias5.size(),0);
     }
   }
-
+  
   // actually process the sequences
   for (int i = 0; i < seqs.size(); i++) {
+    
     s1 = seqs[i].first;
     l1 = seqs[i].second;
     if (paired) {
@@ -1130,16 +1136,29 @@ void ReadProcessor::processBuffer() {
     v1.clear();
     v2.clear();
     u.clear();
-
+    
     // process read
     index.match(s1, l1, v1);
     if (paired) {
       index.match(s2, l2, v2);
     }
+    
+    //std::cout << "v1: ";
+    //for (auto vv : v1) {
+    //  std::cout << vv.second << " ";
+    //}
+    //std::cout << std::endl;
+    //std::cout << "v2: ";
+    //for (auto vv : v2) {
+    //  std::cout << vv.second << " ";
+    //}
+    //std::cout << std::endl;
+    //std::cout << "-----" << std::endl;
 
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired, u);
+    std::cout << u.empty() << " " << v1.size() << " " << v2.size() << std::endl;
     if (u.empty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
         std:cerr << "TODO: Implement fusion" << std::endl;
@@ -1464,7 +1483,7 @@ void BUSProcessor::operator()() {
 
 void BUSProcessor::processBuffer() {
   // set up thread variables
-  std::vector<std::pair<UnitigMap<Node>&, int>> v, v2;
+  std::vector<std::pair<UnitigMap<Node>, int>> v, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
 

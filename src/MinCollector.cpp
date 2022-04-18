@@ -34,10 +34,11 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::intersectKmers(std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
-                          std::vector<std::pair<UnitigMap<Node>&, int>>& v2, bool nonpaired, std::vector<int> &u) const {
+int MinCollector::intersectKmers(std::vector<std::pair<UnitigMap<Node>, int>>& v1,
+                          std::vector<std::pair<UnitigMap<Node>, int>>& v2, bool nonpaired, std::vector<int> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
+  std::cout << "XXX" << u1.size() << ":" << v1.size() << "::" << u2.size() << ":" << v2.size() << std::endl; // XXX0:3::0:0 = needs fixing
 
   if (u1.empty() && u2.empty()) {
     return -1;
@@ -66,8 +67,8 @@ int MinCollector::intersectKmers(std::vector<std::pair<UnitigMap<Node>&, int>>& 
   return 1;
 }
 
-int MinCollector::collect(std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
-                          std::vector<std::pair<UnitigMap<Node>&, int>>& v2, bool nonpaired) {
+int MinCollector::collect(std::vector<std::pair<UnitigMap<Node>, int>>& v1,
+                          std::vector<std::pair<UnitigMap<Node>, int>>& v2, bool nonpaired) {
   std::vector<int> u;
   int r = intersectKmers(v1, v2, nonpaired, u);
   if (r != -1) {
@@ -146,7 +147,7 @@ struct ComparePairsBySecond {
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node>&,int>>& v) const {
+std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node>,int>>& v) const {
   if (v.empty()) {
     return {};
   }
@@ -159,11 +160,19 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<UnitigMap<Node
          }
        }); // sort by contig, and then first position
 
-
   //int ec = index.dbGraph.ecs[v[0].first.contig];
   int ec = v[0].first.getData()->ec[0];
   int lastEC = ec;
   std::vector<int> u = index.ecmap[ec];
+  std::cout << "YYY" << v.size() << " " << ec << " " << u.size() << " : " << v[0].first.getData()->ec.size() << " - ";
+  for (auto xxx : v) {
+    std::cout << xxx.second << " ";
+  }
+  std::cout << " = ";
+  for (auto eee : v[0].first.getData()->ec) {
+    std::cout << eee << " ";
+  }
+  std::cout << std::endl;
 
   for (int i = 1; i < v.size(); i++) {
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first)) {

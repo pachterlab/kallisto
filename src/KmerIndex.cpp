@@ -1162,12 +1162,13 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>&, int>>& v) /*const*/{
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>, int>>& v) /*const*/{
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   UnitigMap<Node> um;
   Node* data;
+  //std::cout << s << std::endl;
 
   for (int i = 0;  kit != kit_end; ++i,++kit) {
     // need to check it
@@ -1181,11 +1182,19 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
       data = um.getData();
 
       v.push_back({um, pos});
+      //std::cout << "XXX " << pos << std::endl;
 
       // see if we can skip ahead
       // bring thisback later
       // TODO: Verify that this is correct
       int dist = um.dist;
+      /*if (!um.strand) {
+        dist = um.size - k;
+      }*/
+      if (um.strand) {
+        dist = um.size-k-dist;
+      }
+      //std::cout << "dist:" << dist << " bifrost\t" << kit->first.toString() << " " << um.strand << " " << (um.size-k) << " " << um.referenceUnitigToString() << std::endl;
 
 
       //const int lastbp = 10;
@@ -1212,7 +1221,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
             found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2)) {
             found2 = true;
-            found2pos = pos=+dist;
+            found2pos = pos+dist;
           }
           if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
@@ -1221,6 +1230,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
               break; //
             } else {
               v.push_back({um, found2pos});
+              //std::cout << "YYY " << found2pos << std::endl;
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -1249,6 +1259,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
 
                 if (foundMiddle) {
                   v.push_back({um3, found3pos});
+                  //std::cout << "ZZZ " << found2pos << std::endl;
                   if (nextPos >= l-k) {
                     break;
                   } else {
