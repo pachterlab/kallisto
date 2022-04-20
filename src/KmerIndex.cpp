@@ -1165,17 +1165,16 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>, int>>& v) /*const*/{
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const{
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
-  UnitigMap<Node> um;
-  Node* data;
+  const Node* data;
   //std::cout << s << std::endl;
 
   for (int i = 0;  kit != kit_end; ++i,++kit) {
     // need to check it
-    um = dbg.find(kit->first);
+    const_UnitigMap<Node> um = dbg.find(kit->first);
     //auto search = kmap.find(kit->first.rep());
 
     int pos = kit->second;
@@ -1210,7 +1209,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
         kit2 += dist;
         if (kit2 != kit_end) {
           Kmer rep2 = kit2->first;
-          UnitigMap<Node> um2 = dbg.find(rep2);
+          const_UnitigMap<Node> um2 = dbg.find(rep2);
           //auto search2 = kmap.find(rep2);
           bool found2 = false;
           int  found2pos = pos+dist;
@@ -1243,7 +1242,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<UnitigMap<Node
               KmerEntry val3;
               if (kit3 != kit_end) {
                 Kmer rep3 = kit3->first;
-                UnitigMap<Node> um3 = dbg.find(rep3);
+                const_UnitigMap<Node> um3 = dbg.find(rep3);
                 if (!um3.isEmpty) {
                   if (um3.isSameReferenceUnitig(um)) {
                     foundMiddle = true;
@@ -1292,7 +1291,7 @@ donejumping:
         if (j==0) {
           // need to check it
           Kmer rep = kit->first;
-          UnitigMap<Node> um = dbg.find(rep);
+          const_UnitigMap<Node> um = dbg.find(rep);
           if (!um.isEmpty) {
             // if k-mer found
             v.push_back({um, kit->second}); // add equivalence class, and position
@@ -1308,8 +1307,8 @@ donejumping:
   }
 }
 
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) /*const*/{
-  UnitigMap<Node> um = dbg.find(km);
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
+  const_UnitigMap<Node> um = dbg.find(km);
   if (!um.isEmpty) {
     return findPosition(tr, km, um, p);
   } else {
@@ -1322,7 +1321,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) /*const*/{
 //      km is the p-th k-mer of a read
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, UnitigMap<Node>& um, int p) /*const*/{
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const{
   bool csense = um.strand;
 
   int trpos = -1;

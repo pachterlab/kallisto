@@ -54,9 +54,9 @@ void createBamRecord(const KmerIndex, const KmerIndex &index, const std::vector<
 
 
 
-void outputPseudoBam(/*const*/ KmerIndex &index, const std::vector<int> &u,
-    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<UnitigMap<Node>&, int>>& v1,
-    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<UnitigMap<Node>&, int>>& v2,
+void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
+    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<const_UnitigMap<Node>&, int>>& v1,
+    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<const_UnitigMap<Node>&, int>>& v2,
     bool paired, bam_hdr_t *h, samFile *fp) {
 
   static char buf1[32768];
@@ -79,7 +79,7 @@ void outputPseudoBam(/*const*/ KmerIndex &index, const std::vector<int> &u,
   /*
   b1.l_data = fillBamRecord(b1, &buf1[0], s1,n1,q1,slen1,nlen1);
   b1.data = (uint8_t*)buf1;
-  
+
   if (paired) {
     b2.l_data = fillBamRecord(b2, &buf2[0], s2,n2,q2,slen2,nlen2);
     b2.data = (uint8_t*) buf2;
@@ -153,7 +153,7 @@ void outputPseudoBam(/*const*/ KmerIndex &index, const std::vector<int> &u,
 
 
       int p1 = -1, p2 = -1;
-      UnitigMap<Node> um1, um2;
+      const_UnitigMap<Node> um1, um2;
       int nmap = u.size();//index.ecmap[ec].size();
       Kmer km1, km2;
 
@@ -298,7 +298,7 @@ void outputPseudoBam(/*const*/ KmerIndex &index, const std::vector<int> &u,
     } else {
       // single end
       int nmap = (int) u.size();
-      UnitigMap<Node> um = v1[0].first;
+      const_UnitigMap<Node> um = v1[0].first;
       int p1 = v1[0].second;
       for (auto &x : v1) {
         if (x.second < p1) {

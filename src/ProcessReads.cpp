@@ -60,7 +60,7 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
-int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>, int>> &v, UnitigMap<Node> um) {
+int findFirstMappingKmer(const std::vector<std::pair<const_UnitigMap<Node>, int>> &v, const_UnitigMap<Node> um) {
   int p = -1;
   if (!v.empty()) {
     um = v[0].first;
@@ -1074,9 +1074,9 @@ void ReadProcessor::operator()() {
 }
 
 void ReadProcessor::processBuffer() {
-  
+
   // set up thread variables
-  std::vector<std::pair<UnitigMap<Node>, int>> v1, v2;
+  std::vector<std::pair<const_UnitigMap<Node>, int>> v1, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
 
@@ -1179,7 +1179,7 @@ void ReadProcessor::processBuffer() {
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
       int p = -1;
-      UnitigMap<Node> um;
+      const_UnitigMap<Node> um;
       Kmer km;
 
       if (!v1.empty()) {
@@ -1215,7 +1215,7 @@ void ReadProcessor::processBuffer() {
     if (mp.opt.strand_specific && !u.empty()) {
       int p = -1;
       Kmer km;
-      UnitigMap<Node> um;
+      const_UnitigMap<Node> um;
       if (!v1.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
@@ -1316,7 +1316,7 @@ void ReadProcessor::processBuffer() {
       if (!u.empty()) {
         info.r1empty = v1.empty();
         info.r2empty = v2.empty();
-        UnitigMap<Node> um;
+        const_UnitigMap<Node> um;
         info.k1pos = (!info.r1empty) ? findFirstMappingKmer(v1, um) : -1;
         info.k2pos = (!info.r2empty) ? findFirstMappingKmer(v2, um) : -1;
 
@@ -1483,7 +1483,7 @@ void BUSProcessor::operator()() {
 
 void BUSProcessor::processBuffer() {
   // set up thread variables
-  std::vector<std::pair<UnitigMap<Node>, int>> v, v2;
+  std::vector<std::pair<const_UnitigMap<Node>, int>> v, v2;
   std::vector<int> vtmp;
   std::vector<int> u;
 

@@ -91,7 +91,7 @@ struct KmerIndex {
 
   ~KmerIndex() {}
 
-  void match(const char *s, int l, std::vector<std::pair<UnitigMap<Node>, int>>& v) /*const*/;
+  void match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const;
 //  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
   int mapPair(const char *s1, int l1, const char *s2, int l2, int ec) /*const*/;
   std::vector<int> intersect(int ec, const std::vector<int>& v) const;
@@ -115,8 +115,8 @@ struct KmerIndex {
   void clear();
 
   // positional information
-  std::pair<int,bool> findPosition(int tr, Kmer km, UnitigMap<Node>& um, int p = 0) /*const*/;
-  std::pair<int,bool> findPosition(int tr, Kmer km, int p) /*const*/;
+  std::pair<int,bool> findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p = 0) const;
+  std::pair<int,bool> findPosition(int tr, Kmer km, int p) const;
 
   int k; // k-mer size used
   int num_trans; // number of targets
