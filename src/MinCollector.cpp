@@ -153,7 +153,8 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMa
   }
   sort(v.begin(), v.end(), [&](std::pair<const_UnitigMap<Node>&, int> a, std::pair<const_UnitigMap<Node>&, int> b)
        {
-         if (a.first.isSameReferenceUnitig(b.first)) {
+         if (a.first.isSameReferenceUnitig(b.first) &&
+             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
            return a.second < b.second;
          } else {
            return a.first.getData()->id < b.first.getData()->id;
