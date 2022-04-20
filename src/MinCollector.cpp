@@ -175,7 +175,8 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMa
   std::cout << std::endl;
 
   for (int i = 1; i < v.size(); i++) {
-    if (!v[i].first.isSameReferenceUnitig(v[i-1].first)) {
+    if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
+        v[i].first.getData()->ec[v[i].first.dist] != v[i-1].first.getData()->ec[v[i-1].first.dist]) {
       ec = v[i].first.getData()->ec[v[i].first.dist];
       if (ec != lastEC) {
         u = index.intersect(ec, u);

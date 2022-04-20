@@ -21,37 +21,44 @@ class Node: public CDBG_Data_t<Node> {
     public:
         // Unitig ID
         int id;
-        // Length of unitig
-        int len;
         // Equivalence class of unitig
         std::vector<int> ec;
         std::vector<u2t> transcripts;
 
-    void initialize_ec(int start, int len, int val) {
-        ec.reserve(start+len);
-        for (int i = start; i < start+len; ++i) {
-            ec[i] = val;
-        }
+    void initialize_ec(int len) {
+        ec = std::vector<int>(-1, len);
     }
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();
         Node* data_src = um_src.getData();
 
-        ec.clear();
         ec = data_dest->ec;
-        ec.reserve(um_dest.size + um_src.size);
+        ec.reserve(data_dest->ec.size() + data_src->ec.size());
         for (const auto& e : data_src->ec) {
             ec.push_back(e);
+        }
+
+        transcripts = data_dest->transcripts;
+        transcripts.reserve(data_dest->transcripts.size() + data_src->transcripts.size());
+        // ATTN:
+        // Do we need to make sure transcripts are unique here??
+        for (const auto& t : data_src->transcripts) {
+            transcripts.push_back(t);
         }
     }
 
     void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_src = um_src.getData();
 
-        ec.reserve(um_dest.size + um_src.size);
+        ec.reserve(ec.size() + data_src->ec.size());
         for (const auto& e : data_src->ec) {
             ec.push_back(e);
+        }
+
+        transcripts.reserve(transcripts.size() + data_src->transcripts.size());
+        for (const auto& t : data_src->transcripts) {
+            transcripts.push_back(t);
         }
     }
 
@@ -61,13 +68,14 @@ class Node: public CDBG_Data_t<Node> {
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
-        ec.clear();
+        Node* data = um_src.getData();
         ec.reserve(um_src.size);
 
-        Node* data = um_src.getData();
-        for (size_t i = um_src.dist; i < um_src.size; ++i) {
-            ec.push_back(data->ec[i]);
+        for (size_t i = um_src.dist; i < um_src.len; ++i) {
+            ec.push_back(data->ec[i - um_src.dist]);
         }
+
+        transcripts = data->transcripts;
     }
 };
 

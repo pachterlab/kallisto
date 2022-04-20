@@ -934,10 +934,14 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::string c_seq;
 
   UnitigMap<Node> um;
-  // Keep track of the order the unitigs are listed in the index in order to
+  // Keep track of the order the contigs are listed in the index in order to
   // match them up with the ECs later on
   std::vector<Kmer> unitig_order;
   unitig_order.reserve(contig_size);
+  // Keep track of the length of the contigs in order to assign the corresponding
+  // EC to the correct part of the mosaic ECs in the unitigs
+  std::vector<int> unitig_sizes;
+  unitig_sizes.reserve(contig_size);
   std::vector<std::vector<u2t> > transcripts(contig_size);
   Kmer kmer;
   Node* data;
@@ -964,11 +968,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     dbg.add(c_seq, false);
     kmer = Kmer(c_seq.substr(0, k).c_str());
     unitig_order.push_back(kmer);
+    unitig_sizes.push_back(c_len);
     um = dbg.findUnitig(c_seq.c_str(), 0, c_seq.length());
     data = um.getData();
-    data->initialize_ec(um.dist, um.size, -i);
+    data->initialize_ec(um.size-(k-1));
     data->id = c_id;
-    data->len = c_len;
 
     // 10.1 read transcript info
     in.read((char*)&tmp_size, sizeof(tmp_size));
@@ -988,12 +992,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
     um = dbg.find(unitig_order[i]);
     data = um.getData();
-    size_t j = um.dist;
-    int curr = data->ec[um.dist];
-    while (/*j < data->ec.size()-1 && */j < um.dist+um.size && curr == data->ec[j+1]) {
-        if (data->ec[j] >= 0) continue;
+    for (size_t j = um.dist; j < unitig_sizes[i]; ++j) {
         data->ec[j] = tmp_ec;
-        ++j;
     }
     data->transcripts = transcripts[i];
   }
@@ -1146,7 +1146,8 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
     return -1;
   }
 
-  if (!um1.isSameReferenceUnitig(um2)) {
+  if (!um1.isSameReferenceUnitig(um2) ||
+      um1.getData()->ec[um1.dist] != um2.getData()->ec[um2.dist]) {
     return -1;
   }
 
@@ -1216,7 +1217,11 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
           if (um2.isEmpty) {
             found2 = true;
             found2pos = pos;
-          } else if (um.isSameReferenceUnitig(um2)) {
+          } else if (um.isSameReferenceUnitig(um2) &&
+                     um.getData()->ec[um.dist] == um2.getData()->ec[um2.dist]) {
+              // If um and um2 are from the same Bifrost unitig and they have
+              // the same equivalence class, then they were part of the same
+              // contig in O.G. kallisto dbg
             found2 = true;
             found2pos = pos+dist;
           }
@@ -1244,10 +1249,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
                 Kmer rep3 = kit3->first;
                 const_UnitigMap<Node> um3 = dbg.find(rep3);
                 if (!um3.isEmpty) {
-                  if (um3.isSameReferenceUnitig(um)) {
+                  if (um3.isSameReferenceUnitig(um) &&
+                     um.getData()->ec[um.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = middlePos;
-                  } else if (um3.isSameReferenceUnitig(um2)) {
+                  } else if (um3.isSameReferenceUnitig(um2) &&
+                     um2.getData()->ec[um2.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = pos+dist;
                   }
