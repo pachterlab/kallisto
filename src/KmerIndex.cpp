@@ -942,6 +942,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // EC to the correct part of the mosaic ECs in the unitigs
   std::vector<int> unitig_sizes;
   unitig_sizes.reserve(contig_size);
+  std::vector<std::vector<u2t> > transcripts(contig_size);
   Kmer kmer;
   Node* data;
   // Keep track of the original strandedness of the contig in order to fix
@@ -981,7 +982,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       in.read((char*)&tr_id, sizeof(tr_id));
       in.read((char*)&pos, sizeof(pos));
       in.read((char*)&sense, sizeof(sense));
-      data->transcripts.emplace_back(tr_id, pos, sense);
+      transcripts[i].emplace_back(tr_id, pos, sense);
     }
   }
 
@@ -993,6 +994,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     data = um.getData();
     for (size_t j = um.dist; j < unitig_sizes[i]; ++j) {
         data->ec[j] = tmp_ec;
+    }
+    data->transcripts.reserve(data->transcript.size() + transcripts[i].size());
+    for (const auto& tr : transcripts[i]) {
+        data->transcripts.push_back(tr);
     }
   }
 
