@@ -992,7 +992,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
     um = dbg.find(unitig_order[i]);
     data = um.getData();
-    for (size_t j = um.dist; j < unitig_sizes[i]; ++j) {
+    for (size_t j = um.dist; j < (um.dist + unitig_sizes[i]); ++j) {
         data->ec[j] = tmp_ec;
     }
     data->transcripts.reserve(data->transcripts.size() + transcripts[i].size());
