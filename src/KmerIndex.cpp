@@ -969,10 +969,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     kmer = Kmer(c_seq.substr(0, k).c_str());
     unitig_order.push_back(kmer);
     unitig_sizes.push_back(c_len);
-    um = dbg.find(kmer);
-    data = um.getData();
-    data->initialize_ec(um.size-(k-1));
-    data->id = c_id;
+    for(size_t processed = 0; processed < c_len;) {
+        um = dbg.findUnitig(c_seq.c_str(), processed, c_seq.length());
+        data->initialize_ec(um.size-(k-1));
+        processed += um.len;
+        data->id = c_id;
+    }
 
     // 10.1 read transcript info
     in.read((char*)&tmp_size, sizeof(tmp_size));
