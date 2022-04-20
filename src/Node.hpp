@@ -72,7 +72,7 @@ class Node: public CDBG_Data_t<Node> {
         ec.reserve(um_src.size);
 
         for (size_t i = um_src.dist; i < um_src.len; ++i) {
-            ec.push_back(data->ec[i - um_src.dist]);
+            ec.push_back(data->ec[i]);
         }
 
         transcripts = data->transcripts;
