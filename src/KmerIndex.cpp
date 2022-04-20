@@ -995,7 +995,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     for (size_t j = um.dist; j < unitig_sizes[i]; ++j) {
         data->ec[j] = tmp_ec;
     }
-    data->transcripts.reserve(data->transcript.size() + transcripts[i].size());
+    data->transcripts.reserve(data->transcripts.size() + transcripts[i].size());
     for (const auto& tr : transcripts[i]) {
         data->transcripts.push_back(tr);
     }
