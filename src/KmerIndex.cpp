@@ -942,7 +942,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // EC to the correct part of the mosaic ECs in the unitigs
   std::vector<int> unitig_sizes;
   unitig_sizes.reserve(contig_size);
-  std::vector<std::vector<u2t> > transcripts(contig_size);
   Kmer kmer;
   Node* data;
   // Keep track of the original strandedness of the contig in order to fix
@@ -969,7 +968,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     kmer = Kmer(c_seq.substr(0, k).c_str());
     unitig_order.push_back(kmer);
     unitig_sizes.push_back(c_len);
-    um = dbg.findUnitig(c_seq.c_str(), 0, c_seq.length());
+    um = dbg.find(kmer);
     data = um.getData();
     data->initialize_ec(um.size-(k-1));
     data->id = c_id;
@@ -982,7 +981,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       in.read((char*)&tr_id, sizeof(tr_id));
       in.read((char*)&pos, sizeof(pos));
       in.read((char*)&sense, sizeof(sense));
-      transcripts[i].emplace_back(tr_id, pos, sense);
+      data->transcripts.emplace_back(tr_id, pos, sense);
     }
   }
 
@@ -995,7 +994,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     for (size_t j = um.dist; j < unitig_sizes[i]; ++j) {
         data->ec[j] = tmp_ec;
     }
-    data->transcripts = transcripts[i];
   }
 
   // With Bifrost we have no control over the strandedness of the contigs.
