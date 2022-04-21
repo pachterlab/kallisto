@@ -23,8 +23,13 @@ class Node: public CDBG_Data_t<Node> {
     public:
         // Unitig ID
         uint32_t id;
-        // Equivalence class of unitig
+        // Mosaic Equivalence Class:
+        // Each kmer in the unitig can have a different equivalence class
         std::vector<uint32_t> ec;
+        // EC : [transcripts]
+        // Each equivalence class that is part of this unitig's mosaic
+        // equivalence class can have a different list of transcripits
+        // associated with it
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {

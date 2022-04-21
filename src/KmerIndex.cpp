@@ -942,6 +942,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // match them up with the ECs later on
   // Keep track of the original strandedness of the contig in order to fix
   // transcript.sense if the strandedness changes.
+  // TODO:
+  // See if we can get away with not keeping all the contig sequences in this
+  // vector by restructuring the index
   std::vector<std::string> canonical_contigs;
   canonical_contigs.reserve(contig_size);
   for (size_t i = 0; i < contig_size; ++i) {
