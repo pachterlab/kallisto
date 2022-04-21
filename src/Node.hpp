@@ -62,6 +62,9 @@ class Node: public CDBG_Data_t<Node> {
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
+        if (ec.size() == 0) {
+          return;
+        }
         Node* data = um_src.getData();
         data->ec.reserve(um_src.size);
 
