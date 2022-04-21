@@ -795,6 +795,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
+  std::ifstream in;
 
   in.open(index_in, std::ios::in | std::ios::binary);
 
