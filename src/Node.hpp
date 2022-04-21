@@ -22,7 +22,7 @@ struct u2t {
 class Node: public CDBG_Data_t<Node> {
     public:
         // Unitig ID
-        int id;
+        uint32_t id;
         // Equivalence class of unitig
         std::vector<uint32_t> ec;
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
