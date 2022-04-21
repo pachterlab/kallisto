@@ -976,6 +976,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 11. read ecs info
   int tmp_ec;
+  size_t running_id;
   for (size_t i = 0; i < canonical_contigs.size(); ++i) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
     size_t proc = 0;
@@ -988,6 +989,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       }
       proc += um.len;
       data->transcripts[tmp_ec] = transcripts[i];
+      data->id = running_id++;
 
       // With Bifrost we have no control over the strandedness of the contigs.
       // We iterate over all the contigs we read from the index and check whether

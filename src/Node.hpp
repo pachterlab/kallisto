@@ -27,10 +27,6 @@ class Node: public CDBG_Data_t<Node> {
         std::vector<uint32_t> ec;
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
-    Node() {
-        id = running_id++;
-    }
-
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();
         Node* data_src = um_src.getData();
@@ -79,9 +75,6 @@ class Node: public CDBG_Data_t<Node> {
             data->transcripts[i] = transcripts[i];
         }
     }
-
-    private:
-        static size_t running_id = 0;
 };
 
 #endif
