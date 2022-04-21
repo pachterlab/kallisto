@@ -24,12 +24,8 @@ class Node: public CDBG_Data_t<Node> {
         // Unitig ID
         int id;
         // Equivalence class of unitig
-        std::vector<int> ec;
-        std::unordered_map<int, std::vector<u2t> > transcripts;
-
-    void initialize_ec(int len) {
-        ec = std::vector<int>(len, -1);
-    }
+        std::vector<uint32_t> ec;
+        std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();
@@ -70,7 +66,7 @@ class Node: public CDBG_Data_t<Node> {
         data->ec.reserve(um_src.size);
 
         std::set<int> ecs;
-        for (size_t i = um_src.dist; i < um.dist + um_src.len; ++i) {
+        for (size_t i = um_src.dist; i < um_src.dist + um_src.len; ++i) {
             data->ec.push_back(data->ec[i]);
             ecs.insert(data->ec[i]);
         }
