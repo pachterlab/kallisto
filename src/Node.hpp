@@ -67,16 +67,16 @@ class Node: public CDBG_Data_t<Node> {
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
         Node* data = um_src.getData();
-        ec.reserve(um_src.size);
+        data->ec.reserve(um_src.size);
 
         std::set<int> ecs;
-        for (size_t i = um_src.dist; i < um_src.len; ++i) {
-            ec.push_back(data->ec[i]);
+        for (size_t i = um_src.dist; i < um.dist + um_src.len; ++i) {
+            data->ec.push_back(data->ec[i]);
             ecs.insert(data->ec[i]);
         }
 
         for (const auto& i : ecs) {
-            transcripts[i] = data->transcripts[i];
+            data->transcripts[i] = transcripts[i];
         }
     }
 };
