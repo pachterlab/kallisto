@@ -795,11 +795,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in, hack_in;
-  size_t hack_var;
 
   in.open(index_in, std::ios::in | std::ios::binary);
-  hack_in.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in.is_open()) {
     // TODO: better handling
@@ -810,7 +807,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 1. read version
   size_t header_version = 0;
   in.read((char *)&header_version, sizeof(header_version));
-  hack_in.read((char *)&hack_var, sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -820,7 +816,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 2. read k
   in.read((char *)&k, sizeof(k));
-  hack_in.read((char *)&hack_var, sizeof(k));
   dbg = CompactedDBG<Node>(k);
   if (Kmer::k == 0) {
     //std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
@@ -837,7 +832,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 3. read in number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
-  hack_in.read((char *)&hack_var, sizeof(num_trans));
 
   // 4. read in length of targets
   target_lens_.clear();
@@ -846,14 +840,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   for (int i = 0; i < num_trans; i++) {
     int tlen;
     in.read((char *)&tlen, sizeof(tlen));
-    hack_in.read((char *)&hack_var, sizeof(tlen));
     target_lens_.push_back(tlen);
   }
 
   // 5. read number of k-mers
   size_t kmap_size;
   in.read((char *)&kmap_size, sizeof(kmap_size));
-  hack_in.read((char *)&hack_var, sizeof(kmap_size));
 
   std::cerr << "[index] k-mer length: " << k << std::endl;
   std::cerr << "[index] number of targets: " << pretty_num(num_trans)
@@ -873,9 +865,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   KmerEntry tmp_val;
   for (size_t i = 0; i < kmap_size; ++i) {
     in.read((char *)&tmp_kmer, sizeof(tmp_kmer));
-    hack_in.read((char *)&hack_var, sizeof(tmp_kmer));
     in.read((char *)&tmp_val, sizeof(tmp_val));
-    hack_in.read((char *)&hack_var, sizeof(tmp_val));
 
     //if (loadKmerTable) {
       //kmap.insert({tmp_kmer, tmp_val});
@@ -885,7 +875,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 7. read number of equivalence classes
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
-  hack_in.read((char *)&hack_var, sizeof(ecmap_size));
 
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
@@ -896,18 +885,15 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 8. read each equiv class
   for (size_t ec = 0; ec < ecmap_size; ++ec) {
     in.read((char *)&tmp_id, sizeof(tmp_id));
-    hack_in.read((char *)&hack_var, sizeof(tmp_id));
 
     // 8.1 read size of equiv class
     in.read((char *)&vec_size, sizeof(vec_size));
-    hack_in.read((char *)&hack_var, sizeof(vec_size));
 
     // 8.2 read each member
     std::vector<int> tmp_vec;
     tmp_vec.reserve(vec_size);
     for (size_t j = 0; j < vec_size; ++j ) {
       in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
-      hack_in.read((char *)&hack_var, sizeof(tmp_ecval));
       tmp_vec.push_back(tmp_ecval);
     }
     //ecmap.insert({tmp_id, tmp_vec});
@@ -922,25 +908,20 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t tmp_size;
   size_t bufsz = 1024;
   char *buffer = new char[bufsz];
-  char *hack_buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
     // 9.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
-    hack_in.read((char *)&hack_var, sizeof(tmp_size));
 
     if (tmp_size +1 > bufsz) {
       delete[] buffer;
       bufsz = 2*(tmp_size+1);
       buffer = new char[bufsz];
-      hack_buffer = new char[bufsz];
     }
 
     // clear the buffer
     memset(buffer,0,bufsz);
-    memset(hack_buffer,0,bufsz);
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
-    hack_in.read(hack_buffer, tmp_size);
 
     target_names_.push_back(std::string(buffer));
   }
@@ -948,24 +929,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 10. read contigs
   size_t contig_size;
   in.read((char *)&contig_size, sizeof(contig_size));
-  hack_in.read((char *)&hack_var, sizeof(contig_size));
-  // Spool hack_in to the location in the index file where the ECs are stored
-  size_t hack_size;
-  int hack_len, hack_id;
-  for (size_t i = 0; i < contig_size; ++i) {
-    in.read((char *)&hack_id, sizeof(hack_id));
-    in.read((char *)&hack_len, sizeof(hack_len));
-    in.read((char *)&hack_size, sizeof(hack_size));
-    if (tmp_size + 1 > bufsz) {
-      delete[] buffer;
-      bufsz = 2*(tmp_size+1);
-      hack_buffer = new char[bufsz];
-    }
-
-    memset(hack_buffer,0,bufsz);
-    hack_in.read(hack_buffer, hack_size);
-  }
-
 
   int c_len, c_id;
   std::string c_seq;
