@@ -1094,7 +1094,7 @@ void ReadProcessor::processBuffer() {
   if (mp.opt.batch_mode) {
     findFragmentLength = (mp.opt.fld == 0) && (mp.tlencounts[id] < 10000);
   }
-  
+
   int flengoal = 0;
   flens.clear();
   if (findFragmentLength) {
@@ -1106,7 +1106,7 @@ void ReadProcessor::processBuffer() {
       flens.resize(tc.flens.size(), 0);
     }
   }
-  
+
   int maxBiasCount = 0;
   bool findBias = mp.opt.bias && (mp.biasCount < mp.maxBiasCount);
 
@@ -1120,10 +1120,10 @@ void ReadProcessor::processBuffer() {
       bias5.resize(tc.bias5.size(),0);
     }
   }
-  
+
   // actually process the sequences
   for (int i = 0; i < seqs.size(); i++) {
-    
+
     s1 = seqs[i].first;
     l1 = seqs[i].second;
     if (paired) {
@@ -1136,13 +1136,13 @@ void ReadProcessor::processBuffer() {
     v1.clear();
     v2.clear();
     u.clear();
-    
+
     // process read
     index.match(s1, l1, v1);
     if (paired) {
       index.match(s2, l2, v2);
     }
-    
+
     //std::cout << "v1: ";
     //for (auto vv : v1) {
     //  std::cout << vv.second << " ";
@@ -1222,7 +1222,9 @@ void ReadProcessor::processBuffer() {
         p = findFirstMappingKmer(v1, um);
         // might need to optimize this
         for (const auto& tr : u) {
-          for (const auto& ctx : um.getData()->transcripts) {
+          const Node* n = um.getData();
+          const auto trs = n->transcripts.find(n->ec[um.dist]);
+          for (const auto& ctx : trs->second) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == firstStrand) {
                 // swap out
@@ -1244,7 +1246,9 @@ void ReadProcessor::processBuffer() {
         km = Kmer((s2+p));
         // might need to optimize this
         for (const auto& tr : u) {
-          for (const auto& ctx : um.getData()->transcripts) {
+          const Node* n = um.getData();
+          const auto trs = n->transcripts.find(n->ec[um.dist]);
+          for (const auto& ctx : trs->second) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == secondStrand) {
                 // swap out
@@ -1708,7 +1712,8 @@ void BUSProcessor::processBuffer() {
         km = Kmer((seq+p));
         // might need to optimize this
         for (auto tr : u) {
-          for (auto ctx : um.getData()->transcripts) {
+          Node* n = um.getData();
+          for (const auto& ctx : n->transcripts[n->ec[um.dist]]) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == firstStrand) {
                 // swap out
@@ -1729,7 +1734,8 @@ void BUSProcessor::processBuffer() {
         km = Kmer((seq2+p));
         // might need to optimize this
         for (auto tr : u) {
-          for (auto ctx : um.getData()->transcripts) {
+          Node* n = um.getData();
+          for (const auto& ctx : n->transcripts[n->ec[um.dist]]) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == secondStrand) {
                 // swap out

@@ -2,6 +2,8 @@
 #define NODE_HPP
 
 #include <vector>
+#include <unordered_map>
+#include <set>
 
 #include <CompactedDBG.hpp>
 
@@ -23,7 +25,7 @@ class Node: public CDBG_Data_t<Node> {
         int id;
         // Equivalence class of unitig
         std::vector<int> ec;
-        std::vector<u2t> transcripts;
+        std::unordered_map<int, std::vector<u2t> > transcripts;
 
     void initialize_ec(int len) {
         ec = std::vector<int>(len, -1);
@@ -40,11 +42,8 @@ class Node: public CDBG_Data_t<Node> {
         }
 
         transcripts = data_dest->transcripts;
-        transcripts.reserve(data_dest->transcripts.size() + data_src->transcripts.size());
-        // ATTN:
-        // Do we need to make sure transcripts are unique here??
-        for (const auto& t : data_src->transcripts) {
-            transcripts.push_back(t);
+        for (const auto& kv : data_src->transcripts) {
+            transcripts[kv.first] = kv.second;
         }
     }
 
@@ -56,9 +55,8 @@ class Node: public CDBG_Data_t<Node> {
             ec.push_back(e);
         }
 
-        transcripts.reserve(transcripts.size() + data_src->transcripts.size());
-        for (const auto& t : data_src->transcripts) {
-            transcripts.push_back(t);
+        for (const auto& kv : data_src->transcripts) {
+            transcripts[kv.first] = kv.second;
         }
     }
 
@@ -71,11 +69,15 @@ class Node: public CDBG_Data_t<Node> {
         Node* data = um_src.getData();
         ec.reserve(um_src.size);
 
+        std::set<int> ecs;
         for (size_t i = um_src.dist; i < um_src.len; ++i) {
             ec.push_back(data->ec[i]);
+            ecs.insert(data->ec[i]);
         }
 
-        transcripts = data->transcripts;
+        for (const auto& i : ecs) {
+            transcripts[i] = data->transcripts[i];
+        }
     }
 };
 

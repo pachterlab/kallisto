@@ -795,9 +795,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in;
+  std::ifstream in, hack_in;
+  size_t hack_var;
 
   in.open(index_in, std::ios::in | std::ios::binary);
+  hack_in.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in.is_open()) {
     // TODO: better handling
@@ -808,6 +810,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 1. read version
   size_t header_version = 0;
   in.read((char *)&header_version, sizeof(header_version));
+  hack_in.read((char *)&hack_var, sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -817,6 +820,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 2. read k
   in.read((char *)&k, sizeof(k));
+  hack_in.read((char *)&hack_var, sizeof(k));
   dbg = CompactedDBG<Node>(k);
   if (Kmer::k == 0) {
     //std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
@@ -833,6 +837,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 3. read in number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
+  hack_in.read((char *)&hack_var, sizeof(num_trans));
 
   // 4. read in length of targets
   target_lens_.clear();
@@ -841,12 +846,14 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   for (int i = 0; i < num_trans; i++) {
     int tlen;
     in.read((char *)&tlen, sizeof(tlen));
+    hack_in.read((char *)&hack_var, sizeof(tlen));
     target_lens_.push_back(tlen);
   }
 
   // 5. read number of k-mers
   size_t kmap_size;
   in.read((char *)&kmap_size, sizeof(kmap_size));
+  hack_in.read((char *)&hack_var, sizeof(kmap_size));
 
   std::cerr << "[index] k-mer length: " << k << std::endl;
   std::cerr << "[index] number of targets: " << pretty_num(num_trans)
@@ -866,7 +873,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   KmerEntry tmp_val;
   for (size_t i = 0; i < kmap_size; ++i) {
     in.read((char *)&tmp_kmer, sizeof(tmp_kmer));
+    hack_in.read((char *)&hack_var, sizeof(tmp_kmer));
     in.read((char *)&tmp_val, sizeof(tmp_val));
+    hack_in.read((char *)&hack_var, sizeof(tmp_val));
 
     //if (loadKmerTable) {
       //kmap.insert({tmp_kmer, tmp_val});
@@ -876,6 +885,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 7. read number of equivalence classes
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
+  hack_in.read((char *)&hack_var, sizeof(ecmap_size));
 
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
@@ -886,15 +896,18 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 8. read each equiv class
   for (size_t ec = 0; ec < ecmap_size; ++ec) {
     in.read((char *)&tmp_id, sizeof(tmp_id));
+    hack_in.read((char *)&hack_var, sizeof(tmp_id));
 
     // 8.1 read size of equiv class
     in.read((char *)&vec_size, sizeof(vec_size));
+    hack_in.read((char *)&hack_var, sizeof(vec_size));
 
     // 8.2 read each member
     std::vector<int> tmp_vec;
     tmp_vec.reserve(vec_size);
     for (size_t j = 0; j < vec_size; ++j ) {
       in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
+      hack_in.read((char *)&hack_var, sizeof(tmp_ecval));
       tmp_vec.push_back(tmp_ecval);
     }
     //ecmap.insert({tmp_id, tmp_vec});
@@ -909,20 +922,25 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t tmp_size;
   size_t bufsz = 1024;
   char *buffer = new char[bufsz];
+  char *hack_buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
     // 9.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
+    hack_in.read((char *)&hack_var, sizeof(tmp_size));
 
     if (tmp_size +1 > bufsz) {
       delete[] buffer;
       bufsz = 2*(tmp_size+1);
       buffer = new char[bufsz];
+      hack_buffer = new char[bufsz];
     }
 
     // clear the buffer
     memset(buffer,0,bufsz);
+    memset(hack_buffer,0,bufsz);
     // 9.2 read in the character string
     in.read(buffer, tmp_size);
+    hack_in.read(hack_buffer, tmp_size);
 
     target_names_.push_back(std::string(buffer));
   }
@@ -930,21 +948,34 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 10. read contigs
   size_t contig_size;
   in.read((char *)&contig_size, sizeof(contig_size));
+  hack_in.read((char *)&hack_var, sizeof(contig_size));
+  // Spool hack_in to the location in the index file where the ECs are stored
+  size_t hack_size;
+  int hack_len, hack_id;
+  for (size_t i = 0; i < contig_size; ++i) {
+    in.read((char *)&hack_id, sizeof(hack_id));
+    in.read((char *)&hack_len, sizeof(hack_len));
+    in.read((char *)&hack_size, sizeof(hack_size));
+    if (tmp_size + 1 > bufsz) {
+      delete[] buffer;
+      bufsz = 2*(tmp_size+1);
+      hack_buffer = new char[bufsz];
+    }
+
+    memset(hack_buffer,0,bufsz);
+    hack_in.read(hack_buffer, hack_size);
+  }
+
+
   int c_len, c_id;
   std::string c_seq;
 
   UnitigMap<Node> um;
-  // Keep track of the order the contigs are listed in the index in order to
-  // match them up with the ECs later on
-  std::vector<Kmer> unitig_order;
-  unitig_order.reserve(contig_size);
-  // Keep track of the length of the contigs in order to assign the corresponding
-  // EC to the correct part of the mosaic ECs in the unitigs
-  std::vector<int> unitig_sizes;
-  unitig_sizes.reserve(contig_size);
   std::vector<std::vector<u2t> > transcripts(contig_size);
   Kmer kmer;
   Node* data;
+  // Keep track of the order the contigs are listed in the index in order to
+  // match them up with the ECs later on
   // Keep track of the original strandedness of the contig in order to fix
   // transcript.sense if the strandedness changes.
   std::vector<std::string> canonical_contigs;
@@ -966,15 +997,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     canonical_contigs.push_back(c_seq);
 
     dbg.add(c_seq, false);
-    kmer = Kmer(c_seq.substr(0, k).c_str());
-    unitig_order.push_back(kmer);
-    unitig_sizes.push_back(c_len);
-    for(size_t processed = 0; processed < c_len;) {
-        um = dbg.findUnitig(c_seq.c_str(), processed, c_seq.length());
-        data->initialize_ec(um.size-(k-1));
-        processed += um.len;
-        data->id = c_id;
-    }
 
     // 10.1 read transcript info
     in.read((char*)&tmp_size, sizeof(tmp_size));
@@ -990,34 +1012,30 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 11. read ecs info
   int tmp_ec;
-  for (size_t i = 0; i < unitig_order.size(); ++i) {
+  for (size_t i = 0; i < canonical_contigs.size(); ++i) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
-    um = dbg.find(unitig_order[i]);
-    data = um.getData();
-    for (size_t j = um.dist; j < (um.dist + unitig_sizes[i]); ++j) {
+    size_t proc = 0;
+    while (proc < canonical_contigs[i].length() - k + 1) {
+      um = dbg.findUnitig(canonical_contigs[i].c_str(), proc, canonical_contigs[i].length());
+      data = um.getData();
+      data->ec.reserve(um.size - k + 1);
+      for (size_t j = um.dist; j < um.dist + um.len; ++j) {
         data->ec[j] = tmp_ec;
-    }
-    data->transcripts.reserve(data->transcripts.size() + transcripts[i].size());
-    for (const auto& tr : transcripts[i]) {
-        data->transcripts.push_back(tr);
-    }
-  }
-
-  // With Bifrost we have no control over the strandedness of the contigs.
-  // We iterate over all the contigs we read from the index and check whether
-  // the corresponding Bifrost unitig has the same strandedness. If not, we
-  // flip the transcript.sense for all transcripts belonging to that unitig.
-  std::set<Kmer> kmer_set;
-  for (const auto& seq : canonical_contigs) {
-    kmer = Kmer(seq.substr(0, k).c_str());
-    um = dbg.find(kmer);
-    // If the canonical contig sequence is not a substring of the found unitig
-    // sequence, and we haven't flipped the sense in this unitig before.
-    if (!um.isEmpty && !um.strand && kmer_set.find(kmer) == kmer_set.end()) {
-      for (auto& tr : um.getData()->transcripts) {
-        tr.sense = !tr.sense;
       }
-      kmer_set.insert(kmer);
+      proc += um.len;
+      data->transcripts[tmp_ec] = transcripts[i];
+
+      // With Bifrost we have no control over the strandedness of the contigs.
+      // We iterate over all the contigs we read from the index and check whether
+      // the corresponding Bifrost unitig has the same strandedness. If not, we
+      // flip the transcript.sense for all transcripts belonging to that unitig.
+      if (!um.isEmpty && !um.strand) {
+        // If the canonical contig sequence is not a substring of the found
+        // unitig sequence
+        for (auto& tr: data->transcripts[tmp_ec]) {
+          tr.sense = !tr.sense;
+        }
+      }
     }
   }
 
@@ -1333,7 +1351,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
 //      km is the p-th k-mer of a read
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const{
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const {
   bool csense = um.strand;
 
   int trpos = -1;
@@ -1341,7 +1359,9 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   if (um.getData()->id < 0) {
     return {-1, true};
   }
-  for (auto x : um.getData()->transcripts) {
+  const Node* n = um.getData();
+  const auto trs = n->transcripts.find(n->ec[um.dist]);
+  for (const auto& x : trs->second) {
     if (x.tr_id == tr) {
       trpos = x.pos;
       trsense = x.sense;
@@ -1418,7 +1438,8 @@ void KmerIndex::loadTranscriptSequences() const {
     if (!um.strand) {
       um_seq = revcomp(um_seq);
     }
-    for (const auto& tr : data->transcripts) {
+    const auto trs = data->transcripts.find(data->ec[um.dist]);
+    for (const auto& tr : trs->second) {
       // TODO:
       // Verify that this method of choosing to reverse complement is legit
       if (um.strand ^ tr.sense) {
