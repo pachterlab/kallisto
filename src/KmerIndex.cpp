@@ -963,7 +963,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     c_seq = std::string(buffer); // copy
     canonical_contigs.push_back(c_seq);
 
-    dbg.add(c_seq, false);
+    //dbg.add(c_seq, false);
 
     // 10.1 read transcript info
     in.read((char*)&tmp_size, sizeof(tmp_size));
@@ -976,6 +976,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       transcripts[i].emplace_back(tr_id, pos, sense);
     }
   }
+
+  std::string tmp_file = ".tmp_dbg.fasta";
+  std::ofstream of(tmp_file);
+  for (size_t i = 0; i < canonical_contigs.size(); ++i) {
+    of << ">" << std::to_string(i) << std::endl;
+    of << canonical_contigs[i] << std::endl;
+  }
+  of.close();
+
+  CDBG_Build_opt c_opt;
+  c_opt.k = k;
+  c_opt.nb_threads = opt.threads;
+  c_opt.build = true;
+  c_opt.clipTips = false;
+  c_opt.deleteIsolated = false;
+  c_opt.filename_ref_in.push_back(tmp_file);
+
+  dbg.build(c_opt);
+
+  std::remove(tmp_file.c_str());
 
   // 11. read ecs info
   int tmp_ec;
