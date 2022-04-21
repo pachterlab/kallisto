@@ -976,7 +976,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 11. read ecs info
   int tmp_ec;
-  size_t running_id;
+  size_t running_id = 0;
   for (size_t i = 0; i < canonical_contigs.size(); ++i) {
     in.read((char*)&tmp_ec, sizeof(tmp_ec));
     size_t proc = 0;
