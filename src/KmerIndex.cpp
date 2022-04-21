@@ -991,6 +991,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   c_opt.build = true;
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
+  c_opt.useMercyKmers = true;
   c_opt.filename_ref_in.push_back(tmp_file);
 
   dbg.build(c_opt);
