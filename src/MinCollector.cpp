@@ -38,7 +38,7 @@ int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, in
                           std::vector<std::pair<const_UnitigMap<Node>, int>>& v2, bool nonpaired, std::vector<int> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
-  std::cout << "XXX" << u1.size() << ":" << v1.size() << "::" << u2.size() << ":" << v2.size() << std::endl; // XXX0:3::0:0 = needs fixing
+  //std::cout << "XXX" << u1.size() << ":" << v1.size() << "::" << u2.size() << ":" << v2.size() << std::endl; // XXX0:3::0:0 = needs fixing
 
   if (u1.empty() && u2.empty()) {
     return -1;
@@ -165,6 +165,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMa
   int ec = v[0].first.getData()->ec[v[0].first.dist];
   int lastEC = ec;
   std::vector<int> u = index.ecmap[ec];
+  /*
   std::cout << "YYY" << v.size() << " " << ec << " " << u.size() << " : " << v[0].first.getData()->ec.size() << " - ";
   for (auto xxx : v) {
     std::cout << xxx.second << " ";
@@ -174,6 +175,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMa
     std::cout << eee << " ";
   }
   std::cout << std::endl;
+  */
 
   for (int i = 1; i < v.size(); i++) {
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||

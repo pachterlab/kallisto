@@ -883,6 +883,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   int tmp_id;
   int tmp_ecval;
   size_t vec_size;
+
   // 8. read each equiv class
   for (size_t ec = 0; ec < ecmap_size; ++ec) {
     in.read((char *)&tmp_id, sizeof(tmp_id));
@@ -1110,7 +1111,7 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
-int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
+int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
@@ -1119,22 +1120,19 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
   int c2 = -1;
 
   KmerIterator kit1(s1), kit_end;
-  UnitigMap<Node> um1, um2;
+  const_UnitigMap<Node> um1, um2;
 
+  Kmer k1, k2;
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
-    Kmer x = kit1->first;
-    um1 = dbg.find(x);
-
+    k1 = Kmer(kit1->first);
+    um1 = dbg.find(kit1->first);
     if (!um1.isEmpty) {
       found1 = true;
-      if (um1.strand) {
+      if (um1.strand)
         p1 = um1.dist - kit1->second;
-        d1 = true;
-      } else {
+      else
         p1 = um1.dist + k + kit1->second;
-        d1 = false;
-      }
       break;
     }
   }
@@ -1147,18 +1145,14 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
   bool found2 = false;
 
   for (; kit2 != kit_end; ++kit2) {
-    Kmer x = kit2->first;
-    um2 = dbg.find(x);
-
+    k2 = kit2->first;
+    um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
       found2 = true;
-      if (um2.strand) {
+      if (um2.strand)
         p2 = um2.dist - kit2->second;
-        d2 = true;
-      } else {
+      else
         p2 = um2.dist + k + kit2->second;
-        d2 = false;
-      }
       break;
     }
   }
@@ -1172,7 +1166,8 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
     return -1;
   }
 
-  if ((d1 && d2) || (!d1 && !d2)) {
+  // Paired reads need to map to opposite strands
+  if (!(um1.strand ^ um2.strand)) {
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
@@ -1188,12 +1183,31 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) {
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
 void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const{
-  KmerIterator kit(s), kit_end;
-  bool backOff = false;
-  int nextPos = 0; // nextPosition to check
   const Node* data;
-  //std::cout << s << std::endl;
 
+  int k = dbg.getK();
+  size_t proc = 0;
+  while (proc < l - k + 1) {
+    const_UnitigMap<Node> um = dbg.findUnitig(s, proc, l);
+    if (um.isEmpty) {
+      proc++;
+      continue;
+    }
+
+    data = um.getData();
+    uint32_t curr_ec = data->ec[um.dist];
+    v.emplace_back(um, proc);
+    // Add one entry to v for each EC that is part of the mosaic EC of the contig.
+    for (size_t i = 0; i < um.len; ++i) {
+      if (data->ec[um.dist + i] != curr_ec) {
+        curr_ec = data->ec[um.dist + i];
+        v.emplace_back(dbg.find(um.getMappedKmer(i)), proc + i);
+      }
+    }
+    proc += um.len;
+  }
+
+  /*
   for (int i = 0;  kit != kit_end; ++i,++kit) {
     // need to check it
     const_UnitigMap<Node> um = dbg.find(kit->first);
@@ -1210,7 +1224,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
       // see if we can skip ahead
       // bring thisback later
-      // TODO: Verify that this is correct
+
       int dist = um.dist;
       if (um.strand) {
         dist = um.size-k-dist;
@@ -1284,7 +1298,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
                 if (foundMiddle) {
                   v.push_back({um3, found3pos});
-                  //std::cout << "ZZZ " << found2pos << std::endl;
+                  //std::cout << "ZZZ " << found3pos << std::endl;
                   if (nextPos >= l-k) {
                     break;
                   } else {
@@ -1333,6 +1347,7 @@ donejumping:
       }
     }
   }
+  */
 }
 
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{

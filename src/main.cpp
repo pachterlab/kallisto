@@ -2924,7 +2924,6 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // run the em algorithm
-        // TODO: Let's do this first
         KmerIndex index(opt);
         index.load(opt);
         if (opt.fusion) {
@@ -2980,13 +2979,11 @@ int main(int argc, char *argv[]) {
         if (opt.bias) {
          // TODO: implement bias
          // ==============================================
-         
-         // ==============================================
          std::cout << "TODO: implement bias" << std::endl;
          exit(1);
+         // ==============================================
           //preBias = collection.bias5; // copy
         }
-        
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 

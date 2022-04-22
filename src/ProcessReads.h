@@ -288,24 +288,23 @@ public:
 
 class ReadProcessor {
 public:
-  ReadProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
+  ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
-  
+
   size_t bufsize;
   bool paired;
   const MinCollector& tc;
   std::vector<std::pair<int, std::string>> ec_umi;
   std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
-  /*const*/ KmerIndex& index;
+  const KmerIndex& index;
   MasterProcessor& mp;
   FastqSequenceReader batchSR;
   int64_t numreads;
   int id;
   int local_id;
   PseudoAlignmentBatch pseudobatch;
-  
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
@@ -323,14 +322,13 @@ public:
   void clear();
 };
 
-
 class BUSProcessor {
 public:
   BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   BUSProcessor(BUSProcessor && o);
   ~BUSProcessor();
   char *buffer;
-  
+
   size_t bufsize;
   bool paired;
   bool bam;
@@ -346,7 +344,6 @@ public:
 
   int bc_len[33];
   int umi_len[33];
-  
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;

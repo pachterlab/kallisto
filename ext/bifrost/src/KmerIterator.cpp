@@ -15,7 +15,7 @@ KmerIterator& KmerIterator::operator++() {
 
                 if (pos_s + Kmer::k - 1 == pos_e){
 
-                    if (pos_s == p.second + 1) p.first.selfForwardBase(c);
+                    if (pos_s == p.second + 1 && !p.first.isEmpty()) p.first.selfForwardBase(c);
                     else p.first = Kmer(str + pos_s);
 
                     p.second = pos_s;

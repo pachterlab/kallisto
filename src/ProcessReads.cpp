@@ -982,7 +982,7 @@ void MasterProcessor::outputFusion(const std::stringstream &o) {
 }
 
 
-ReadProcessor::ReadProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
+ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int _id, int _local_id) :
  paired(!opt.single_end), tc(tc), index(index), mp(mp), id(_id), local_id(_local_id) {
    // initialize buffer
    bufsize = mp.bufsize;
@@ -1058,7 +1058,7 @@ void ReadProcessor::operator()() {
         // get new sequences
         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
       }
-      
+
       // release the reader lock
     }
     pseudobatch.aln.clear();
@@ -1143,22 +1143,9 @@ void ReadProcessor::processBuffer() {
       index.match(s2, l2, v2);
     }
 
-    //std::cout << "v1: ";
-    //for (auto vv : v1) {
-    //  std::cout << vv.second << " ";
-    //}
-    //std::cout << std::endl;
-    //std::cout << "v2: ";
-    //for (auto vv : v2) {
-    //  std::cout << vv.second << " ";
-    //}
-    //std::cout << std::endl;
-    //std::cout << "-----" << std::endl;
-
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired, u);
-    std::cout << u.empty() << " " << v1.size() << " " << v2.size() << std::endl;
     if (u.empty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
         std:cerr << "TODO: Implement fusion" << std::endl;
@@ -1168,7 +1155,6 @@ void ReadProcessor::processBuffer() {
     } else {
       ec = tc.findEC(u);
     }
-
 
     /* --  possibly modify the pseudoalignment  -- */
 
