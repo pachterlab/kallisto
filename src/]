@@ -10,9 +10,9 @@
 // Unitig to transcript
 struct u2t {
     // Transcript ID
-    uint32_t tr_id;
+    int tr_id;
     // Position of unitig within transcript
-    uint32_t pos;
+    int pos;
     // Strandedness
     bool sense;
     u2t() {};

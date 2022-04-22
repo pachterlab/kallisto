@@ -941,10 +941,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // Keep track of the order the contigs are listed in the index in order to
   // match them up with the ECs later on
   // Keep track of the original strandedness of the contig in order to fix
-  // transcript.sense if the strandedness changes.
+  // transcript.sense if the strandedness changes. (Because the strandedness
+  // of Bifrost unitigs is not guaranteed to be the same as the strandedness
+  // of kallisto contigs).
   // TODO:
   // See if we can get away with not keeping all the contig sequences in this
-  // vector by restructuring the index
+  // vector by restructuring the index.
   std::vector<std::string> canonical_contigs;
   canonical_contigs.reserve(contig_size);
   for (size_t i = 0; i < contig_size; ++i) {
@@ -977,6 +979,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     }
   }
 
+  // TODO:
+  // We read all the contigs in the index into a vector and write them out into
+  // a temporary fasta file, from which we build a Bifrost CompactedDBG.
+  // In the future, we should implement a method in Bifrost that can take in
+  // a vector of strings and create a CompactedDBG from it, so we don't have
+  // to write to disk.
   std::string tmp_file = ".tmp_dbg.fasta";
   std::ofstream of(tmp_file);
   for (size_t i = 0; i < canonical_contigs.size(); ++i) {
