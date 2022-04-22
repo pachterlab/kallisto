@@ -1122,10 +1122,8 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   KmerIterator kit1(s1), kit_end;
   const_UnitigMap<Node> um1, um2;
 
-  Kmer k1, k2;
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
-    k1 = Kmer(kit1->first);
     um1 = dbg.find(kit1->first);
     if (!um1.isEmpty) {
       found1 = true;
@@ -1145,7 +1143,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   bool found2 = false;
 
   for (; kit2 != kit_end; ++kit2) {
-    k2 = kit2->first;
     um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
       found2 = true;
@@ -1161,6 +1158,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     return -1;
   }
 
+  // We want the reads to map within the same EC block on the same unitig
   if (!um1.isSameReferenceUnitig(um2) ||
       um1.getData()->ec[um1.dist] != um2.getData()->ec[um2.dist]) {
     return -1;
