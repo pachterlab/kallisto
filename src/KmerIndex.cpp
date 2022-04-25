@@ -621,7 +621,6 @@ void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vect
 
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
-  /*
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
 
@@ -645,24 +644,12 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
     out.write((char *)&tlen, sizeof(tlen));
   }
 
-  size_t kmap_size = kmap.size();
+  // 5. write fake k-mer size
+  size_t kmap_size = 0;
+  out.write((char *)&kmap_size, sizeof(kmap_size));
 
-  if (writeKmerTable) {
-    // 5. write number of k-mers in map
-    out.write((char *)&kmap_size, sizeof(kmap_size));
+  // 6. write none of the kmer->ec values
 
-    // 6. write kmer->ec values
-    for (auto& kv : kmap) {
-      out.write((char *)&kv.first, sizeof(kv.first));
-      out.write((char *)&kv.second, sizeof(kv.second));
-    }
-  } else {
-    // 5. write fake k-mer size
-    kmap_size = 0;
-    out.write((char *)&kmap_size, sizeof(kmap_size));
-
-    // 6. write none of the kmer->ec values
-  }
   // 7. write number of equivalence classes
   size_t tmp_size;
   tmp_size = ecmap.size();
@@ -700,42 +687,74 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
 
   // 10. write out contigs
   if (writeKmerTable) {
-    assert(dbGraph.contigs.size() == dbGraph.ecs.size());
-    tmp_size = dbGraph.contigs.size();
+    // Split the unitigs in the graph into vanilla kallisto contigs that have
+    // non-mosaic ECs
+    tmp_size = 0;
+    for (const auto& um : dbg) {
+      // The key in the transcripts unordered_map is the EC, and the number of
+      // ECs in a unitig denote how many vanilla kallisto contigs they get split
+      // into.
+      tmp_size += um.getData()->transcripts.size();
+    }
     out.write((char*)&tmp_size, sizeof(tmp_size));
-    for (auto& contig : dbGraph.contigs) {
-      out.write((char*)&contig.id, sizeof(contig.id));
-      out.write((char*)&contig.length, sizeof(contig.length));
-      tmp_size = strlen(contig.seq.c_str());
-      out.write((char*)&tmp_size, sizeof(tmp_size));
-      out.write(contig.seq.c_str(), tmp_size);
+    std::vector<uint32_t> ecs;
+    for (const auto& um : dbg) {
+      // I beg forgiveness for the double pass.
+      Node* n = um.getData();
+      uint32_t curr_ec = n->ec[0];
+      std::string ref = um.referenceUnitigToString();
+      size_t start = 0;
+      for (size_t i = 0; i < n->ec.size(); ++i) {
+        if (curr_ec == n->ec[i]) continue;
+        ecs.push_back(curr_ec);
+        std::string contig = ref.substr(start, i-start+k);
+        out.write((char*)&n->id, sizeof(n->id));
+        tmp_size = strlen(contig.c_str());
+        out.write((char*)&tmp_size, sizeof(tmp_size));
+        out.write(contig.c_str(), tmp_size);
 
-      // 10.1 write out transcript info
-      tmp_size = contig.transcripts.size();
+        // 10.1 write out transcript info
+        tmp_size = n->transcripts[curr_ec].size();
+        out.write((char*)&tmp_size, sizeof(tmp_size));
+        for (const auto& info : n->transcripts[curr_ec]) {
+          out.write((char*)&info.tr_id, sizeof(info.tr_id));
+          out.write((char*)&info.pos, sizeof(info.pos));
+          out.write((char*)&info.sense, sizeof(info.sense));
+        }
+
+        start = i;
+        curr_ec = n->ec[i];
+      }
+      ecs.push_back(curr_ec);
+      std::string contig = ref.substr(start, ref.length()-start);
+      out.write((char*)&n->id, sizeof(n->id));
+      tmp_size = strlen(contig.c_str());
       out.write((char*)&tmp_size, sizeof(tmp_size));
-      for (auto& info : contig.transcripts) {
-        out.write((char*)&info.trid, sizeof(info.trid));
+      out.write(contig.c_str(), tmp_size);
+
+      // 10.1 write out transcript info for last mosaic EC in unitig
+      tmp_size = n->transcripts[curr_ec].size();
+      out.write((char*)&tmp_size, sizeof(tmp_size));
+      for (const auto& info : n->transcripts[curr_ec]) {
+        out.write((char*)&info.tr_id, sizeof(info.tr_id));
         out.write((char*)&info.pos, sizeof(info.pos));
         out.write((char*)&info.sense, sizeof(info.sense));
       }
     }
-    
+
     // 11. write out ecs info
-    for (auto ec : dbGraph.ecs) {
+    for (uint32_t ec : ecs) {
       out.write((char*)&ec, sizeof(ec));
     }
-
 
   } else {
     // write empty dBG
     tmp_size = 0;
     out.write((char*)&tmp_size, sizeof(tmp_size));
   }
-  
 
   out.flush();
   out.close();
-  */
 }
 
 bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
@@ -854,23 +873,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::cerr << "[index] number of k-mers: " << pretty_num(kmap_size)
     << std::endl;
 
-  /*
-  kmap.clear();
-  if (loadKmerTable) {
-    kmap.reserve(kmap_size,true);
-  }
-  */
-
   // 6. read kmer->ec values
   Kmer tmp_kmer;
   KmerEntry tmp_val;
   for (size_t i = 0; i < kmap_size; ++i) {
+    // Spool over kmap. Don't need it.
     in.read((char *)&tmp_kmer, sizeof(tmp_kmer));
     in.read((char *)&tmp_val, sizeof(tmp_val));
-
-    //if (loadKmerTable) {
-      //kmap.insert({tmp_kmer, tmp_val});
-    //}
   }
 
   // 7. read number of equivalence classes
@@ -952,6 +961,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   canonical_contigs.reserve(contig_size);
   for (size_t i = 0; i < contig_size; ++i) {
     in.read((char *)&c_id, sizeof(c_id));
+    // TODO:
+    // We never use c_len. Remove it.
     in.read((char *)&c_len, sizeof(c_len));
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
@@ -1008,6 +1019,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::remove(tmp_file.c_str());
 
   // 11. read ecs info
+  // TODO:
+  // Change to uint32_t
   int tmp_ec;
   size_t running_id = 0;
   for (size_t i = 0; i < canonical_contigs.size(); ++i) {
