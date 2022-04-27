@@ -22,6 +22,7 @@ ext/htslib/src/htslib-stamp
 ext/htslib/tmp/
 ext/bifrost/tmp/
 ext/bifrost/build/
+ext/bifrost/src/bifrost-stamp/
 .snakemake
 *.swp
 *.swo

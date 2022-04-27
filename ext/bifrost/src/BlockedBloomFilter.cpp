@@ -1399,7 +1399,7 @@ bool BlockedBloomFilter::insert_unpar(const uint64_t kmh, const uint64_t minh) {
             else i = j;
         }
 
-        minh1 = minh_s2 + minh_s2;
+        minh1 += minh_s2 + minh_s2;
 
         ++nb_overflow;
     }
