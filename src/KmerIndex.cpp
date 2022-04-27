@@ -69,7 +69,6 @@ std::string revcomp(const std::string s) {
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
-  /*
   std::unordered_set<std::string> unique_names;
   int k = opt.k;
   for (auto& fasta : opt.transfasta) {
@@ -78,10 +77,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
-
   std::vector<std::string> seqs;
 
-  // read fasta file  
+  // read fasta file
   gzFile fp = 0;
   kseq_t *seq;
   int l = 0;
@@ -123,7 +121,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
         str = str.substr(0,j+1);
       }
 
-    
       target_lens_.push_back(seq->seq.l);
       std::string name(seq->name.s);
       size_t p = name.find(' ');
@@ -157,468 +154,170 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     std::cerr << "[build] warning: clipped off poly-A tail (longer than 10)" << std::endl << "        from " << polyAcount << " target sequences" << std::endl;
   }
 
-  
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl << "        with pseudorandom nucleotides" << std::endl;
   }
   if (countUNuc > 0) {
     std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
   }
-  
+
   num_trans = seqs.size();
-  
-  // for each target, create it's own equivalence class
+
+  // for each target, create its own equivalence class
   for (int i = 0; i < seqs.size(); i++ ) {
     std::vector<int> single(1,i);
     //ecmap.insert({i,single});
     ecmap.push_back(single);
     ecmapinv.insert({single,i});
   }
-  
+
   BuildDeBruijnGraph(opt, seqs);
   BuildEquivalenceClasses(opt, seqs);
   //BuildEdges(opt);
 
-  */
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
 
-  /*
-  std::cerr << "[build] counting k-mers ... "; std::cerr.flush();
-  // gather all k-mers
-  for (int i = 0; i < seqs.size(); i++) {
-    const char *s = seqs[i].c_str();
-    KmerIterator kit(s),kit_end;
-    for (; kit != kit_end; ++kit) {
-      kmap.insert({kit->first.rep(), KmerEntry()}); // don't care about repeats
-      //    Kmer rep = kit->first.rep();
-      // std::cout << rep.toString() << "\t" << rep.hash() << std::endl;
-    }
+  std::string tmp_file = ".tmp_dbg.fasta";
+  std::ofstream of(tmp_file);
+  for (size_t i = 0; i < seqs.size(); ++i) {
+    of << ">" << std::to_string(i) << std::endl;
+    of << seqs[i] << std::endl;
   }
-  std::cerr << "done." << std::endl;
-  
-  std::cerr << "[build] building target de Bruijn graph ... "; std::cerr.flush();
-  // find out how much we can skip ahead for each k-mer.
-  for (auto& kv : kmap) {
-    if (kv.second.contig == -1) {
-      // ok we haven't processed the k-mer yet
-      std::vector<Kmer> flist, blist;
+  of.close();
 
-      // iterate in forward direction
-      Kmer km = kv.first;
-      Kmer end = km;
-      Kmer last = end;
-      Kmer twin = km.twin();
-      bool selfLoop = false;
-      flist.push_back(km);
+  CDBG_Build_opt c_opt;
+  c_opt.k = k;
+  c_opt.nb_threads = opt.threads;
+  c_opt.build = true;
+  c_opt.clipTips = false;
+  c_opt.deleteIsolated = false;
+  c_opt.useMercyKmers = true;
+  c_opt.verbose = true;
+  c_opt.filename_ref_in.push_back(tmp_file);
 
-      while (fwStep(end,end)) {
-        if (end == km) {
-          // selfloop
-          selfLoop = true;
-          break;
-        } else if (end == twin) {
-          selfLoop = (flist.size() > 1); // hairpins are not loops
-          // mobius loop
-          break;
-        } else if (end == last.twin()) {
-          // hairpin
-          break;
-        }
-        flist.push_back(end);
-        last = end;
-      }
+  dbg = CompactedDBG<Node>(k);
+  dbg.build(c_opt);
 
-      Kmer front = twin;
-      Kmer first = front;
-
-      if (!selfLoop) {
-        while (fwStep(front,front)) {
-          if (front == twin) {
-            // selfloop
-            selfLoop = true;
-            break;
-          } else if (front == km) {
-            // mobius loop
-            selfLoop = true;
-            break;
-          } else if (front == first.twin()) {
-            // hairpin
-            break;
-          }
-          blist.push_back(front);
-          first = front;
-        }
-      }
-
-      std::vector<Kmer> klist;
-      for (auto it = blist.rbegin(); it != blist.rend(); ++it) {
-        klist.push_back(it->twin());
-      }
-      for (auto x : flist) {
-        klist.push_back(x);
-      }
-
-
-      Contig contig;
-      contig.id = dbGraph.contigs.size();
-      contig.length = klist.size();
-      contig.seq = klist[0].toString();
-      contig.seq.reserve(contig.length + k-1);
-
-
-      for (int i = 0; i < klist.size(); i++) {
-        Kmer x = klist[i];
-        Kmer xr = x.rep();
-        bool forward = (x==xr);
-        auto it = kmap.find(xr);
-        assert(it->second.contig==-1);
-        it->second = KmerEntry(contig.id, contig.length, i, forward);
-        if (i > 0) {
-          contig.seq.push_back(x.toString()[k-1]);
-        }
-      }
-      
-      dbGraph.contigs.push_back(contig);
-      dbGraph.ecs.push_back(-1);
-    }
-  }
-  std::cerr << " done " << std::endl;
-
-  */
+  std::remove(tmp_file.c_str());
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
-  /*
+
   std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
-  std::vector<std::vector<TRInfo>> trinfos(dbGraph.contigs.size());
+  std::vector<std::vector<TRInfo>> trinfos(dbg.size());
+  UnitigMap<Node> um;
+  uint32_t running_id = 0;
   //std::cout << "Mapping target " << std::endl;
-  for (int i = 0; i < seqs.size(); i++) {
-    int seqlen = seqs[i].size() - k + 1; // number of k-mers
-    const char *s = seqs[i].c_str();
+  for (size_t i = 0; i < seqs.size(); ++i) {
+    const auto& seq = seqs[i];
+    int seqlen = seq.size() - k + 1; // number of k-mers
+    const char *s = seq.c_str();
     //std::cout << "sequence number " << i << std::endl;
-    KmerIterator kit(s), kit_end;
-    for (; kit != kit_end; ++kit) {
-      Kmer x = kit->first;
-      Kmer xr = x.rep();
-      auto search = kmap.find(xr);
-      bool forward = (x==xr);
-      KmerEntry val = search->second;
-      std::vector<TRInfo>& trinfo = trinfos[val.contig];
-      Contig& contig = dbGraph.contigs[val.contig];
-
+    size_t proc = 0;
+    while (proc < seqlen) {
+      um = dbg.findUnitig(seq.c_str(), proc, seq.size());
+      if (um.getData()->id == 0) um.getData()->id = ++running_id;
+      std::vector<TRInfo>& trinfo = trinfos[um.getData()->id];
       TRInfo tr;
+
       tr.trid = i;
-      int jump = kit->second;
-      if (forward == val.isFw()) {
-        tr.sense = true;
-        tr.start = val.getPos();
-        if (contig.length - tr.start > seqlen - kit->second) {
-          // tartget stops
-          tr.stop = tr.start + seqlen - kit->second;
-          jump = seqlen;
-        } else {
-          tr.stop = contig.length;
-          jump = kit->second + (tr.stop - tr.start)-1;
-        }
+      tr.pos = proc;
+      tr.sense = um.strand;
+      tr.start = um.dist;
+      tr.stop  = um.dist + um.len;
+      /*
+      if (tr.sense) {
+        tr.start = um.dist;
+        // tr = um[start, stop)
+        tr.stop  = um.dist + um.len;
       } else {
-        tr.sense = false;
-        tr.stop = val.getPos()+1;
-        int stpos = tr.stop - (seqlen - kit->second);
-        if (stpos > 0) {
-          tr.start = stpos;
-          jump = seqlen;
-        } else {
-          tr.start = 0;
-          jump = kit->second + (tr.stop - tr.start) - 1;
-        }
+        tr.start = um.dist + um.len;
+        // tr = um[start, stop)
+        tr.stop  = um.dist + 1;
       }
+      */
 
-      // // debugging -->
-      //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
-      //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
-      //std::cout << "contig seq" << std::endl;
-      // if (forward == val.isFw()) {
-      //   //std::cout << contig.seq << std::endl;
-      //   assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
-      // } else {
-      //   //std::cout << revcomp(contig.seq) << std::endl;
-      //   assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
-      // }
-      // if (jump == seqlen) {
-      //   //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
-      // }
-
-      // // <-- debugging
-      
       trinfo.push_back(tr);
-      kit.jumpTo(jump);
+      proc += um.len;
     }
   }
 
-  
-  FixSplitContigs(opt, trinfos);
+  PopulateMosaicECs(trinfos);
 
-  
-  int perftr = 0;
-  for (int i = 0; i < trinfos.size(); i++) {
-    bool all = true;
-
-    int contigLen = dbGraph.contigs[i].length;
-    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
-    for (auto x : trinfos[i]) {
-      if (x.start!=0 || x.stop !=contigLen) {
-        all = false;
-      }
-      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
-    }
-    //std::cout << std::endl;
-    if (all) {
-      perftr++;
-    } 
-  }
-  //std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
-  // need to create the equivalence classes
-
-  assert(dbGraph.contigs.size() == trinfos.size());
-  // for each contig
-  for (int i = 0; i < trinfos.size(); i++) {
-    std::vector<int> u;
-    for (auto x : trinfos[i]) {
-      u.push_back(x.trid);
-    }
-    sort(u.begin(), u.end());
-    if (!isUnique(u)){
-      std::vector<int> v = unique(u);
-      swap(u,v);
-    }
-
-    assert(!u.empty());
-
-    auto search = ecmapinv.find(u);
-    int ec = -1;
-    if (search != ecmapinv.end()) {
-      // insert contig -> ec info
-      ec = search->second;
-    } else {
-      ec = ecmapinv.size();
-      ecmapinv.insert({u,ec});
-      ecmap.push_back(u);
-    }
-    dbGraph.ecs[i] = ec;
-    assert(ec != -1);
-    
-    // record the transc
-    Contig& contig = dbGraph.contigs[i];
-    contig.ec = ec;
-    // ATTN:
-    // This was allready commented out.
-    // Consider removing as cruft
-    // correct ec of all k-mers in contig
-    //KmerIterator kit(contig.seq.c_str()), kit_end;
-    //for (; kit != kit_end; ++kit) {
-      //auto ksearch = kmap.find(kit->first.rep());
-      //ksearch->second.ec = ec;
-    //}
-  }
-
-  // map transcripts to contigs
-  //std::cout << std::endl;
-  for (int i = 0; i < seqs.size(); i++) {
-    int seqlen = seqs[i].size() - k + 1; // number of k-mers
-    // debugging
-    std::string stmp;
-    const char *s = seqs[i].c_str();
-    ////std::cout << "sequence number " << i << std::endl;
-    //std::cout << ">" << target_names_[i] << std::endl;
-    //std::cout << seqs[i] << std::endl;
-    KmerIterator kit(s), kit_end;
-    for (; kit != kit_end; ++kit) {
-      Kmer x = kit->first;
-      //std::cout << "position = " << kit->second << ", mapping " << x.toString() << std::endl;
-      Kmer xr = x.rep();
-      auto search = kmap.find(xr);
-      bool forward = (x==xr);
-      KmerEntry val = search->second;
-      Contig& contig = dbGraph.contigs[val.contig];
-
-      ContigToTranscript info;
-      info.trid = i;
-      info.pos = kit->second;
-      info.sense = (forward == val.isFw());
-      int jump = kit->second + contig.length-1;
-      //std::cout << "mapped to contig " << val.contig << ", len = " << contig.length <<  ", pos = " << val.getPos() << ", sense = " << info.sense << std::endl;
-      contig.transcripts.push_back(info);
-      // debugging
-      if (info.sense) {
-
-        if (info.pos == 0) {
-          stmp.append(contig.seq);
-          //std::cout << contig.seq << std::endl;
-        } else {
-          stmp.append(contig.seq.substr(k-1));
-          //std::cout << contig.seq.substr(k-1) << std::endl;
-        }
-      } else {
-        std::string r = revcomp(contig.seq);
-        if (info.pos == 0) {
-          stmp.append(r);
-          //std::cout << r << std::endl;
-        } else {
-          stmp.append(r.substr(k-1));
-          //std::cout << r.substr(k-1) << std::endl;
-        }
-      }
-      //std::cout << stmp << std::endl;
-      //std::cout << "covering seq" << std::endl << seqs[i].substr(kit->second, jump-kit->second +k) << std::endl;
-      //std::cout << "id = " << tr.trid << ", (" << tr.start << ", " << tr.stop << ")" << std::endl;
-      //std::cout << "contig seq" << std::endl;
-      // if (forward == val.isFw()) {
-      //   //std::cout << contig.seq << std::endl;
-      //   assert(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start) == seqs[i].substr(kit->second, jump-kit->second +k) );
-      // } else {
-      //   //std::cout << revcomp(contig.seq) << std::endl;
-      //   assert(revcomp(contig.seq.substr(tr.start, k-1 + tr.stop-tr.start)) == seqs[i].substr(kit->second, jump-kit->second +k));
-      // }
-      // if (jump == seqlen) {
-      //   //std::cout << std::string(k-1+(tr.stop-tr.start)-1,'-') << "^" << std::endl;
-      // }
-
-      // // <-- debugging
-      
-      kit.jumpTo(jump);
-    }
-    if (seqlen > 0 && seqs[i] != stmp) {
-      //std::cout << ">" << target_names_[i] << std::endl
-                //<< seqs[i] << std::endl
-                //<< stmp << std::endl;
-      assert(false);
-      
-    }
-  }
-
-  // double check the contigs
-  for (auto &c : dbGraph.contigs) {
-    for (auto info : c.transcripts) {
-      std::string r;
-      if (info.sense) {
-        r = c.seq;
-      } else {
-        r = revcomp(c.seq);
-      }
-      assert(r == seqs[info.trid].substr(info.pos,r.size()));
-    }
-  }
-
-  
   std::cerr << " done" << std::endl;
-  std::cerr << "[build] target de Bruijn graph has " << dbGraph.contigs.size() << " contigs and contains "  << kmap.size() << " k-mers " << std::endl;
-  */
+  std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
 }
 
-void KmerIndex::FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos) {
-  /*
-  int perftr = 0;
-  int orig_size = trinfos.size();
+void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
-  for (int i = 0; i < orig_size; i++) {
-    bool all = true;
+  for (const auto& um : dbg) {
 
-    int contigLen = dbGraph.contigs[i].length;
-    //std::cout << "contig " << i << ", length = " << contigLen << ", seq = " << dbGraph.contigs[i].seq << std::endl << "tr = ";
-    for (auto x : trinfos[i]) {
-      if (x.start!=0 || x.stop !=contigLen) {
-        all = false;
-      }
-      //std::cout << "[" << x.trid << ",(" << x.start << ", " << x.stop << ")], " ;
-      assert(x.start < x.stop);
+    Node* n = um.getData();
+    // Mosaic EC vector should always be the length of the number of kmers
+    // in the corresponding unitig
+    n->ec.resize(um.size - k + 1);
+
+    // Find the overlaps
+    std::vector<int> brpoints;
+    for (const auto& x : trinfos[n->id]) {
+      brpoints.push_back(x.start);
+      brpoints.push_back(x.stop);
     }
-    //std::cout << std::endl;
+    sort(brpoints.begin(), brpoints.end());
+    assert(brpoints[0] == 0);
+    assert(brpoints[brpoints.size()-1]==um.size());
 
-    if (all) {
-      perftr++;
-    } else {
-      // break up equivalence classes
-      // sort by start/stop
-      std::vector<int> brpoints;
-      for (auto& x : trinfos[i]) {
-        brpoints.push_back(x.start);
-        brpoints.push_back(x.stop);
-      }
-      sort(brpoints.begin(), brpoints.end());
-      assert(brpoints[0] == 0);
-      assert(brpoints[brpoints.size()-1]==contigLen);
+    // Find unique break points
+    if (!isUnique(brpoints)) {
+      std::vector<int> u = unique(brpoints);
+      swap(u,brpoints);
+    }
 
-      // find unique points
-      if (!isUnique(brpoints)) {
-        std::vector<int> u = unique(brpoints);
-        swap(u,brpoints);
-      }
-
-      assert(!brpoints.empty());
-      
-      // copy sequence
-      std::string seq = dbGraph.contigs[i].seq;
-      // copy old trinfo
-      std::vector<TRInfo> oldtrinfo = trinfos[i];
-      
-      for (int j = 1; j < brpoints.size(); j++) {
-        assert(brpoints[j-1] < brpoints[j]);
-        Contig newc;
-        newc.seq = seq.substr(brpoints[j-1], brpoints[j]-brpoints[j-1]+k-1);
-        newc.length = brpoints[j]-brpoints[j-1];
-
-        if (j>1) {
-          newc.id = dbGraph.contigs.size();
-          dbGraph.contigs.push_back(newc);
-          dbGraph.ecs.push_back(-1);
-        } else {
-          newc.id = i;
-          dbGraph.contigs[i] = newc;
-        }
-
-        // repair k-mer mapping
-        KmerIterator kit(newc.seq.c_str()), kit_end;
-        for (; kit != kit_end; ++kit) {
-          Kmer x = kit->first;
-          Kmer xr = x.rep();
-          auto search = kmap.find(xr);
-          assert(search != kmap.end());
-          bool forward = (x==xr);
-          search->second = KmerEntry(newc.id, newc.length,  kit->second, forward);
-        }
-
-        // repair tr-info
-        std::vector<TRInfo> newtrinfo;
-        for (auto x : oldtrinfo) {
-          if (!(x.stop <= brpoints[j-1] || x.start >= brpoints[j])) {
-            TRInfo trinfo;
-            trinfo.sense = x.sense;
-            trinfo.trid = x.trid;
-            trinfo.start = 0;
-            trinfo.stop = newc.length;
-            newtrinfo.push_back(trinfo);
-          }
-        }
-        if (j>1) {
-          trinfos.push_back(newtrinfo);
-        } else {
-          trinfos[i] = newtrinfo;
+    // Create a mosaic EC for the unitig, where each break point interval
+    // corresponds to one set of transcripts and therefore an EC
+    for (size_t i = 1; i < brpoints.size(); ++i) {
+      std::vector<int> u;
+      std::vector<u2t> transcripts;
+      for (const auto& tr : trinfos[n->id]) {
+        // If a transcript encompasses the full breakpoint interval
+        if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
+          u.push_back(tr.trid);
+          transcripts.emplace_back(tr.trid, tr.pos, tr.sense);
         }
       }
+
+      sort(u.begin(), u.end());
+      if (!isUnique(u)){
+        std::vector<int> v = unique(u);
+        swap(u,v);
+      }
+
+      assert(!u.empty());
+
+      auto search = ecmapinv.find(u);
+      int ec = -1;
+      if (search != ecmapinv.end()) {
+        // See if we've created an EC for this set of transcripts yet
+        ec = search->second;
+      } else {
+        // Otherwise, we create a new EC
+        ec = ecmapinv.size();
+        ecmapinv.insert({u,ec});
+        ecmap.push_back(u);
+      }
+
+      // Assign mosaic EC to the corresponding part of unitig
+      for (size_t j = brpoints[i-1]; j < brpoints[i]; ++j) {
+        n->ec[j] = ec;
+      }
+      // Assign the transcripts to the EC
+      n->transcripts[ec] = transcripts;
     }
   }
-
-
-  //std::cerr << "For " << dbGraph.contigs.size() << ", " << (dbGraph.contigs.size() - perftr) << " of them need to be split" << std::endl;
-
-  */
 }
-
-
-
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   std::ofstream out;
@@ -696,7 +395,9 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
       // into.
       tmp_size += um.getData()->transcripts.size();
     }
+
     out.write((char*)&tmp_size, sizeof(tmp_size));
+    // Store the ECs in the same order as we write out the contigs
     std::vector<uint32_t> ecs;
     for (const auto& um : dbg) {
       // I beg forgiveness for the double pass.
@@ -1029,7 +730,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     while (proc < canonical_contigs[i].length() - k + 1) {
       um = dbg.findUnitig(canonical_contigs[i].c_str(), proc, canonical_contigs[i].length());
       data = um.getData();
-      data->ec.reserve(um.size - k + 1);
+      if (data->ec.size() < um.size - k + 1) {
+          data->ec.resize(um.size - k + 1);
+      }
       for (size_t j = um.dist; j < um.dist + um.len; ++j) {
         data->ec[j] = tmp_ec;
       }
@@ -1196,7 +899,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const{
   const Node* data;
 
-  int k = dbg.getK();
   size_t proc = 0;
   while (proc < l - k + 1) {
     const_UnitigMap<Node> um = dbg.findUnitig(s, proc, l);
@@ -1212,7 +914,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     for (size_t i = 0; i < um.len; ++i) {
       if (data->ec[um.dist + i] != curr_ec) {
         curr_ec = data->ec[um.dist + i];
-        v.emplace_back(dbg.find(um.getMappedKmer(i)), proc + i);
+        v.emplace_back(dbg.find(um.getUnitigKmer(um.dist + i)), proc + i);
       }
     }
     proc += um.len;

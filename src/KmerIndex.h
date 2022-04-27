@@ -17,9 +17,14 @@
 std::string revcomp(const std::string s);
 
 struct TRInfo {
-  int trid;
-  int start;
-  int stop; //exclusive [start,stop)
+  uint32_t trid;
+  // denotes where the transcript begins, with respect to a given contig
+  uint32_t start;
+  // denotes where the transcript ends, with respect to a given contig
+  // exclusive [start,stop)
+  uint32_t stop;
+  // denotes where the given contig starts with respect to the transcript
+  uint32_t pos;
   bool sense; // true for sense, false for anti-sense
 };
 
@@ -99,7 +104,8 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
-  void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
+  //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
+  void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
   bool fwStep(Kmer km, Kmer& end) const;
 
   // output methods

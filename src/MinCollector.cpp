@@ -323,7 +323,7 @@ double MinCollector::get_sd_frag_len() const {
 
   size_t total_counts = 0;
   double total_mass = 0.0;
-  
+
   for (size_t i = 0; i < flens.size(); ++i) {
     total_counts += flens[i];
     total_mass += flens[i]*(i-m)*(i-m);
@@ -332,8 +332,6 @@ double MinCollector::get_sd_frag_len() const {
   double sd_fl = std::sqrt(total_mass/total_counts);
   return sd_fl;
 }
-
-
 
 void MinCollector::compute_mean_frag_lens_trunc(bool verbose)  {
 
@@ -349,7 +347,6 @@ void MinCollector::compute_mean_frag_lens_trunc(bool verbose)  {
     if (counts[i] > 0) {
       mean_fl_trunc[i] = mass[i] / static_cast<double>(counts[i]);
     }
-    // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
 
   has_mean_fl_trunc = true;
