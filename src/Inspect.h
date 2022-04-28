@@ -117,11 +117,7 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
 }
 
 void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
-  // TODO:
-  // There are some nasty, crufty inline block comments in this function.
-  // Probably remove those?
 
-  /*
   std::string gfa = opt.gfa;
   std::string bed = opt.bedFile;
 
@@ -135,21 +131,13 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
 
   cout << "#[inspect] number of equivalence classes = " << index.ecmap.size() << endl;
 
-
   if (index.ecmap.size() != index.ecmapinv.size()) {
     cout << "Error: sizes do not match. ecmap.size = " << index.ecmap.size()
          << ", ecmapinv.size = " << index.ecmapinv.size() << endl;
     exit(1);
   }
 
-  if (index.dbGraph.ecs.size() != index.dbGraph.contigs.size()) {
-    cout << "Error: sizes do not match. ecs.size = " << index.dbGraph.ecs.size()
-         << ", contigs.size = " << index.dbGraph.contigs.size() << endl;
-    exit(1);
-  }
-
-  cout << "#[inspect] number of contigs = " << index.dbGraph.contigs.size() << endl;
-  
+  cout << "#[inspect] number of contigs = " << index.dbg.size() << endl;
 
   unordered_map<int,int> echisto;
 
@@ -217,152 +205,28 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
     }
   }
 
-  cout << "#[inspect] Number of k-mers in index = " << index.kmap.size() << endl;
-  unordered_map<int,int> kmhisto;
-
-  for (auto& kv : index.kmap) {
-    int id = kv.second.contig;
-    int pos = kv.second.getPos();
-    int fw = kv.second.isFw();
-
-    if (id < 0 || id >= index.dbGraph.contigs.size()) {
-      cerr << "Kmer " << kv.first.toString() << " mapped to contig " << id << ", which is not in the de Bruijn Graph" << endl;
-      exit(1);
-    } else {
-      ++kmhisto[index.ecmap[index.dbGraph.ecs[id]].size()];
-    }
-
-    if (opt.inspect_thorough) {
-      const Contig& c = index.dbGraph.contigs[id];
-      const char* s = c.seq.c_str();
-      Kmer x = Kmer(s+pos);
-      Kmer xr = x.rep();
-
-      bool bad = (fw != (x==xr)) || (xr != kv.first);
-      if (bad) {
-        cerr << "Kmer " << kv.first.toString() << " mapped to contig " << id << ", pos = " << pos << ", on " << (fw ? "forward" : "reverse") << " strand" << endl;
-        cerr << "seq = " << c.seq << endl;
-        cerr << "x  = " << x.toString() << endl;
-        cerr << "xr = " << xr.toString() << endl;
-        exit(1);
-      }
-    }
-  }
-
-  if (opt.inspect_thorough) {
-    for (int i = 0; i < index.dbGraph.contigs.size(); i++) {
-      const Contig& c = index.dbGraph.contigs[i];
-
-      if (c.seq.size() != c.length + k-1) {
-        cerr << "Length and string dont match " << endl << "seq = " << c.seq << " (length = " << c.seq.size() << "), c.length = " << c.length << endl;
-        exit(1);
-      }
-
-
-      const char *s = c.seq.c_str();
-      KmerIterator kit(s), kit_end;
-      for (; kit != kit_end; ++kit) {
-        Kmer x = kit->first;
-        Kmer xr = x.rep();
-        auto search = index.kmap.find(xr);
-        if (search == index.kmap.end()) {
-          cerr << "could not find kmer " << x.toString() << " in map " << endl << "seq = " << c.seq << ", pos = " << kit->second << endl;
-          exit(1);
-        }
-
-        KmerEntry val = search->second;
-
-        // TODO:
-        // Check source on github and look at inline block comment there
-        if (val.contig != i  || val.contig_length != c.length || val.getPos() != kit->second || val.isFw() != (x==xr)) {
-          cerr << "mismatch " << x.toString() << " in map " << endl << "id = " << i << ", ec = " << index.dbGraph.ecs[i] << ", length = " << c.length << ", seq = " << c.seq << ", pos = " << kit->second << endl;
-          // TODO:
-          // Check source on github and look at inline block comment there
-          cerr << "val = " << val.contig <<  ", length = " << val.contig_length << ", pos = (" << val.getPos() << ", " << (val.isFw() ? "forward" :  "reverse") << ")" << endl;
-          exit(1);
-        }
-      }
-      
-    }
-  }
+  cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
 
   if (gfa.empty() && bed.empty()) {
     printHisto(echisto, "#EC.size\tNum.targets");
     cout << endl << endl;
 
-    printHisto(kmhisto, "#EC.size\tNum.kmers");
   }
 
-
   if (!gfa.empty()) {
-    std::ofstream out;
-    out.open(gfa);
-    out << "H\tVN:Z:1.0\n";
-    int i = 0;
-    for (auto& c : index.dbGraph.contigs) {
-      out << "S\t" << i << "\t" << c.seq << "\tXT:S:";
-      for (int j = 0; j < c.transcripts.size(); j++) {
-        auto &ct = c.transcripts[j];
-        if (j > 0) {
-          out << ",";
-        }
-        out << index.target_names_[ct.trid];
-      }
-      out << "\n";
-      i++;
-    }
-
-    const auto& kmap = index.kmap;
-    i = 0;
-    for (auto& c : index.dbGraph.contigs) {
-      auto& seq = c.seq;
-
-      Kmer last(seq.c_str() + seq.size()-k);
-      for (int j = 0; j < 4; j++) {
-        Kmer after = last.forwardBase(Dna(j));
-        auto search = kmap.find(after.rep());
-        if (search != kmap.end()) {
-          KmerEntry val = search->second;
-          // check if + or -
-          bool strand = val.isFw() == (after == after.rep());
-          out << "L\t" << i << "\t+\t" << val.contig
-              << "\t" << (strand ? '+' : '-') << "\t" << (k-1) << "M\n";
-        }
-      }
-
-      // enumerate bw links
-      Kmer first(seq.c_str());
-      for (int j = 0; j < 4; j++) {
-        Kmer before = first.backwardBase(Dna(j));
-        auto search = kmap.find(before.rep());
-        if (search != kmap.end()) {
-          KmerEntry val = search->second;
-          // check if + or -
-          bool strand = val.isFw() == (before == before.rep());
-          out << "L\t" << i << "\t-\t"
-              << val.contig << "\t" << (strand ? '-' : '+')
-              << "\t" << (k-1) << "M\n";
-        }
-      }
-
-      i++;
-    }
-
-    out.flush();
-    
-    out.close();
+    index.dbg.write(gfa);
   }
 
   if (!bed.empty()) {
-    // export bed track with TCC information    
+    // export bed track with TCC information
     bool guessChromosomes = false;
     Transcriptome model;
-    if (opt.genomebam) {          
+    if (opt.genomebam) {
       if (!opt.chromFile.empty()) {
         model.loadChromosomes(opt.chromFile);
       } else {
         guessChromosomes = true;
-      }          
+      }
       model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
       //model.loadTranscriptome(index, in, opt);
     }
@@ -375,13 +239,14 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
     cmap.reserve(100);
     std::vector<std::unordered_map<int, std::vector<ECStruct>>> ec_chrom(index.ecmap.size());
 
-    for (const auto& c : index.dbGraph.contigs) {
+    for (const auto& um : index.dbg) {
       cmap.clear();
       // structure for TRaln
       TranscriptAlignment tra;
-      
-      int len = c.length;
-      int cid = c.id;
+
+      const Node* n = um.getData();
+      int len = um.size();
+      int cid = n->id;
       for (const auto& ct : c.transcripts) {
         // ct.trid, ct.pos, ct.sense
         model.translateTrPosition(ct.trid, ct.pos, len, ct.sense, tra);
@@ -390,8 +255,8 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
 
       for (const auto& cp : cmap) {
         const auto& tra = cp.first;
-        const auto& tlist = cp.second;      
-        if (tra.chr != -1) {          
+        const auto& tlist = cp.second;
+        if (tra.chr != -1) {
           ECStruct ecs;
           ecs.chr = tra.chr;
           ecs.ec = index.dbGraph.ecs[c.id];
@@ -400,7 +265,7 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
           for (uint32_t cig : tra.cigar) {
             int len = cig >> BAM_CIGAR_SHIFT;
             int type = cig & 0xF;
-            if (type == BAM_CMATCH) {            
+            if (type == BAM_CMATCH) {
               ecs.start_lens.push_back({pos, len});
               pos += len;
             } else if (type == BAM_CREF_SKIP) {
@@ -410,13 +275,13 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
             }
           }
           ecs.stop = tra.chrpos + pos;
-          ecs.tlist = tlist;    
-          
+          ecs.tlist = tlist;
+
           ec_chrom[ecs.ec][tra.chr].push_back(ecs);
         }
       }
     }
-    
+
     int num_ecs = ec_chrom.size();
     for (int ec = 0; ec < num_ecs; ec++) {
       auto& chrmap = ec_chrom[ec];
@@ -440,7 +305,7 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
             bool ischr = (std::find(ecs.tlist.begin(), ecs.tlist.end(), t) != ecs.tlist.end());
             if (i++ > 0) {
               out << "%0A";
-            }            
+            }
             out << index.target_names_[t];
             if (!ischr) {
               int tchr = model.transcripts[t].chr;
@@ -454,7 +319,6 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
                 out << "%20(\?\?\?)";
               }
             }
-
           }
           out  << ";\t" <<  (int)(1000.0 / index.ecmap[ec].size()) << "\t" // score
                << ".\t" // strand
@@ -482,7 +346,6 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
       }
     }
   }
-  */
 }
 
 #endif // KALLISTO_INSPECTINDEX_H

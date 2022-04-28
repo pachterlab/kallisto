@@ -334,7 +334,7 @@ public:
   bool bam;
   bool num;
   const MinCollector& tc;
-  /*const */KmerIndex& index;
+  const KmerIndex& index;
   MasterProcessor& mp;
   int64_t numreads;
   int id;
