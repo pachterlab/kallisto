@@ -21,7 +21,7 @@ struct u2t {
 
 class Node: public CDBG_Data_t<Node> {
     public:
-        uint32_t id;
+        int id;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
         std::vector<uint32_t> ec;
@@ -30,6 +30,8 @@ class Node: public CDBG_Data_t<Node> {
         // equivalence class can have a different list of transcripits
         // associated with it
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
+
+    Node() : id(-1) {}
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();

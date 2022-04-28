@@ -213,14 +213,20 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   //std::cout << "Mapping target " << std::endl;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
+    if (seq.size() < k) continue;
+
     int seqlen = seq.size() - k + 1; // number of k-mers
     const char *s = seq.c_str();
     //std::cout << "sequence number " << i << std::endl;
     size_t proc = 0;
     while (proc < seqlen) {
       um = dbg.findUnitig(seq.c_str(), proc, seq.size());
-      if (um.getData()->id == 0) um.getData()->id = ++running_id;
-      std::vector<TRInfo>& trinfo = trinfos[um.getData()->id];
+      if (um.isEmpty) {
+        ++proc;
+        continue;
+      }
+      if (um.getData()->id == -1) um.getData()->id = running_id++;
+
       TRInfo tr;
 
       tr.trid = i;
@@ -240,7 +246,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       }
       */
 
-      trinfo.push_back(tr);
+      trinfos[um.getData()->id].push_back(tr);
+
       proc += um.len;
     }
   }
@@ -249,6 +256,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
   std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
+  std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
@@ -355,7 +363,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
   out.write((char *)&tmp_size, sizeof(tmp_size));
 
   // 8. write out each equiv class
-  //  for (auto& kv : ecmap) {
   for (int ec = 0; ec < ecmap.size(); ec++) {
     out.write((char *)&ec, sizeof(ec));
     auto& v = ecmap[ec];
@@ -612,11 +619,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     ecmap[tmp_id] = tmp_vec;
     ecmapinv.insert({tmp_vec, tmp_id});
   }
+  std::cout << "read ECs" << std::endl;
 
   // 9. read in target ids
   target_names_.clear();
   target_names_.reserve(num_trans);
 
+  std::cout << "read target ids" << std::endl;
   size_t tmp_size;
   size_t bufsz = 1024;
   char *buffer = new char[bufsz];
@@ -637,6 +646,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     target_names_.push_back(std::string(buffer));
   }
+  std::cout << "read target names" << std::endl;
 
   // 10. read contigs
   size_t contig_size;
@@ -664,7 +674,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char *)&c_id, sizeof(c_id));
     // TODO:
     // We never use c_len. Remove it.
-    in.read((char *)&c_len, sizeof(c_len));
+    //in.read((char *)&c_len, sizeof(c_len));
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
     if (tmp_size + 1 > bufsz) {

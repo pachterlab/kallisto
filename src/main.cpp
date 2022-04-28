@@ -2604,9 +2604,9 @@ int main(int argc, char *argv[]) {
         // create an index
         Kmer::set_k(opt.k);
         // TODO:
-        //KmerIndex index(opt);
-        //index.BuildTranscripts(opt);
-        //index.write(opt.index);
+        KmerIndex index(opt);
+        index.BuildTranscripts(opt);
+        index.write(opt.index);
       }
       cerr << endl;
     } else if (cmd == "inspect") {
