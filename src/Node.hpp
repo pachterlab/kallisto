@@ -45,11 +45,13 @@ class Node: public CDBG_Data_t<Node> {
 
         transcripts = data_dest->transcripts;
         for (const auto& kv : data_src->transcripts) {
-            // Pos denotes where the unitig begins within the transcript. Since
-            // we're prepending um_dest to um_src, the new unitig begins
-            // um_dest.len + k - 1 base pairs earlier in the transcript
-            kv.second.pos -= (um_dest.len + um_dest.getGraph().getK() - 1);
             transcripts[kv.first] = kv.second;
+            for (auto tr : transcripts[kv.first]) {
+                // Pos denotes where the unitig begins within the transcript. Since
+                // we're prepending um_dest to um_src, the new unitig begins
+                // um_dest.len + k - 1 base pairs earlier in the transcript
+                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+            }
         }
     }
 
@@ -62,11 +64,13 @@ class Node: public CDBG_Data_t<Node> {
         }
 
         for (const auto& kv : data_src->transcripts) {
-            // Pos denotes where the unitig begins within the transcript. Since
-            // we're prepending um_dest to um_src, the new unitig begins
-            // um_dest.len + k - 1 base pairs earlier in the transcript
-            kv.second.pos -= (um_dest.len + um_dest.getGraph().getK() - 1);
             transcripts[kv.first] = kv.second;
+            for (auto tr : transcripts[kv.first]) {
+                // Pos denotes where the unitig begins within the transcript. Since
+                // we're prepending um_dest to um_src, the new unitig begins
+                // um_dest.len + k - 1 base pairs earlier in the transcript
+                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+            }
         }
     }
 
@@ -89,10 +93,12 @@ class Node: public CDBG_Data_t<Node> {
         }
 
         for (const auto& i : ecs) {
-            // We're cutting um_src.dist from the beginning of the unitig  so
-            // the new unitig begins um_src.dist further into back.
-            transcripts[i].pos += um_src.dist;
             data->transcripts[i] = transcripts[i];
+            for (auto tr : data->transcripts[i]) {
+                // We're cutting um_src.dist from the beginning of the unitig  so
+                // the new unitig begins um_src.dist further into back.
+                tr.pos += um_src.dist;
+            }
         }
     }
 };
