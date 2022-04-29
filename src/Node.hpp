@@ -45,9 +45,9 @@ class Node: public CDBG_Data_t<Node> {
                 j--;
             }
         }
-        if (ec[k] != ec[i]) {
+        if (ec[k-1] != ec[i]) {
             k = i+1;
-            while (ec[k] == ec[i] && k < ec.size()) {
+            while (ec[k-1] == ec[i] && k < ec.size()) {
                 k++;
             }
         }

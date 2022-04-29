@@ -776,7 +776,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       }
     }
   }
-  std::cout << "There are " << polychromatic << " unitigs in the graph out of " << dbg.size() << " unitigs (" << polychromatic / dbg.size() << ")." << std::endl;
+  std::cout << "There are " << polychromatic << " polychromatic unitigs in the graph out of " << dbg.size() << " unitigs (" << float(polychromatic) / dbg.size() << ")." << std::endl;
 
   // delete the buffer
   delete[] buffer;
@@ -960,7 +960,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
     int pos = kit->second;
 
-    if (um.isEmpty) {
+    if (!um.isEmpty) {
 
       v.push_back({um, kit->second});
 
