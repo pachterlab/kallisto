@@ -22,6 +22,7 @@ struct u2t {
 class Node: public CDBG_Data_t<Node> {
     public:
         int id;
+        bool monochrome;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
         std::vector<uint32_t> ec;
@@ -31,7 +32,27 @@ class Node: public CDBG_Data_t<Node> {
         // associated with it
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
-    Node() : id(-1) {}
+    Node() : id(-1), monochrome(true) {}
+
+    // Returns [j, k), j<=i, k>=i, where j-1 is the last kmer to have a
+    // different EC than kmer i, and k is the first kmer to have a different
+    // EC than i.
+    std::pair<size_t, size_t> get_mc_contig(size_t i) const {
+        size_t j = 0, k = ec.size();
+        if (ec[j] != ec[i]) {
+            j = i-1;
+            while (ec[j] == ec[i] && j > 0) {
+                j--;
+            }
+        }
+        if (ec[k] != ec[i]) {
+            k = i+1;
+            while (ec[k] == ec[i] && k < ec.size()) {
+                k++;
+            }
+        }
+        return std::pair<size_t, size_t>(j, k);
+    }
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();

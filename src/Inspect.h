@@ -117,7 +117,7 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
 }
 
 void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
-
+    /*
   std::string gfa = opt.gfa;
   std::string bed = opt.bedFile;
 
@@ -346,6 +346,7 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
       }
     }
   }
+  */
 }
 
 #endif // KALLISTO_INSPECTINDEX_H

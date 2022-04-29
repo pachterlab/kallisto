@@ -764,6 +764,20 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     }
   }
 
+  int polychromatic = 0;
+  for (auto& um : dbg) {
+    Node* n = um.getData();
+    uint32_t ec = n->ec[0];
+    for (size_t i = 0; i < n->ec.size(); ++i) {
+      if (n->ec[i] != ec) {
+        n->monochrome = false;
+        break;
+        polychromatic++;
+      }
+    }
+  }
+  std::cout << "There are " << polychromatic << " unitigs in the graph out of " << dbg.size() << " unitigs (" << polychromatic / dbg.size() << ")." << std::endl;
+
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
@@ -907,8 +921,13 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
 void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const{
-  const Node* data;
+  const Node* n;
 
+  // TODO:
+  // Rework KmerIndex::match() such that it uses the following type of logic
+  // rather than the jumping logic below
+
+  /*
   size_t proc = 0;
   while (proc < l - k + 1) {
     const_UnitigMap<Node> um = dbg.findUnitig(s, proc, l);
@@ -917,17 +936,153 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
       continue;
     }
 
-    data = um.getData();
-    uint32_t curr_ec = data->ec[um.dist];
+    n = um.getData();
+    uint32_t curr_ec = n->ec[um.dist];
     v.emplace_back(um, proc);
     // Add one entry to v for each EC that is part of the mosaic EC of the contig.
     for (size_t i = 0; i < um.len; ++i) {
-      if (data->ec[um.dist + i] != curr_ec) {
-        curr_ec = data->ec[um.dist + i];
+      if (n->ec[um.dist + i] != curr_ec) {
+        curr_ec = n->ec[um.dist + i];
         v.emplace_back(dbg.find(um.getUnitigKmer(um.dist + i)), proc + i);
       }
     }
     proc += um.len;
+  }
+  */
+
+  KmerIterator kit(s), kit_end;
+  bool backOff = false;
+  int nextPos = 0; // nextPosition to check
+  for (int i = 0;  kit != kit_end; ++i,++kit) {
+    // need to check it
+    const_UnitigMap<Node> um = dbg.find(kit->first);
+    n = um.getData();
+
+    int pos = kit->second;
+
+    if (um.isEmpty) {
+
+      v.push_back({um, kit->second});
+
+      // Find start and end of O.G. kallisto contig w.r.t. the bifrost-kallisto
+      // unitig
+      size_t contig_start = 0, contig_length = um.size - k + 1;
+      if (!n->monochrome) {
+        auto p = n->get_mc_contig(um.dist);
+        contig_start += p.first;
+        contig_length = p.second - contig_start;
+      }
+      // Looks like kallisto thinks that canonical kmer means forward strand?
+      //bool forward = (um.strand == (kit->first == kit->first.rep()));
+      bool forward = um.strand;
+      int dist = (forward) ? (contig_length - 1 - (um.dist - contig_start)) : um.dist - contig_start;
+
+      // see if we can skip ahead
+      if (dist >= 2) {
+        // where should we jump to?
+        int nextPos = pos+dist; // default jump
+
+        if (pos + dist >= l-k) {
+          // if we can jump beyond the read, check the end
+          nextPos = l-k;
+        }
+
+        // check next position
+        KmerIterator kit2(kit);
+        kit2 += nextPos;
+        if (kit2 != kit_end) {
+          const_UnitigMap<Node> um2 = dbg.find(kit2->first);
+          bool found2 = false;
+          int  found2pos = pos+dist;
+          if (um.isEmpty) {
+            found2=true;
+            found2pos = pos;
+          } else if (um.isSameReferenceUnitig(um2) &&
+                     n->ec[pos] == n->ec[pos+dist]) {
+            // um and um2 are on the same unitig and also share the same EC
+            found2=true;
+            found2pos = pos+dist;
+          }
+          if (found2) {
+            // great, a match (or nothing) see if we can move the k-mer forward
+            if (found2pos >= l-k) {
+              v.push_back({um, l-k}); // push back a fake position
+              break; //
+            } else {
+              v.push_back({um2, found2pos});
+              kit = kit2; // move iterator to this new position
+            }
+          } else {
+            // this is weird, let's try the middle k-mer
+            bool foundMiddle = false;
+            if (dist > 4) {
+              int middlePos = (pos + nextPos)/2;
+              int middleContig = -1;
+              int found3pos = pos+dist;
+              KmerIterator kit3(kit);
+              kit3 += middlePos;
+              if (kit3 != kit_end) {
+                const_UnitigMap<Node> um3 = dbg.find(kit3->first);
+                if (!um3.isEmpty) {
+                  if (um.isSameReferenceUnitig(um3) &&
+                      n->ec[pos] == n->ec[middlePos]) {
+                    foundMiddle = true;
+                    found3pos = middlePos;
+                  } else if (um2.isSameReferenceUnitig(um3) &&
+                             um2.getData()->ec[pos+dist] == um3.getData()->ec[middlePos]) {
+                    foundMiddle = true;
+                    found3pos = pos+dist;
+                  }
+                }
+
+                if (foundMiddle) {
+                  v.push_back({um3, found3pos});
+                  if (nextPos >= l-k) {
+                    break;
+                  } else {
+                    kit = kit2;
+                  }
+                }
+              }
+            }
+
+            if (!foundMiddle) {
+              ++kit;
+              backOff = true;
+              goto donejumping; // sue me Dijkstra!
+            }
+          }
+        } else {
+          // the sequence is messed up at this point, let's just take the match
+          //v.push_back({dbGraph.ecs[val.contig], l-k});
+          break;
+        }
+      }
+    }
+
+donejumping:
+
+    if (backOff) {
+      // backup plan, let's play it safe and search incrementally for the rest, until nextStop
+      for (int j = 0; kit != kit_end; ++kit,++j) {
+        if (j==skip) {
+          j=0;
+        }
+        if (j==0) {
+          // need to check it
+          const_UnitigMap<Node> um4 = dbg.find(kit->first);
+          if (!um4.isEmpty) {
+            // if k-mer found
+            v.push_back({um4, kit->second}); // add equivalence class, and position
+          }
+        }
+
+        if (kit->second >= nextPos) {
+          backOff = false;
+          break; // break out of backoff for loop
+        }
+      }
+    }
   }
 }
 
