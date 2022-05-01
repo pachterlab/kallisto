@@ -989,12 +989,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
         // check next position
         KmerIterator kit2(kit);
-        kit2 += nextPos;
+        kit2 += nextPos-pos;
         if (kit2 != kit_end) {
           const_UnitigMap<Node> um2 = dbg.find(kit2->first);
           bool found2 = false;
           int  found2pos = pos+dist;
-          if (um.isEmpty) {
+          if (um2.isEmpty) {
             found2=true;
             found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2) &&
@@ -1009,7 +1009,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               v.push_back({um, l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({um2, found2pos});
+              v.push_back({um, found2pos});
               kit = kit2; // move iterator to this new position
             }
           } else {
