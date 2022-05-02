@@ -998,7 +998,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
             found2=true;
             found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2) &&
-                     n->ec[pos] == n->ec[pos+dist]) {
+                     n->ec[um.dist] == um2.getData()->ec[um2.dist]) {
             // um and um2 are on the same unitig and also share the same EC
             found2=true;
             found2pos = pos+dist;
@@ -1020,16 +1020,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               int middleContig = -1;
               int found3pos = pos+dist;
               KmerIterator kit3(kit);
-              kit3 += middlePos;
+              kit3 += middlePos-pos;
               if (kit3 != kit_end) {
                 const_UnitigMap<Node> um3 = dbg.find(kit3->first);
                 if (!um3.isEmpty) {
                   if (um.isSameReferenceUnitig(um3) &&
-                      n->ec[pos] == n->ec[middlePos]) {
+                      n->ec[um.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = middlePos;
                   } else if (um2.isSameReferenceUnitig(um3) &&
-                             um2.getData()->ec[pos+dist] == um3.getData()->ec[middlePos]) {
+                             um2.getData()->ec[um2.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = pos+dist;
                   }
