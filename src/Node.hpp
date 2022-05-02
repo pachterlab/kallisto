@@ -40,14 +40,15 @@ class Node: public CDBG_Data_t<Node> {
     std::pair<size_t, size_t> get_mc_contig(size_t i) const {
         size_t j = 0, k = ec.size();
         if (ec[j] != ec[i]) {
-            j = i-1;
-            while (ec[j] == ec[i] && j > 0) {
+            j = i;
+            do {
                 j--;
-            }
+            } while (j >= 0 && ec[j] == ec[i]);
+            j++;
         }
         if (ec[k-1] != ec[i]) {
             k = i+1;
-            while (ec[k-1] == ec[i] && k < ec.size()) {
+            while (k < ec.size() && ec[k] == ec[i]) {
                 k++;
             }
         }
