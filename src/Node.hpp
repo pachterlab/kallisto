@@ -37,16 +37,16 @@ class Node: public CDBG_Data_t<Node> {
     // Returns [j, k), j<=i, k>=i, where j-1 is the last kmer to have a
     // different EC than kmer i, and k is the first kmer to have a different
     // EC than i.
-    std::pair<size_t, size_t> get_mc_contig(size_t i) const {
+    std::pair<size_t, size_t> get_mc_contig(size_t i, bool checkAll=false) const {
         size_t j = 0, k = ec.size();
-        if (ec[j] != ec[i]) {
+        if (ec[j] != ec[i] || checkAll) {
             j = i;
             do {
                 j--;
             } while (j >= 0 && ec[j] == ec[i]);
             j++;
         }
-        if (ec[k-1] != ec[i]) {
+        if (ec[k-1] != ec[i] || checkAll) {
             k = i+1;
             while (k < ec.size() && ec[k] == ec[i]) {
                 k++;
