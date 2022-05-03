@@ -909,6 +909,12 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
+  
+  if (!um1.getData()->monochrome || !um2.getData()->monochrome) {
+    if (um1.getData()->get_mc_contig(um1.dist, true).second != um2.getData()->get_mc_contig(um2.dist, true).second) {
+      return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
+    }
+  }
 
   if (p1>p2) {
     return p1-p2;
