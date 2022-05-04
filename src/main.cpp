@@ -3238,15 +3238,12 @@ int main(int argc, char *argv[]) {
         usageTCCQuant();
         return 0;
       }
-      // TODO
-      /*
       ParseOptionsTCCQuant(argc-1,argv+1,opt);
       if (!CheckOptionsTCCQuant(opt)) {
         usageTCCQuant();
         exit(1);
       } else {
-        // TODO:
-        //KmerIndex index(opt);
+        KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
         size_t num_ecs = index.ecmap.size();
         MinCollector collection(index, opt);
@@ -3531,7 +3528,6 @@ int main(int argc, char *argv[]) {
           writeFLD(fldfilename, FLD_mat);
         }
       }
-      */
     } else if (cmd == "pseudo") {
       if (argc==2) {
         usagePseudo();
