@@ -38,6 +38,9 @@ class Node: public CDBG_Data_t<Node> {
     // different EC than kmer i, and k is the first kmer to have a different
     // EC than i.
     std::pair<size_t, size_t> get_mc_contig(size_t i) const {
+        if (monochrome) {
+            return std::pair<size_t, size_t>(0, ec.size());
+        }
         size_t j = 0, k = ec.size();
         if (ec[j] != ec[i]) {
             j = i-1;

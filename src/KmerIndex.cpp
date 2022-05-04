@@ -514,6 +514,7 @@ bool KmerIndex::fwStep(Kmer km, Kmer& end) const {
 }
 
 void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
+
   if (opt.index.empty() && !loadKmerTable) {
     // Make an index from transcript and EC files
     loadTranscriptsFromFile(opt);
@@ -723,6 +724,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
   c_opt.useMercyKmers = true;
+  c_opt.verbose = true;
   c_opt.filename_ref_in.push_back(tmp_file);
 
   dbg.build(c_opt);
