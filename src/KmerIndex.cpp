@@ -911,6 +911,12 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
+  
+  if (!um1.getData()->monochrome || !um2.getData()->monochrome) {
+    if (um1.getData()->get_mc_contig(um1.dist, true).second != um2.getData()->get_mc_contig(um2.dist, true).second) {
+      return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
+    }
+  }
 
   if (p1>p2) {
     return p1-p2;
@@ -991,16 +997,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
         // check next position
         KmerIterator kit2(kit);
-        kit2 += nextPos;
+        kit2 += nextPos-pos;
         if (kit2 != kit_end) {
           const_UnitigMap<Node> um2 = dbg.find(kit2->first);
           bool found2 = false;
           int  found2pos = pos+dist;
-          if (um.isEmpty) {
+          if (um2.isEmpty) {
             found2=true;
             found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2) &&
-                     n->ec[pos] == n->ec[pos+dist]) {
+                     n->ec[um.dist] == um2.getData()->ec[um2.dist]) {
             // um and um2 are on the same unitig and also share the same EC
             found2=true;
             found2pos = pos+dist;
@@ -1011,7 +1017,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               v.push_back({um, l-k}); // push back a fake position
               break; //
             } else {
-              v.push_back({um2, found2pos});
+              v.push_back({um, found2pos});
               kit = kit2; // move iterator to this new position
             }
           } else {
@@ -1022,16 +1028,16 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               int middleContig = -1;
               int found3pos = pos+dist;
               KmerIterator kit3(kit);
-              kit3 += middlePos;
+              kit3 += middlePos-pos;
               if (kit3 != kit_end) {
                 const_UnitigMap<Node> um3 = dbg.find(kit3->first);
                 if (!um3.isEmpty) {
                   if (um.isSameReferenceUnitig(um3) &&
-                      n->ec[pos] == n->ec[middlePos]) {
+                      n->ec[um.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = middlePos;
                   } else if (um2.isSameReferenceUnitig(um3) &&
-                             um2.getData()->ec[pos+dist] == um3.getData()->ec[middlePos]) {
+                             um2.getData()->ec[um2.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
                     found3pos = pos+dist;
                   }
