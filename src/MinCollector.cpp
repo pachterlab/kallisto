@@ -384,11 +384,11 @@ int hexamerToInt(const char *s, bool revcomp) {
   return hex;
 }
 
-bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired) {
   return countBias(s1,s2,v1,v2,paired,bias5);
 }
 
-bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const {
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired, std::vector<int>& biasOut) const {
 
   const int pre = 2, post = 4;
 
@@ -396,22 +396,31 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     return false;
   }
 
-  auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
+  auto getPreSeq = [&](const char *s, const_UnitigMap<Node> um, int p) -> int {
     if (s==0) {
       return -1;
     }
-    if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
-      const Contig &c = index.dbGraph.contigs[val.contig];
-      bool sense = c.transcripts[0].sense;
+
+    size_t contig_start = 0, contig_length = um.size - um.getGraph()->getK() + 1;
+    const Node* n = um.getData();
+    if (!n->monochrome) {
+      auto p = n->get_mc_contig(um.dist);
+      contig_start += p.first;
+      contig_length = p.second - contig_start;
+    }
+
+    size_t pos = um.dist - contig_start;
+    if (( um.strand && (pos - p > pre)) ||
+        (!um.strand && (contig_length - 1 - pos - p >= pre))) {
 
       int hex = -1;
       //std::cout << "  " << s << "\n";
-      if (csense) {
-        hex = hexamerToInt(c.seq.c_str() + (val.getPos()-p - pre), true);
+      if (um.strand) {
+        hex = hexamerToInt(um.referenceUnitigToString().c_str() + (contig_start + pos - p - pre), true);
         //std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
       } else {
-        int pos = (val.getPos() + p) + k - post;
-        hex = hexamerToInt(c.seq.c_str() + (pos), false);
+        int pos_ = (pos + p) + k - post;
+        hex = hexamerToInt(um.referenceUnitigToString().c_str() + (contig_start + pos_), false);
         //std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
       }
       return hex;
@@ -421,20 +430,18 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
   };
 
   // find first contig of read
-  KmerEntry val1 = v1[0].first;
+  const_UnitigMap<Node> um1 = v1[0].first;
   int p1 = v1[0].second;
   for (auto &x : v1) {
     if (x.second < p1) {
-      val1 = x.first;
+      um1 = x.first;
       p1 = x.second;
     }
   }
 
-  Kmer km1 = Kmer((s1+p1));
-  bool fw1 = (km1==km1.rep());
-  bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+  bool csense1 = um1.strand; // is this in the direction of the contig?
 
-  int hex5 = getPreSeq(s1, km1, fw1, csense1, val1, p1);
+  int hex5 = getPreSeq(s1, um1, p1);
 
   /*
   int hex3 = -1;

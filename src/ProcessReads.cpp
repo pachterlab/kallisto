@@ -1276,14 +1276,9 @@ void ReadProcessor::processBuffer() {
       if (findBias && !u.empty() && biasgoal > 0) {
         // collect sequence specific bias info
 
-        // TODO
-        // ===================================================
-        std::cout << "TODO: Implement countBias" << std::endl;
-        exit(1);
-        // ===================================================
-        //if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
-          //biasgoal--;
-        //}
+        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+          biasgoal--;
+        }
       }
 
       // collect fragment length info
