@@ -2635,8 +2635,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else if (opt.batch_mode) { // kallisto pseudo
         // pseudoalign the reads
-        // TODO:
-        /*
+
         KmerIndex index(opt);
         index.load(opt);
 
@@ -2743,7 +2742,6 @@ int main(int argc, char *argv[]) {
           // write out gene info
           writeGeneList(genelistname, model);
         }
-        */
       } else { // kallisto bus -x
         int num_trans, index_version;
         int64_t num_processed = 0;
@@ -2752,8 +2750,7 @@ int main(int argc, char *argv[]) {
 
         opt.bus_mode = true;
         opt.single_end = false;
-        // TODO:
-        /*
+
         KmerIndex index(opt);
         index.load(opt);
 
@@ -2877,7 +2874,6 @@ int main(int argc, char *argv[]) {
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
-        */
       }
     } else if (cmd == "merge") {
       if (argc == 2) {
@@ -2949,14 +2945,11 @@ int main(int argc, char *argv[]) {
         MinCollector collection(index, opt);
         MasterProcessor MP(index, opt, collection, model);
         num_processed = ProcessReads(MP, opt);
-        /*
 
-        // TODO:
         // save modified index for future use
         if (opt.write_index) {
           index.write((opt.output + "/index.saved"), false);
         }
-        */
 
         // if mean FL not provided, estimate
         std::vector<int> fld;
@@ -2977,12 +2970,7 @@ int main(int argc, char *argv[]) {
 
         std::vector<int> preBias(4096,1);
         if (opt.bias) {
-         // TODO: implement bias
-         // ==============================================
-         std::cout << "TODO: implement bias" << std::endl;
-         exit(1);
-         // ==============================================
-          //preBias = collection.bias5; // copy
+          preBias = collection.bias5; // copy
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -3539,8 +3527,6 @@ int main(int argc, char *argv[]) {
         usagePseudo(false);
         exit(1);
       } else {
-        // TODO:
-        /*
         // pseudoalign the reads
         KmerIndex index(opt);
         index.load(opt);
@@ -3785,7 +3771,6 @@ int main(int argc, char *argv[]) {
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
           MP.processAln(em, false);
         }
-        */
       }
 
     } else if (cmd == "h5dump") {
