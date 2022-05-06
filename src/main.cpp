@@ -2603,7 +2603,6 @@ int main(int argc, char *argv[]) {
       } else {
         // create an index
         Kmer::set_k(opt.k);
-        // TODO:
         KmerIndex index(opt);
         index.BuildTranscripts(opt);
         index.write(opt.index);
@@ -2620,6 +2619,8 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // TODO:
+          std::cout << "InspectIndex not implemented" << std::endl;
+          exit(1);
         //KmerIndex index(opt);
         //index.load(opt);
         //InspectIndex(index,opt);

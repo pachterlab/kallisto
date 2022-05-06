@@ -106,7 +106,6 @@ struct KmerIndex {
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
-  bool fwStep(Kmer km, Kmer& end) const;
 
   // output methods
   void write(const std::string& index_out, bool writeKmerTable = true);
@@ -114,6 +113,7 @@ struct KmerIndex {
 
   // note opt is not const
   // load methods
+  static void spool_index_to(std::ifstream& in, int loc);
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
   void loadECsFromFile(const ProgramOptions& opt);
