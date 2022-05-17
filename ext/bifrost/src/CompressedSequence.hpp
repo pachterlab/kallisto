@@ -49,6 +49,7 @@ class CompressedSequence {
         }
 
         Kmer getKmer(size_t offset) const;
+        Minimizer getMinimizer(size_t offset) const;
         char getChar(const size_t offset) const;
 
         //bool compareKmer(const size_t offset, const Kmer& km) const;
@@ -66,6 +67,9 @@ class CompressedSequence {
         //size_t bw_jump(const char *s, const size_t i, int pos, const bool reversed) const;
 
         int64_t findKmer(const Kmer& km) const;
+
+        bool write(std::ostream& stream_out) const;
+        bool read(std::istream& stream_in);
 
         BFG_INLINE void reserveLength(const size_t new_length) {
 

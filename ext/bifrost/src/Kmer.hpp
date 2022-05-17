@@ -231,6 +231,8 @@ struct KmerHash {
 ///@cond NO_DOC
 class Minimizer {
 
+    friend class CompressedSequence;
+
     public:
 
         Minimizer();
@@ -282,6 +284,9 @@ class Minimizer {
 
         void toString(char *s) const;
         std::string toString() const;
+
+        bool write(std::ostream& stream_out) const;
+        bool read(std::istream& stream_in);
 
         // static functions
         static void set_g(unsigned int _g);

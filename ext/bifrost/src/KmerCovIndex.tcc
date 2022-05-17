@@ -562,6 +562,25 @@ Kmer KmerCovIndex<T>::getKmer(const size_t idx) const {
 }
 
 template<typename T>
+Minimizer KmerCovIndex<T>::getMinimizer(const size_t idx, const size_t offset) const {
+
+    if ((idx >= sz) || (offset >= (Kmer::k - Minimizer::g + 1))) {
+
+        Minimizer minz;
+
+        minz.set_empty();
+
+        return minz;
+    }
+
+    char km_cstr[MAX_KMER_SIZE];
+
+    v_blocks[idx >> shift_div]->km_block[idx & mask_mod].toString(km_cstr);
+
+    return Minimizer(km_cstr + offset);
+}
+
+template<typename T>
 void KmerCovIndex<T>::remove(const size_t idx) {
 
     if (idx < sz){
@@ -581,6 +600,56 @@ void KmerCovIndex<T>::remove(const size_t idx) {
             block->bc_cov.runOptimize();
         }
     }
+}
+
+template<typename T>
+bool KmerCovIndex<T>::write(std::ostream& stream_out) const {
+
+    if (stream_out.fail()) return false;
+
+    stream_out.write(reinterpret_cast<const char*>(&sz), sizeof(size_t));
+
+    bool success_write = !stream_out.fail();
+
+    for (const auto& block : v_blocks) {
+
+        for (size_t i = 0; (i < block_sz) && success_write; ++i) {
+
+            if (!block->km_block[i].isDeleted() && !block->km_block[i].isEmpty()) success_write = block->km_block[i].write(stream_out);
+        }
+    }
+
+    return (success_write && !stream_out.fail());
+}
+
+template<typename T>
+bool KmerCovIndex<T>::read(std::istream& stream_in) {
+
+    if (stream_in.fail()) return false;
+
+    clear();
+
+    size_t sz_ = 0;
+
+    stream_in.read(reinterpret_cast<char*>(&sz_), sizeof(size_t));
+
+    bool success_read = !stream_in.fail();
+
+    shift_div = __builtin_ffsll(block_sz) - 1;
+    mask_mod = block_sz - 1;
+
+    if (sz_ != 0) {
+
+        resize(sz_);
+
+        for (size_t i = 0; (i < sz_) && success_read; ++i) {
+
+            success_read = v_blocks[i >> shift_div]->km_block[i & mask_mod].read(stream_in);
+            setFull(i);
+        }
+    }
+
+    return (success_read && !stream_in.fail());
 }
 
 template<>

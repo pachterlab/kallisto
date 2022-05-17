@@ -27,7 +27,7 @@ I will try to cover as much ground as possible in this tutorial. However, the ke
 Graphs in Bifrost are compacted bi-directed de Bruijn graphs. It is important to understand this concept before getting started as the API relies on these notions. Unitigs, compaction and bi-directed edges are all explained in this excellent [short tutorial](https://github.com/GATB/bcalm/blob/master/bidirected-graphs-in-bcalm2/bidirected-graphs-in-bcalm2.md) by Paul Medvedev and Rayan Chikhi.
 I will try to summarize quickly some of the important concepts for Bifrost:
 
-- Bifrost uses a node-centric representation of the graph. Vertices are represented explicitely while edges are represented implicitly.
+- Bifrost uses a node-centric representation of the graph. Vertices are represented explicitly while edges are represented implicitly.
 - Vertices are unitigs, i.e., sequences of length greater or equal to *k* (the *k*-mer size). Hence, a unitig is composed of at least one *k*-mer.
 - *K*-mers in a unitig are not branching (edge in-degree = edge out-degree = 1) in the graph **except** the first and last *k*-mers which **might** be branching.
 - A *k*-mer occurs in **at most** one unitig.
@@ -180,14 +180,14 @@ Rather than manually adding sequences in the graph, Bifrost enables developers t
 - *reference* mode: the graph is built from **all** *k*-mers in the input data sets.
 - *sequence* mode: the graph is built from *k*-mers occuring **twice or more** in the input data sets.
 
-The reference mode is ideal for building the graph from reference genomes while the sequence mode is ideal for raw reads. Note that you can build your graph from assembled genomes and raw reads by combining both modes! Parameters of the graph construction are set in an object of type `CDBG_Build_opt` that you must configure:
+The reference mode is ideal for building the graph from reference genomes while the sequence mode is better for reads. Note that you can build your graph from assembled genomes and reads by combining both modes! Parameters of the graph construction are set in an object of type `CDBG_Build_opt` that you must configure:
 - `CDBG_Build_opt::k`: Length of k-mers.
 - `CDBG_Build_opt::filename_seq_in`: Vector of input filenames for the sequence mode.
 - `CDBG_Build_opt::filename_ref_in`: Vector of input filenames for the reference mode.
 - `CDBG_Build_opt::nb_threads`: Number of threads to use.
 - `CDBG_Build_opt::verbose`: Print information messages during the construction.
 
-Input filenames can be provided in FASTA or FASTQ format, gzipped or not, and GFA. That's right: if you already have a graph in GFA format but not necessarily a de Bruijn graph, Bifrost will take its sequences to build a compacted de Bruijn graph. You can also provide in input a list of filenames as a text file with one filename per line (be careful to not have empty lines). Once you're done with setting these parameters, constructing the graph is as easy as:
+Input filenames can be provided in FASTA or FASTQ format, gzipped or not, and GFA. Indeed, if you already have a graph in GFA format but not necessarily a de Bruijn graph, Bifrost will take its sequences to build a compacted de Bruijn graph. You can also provide in input a list of filenames as a text file with one filename per line (be careful to not have empty lines). Once you're done with setting these parameters, constructing the graph is as easy as:
 ```cpp
 CDBG_Build_opt opt;
 

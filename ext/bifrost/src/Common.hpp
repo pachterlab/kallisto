@@ -26,7 +26,7 @@
 
 #define BUFFER_SIZE 1048576
 
-#define BFG_VERSION "1.0.6"
+#define BFG_VERSION "1.0.6.4"
 #define BFG_BUG_EMAIL "guillaume[d0T}holley{aT}gmail[d0T}com"
 
 using namespace std;

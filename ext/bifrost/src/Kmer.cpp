@@ -314,7 +314,7 @@ bool Kmer::write(ostream& stream_out) const {
 
     const size_t nlongs = MAX_K/32;
 
-    for (size_t i = 0; (i < nlongs) && stream_out.good(); ++i){
+    for (size_t i = 0; (i < nlongs) && !stream_out.fail(); ++i){
 
         stream_out.write(reinterpret_cast<const char*>(&longs[i]), sizeof(uint64_t));
     }
@@ -326,12 +326,12 @@ bool Kmer::read(istream& stream_in) {
 
     const size_t nlongs = MAX_K/32;
 
-    for (size_t i = 0; (i < nlongs) && stream_in.good(); ++i){
+    for (size_t i = 0; (i < nlongs) && !stream_in.fail(); ++i){
 
         stream_in.read(reinterpret_cast<char*>(&longs[i]), sizeof(uint64_t));
     }
 
-    return stream_in.good();
+    return !stream_in.fail();
 }
 
 unsigned int Kmer::k = 0;
@@ -553,6 +553,30 @@ std::string Minimizer::toString() const {
     toString(buf);
 
     return std::string(buf);
+}
+
+bool Minimizer::write(ostream& stream_out) const {
+
+    const size_t nlongs = MAX_G/32;
+
+    for (size_t i = 0; (i < nlongs) && !stream_out.fail(); ++i){
+
+        stream_out.write(reinterpret_cast<const char*>(&longs[i]), sizeof(uint64_t));
+    }
+
+    return !stream_out.fail();
+}
+
+bool Minimizer::read(istream& stream_in) {
+
+    const size_t nlongs = MAX_G/32;
+
+    for (size_t i = 0; (i < nlongs) && !stream_in.fail(); ++i){
+
+        stream_in.read(reinterpret_cast<char*>(&longs[i]), sizeof(uint64_t));
+    }
+
+    return !stream_in.fail();
 }
 
 void Minimizer::set_g(unsigned int _g) {

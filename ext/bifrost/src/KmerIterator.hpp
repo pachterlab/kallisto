@@ -17,11 +17,13 @@ class KmerIterator : public std::iterator<std::input_iterator_tag, std::pair<Kme
     public:
 
         KmerIterator() : str(nullptr), invalid(true), pos_s(0), pos_e(0) {
+            
             p.first.set_empty();
             p.second = 0;
         }
 
         KmerIterator(const char* s) : str(s), invalid(false), pos_s(0), pos_e(0) {
+
             p.first.set_empty();
             p.second = 0;
 

@@ -838,7 +838,7 @@ size_t BitContainer::size() const {
 
 bool BitContainer::write(ostream& stream_out) const {
 
-    if (stream_out.good()){
+    if (!stream_out.fail()){
 
         const uintptr_t flag = setBits & flagMask;
 
@@ -869,7 +869,7 @@ bool BitContainer::write(ostream& stream_out) const {
         }
         else stream_out.write(reinterpret_cast<const char*>(&setBits), sizeof(uintptr_t));
 
-        return true;
+        return !stream_out.fail();
     }
 
     return false;
@@ -877,7 +877,7 @@ bool BitContainer::write(ostream& stream_out) const {
 
 bool BitContainer::read(istream& stream_in) {
 
-    if (stream_in.good()){
+    if (!stream_in.fail()){
 
         clear();
 
@@ -910,7 +910,7 @@ bool BitContainer::read(istream& stream_in) {
             setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
         }
 
-        return true;
+        return !stream_in.fail();
     }
 
     return false;

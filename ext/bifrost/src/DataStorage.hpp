@@ -6,7 +6,7 @@
 #include "ColorSet.hpp"
 #include "CompactedDBG.hpp"
 
-#define BFG_COLOREDCDBG_FORMAT_VERSION 2
+#define BFG_COLOREDCDBG_FORMAT_VERSION 3
 
 template<typename Unitig_data_t> class ColoredCDBG;
 template<typename Unitig_data_t> class DataAccessor;

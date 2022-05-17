@@ -2,6 +2,9 @@
 
 API only.
 
+* **04-28-2022**
+	* Color files generated prior to version 1.0.6.2 are **not** compatible with version 1.0.6.2 and onward.
+	* `CompactedDBG::simplify()` and `ColoredCDBG::simplify()` now return true even if no simplification was performed ("null-simplification" in case all input parameters are set to false). The goal is to only return false if the graph is invalid or in case of unexpected behavior. 
 * **08-29-2018**
 	* `UnitigColors::const_iterator` only considers now the k-mer positions of the unitig mapping provided in the `UnitigMap`/`UnitigColorMap` parameter of `UnitigColors::begin()`.
 * **08-28-2018**

@@ -186,7 +186,7 @@ class Node: public CDBG_Data_t<Node> {
             // 3.2 Read transcripts
             transcripts[tmp_uint].reserve(n_transcripts);
             in.read((char *)&n_transcripts, sizeof(n_transcripts));
-            for (size_t j = 0; j < n_transcripts; ++) {
+            for (size_t j = 0; j < n_transcripts; ++j) {
                 in.read((char *)&tr_id, sizeof(tr_id));
                 in.read((char *)&pos, sizeof(pos));
                 in.read((char *)&sense, sizeof(sense));

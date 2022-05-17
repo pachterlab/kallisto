@@ -849,6 +849,44 @@ bool DataStorage<U>::read(const string& filename_colors, const size_t nb_threads
         return false;
     }
 
+    if (format_version < 3) { // Color files v1 and v2 are incompatible with Bifrost v1.0.6.2 and versions onward
+
+        stringstream ss_bfg_version(string(BFG_VERSION));
+        string segment;
+
+        vector<int> seglist;
+
+        while(getline(ss_bfg_version, segment, '.')) seglist.push_back(atoi(segment.c_str()));
+
+        const size_t len_bfg_v = seglist.size();
+
+        bool compatible = false;
+
+        if (seglist[0] == 0) compatible = true; // Major version is 0, compatible
+        else if (seglist[0] == 1) { // Version is 1xxxxxxxx
+
+            if (len_bfg_v >= 2){
+
+                if (seglist[1] == 0) { // Version is 1.0xxxxxxx
+
+                    if (len_bfg_v >= 3) {
+
+                        if (seglist[2] < 6) compatible = true; // Version is 1.0.5xxxxxxx or before
+                        else if (seglist[2] == 6) compatible = (len_bfg_v < 4) || ((len_bfg_v >= 4) && (seglist[3] < 2)); // Version is 1.0.6xxxxxxx, compatible if below 1.0.6.2
+                    }
+                    else compatible = true;
+                }
+            }
+            else compatible = true;
+        }
+
+        if (!compatible) {
+
+            cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << endl;
+            return false;
+        }
+    }
+
     const size_t sz_unitig_cs_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
     overflow = unordered_map<pair<Kmer, size_t>, size_t>(overflow_sz);
@@ -1102,6 +1140,44 @@ inline bool DataStorage<void>::read(const string& filename_colors, const size_t 
 
         cerr << "DataStorage::read(): Does not support more than 255 hash seeds" << endl;
         return false;
+    }
+
+    if (format_version < 3) { // Color files v1 and v2 are incompatible with Bifrost v1.0.6.2 and versions onward
+
+        stringstream ss_bfg_version(string(BFG_VERSION));
+        string segment;
+
+        vector<int> seglist;
+
+        while(getline(ss_bfg_version, segment, '.')) seglist.push_back(atoi(segment.c_str()));
+
+        const size_t len_bfg_v = seglist.size();
+
+        bool compatible = false;
+
+        if (seglist[0] == 0) compatible = true; // Major version is 0, compatible
+        else if (seglist[0] == 1) { // Version is 1xxxxxxxx
+
+            if (len_bfg_v >= 2){
+
+                if (seglist[1] == 0) { // Version is 1.0xxxxxxx
+
+                    if (len_bfg_v >= 3) {
+
+                        if (seglist[2] < 6) compatible = true; // Version is 1.0.5xxxxxxx or before
+                        else if (seglist[2] == 6) compatible = (len_bfg_v < 4) || ((len_bfg_v >= 4) && (seglist[3] < 2)); // Version is 1.0.6xxxxxxx, compatible if below 1.0.6.2
+                    }
+                    else compatible = true;
+                }
+            }
+            else compatible = true;
+        }
+
+        if (!compatible) {
+
+            cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << endl;
+            return false;
+        }
     }
 
     const size_t sz_unitig_cs_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);

@@ -651,14 +651,14 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& k
 
 MinimizerIndex::iterator MinimizerIndex::begin() {
 
-    iterator it(this);
+    iterator it(this, 0xffffffffffffffffULL);
     it.operator++();
     return it;
 }
 
 MinimizerIndex::const_iterator MinimizerIndex::begin() const {
 
-    const_iterator it(this);
+    const_iterator it(this, 0xffffffffffffffffULL);
     it.operator++();
     return it;
 }

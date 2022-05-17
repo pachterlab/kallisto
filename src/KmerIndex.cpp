@@ -361,7 +361,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   for (const auto& um : dbg) {
     // 3.1 write head kmer to associate unitig with node
     std::string kmer = um.getUnitigHead().toString();
-    out.write((char *)&kmer, sizeof(kmer));
+    out.write(kmer.c_str(), strlen(kmer.c_str()));
     // 3.2 serialize node
     um.getData()->serialize(out);
   }
@@ -430,7 +430,7 @@ void KmerIndex::spool_index_to(std::ifstream& in, int loc) {
 
   // 4. read in length of targets
   if (loc == 4) return;
-  in.read(_num_trans * sizeof(tmp_int));
+  in.ignore(_num_trans * sizeof(tmp_int));
 
   // 5. read number of k-mers
   if (loc == 5) return;
@@ -474,7 +474,7 @@ void KmerIndex::spool_index_to(std::ifstream& in, int loc) {
   in.read((char *)&contig_size, sizeof(contig_size));
 
   for (size_t i = 0; i < contig_size; ++i) {
-    in.ignorer(sizeof(tmp_int));
+    in.ignore(sizeof(tmp_int));
     in.read((char *)&tmp_size_t, sizeof(tmp_size_t));
 
     in.ignore(tmp_size_t);
@@ -519,55 +519,55 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     exit(1);
   }
 
-  // 2. read k
-  in.read((char *)&k, sizeof(k));
-  dbg = CompactedDBG<Node>(k);
-  if (Kmer::k == 0) {
-    //std::cerr << "[index] no k has been set, setting k = " << k << std::endl;
-    Kmer::set_k(k);
-    opt.k = k;
-  } else if (Kmer::k == k) {
-    //std::cerr << "[index] Kmer::k has been set and matches" << k << std::endl;
-    opt.k = k;
-  } else {
-    std::cerr << "Error: Kmer::k was already set to = " << Kmer::k << std::endl
-              << "       conflicts with value of k  = " << k << std::endl;
-    exit(1);
+  // 2. deserialize dBG
+  size_t tmp_size;
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  if (tmp_size > 0) {
+    std::string dbg_bin;
+    in.read((char *)&dbg_bin, sizeof(dbg_bin));
+    dbg.readBinary(dbg_bin);
+    // XXX:
+    // Do we need k if writeKmerTable == false?
+    k = dbg.getK();
   }
 
-  // 3. read in number of targets
+  // 3. deserialize nodes
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  Kmer kmer;
+  UnitigMap<Node> um;
+  std::string kmer_string;
+  size_t kmer_size = strlen(kmer.toString().c_str());
+  char* buffer = new char[kmer_size];
+  for (size_t i = 0; i < tmp_size; ++i) {
+    // 3.1 read head kmer
+    memset(buffer, 0, kmer_size);
+    in.read(buffer, kmer_size);
+    kmer = Kmer(buffer);
+    um = dbg.find(kmer);
+
+    if (um.isEmpty) {
+      std::cerr << "Error: Corrupred index; unitig not found: " << std::string(buffer) << std::endl;
+      exit(1);
+    }
+
+    // 3.2 deserialize node
+    um.getData()->deserialize(in);
+  }
+  delete[] buffer;
+
+  // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
 
-  // 4. read in length of targets
+  // 5. read out target lengths
   target_lens_.clear();
   target_lens_.reserve(num_trans);
-
-  for (int i = 0; i < num_trans; i++) {
-    int tlen;
-    in.read((char *)&tlen, sizeof(tlen));
-    target_lens_.push_back(tlen);
+  int tmp_int;
+  for (size_t i = 0; i < num_trans; ++i) {
+    in.read((char *)&tmp_int, sizeof(tmp_int));
+    target_lens_.push_back(tmp_int);
   }
 
-  // 5. read number of k-mers
-  size_t kmap_size;
-  in.read((char *)&kmap_size, sizeof(kmap_size));
-
-  std::cerr << "[index] k-mer length: " << k << std::endl;
-  std::cerr << "[index] number of targets: " << pretty_num(num_trans)
-    << std::endl;
-  std::cerr << "[index] number of k-mers: " << pretty_num(kmap_size)
-    << std::endl;
-
-  // 6. read kmer->ec values
-  Kmer tmp_kmer;
-  KmerEntry tmp_val;
-  for (size_t i = 0; i < kmap_size; ++i) {
-    // Spool over kmap. Don't need it.
-    in.read((char *)&tmp_kmer, sizeof(tmp_kmer));
-    in.read((char *)&tmp_val, sizeof(tmp_val));
-  }
-
-  // 7. read number of equivalence classes
+  // 6. read number of equivalence classes
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
 
@@ -578,14 +578,14 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   int tmp_ecval;
   size_t vec_size;
 
-  // 8. read each equiv class
+  // 7. read each equiv class
   for (size_t ec = 0; ec < ecmap_size; ++ec) {
     in.read((char *)&tmp_id, sizeof(tmp_id));
 
-    // 8.1 read size of equiv class
+    // 7.1 read size of equiv class
     in.read((char *)&vec_size, sizeof(vec_size));
 
-    // 8.2 read each member
+    // 7.2 read each member
     std::vector<int> tmp_vec;
     tmp_vec.reserve(vec_size);
     for (size_t j = 0; j < vec_size; ++j ) {
@@ -596,18 +596,16 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     ecmap[tmp_id] = tmp_vec;
     ecmapinv.insert({tmp_vec, tmp_id});
   }
-  std::cout << "read ECs" << std::endl;
 
-  // 9. read in target ids
+  // 8. read in target ids
   target_names_.clear();
   target_names_.reserve(num_trans);
 
   std::cout << "read target ids" << std::endl;
-  size_t tmp_size;
   size_t bufsz = 1024;
-  char *buffer = new char[bufsz];
+  buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
-    // 9.1 read in the size
+    // 8.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
     if (tmp_size +1 > bufsz) {
@@ -618,155 +616,17 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     // clear the buffer
     memset(buffer,0,bufsz);
-    // 9.2 read in the character string
+    // 8.2 read in the character string
     in.read(buffer, tmp_size);
 
     target_names_.push_back(std::string(buffer));
   }
-  std::cout << "read target names" << std::endl;
-
-  // 10. read contigs
-  size_t contig_size;
-  in.read((char *)&contig_size, sizeof(contig_size));
-
-  int c_len, c_id;
-  std::string c_seq;
-
-  UnitigMap<Node> um;
-  std::vector<std::vector<u2t> > transcripts(contig_size);
-  Kmer kmer;
-  Node* data;
-
-  // Write contigs to temp fasta file in order to build dBG directly from them
-  std::string tmp_file = ".tmp_dbg.fasta";
-  std::ofstream of(tmp_file);
-  // Keep track of the order the contigs are listed in the index in order to
-  // match them up with the ECs later on
-  // Keep track of the original strandedness of the contig in order to fix
-  // transcript.sense if the strandedness changes. (Because the strandedness
-  // of Bifrost unitigs is not guaranteed to be the same as the strandedness
-  // of kallisto contigs).
-  // TODO:
-  // See if we can get away with not keeping all the contig sequences in this
-  // vector by restructuring the index.
-  for (size_t i = 0; i < contig_size; ++i) {
-    in.read((char *)&c_id, sizeof(c_id));
-    // TODO:
-    // We never use c_len. Remove it.
-    //in.read((char *)&c_len, sizeof(c_len));
-    in.read((char *)&tmp_size, sizeof(tmp_size));
-
-    if (tmp_size + 1 > bufsz) {
-      delete[] buffer;
-      bufsz = 2*(tmp_size+1);
-      buffer = new char[bufsz];
-    }
-
-    memset(buffer,0,bufsz);
-    in.read(buffer, tmp_size);
-    c_seq = std::string(buffer); // copy
-
-    // Write contig to tmp file
-    of << ">" << std::to_string(i) << std::endl << c_seq << std::endl;
-    canonical_contigs.push_back(c_seq);
-
-    // 10.1 read transcript info
-    in.read((char*)&tmp_size, sizeof(tmp_size));
-    int tr_id, pos;
-    bool sense;
-    for (size_t j = 0; j < tmp_size; ++j) {
-      in.read((char*)&tr_id, sizeof(tr_id));
-      in.read((char*)&pos, sizeof(pos));
-      in.read((char*)&sense, sizeof(sense));
-      transcripts[i].emplace_back(tr_id, pos, sense);
-    }
-  }
-  of.close();
-
-  CDBG_Build_opt c_opt;
-  c_opt.k = k;
-  c_opt.nb_threads = opt.threads;
-  c_opt.build = true;
-  c_opt.clipTips = false;
-  c_opt.deleteIsolated = false;
-  c_opt.useMercyKmers = true;
-  c_opt.verbose = true;
-  c_opt.filename_ref_in.push_back(tmp_file);
-
-  dbg.build(c_opt);
-
-  std::remove(tmp_file.c_str());
-
-  // 11. read ecs info
-  int tmp_ec;
-  size_t running_id = 0;
-  // Open new ifstream and spool it to the contigs
-  std::ifstream contig_in;
-  contig_in.open(index_in, std::ios::in | std::ios::binary);
-  spool_index_to(contig_in, 10);
-
-  for (size_t i = 0; i < contig_size; ++i) {
-    in.read((char*)&tmp_ec, sizeof(tmp_ec));
-
-    // Read contig from second file handle
-    contig_in.read((char *)&c_id, sizeof(c_id));
-    contig_in.read((char *)&tmp_size, sizeof(tmp_size));
-    if (tmp_size + 1 > bufsz) {
-      delete[] buffer;
-      bufsz = 2*(tmp_size+1);
-      buffer = new char[bufsz];
-    }
-    memset(buffer,0,bufsz);
-    contig_in.read(buffer, tmp_size);
-    c_seq = std::string(buffer);
-
-    size_t proc = 0;
-    while (proc < c_seq.length() - k + 1) {
-      um = dbg.findUnitig(c_seq.c_str(), proc, c_seq.length());
-      data = um.getData();
-      if (data->ec.size() < um.size - k + 1) {
-          data->ec.resize(um.size - k + 1);
-      }
-      for (size_t j = um.dist; j < um.dist; ++j) {
-          data->ec[j] = tmp_ec;
-      }
-      proc += um.len;
-      data->transcripts[tmp_ec] = transcripts[i];
-      data->id = running_id++;
-      // With Bifrost we have no control over the strandedness of the contigs.
-      // We iterate over all the contigs we read from the index and check whether
-      // the corresponding Bifrost unitig has the same strandedness. If not, we
-      // flip the transcript.sense for all transcripts belonging to that unitig.
-      if (!um.isEmpty && !um.strand) {
-        // If the canonical contig sequence is not a substring of the found
-        // unitig sequence
-        for (auto& tr: data->transcripts) {
-          tr.sense = !tr.sense;
-        }
-      }
-    }
-  }
-
-  int polychrome = 0;
-  for (auto& um : dbg) {
-    Node* n = um.getData();
-    uint32_t ec = m->ec[0];
-    for (size_t i = 0; i < n->ec.size(); ++i) {
-      if (n->ec[i] != ec) {
-        n->monochrome = false;
-        polychrome++;
-        break;
-      }
-    }
-  }
-  std::cout << "There are " << polychrome << " polychromatic unitigs in the graph out of " << dbg.size() << " unitigs (" << float(polychrome) / dbg.size() << ")." << std::endl;
 
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
 
   in.close();
-  contig_in.close();
 
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);

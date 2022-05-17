@@ -131,6 +131,8 @@ struct CDBG_Build_opt {
 
     size_t nb_threads;
 
+    size_t min_count_km;
+
     size_t nb_bits_unique_kmers_bf;
     size_t nb_bits_non_unique_kmers_bf;
 
@@ -167,7 +169,7 @@ struct CDBG_Build_opt {
     vector<string> filename_query_in;
 
     CDBG_Build_opt() :  nb_threads(1), k(DEFAULT_K), g(-1), nb_bits_unique_kmers_bf(14),
-                        nb_bits_non_unique_kmers_bf(14), ratio_kmers(0.8),
+                        nb_bits_non_unique_kmers_bf(14), ratio_kmers(0.8), min_count_km(1),
                         build(false), update(false), query(false), clipTips(false), deleteIsolated(false),
                         inexact_search(false), useMercyKmers(false), outputGFA(true), verbose(false) {}
 };
@@ -598,6 +600,12 @@ class CompactedDBG {
                     const double ratio_kmers, const bool inexact_search, const size_t nb_threads,
                     const size_t verbose = false) const;
 
+        bool writeBinary(const string& fn, const size_t nb_threads = 1) const;
+        bool writeBinary(ostream& out, const size_t nb_threads = 1) const;
+
+        bool readBinary(const string& fn);
+        bool readBinary(istream& in);
+
     protected:
 
         bool annotateSplitUnitigs(const CompactedDBG<U, G>& o, const size_t nb_threads = 1, const bool verbose = false);
@@ -617,14 +625,14 @@ class CompactedDBG {
 
         CompactedDBG<U, G>& toDataGraph(CompactedDBG<void, void>&& o, const size_t nb_threads = 1);
 
-        bool filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers);
-        bool construct(const CDBG_Build_opt& opt, const size_t nb_unique_minimizers, const size_t nb_non_unique_minimizers);
+        pair<bool, BlockedBloomFilter> filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers);
+        bool construct(const CDBG_Build_opt& opt, BlockedBloomFilter& bf, const size_t nb_unique_minimizers, const size_t nb_non_unique_minimizers);
 
-        bool addUnitigSequenceBBF(const Kmer km, const string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g);
+        bool addUnitigSequence(const Kmer km, const string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g);
 
-        size_t findUnitigSequenceBBF(Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip);
-        bool bwStepBBF(const Kmer km, Kmer& front, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
-        bool fwStepBBF(const Kmer km, Kmer& end, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
+        size_t findUnitigSequenceBBF(const BlockedBloomFilter& bf, Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip);
+        bool bwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& front, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
+        bool fwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& end, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
 
         inline size_t find(const preAllocMinHashIterator<RepHash>& it_min_h) const {
 
@@ -705,13 +713,13 @@ class CompactedDBG {
         size_t removeUnitigs(bool rmIsolated, bool clipTips, vector<Kmer>& v);
 
         size_t joinTips(string filename_MBBF_uniq_kmers, const size_t nb_threads = 1, const bool verbose = false);
-        vector<Kmer> extractMercyKmers(BlockedBloomFilter& bf_uniq_km, const size_t nb_threads = 1, const bool verbose = false);
+        vector<Kmer> extractMercyKmers(const BlockedBloomFilter& bf_uniq_km, const size_t nb_threads = 1, const bool verbose = false);
 
-        void writeGFA(const string& graphfilename, const size_t nb_threads = 1) const;
-        void writeFASTA(const string& graphfilename) const;
+        void writeGFA(const string& fn, const size_t nb_threads = 1) const;
+        void writeFASTA(const string& fn) const;
 
-        void readGFA(const string& graphfilename, const size_t nb_threads = 1);
-        void readFASTA(const string& graphfilename, const size_t nb_threads = 1);
+        void readGFA(const string& fn, const size_t nb_threads = 1);
+        void readFASTA(const string& fn, const size_t nb_threads = 1);
 
         template<bool is_void>
         typename std::enable_if<!is_void, void>::type writeGFA_sequence_(GFA_Parser& graph, KmerHashTable<size_t>& idmap) const;
@@ -726,6 +734,8 @@ class CompactedDBG {
 
         void setKmerGmerLength(const int kmer_length, const int minimizer_length = -1);
         void print() const;
+
+        //bool checkMinimizerIndex() const;
 
         vector<pair<size_t, UnitigMap<U, G>>> searchSequence(   const string& seq, const bool exact, const bool insertion, const bool deletion,
                                                                 const bool substitution, const double ratio_kmers, const bool or_exclusive_match);
@@ -750,8 +760,6 @@ class CompactedDBG {
         MinimizerIndex hmap_min_unitigs;
 
         h_kmers_ccov_t h_kmers_ccov;
-
-        BlockedBloomFilter bf;
 
         wrapperData<G> data;
 };

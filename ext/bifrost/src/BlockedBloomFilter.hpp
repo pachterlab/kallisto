@@ -1,6 +1,7 @@
 #ifndef BIFROST_BLOCKEDBLOOMFILTER_HPP
 #define BIFROST_BLOCKEDBLOOMFILTER_HPP
 
+#include <array>
 #include <atomic>
 #include <cmath>
 #include <cstdlib>
@@ -18,15 +19,6 @@
 #define MASK_BITS_BLOCK (0x7ffULL)
 #define NB_ELEM_BLOCK (32)
 
-/* Short description:
- *  - Extended BloomFilter which hashes into 64-bit blocks
- *    that can be accessed very fast from the CPU cache
- * */
-
-/*#if defined(__AVX2__)
-#include <x86intrin.h>
-#endif*/
-
 class BlockedBloomFilter {
 
     public:
@@ -42,20 +34,29 @@ class BlockedBloomFilter {
         BlockedBloomFilter& operator=(BlockedBloomFilter&& o);
 
         int contains(const uint64_t (&kmh)[4], const uint64_t minh, bool (&pres)[4], const int limit) const;
-        bool contains(const uint64_t kmh, const uint64_t minh) const;
-        int contains_bids(const uint64_t kmh, const uint64_t minh) const;
+        std::array<int64_t, 4> contains_bids(const uint64_t (&kmh)[4], const uint64_t minh, const int limit) const;
 
-        inline bool insert(const uint64_t kmh, const uint64_t minh, const bool multi_threaded = false) {
-
-            return (multi_threaded ? insert_par(kmh, minh) : insert_unpar(kmh, minh));
-        }
+        int64_t contains_bids(const uint64_t kmh, const uint64_t minh) const;
 
         bool WriteBloomFilter(FILE *fp) const;
         bool ReadBloomFilter(FILE *fp);
 
         void clear();
 
-        inline uint64_t getNbBlocks() const { return blocks_; }
+        inline bool contains(const uint64_t kmh, const uint64_t minh) const {
+
+            return (contains_bids(kmh, minh) != -1);
+        }
+
+        inline bool insert(const uint64_t kmh, const uint64_t minh, const bool multi_threaded = false) {
+
+            return static_cast<bool>((multi_threaded ? insert_par(kmh, minh) : insert_unpar(kmh, minh)) & 0x1ULL);
+        }
+
+        inline uint64_t getNbBlocks() const {
+
+            return (blocks_ + 1); // Number of blocks +  the one bucket of overflowing k-mers
+        }
 
         inline double getOccupancy(const uint64_t block_id) const {
 
@@ -83,7 +84,7 @@ class BlockedBloomFilter {
             std::cout << (static_cast<double>(nb_underloaded) / static_cast<double>(blocks_)) * 100 << " % blocks are underloaded." <<std::endl;
         }
 
-    private:
+    protected:
 
         struct BBF_Block {
 
@@ -115,7 +116,7 @@ class BlockedBloomFilter {
             std::atomic_flag lck = ATOMIC_FLAG_INIT;
         };
 
-        BBF_Block* table_; //Bit array
+        BBF_Block* table_; //Array of Bloom filter blocks
 
         uint64_t blocks_; //Nb blocks
 
@@ -129,115 +130,61 @@ class BlockedBloomFilter {
 
         std::atomic_flag lck_ush = ATOMIC_FLAG_INIT;
 
-        /*#if defined(__AVX2__)
-
-        // The following functions are from the libpopcnt library 
-        // (https://github.com/kimwalisch/libpopcnt) by Kim Walisch.
-        // The algorithm is based on the paper "Faster Population Counts
-        // using AVX2 Instructions" by Daniel Lemire, Nathan Kurz and
-        // Wojciech Mula (23 Nov 2016). https://arxiv.org/abs/1611.07612
-
-        static inline void CSA256(__m256i* h, __m256i* l, __m256i a, __m256i b, __m256i c) {
-
-            __m256i u = a ^ b;
-            *h = (a & b) | (u & c);
-            *l = u ^ c;
-        }
-
-        static inline __m256i popcnt256(__m256i v) {
-
-            __m256i lookup1 = _mm256_setr_epi8(
-              4, 5, 5, 6, 5, 6, 6, 7,
-              5, 6, 6, 7, 6, 7, 7, 8,
-              4, 5, 5, 6, 5, 6, 6, 7,
-              5, 6, 6, 7, 6, 7, 7, 8
-            );
-
-            __m256i lookup2 = _mm256_setr_epi8(
-              4, 3, 3, 2, 3, 2, 2, 1,
-              3, 2, 2, 1, 2, 1, 1, 0,
-              4, 3, 3, 2, 3, 2, 2, 1,
-              3, 2, 2, 1, 2, 1, 1, 0
-            );
-
-            __m256i low_mask = _mm256_set1_epi8(0x0f);
-            __m256i lo = v & low_mask;
-            __m256i hi = _mm256_srli_epi16(v, 4) & low_mask;
-            __m256i popcnt1 = _mm256_shuffle_epi8(lookup1, lo);
-            __m256i popcnt2 = _mm256_shuffle_epi8(lookup2, hi);
-
-            return _mm256_sad_epu8(popcnt1, popcnt2);
-        }
-
-        static inline uint64_t popcnt_avx2(const __m256i* data, uint64_t size) {
-
-            __m256i cnt = _mm256_setzero_si256();
-            __m256i ones = _mm256_setzero_si256();
-            __m256i twos = _mm256_setzero_si256();
-            __m256i fours = _mm256_setzero_si256();
-            __m256i eights = _mm256_setzero_si256();
-            __m256i sixteens = _mm256_setzero_si256();
-            __m256i twosA, twosB, foursA, foursB, eightsA, eightsB;
-
-            uint64_t i = 0;
-            uint64_t limit = size - size % 16;
-            uint64_t* cnt64;
-
-            for (; i < limit; i += 16) {
-
-                CSA256(&twosA, &ones, ones, data[i+0], data[i+1]);
-                CSA256(&twosB, &ones, ones, data[i+2], data[i+3]);
-                CSA256(&foursA, &twos, twos, twosA, twosB);
-                CSA256(&twosA, &ones, ones, data[i+4], data[i+5]);
-                CSA256(&twosB, &ones, ones, data[i+6], data[i+7]);
-                CSA256(&foursB, &twos, twos, twosA, twosB);
-                CSA256(&eightsA, &fours, fours, foursA, foursB);
-                CSA256(&twosA, &ones, ones, data[i+8], data[i+9]);
-                CSA256(&twosB, &ones, ones, data[i+10], data[i+11]);
-                CSA256(&foursA, &twos, twos, twosA, twosB);
-                CSA256(&twosA, &ones, ones, data[i+12], data[i+13]);
-                CSA256(&twosB, &ones, ones, data[i+14], data[i+15]);
-                CSA256(&foursB, &twos, twos, twosA, twosB);
-                CSA256(&eightsB, &fours, fours, foursA, foursB);
-                CSA256(&sixteens, &eights, eights, eightsA, eightsB);
-
-                cnt = _mm256_add_epi64(cnt, popcnt256(sixteens));
-            }
-
-            cnt = _mm256_slli_epi64(cnt, 4);
-            cnt = _mm256_add_epi64(cnt, _mm256_slli_epi64(popcnt256(eights), 3));
-            cnt = _mm256_add_epi64(cnt, _mm256_slli_epi64(popcnt256(fours), 2));
-            cnt = _mm256_add_epi64(cnt, _mm256_slli_epi64(popcnt256(twos), 1));
-            cnt = _mm256_add_epi64(cnt, popcnt256(ones));
-
-            for(; i < size; i++) cnt = _mm256_add_epi64(cnt, popcnt256(data[i]));
-
-            cnt64 = (uint64_t*) &cnt;
-
-            return (cnt64[0] + cnt64[1] + cnt64[2] + cnt64[3]);
-        }
-
-        uint64_t hashes_mask[4];
-
-        static const __m256i mask_and_div; // All MASK_BITS_BLOCK LSB of each 16 bits word
-        static const __m256i mask_and_mod; // All 4 LSB of each 16 bits word
-        static const __m256i one2shift_lsb; // All 1 LSB of each 32 bits word
-        static const __m256i one2shift_msb; // Set the 17th LSB bit of each 32 bits word
-        static const __m256i mask_lsb; // All 16 LSB bits of each 32 bits word
-
-        uint16_t mask_ksup4, mask_ksup8, mask_ksup12;
-
-        #endif*/
-
-        void init_table();
+        void init_arrays();
 
         inline double fpp(size_t bits, int k) const {
 
             return pow(1-exp(-((double)k)/((double)bits)),(double)k);
         }
 
-        bool insert_par(const uint64_t kmer_hash, const uint64_t min_hash);
-        bool insert_unpar(const uint64_t kmer_hash, const uint64_t min_hash);
+        uint64_t insert_par(const uint64_t kmer_hash, const uint64_t min_hash);
+        uint64_t insert_unpar(const uint64_t kmer_hash, const uint64_t min_hash);
+};
+
+class CountingBlockedBloomFilter : public BlockedBloomFilter {
+
+    public:
+
+        CountingBlockedBloomFilter();
+        CountingBlockedBloomFilter(size_t nb_elem, size_t bits_per_elem);
+        CountingBlockedBloomFilter(const CountingBlockedBloomFilter& o);
+        CountingBlockedBloomFilter(CountingBlockedBloomFilter&& o);
+
+        ~CountingBlockedBloomFilter();
+
+        CountingBlockedBloomFilter& operator=(const CountingBlockedBloomFilter& o);
+        CountingBlockedBloomFilter& operator=(CountingBlockedBloomFilter&& o);
+
+        void clear();
+
+        bool WriteBloomFilter(FILE *fp) const;
+        bool ReadBloomFilter(FILE *fp);
+
+        int64_t contains_bids(const uint64_t kmh, const uint64_t minh, const uint64_t min_count) const;
+
+        int contains(const uint64_t (&kmh)[4], const uint64_t minh, bool (&pres)[4], const int limit, const uint64_t min_count) const;
+
+        inline bool contains(const uint64_t kmh, const uint64_t minh, const uint64_t min_count) const {
+
+            return (contains_bids(kmh, minh, min_count) != -1);
+        }
+
+        inline bool insert(const uint64_t kmh, const uint64_t minh, const bool multi_threaded = false) {
+
+            return (((multi_threaded ? insert_par(kmh, minh) : insert_unpar(kmh, minh)) & 0x1ULL) == 1);
+        }
+
+    private:
+
+        uint64_t insert_par(const uint64_t kmer_hash, const uint64_t min_hash);
+        uint64_t insert_unpar(const uint64_t kmer_hash, const uint64_t min_hash);
+
+        void init_arrays();
+
+        uint64_t elems_per_block; //Nb elements
+
+        uint64_t* hashbit; //Bitmap of used hashes for approximate counts (BBHash-style)
+        uint8_t* counts; //Counts
 };
 
 #endif // BFG_BLOCKEDBLOOMFILTER_HPP

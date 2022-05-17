@@ -303,6 +303,48 @@ void CompressedSequence::toString(char *s, const size_t offset, const size_t len
     s[length] = 0; // 0-terminated string
 }
 
+bool CompressedSequence::write(std::ostream& stream_out) const {
+
+    if (stream_out.fail()) return false;
+
+    const unsigned char* data = getPointer();
+    const size_t len = size();
+    const size_t data_sz = round_to_bytes(len);
+
+    stream_out.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
+    stream_out.write(reinterpret_cast<const char*>(data), data_sz * sizeof(unsigned char));
+
+    return !stream_out.fail();
+}
+
+bool CompressedSequence::read(std::istream& stream_in) {
+
+    if (!stream_in.fail()) {
+
+        clear();
+
+        size_t len = 0;
+
+        stream_in.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+
+        if (len != 0) {
+
+            const size_t data_sz = round_to_bytes(len);
+
+            _resize_and_copy(data_sz, size());
+            setSize(len);
+
+            unsigned char* data = const_cast<unsigned char*>(getPointer());
+
+            stream_in.read(reinterpret_cast<char*>(data), data_sz * sizeof(unsigned char));
+        }
+
+        return !stream_in.fail();
+    }
+
+    return false;
+}
+
 char CompressedSequence::getChar(const size_t offset) const {
 
     return bases[(getPointer()[offset >> 2] >> ((offset & 0x3) << 1)) & 0x03];
@@ -352,6 +394,52 @@ Kmer CompressedSequence::getKmer(const size_t offset) const {
     }
 
     return km;
+}
+
+Minimizer CompressedSequence::getMinimizer(const size_t offset) const {
+
+    Minimizer minz;
+
+    const unsigned char* data = getPointer();
+
+    const size_t len = offset + Minimizer::g;
+
+    if ((offset & 0x3) == 0){ // Extraction byte to byte is possible
+
+        const size_t nbytes = (Minimizer::g + 3) / 4;
+
+        size_t i = offset >> 2, j = 0;
+
+        for (; j < nbytes - 1; ++i, ++j) minz.bytes[(7 - (j & 0x7)) + ((j >> 3) << 3)] = revBits[data[i]];
+
+        unsigned char tmp_km = 0;
+        unsigned char tmp_data = data[i];
+
+        for (i <<= 2; i < len; ++i, tmp_data >>= 2) tmp_km = (tmp_km << 2) | (tmp_data & 0x3);
+
+        tmp_km <<= ((4 - (Minimizer::g & 0x3)) << 1) & 0x7;
+        minz.bytes[(7 - (j & 0x7)) + ((j >> 3) << 3)] = tmp_km;
+    }
+    else { // Extraction 2 bits per 2 bits
+
+        const size_t nlongs = (Minimizer::g + 31) / 32;
+
+        size_t j = 0;
+
+        for (size_t i = offset; j < nlongs; ++j){
+
+            uint64_t tmp_km = 0;
+            const size_t end = len < i + 32 ? len : i + 32;
+
+            for (; i != end; ++i) tmp_km = (tmp_km << 2) | ((data[i >> 2] >> ((i & 0x3) << 1)) & 0x3);
+
+            minz.longs[j] = tmp_km;
+        }
+
+        minz.longs[j-1] <<= (32 - (Minimizer::g & 0x1f)) << 1;
+    }
+
+    return minz;
 }
 
 bool CompressedSequence::compareKmer(const size_t offset, const size_t length, const Kmer& km) const {
@@ -567,12 +655,9 @@ size_t CompressedSequence::jump(const char *s, const size_t i, int pos, const bo
 
 void CompressedSequence::clear() {
 
-    if (!isShort() && (asPointer._capacity > 0) && (asPointer._data != NULL)) {
+    if (!isShort() && (asPointer._capacity > 0) && (asPointer._data != NULL)) delete[] asPointer._data;
 
-        delete[] asPointer._data;
-
-        asPointer._data = NULL;
-    }
+    initShort();
 }
 
 const char CompressedSequence::bases[256] = {

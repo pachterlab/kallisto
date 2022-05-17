@@ -63,6 +63,7 @@ class KmerCovIndex {
         void uncover(const size_t idx);
 
         Kmer getKmer(const size_t idx) const;
+        Minimizer getMinimizer(const size_t idx, const size_t offset) const;
 
         const T* getData(const size_t idx) const;
         T* getData(const size_t idx);
@@ -102,6 +103,9 @@ class KmerCovIndex {
         }
 
         KmerCovIndex<T>& toData(KmerCovIndex<void>&& o, const size_t nb_threads = 1);
+
+        bool write(std::ostream& stream_out) const;
+        bool read(std::istream& stream_in);
 
     private:
 
