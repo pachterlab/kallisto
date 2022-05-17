@@ -771,49 +771,49 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
       buffer = new char[bufsz];
     }
     memset(buffer,0,bufsz);
-    in.read(buffer, tmp_size);
+    contig_in.read(buffer, tmp_size);
     c_seq = std::string(buffer);
 
     size_t proc = 0;
-    um = dbg.findUnitig(c_seq.c_str(), 0, c_seq.length());
-
-    Kmer kmer;
-    std::vector<Kmer> to_add;
-    to_add.reserve(2);
-    if (um.dist > 0) {
-        // Add sentinel unitig before um
-        kmer = um.getUnitigKmer(um.dist - 1);
-        to_add.push_back(kmer.forwardBase(xxx));
-    }
-
-    if (um.dist + um.len < um.size - k + 1) {
-        // Add sentinel unitig after um
-        kmer = um.getUnitigKmer(um.dist + um.len - 1);
-        to_add.push_back(kmer.backwardBase(xxx));
-    }
-
-    for (const auto& km : to_add) {
-        dbg.add(km.toString());
-    }
-
-    um = dbg.findUnitig(c_seq.c_str(), 0, c_seq.length());
-    data = um.getData();
-    data->ec = tmp_ec;
-    data->transcripts = transcripts[i];
-    data->id = running_id++;
-
-    // With Bifrost we have no control over the strandedness of the contigs.
-    // We iterate over all the contigs we read from the index and check whether
-    // the corresponding Bifrost unitig has the same strandedness. If not, we
-    // flip the transcript.sense for all transcripts belonging to that unitig.
-    if (!um.isEmpty && !um.strand) {
-      // If the canonical contig sequence is not a substring of the found
-      // unitig sequence
-      for (auto& tr: data->transcripts) {
-        tr.sense = !tr.sense;
+    while (proc < c_seq.length() - k + 1) {
+      um = dbg.findUnitig(c_seq.c_str(), proc, c_seq.length());
+      data = um.getData();
+      if (data->ec.size() < um.size - k + 1) {
+          data->ec.resize(um.size - k + 1);
+      }
+      for (size_t j = um.dist; j < um.dist; ++j) {
+          data->ec[j] = tmp_ec;
+      }
+      proc += um.len;
+      data->transcripts[tmp_ec] = transcripts[i];
+      data->id = running_id++;
+      // With Bifrost we have no control over the strandedness of the contigs.
+      // We iterate over all the contigs we read from the index and check whether
+      // the corresponding Bifrost unitig has the same strandedness. If not, we
+      // flip the transcript.sense for all transcripts belonging to that unitig.
+      if (!um.isEmpty && !um.strand) {
+        // If the canonical contig sequence is not a substring of the found
+        // unitig sequence
+        for (auto& tr: data->transcripts) {
+          tr.sense = !tr.sense;
+        }
       }
     }
   }
+
+  int polychrome = 0;
+  for (auto& um : dbg) {
+    Node* n = um.getData();
+    uint32_t ec = m->ec[0];
+    for (size_t i = 0; i < n->ec.size(); ++i) {
+      if (n->ec[i] != ec) {
+        n->monochrome = false;
+        polychrome++;
+        break;
+      }
+    }
+  }
+  std::cout << "There are " << polychrome << " polychromatic unitigs in the graph out of " << dbg.size() << " unitigs (" << float(polychrome) / dbg.size() << ")." << std::endl;
 
   // delete the buffer
   delete[] buffer;

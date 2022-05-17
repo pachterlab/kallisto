@@ -22,68 +22,135 @@ struct u2t {
 class Node: public CDBG_Data_t<Node> {
     public:
         int id;
-        int ec;
-        std::vector<u2t> transcripts;
+        bool monochrome;
+        // Mosaic Equivalence Class:
+        // Each kmer in the unitig can have a different equivalence class
+        std::vector<uint32_t> ec;
+        // EC : [transcripts]
+        // Each equivalence class that is part of this unitig's mosaic
+        // equivalence class can have a different list of transcripits
+        // associated with it
+        std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
-    Node() : id(-1), ec(-1) {}
+    Node() : id(-1), monochrome(true) {}
+
+    // Returns [j, k), j<=i, k>=i, where j-1 is the last kmer to have a
+    // different EC than kmer i, and k is the first kmer to have a different
+    // EC than i.
+    std::pair<size_t, size_t> get_mc_contig(size_t i, bool checkAll=false) const {
+        size_t j = 0, k = ec.size();
+        if (ec[j] != ec[i] || checkAll) {
+            j = i;
+            do {
+                j--;
+            } while (j >= 0 && ec[j] == ec[i]);
+            j++;
+        }
+        if (ec[k-1] != ec[i] || checkAll) {
+            k = i+1;
+            while (k < ec.size() && ec[k] == ec[i]) {
+                k++;
+            }
+        }
+        return std::pair<size_t, size_t>(j, k);
+    }
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_dest = um_dest.getData();
         Node* data_src = um_src.getData();
 
-        if (data_dest->ec != data_src->ec) {
-            std::cout << "warning: concatenating two unitigs with corresponding";
-            std::cout << " to different ECs" << std::endl;
-        }
         ec = data_dest->ec;
+        ec.reserve(data_dest->ec.size() + data_src->ec.size());
+        for (const auto& e : data_src->ec) {
+            ec.push_back(e);
+        }
 
         transcripts = data_dest->transcripts;
-        transcripts.reserve(data_dest->transcripts.size() + data_src->transcripts.size());
-        for (auto& trans : data_src->transcripts) {
-            transcripts.push_back(trans);
-            // Pos denotes where the unitig begins within the transcript. Since
-            // we're prepending um_dest to um_src, the new unitig begins
-            // um_dest.len + k - 1 base pairs earlier in the transcript
-            transcripts[transcripts.size()-1].pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+        for (const auto& kv : data_src->transcripts) {
+            transcripts[kv.first] = kv.second;
+            for (auto tr : transcripts[kv.first]) {
+                // Pos denotes where the unitig begins within the transcript. Since
+                // we're prepending um_dest to um_src, the new unitig begins
+                // um_dest.len + k - 1 base pairs earlier in the transcript
+                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+            }
         }
     }
 
     void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_src = um_src.getData();
 
-        if (ec != data_src->ec) {
-            std::cout << "warning: merging two unitigs with corresponding";
-            std::cout << " to different ECs" << std::endl;
+        ec.reserve(ec.size() + data_src->ec.size());
+        for (const auto& e : data_src->ec) {
+            ec.push_back(e);
         }
 
-
-        transcripts.reserve(transcripts.size() + data_src->transcripts.size());
-        for (auto& trans : data_src->transcripts) {
-            transcripts.push_back(trans);
-            // Pos denotes where the unitig begins within the transcript. Since
-            // we're prepending um_dest to um_src, the new unitig begins
-            // um_dest.len + k - 1 base pairs earlier in the transcript
-            transcripts[transcripts.size()-1].pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+        for (const auto& kv : data_src->transcripts) {
+            transcripts[kv.first] = kv.second;
+            for (auto tr : transcripts[kv.first]) {
+                // Pos denotes where the unitig begins within the transcript. Since
+                // we're prepending um_dest to um_src, the new unitig begins
+                // um_dest.len + k - 1 base pairs earlier in the transcript
+                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+            }
         }
     }
 
     void clear(const UnitigMap<Node>& um_dest) {
+        ec.clear();
         transcripts.clear();
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
-        if (ec == -1) {
+        if (ec.size() == 0) {
           return;
         }
-
         Node* data = um_src.getData();
-        data->ec = ec;
-        data->transcripts = transcripts;
+        data->ec.reserve(um_src.size);
 
-        for (auto tr : data->transcripts) {
-            // We're cutting um_src.dist from the beginning of the unitig so
-            // the new unitig begins um_src.dist further into back.
-            tr.pos += um_src.dist;
+        std::set<int> ecs;
+        for (size_t i = um_src.dist; i < um_src.dist + um_src.len; ++i) {
+            data->ec.push_back(data->ec[i]);
+            ecs.insert(data->ec[i]);
+        }
+
+        for (const auto& i : ecs) {
+            data->transcripts[i] = transcripts[i];
+            for (auto tr : data->transcripts[i]) {
+                // We're cutting um_src.dist from the beginning of the unitig  so
+                // the new unitig begins um_src.dist further into back.
+                tr.pos += um_src.dist;
+            }
+        }
+    }
+
+    void serialize(std::ofstream& out) const {
+
+        size_t tmp_size;
+
+        // 1 Write id
+        out.write((char *)&id, sizeof(id));
+
+        // 2 Write mosaic equivalence class
+        out.write((char *)&monochrome, sizeof(monochrome));
+        tmp_size = ec.size();
+        out.write((char *)&tmp_size, sizeof(tmp_size));
+        for (const auto& e : ec) {
+            out.write((char *)&e, sizeof(e));
+        }
+
+        // 3 Write transcripts for each equivalence class
+        tmp_size = transcripts.size();
+        out.write((char *)&tmp_size, sizeof(tmp_size));
+        for (const auto& kv : transcripts) {
+            // 3.1 Write EC
+            out.write((char *)&kv.first, sizeof(kv.first));
+            // 3.2 Write transcripts
+            tmp_size = kv.second.size();
+            out.write((char *)&tmp_size, sizeof(tmp_size));
+            for (const auto& tr : kv.second) {
+                out.write((char *)&tr, sizeof(tr));
+            }
         }
     }
 };
