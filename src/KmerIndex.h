@@ -113,7 +113,6 @@ struct KmerIndex {
 
   // note opt is not const
   // load methods
-  static void spool_index_to(std::ifstream& in, int loc);
   void load(ProgramOptions& opt, bool loadKmerTable = true);
   void loadTranscriptSequences() const;
   void loadECsFromFile(const ProgramOptions& opt);
