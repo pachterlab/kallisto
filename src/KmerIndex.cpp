@@ -327,7 +327,8 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
   }
 }
 
-void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
+void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
+
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
 
@@ -337,128 +338,73 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable) {
     exit(1);
   }
 
+  size_t tmp_size;
+
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
 
-  // 2. write k
-  out.write((char *)&k, sizeof(k));
+  // 2. serialize dBG
+  if (writeKmerTable) {
+    std::string dbg_bin;
+    dbg.writeBinary(dbg_bin, threads);
+    tmp_size = sizeof(dbg_bin);
+    out.write((char *)&tmp_size, sizeof(tmp_size));
+    out.write((char *)&dbg_bin, tmp_size);
+  } else {
+    tmp_size = 0;
+    out.write((char *)&tmp_size, sizeof(tmp_size));
+  }
 
-  // 3. write number of targets
+  // 3. serialize nodes
+  tmp_size = dbg.size();
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  for (const auto& um : dbg) {
+    // 3.1 write head kmer to associate unitig with node
+    std::string kmer = um.getUnitigHead().toString();
+    out.write((char *)&kmer, sizeof(kmer));
+    // 3.2 serialize node
+    um.getData()->serialize(out);
+  }
+
+  // 4. write number of targets
   out.write((char *)&num_trans, sizeof(num_trans));
 
-  // 4. write out target lengths
+  // 5. write out target lengths
   for (int tlen : target_lens_) {
     out.write((char *)&tlen, sizeof(tlen));
   }
 
-  // 5. write fake k-mer size
-  size_t kmap_size = 0;
-  out.write((char *)&kmap_size, sizeof(kmap_size));
-
-  // 6. write none of the kmer->ec values
-
-  // 7. write number of equivalence classes
-  size_t tmp_size;
+  // 6. write number of equivalence classes
   tmp_size = ecmap.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
 
-  // 8. write out each equiv class
+  // 7. write out each equiv class
   for (int ec = 0; ec < ecmap.size(); ec++) {
     out.write((char *)&ec, sizeof(ec));
     auto& v = ecmap[ec];
-    // 8.1 write out the size of equiv class
+    // 7.1 write out the size of equiv class
     tmp_size = v.size();
     out.write((char *)&tmp_size, sizeof(tmp_size));
-    // 8.2 write each member
+    // 7.2 write each member
     for (auto& val: v) {
       out.write((char *)&val, sizeof(val));
     }
   }
 
-  // 9. Write out target ids
+  // 8. Write out target ids
   // XXX: num_trans should equal to target_names_.size(), so don't need
   // to write out again.
   assert(num_trans == target_names_.size());
   for (auto& tid : target_names_) {
-    // 9.1 write out how many bytes
+    // 8.1 write out how many bytes
     // XXX: Note: this doesn't actually encore the max targ id size.
     // might cause problems in the future
     // tmp_size = tid.size();
     tmp_size = strlen(tid.c_str());
     out.write((char *)&tmp_size, sizeof(tmp_size));
 
-    // 9.2 write out the actual string
+    // 8.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
-  }
-
-  // 10. write out contigs
-  if (writeKmerTable) {
-    // Split the unitigs in the graph into vanilla kallisto contigs that have
-    // non-mosaic ECs
-    tmp_size = 0;
-    for (const auto& um : dbg) {
-      // The key in the transcripts unordered_map is the EC, and the number of
-      // ECs in a unitig denote how many vanilla kallisto contigs they get split
-      // into.
-      tmp_size += um.getData()->transcripts.size();
-    }
-
-    out.write((char*)&tmp_size, sizeof(tmp_size));
-    // Store the ECs in the same order as we write out the contigs
-    std::vector<uint32_t> ecs;
-    for (const auto& um : dbg) {
-      // I beg forgiveness for the double pass.
-      Node* n = um.getData();
-      uint32_t curr_ec = n->ec[0];
-      std::string ref = um.referenceUnitigToString();
-      size_t start = 0;
-      for (size_t i = 0; i < n->ec.size(); ++i) {
-        if (curr_ec == n->ec[i]) continue;
-        ecs.push_back(curr_ec);
-        std::string contig = ref.substr(start, i-start+k);
-        out.write((char*)&n->id, sizeof(n->id));
-        tmp_size = strlen(contig.c_str());
-        out.write((char*)&tmp_size, sizeof(tmp_size));
-        out.write(contig.c_str(), tmp_size);
-
-        // 10.1 write out transcript info
-        tmp_size = n->transcripts[curr_ec].size();
-        out.write((char*)&tmp_size, sizeof(tmp_size));
-        for (const auto& info : n->transcripts[curr_ec]) {
-          out.write((char*)&info.tr_id, sizeof(info.tr_id));
-          out.write((char*)&info.pos, sizeof(info.pos));
-          out.write((char*)&info.sense, sizeof(info.sense));
-        }
-
-        start = i;
-        curr_ec = n->ec[i];
-      }
-      ecs.push_back(curr_ec);
-      std::string contig = ref.substr(start, ref.length()-start);
-      out.write((char*)&n->id, sizeof(n->id));
-      tmp_size = strlen(contig.c_str());
-      out.write((char*)&tmp_size, sizeof(tmp_size));
-      out.write(contig.c_str(), tmp_size);
-
-      // 10.1 write out transcript info for last mosaic EC in unitig
-      tmp_size = n->transcripts[curr_ec].size();
-      out.write((char*)&tmp_size, sizeof(tmp_size));
-      for (const auto& info : n->transcripts[curr_ec]) {
-        out.write((char*)&info.tr_id, sizeof(info.tr_id));
-        out.write((char*)&info.pos, sizeof(info.pos));
-        out.write((char*)&info.sense, sizeof(info.sense));
-      }
-    }
-
-    // 11. write out ecs info
-    for (uint32_t ec : ecs) {
-      out.write((char*)&ec, sizeof(ec));
-    }
-
-  } else {
-    // write empty dBG
-    tmp_size = 0;
-    out.write((char*)&tmp_size, sizeof(tmp_size));
   }
 
   out.flush();

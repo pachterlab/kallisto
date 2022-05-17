@@ -2605,7 +2605,7 @@ int main(int argc, char *argv[]) {
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
         index.BuildTranscripts(opt);
-        index.write(opt.index);
+        index.write(opt.index, true, opt.threads);
       }
       cerr << endl;
     } else if (cmd == "inspect") {
@@ -2722,7 +2722,7 @@ int main(int argc, char *argv[]) {
             writeCellIds(busbarcodelistname, fake_bcs);
           }
           // Write out index:
-          index.write((opt.output + "/index.saved"), false);
+          index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distributions if reads paired-end:
           if (!opt.single_end) {
             std::ofstream flensout_f((opt.output + "/flens.txt"));
@@ -2825,7 +2825,7 @@ int main(int argc, char *argv[]) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
           // Write out index:
-          index.write((opt.output + "/index.saved"), false);
+          index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
@@ -2838,7 +2838,7 @@ int main(int argc, char *argv[]) {
           flensout_f.close();
         } else if (opt.busOptions.umi[0].fileno == -1) {
           // Write out index:
-          index.write((opt.output + "/index.saved"), false);
+          index.write((opt.output + "/index.saved"), false, opt.threads);
         }
 
         // gather stats
@@ -2949,7 +2949,7 @@ int main(int argc, char *argv[]) {
 
         // save modified index for future use
         if (opt.write_index) {
-          index.write((opt.output + "/index.saved"), false);
+          index.write((opt.output + "/index.saved"), false, opt.threads);
         }
 
         // if mean FL not provided, estimate
@@ -3692,7 +3692,7 @@ int main(int argc, char *argv[]) {
             writeCellIds(busbarcodelistname, fake_bcs);
           }
           // Write out index:
-          index.write((opt.output + "/index.saved"), false);
+          index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distributions if reads paired-end:
           if (!opt.single_end) {
             std::ofstream flensout_f((opt.output + "/flens.txt"));
