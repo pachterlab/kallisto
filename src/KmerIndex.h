@@ -133,7 +133,7 @@ struct KmerIndex {
   EcMap ecmap;
   DBGraph dbGraph;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
-  const size_t INDEX_VERSION = 11; // increase this every time you change the file format
+  const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
   std::vector<int> target_lens_;
 
