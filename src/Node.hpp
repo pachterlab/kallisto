@@ -135,7 +135,7 @@ class Node: public CDBG_Data_t<Node> {
         out.write((char *)&monochrome, sizeof(monochrome));
         tmp_size = ec.size();
         out.write((char *)&tmp_size, sizeof(tmp_size));
-        for (const auto& e : ec) {
+        for (uint32_t e : ec) {
             out.write((char *)&e, sizeof(e));
         }
 
@@ -184,8 +184,8 @@ class Node: public CDBG_Data_t<Node> {
             in.read((char *)&tmp_uint, sizeof(tmp_uint));
             transcripts[tmp_uint] = std::vector<u2t>();
             // 3.2 Read transcripts
-            transcripts[tmp_uint].reserve(n_transcripts);
             in.read((char *)&n_transcripts, sizeof(n_transcripts));
+            transcripts[tmp_uint].reserve(n_transcripts);
             for (size_t j = 0; j < n_transcripts; ++j) {
                 in.read((char *)&tr_id, sizeof(tr_id));
                 in.read((char *)&pos, sizeof(pos));

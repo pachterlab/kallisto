@@ -260,13 +260,18 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
+  std::cout << "KmerIndex::PopulateMosaicECs(): entering" << std::endl;
 
   for (const auto& um : dbg) {
+    std::cout << 1 << std::endl;
+    std::cout << um.getMappedHead().toString() << std::endl;
 
+    std::cout << 2 << std::endl;
     Node* n = um.getData();
     // Mosaic EC vector should always be the length of the number of kmers
     // in the corresponding unitig
     n->ec.resize(um.size - k + 1);
+    std::cout << 3 << std::endl;
 
     // Find the overlaps
     std::vector<int> brpoints;
@@ -274,22 +279,28 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       brpoints.push_back(x.start);
       brpoints.push_back(x.stop);
     }
+    std::cout << 4 << std::endl;
     sort(brpoints.begin(), brpoints.end());
     assert(brpoints[0] == 0);
     assert(brpoints[brpoints.size()-1]==um.size());
+    std::cout << 5 << std::endl;
 
     // Find unique break points
     if (!isUnique(brpoints)) {
       std::vector<int> u = unique(brpoints);
       swap(u,brpoints);
     }
+    std::cout << 6 << std::endl;
 
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
+    std::cout << 7 << std::endl;
+      std::cout << "brpoints: " << i << std::endl;
       std::vector<int> u;
       std::vector<u2t> transcripts;
       for (const auto& tr : trinfos[n->id]) {
+    std::cout << 8 << std::endl;
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.push_back(tr.trid);
@@ -297,34 +308,42 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         }
       }
 
+    std::cout << 9 << std::endl;
       sort(u.begin(), u.end());
       if (!isUnique(u)){
         std::vector<int> v = unique(u);
         swap(u,v);
       }
+    std::cout << 10 << std::endl;
 
       assert(!u.empty());
 
       auto search = ecmapinv.find(u);
       int ec = -1;
+    std::cout << 11 << std::endl;
       if (search != ecmapinv.end()) {
+    std::cout << 12 << std::endl;
         // See if we've created an EC for this set of transcripts yet
         ec = search->second;
       } else {
+    std::cout << 13 << std::endl;
         // Otherwise, we create a new EC
         ec = ecmapinv.size();
         ecmapinv.insert({u,ec});
         ecmap.push_back(u);
       }
 
+    std::cout << 14 << std::endl;
       // Assign mosaic EC to the corresponding part of unitig
       for (size_t j = brpoints[i-1]; j < brpoints[i]; ++j) {
         n->ec[j] = ec;
       }
+    std::cout << 15 << std::endl;
       // Assign the transcripts to the EC
       n->transcripts[ec] = transcripts;
     }
   }
+  std::cout << "KmerIndex::PopulateMosaicECs(): exiting" << std::endl;
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -345,11 +364,12 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
 
   // 2. serialize dBG
   if (writeKmerTable) {
-    std::string dbg_bin;
-    dbg.writeBinary(dbg_bin, threads);
-    tmp_size = sizeof(dbg_bin);
+    std::ostringstream dbg_stream;
+    dbg.writeBinary(dbg_stream, threads);
+    std::string dbg_bin = dbg_stream.str();
+    tmp_size = dbg_bin.length();
     out.write((char *)&tmp_size, sizeof(tmp_size));
-    out.write((char *)&dbg_bin, tmp_size);
+    out.write(dbg_bin.c_str(), tmp_size);
   } else {
     tmp_size = 0;
     out.write((char *)&tmp_size, sizeof(tmp_size));
@@ -522,22 +542,25 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 2. deserialize dBG
   size_t tmp_size;
   in.read((char *)&tmp_size, sizeof(tmp_size));
+  char* buffer = new char[tmp_size];
   if (tmp_size > 0) {
-    std::string dbg_bin;
-    in.read((char *)&dbg_bin, sizeof(dbg_bin));
+    in.read(buffer, tmp_size);
+
+    std::istringstream dbg_bin(std::string(buffer, tmp_size));
+
     dbg.readBinary(dbg_bin);
     // XXX:
     // Do we need k if writeKmerTable == false?
     k = dbg.getK();
   }
+  delete[] buffer;
 
   // 3. deserialize nodes
   in.read((char *)&tmp_size, sizeof(tmp_size));
   Kmer kmer;
   UnitigMap<Node> um;
-  std::string kmer_string;
-  size_t kmer_size = strlen(kmer.toString().c_str());
-  char* buffer = new char[kmer_size];
+  size_t kmer_size = k * sizeof(char);
+  buffer = new char[kmer_size];
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
@@ -546,7 +569,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     um = dbg.find(kmer);
 
     if (um.isEmpty) {
-      std::cerr << "Error: Corrupred index; unitig not found: " << std::string(buffer) << std::endl;
+      std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
       exit(1);
     }
 
