@@ -149,7 +149,48 @@ class Node: public CDBG_Data_t<Node> {
             tmp_size = kv.second.size();
             out.write((char *)&tmp_size, sizeof(tmp_size));
             for (const auto& tr : kv.second) {
-                out.write((char *)&tr, sizeof(tr));
+                out.write((char *)&tr.tr_id, sizeof(tr.tr_id));
+                out.write((char *)&tr.pos, sizeof(tr.pos));
+                out.write((char *)&tr.sense, sizeof(tr.sense));
+            }
+        }
+    }
+
+    void deserialize(std::ifstream& in) {
+
+        size_t tmp_size;
+        uint32_t tmp_uint;
+
+        // 1 Read id
+        in.read((char *)&id, sizeof(id));
+
+        // 2 Read mosaic equivalence class
+        in.read((char *)&monochrome, sizeof(monochrome));
+        in.read((char *)&tmp_size, sizeof(tmp_size));
+        ec.reserve(tmp_size);
+        for (size_t i = 0; i < tmp_size; ++i) {
+            in.read((char *)&tmp_uint, sizeof(tmp_uint));
+            ec.push_back(tmp_uint);
+        }
+
+        // 3 Read transcripts for each equivalence class
+        size_t n_transcripts;
+        uint32_t tr_id, pos;
+        bool sense;
+        in.read((char *)&tmp_size, sizeof(tmp_size));
+        transcripts.reserve(tmp_size);
+        for (size_t i = 0; i < tmp_size; ++i) {
+            // 3.1 Read EC
+            in.read((char *)&tmp_uint, sizeof(tmp_uint));
+            transcripts[tmp_uint] = std::vector<u2t>();
+            // 3.2 Read transcripts
+            transcripts[tmp_uint].reserve(n_transcripts);
+            in.read((char *)&n_transcripts, sizeof(n_transcripts));
+            for (size_t j = 0; j < n_transcripts; ++) {
+                in.read((char *)&tr_id, sizeof(tr_id));
+                in.read((char *)&pos, sizeof(pos));
+                in.read((char *)&sense, sizeof(sense));
+                transcripts[tmp_uint].emplace_back(tr_id, pos, sense);
             }
         }
     }
