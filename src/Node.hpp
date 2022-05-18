@@ -6,6 +6,7 @@
 #include <set>
 
 #include <CompactedDBG.hpp>
+#include <BlockArray.hpp>
 
 // Unitig to transcript
 struct u2t {
@@ -22,37 +23,22 @@ struct u2t {
 class Node: public CDBG_Data_t<Node> {
     public:
         int id;
-        bool monochrome;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
-        std::vector<uint32_t> ec;
+        BlockArray<uint32_t> ec;
         // EC : [transcripts]
         // Each equivalence class that is part of this unitig's mosaic
         // equivalence class can have a different list of transcripits
         // associated with it
         std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
 
-    Node() : id(-1), monochrome(true) {}
+    Node() : id(-1) {}
 
     // Returns [j, k), j<=i, k>=i, where j-1 is the last kmer to have a
     // different EC than kmer i, and k is the first kmer to have a different
     // EC than i.
-    std::pair<size_t, size_t> get_mc_contig(size_t i, bool checkAll=false) const {
-        size_t j = 0, k = ec.size();
-        if (ec[j] != ec[i] || checkAll) {
-            j = i;
-            do {
-                j--;
-            } while (j >= 0 && ec[j] == ec[i]);
-            j++;
-        }
-        if (ec[k-1] != ec[i] || checkAll) {
-            k = i+1;
-            while (k < ec.size() && ec[k] == ec[i]) {
-                k++;
-            }
-        }
-        return std::pair<size_t, size_t>(j, k);
+    std::pair<size_t, size_t> get_mc_contig(size_t i) const {
+        return ec.get_block_at(i);
     }
 
     void concat(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
@@ -60,19 +46,20 @@ class Node: public CDBG_Data_t<Node> {
         Node* data_src = um_src.getData();
 
         ec = data_dest->ec;
-        ec.reserve(data_dest->ec.size() + data_src->ec.size());
+        ec.reserve(ec.size() + data_src->transcripts.size());
         for (const auto& e : data_src->ec) {
-            ec.push_back(e);
+            ec.insert(e.lb + um_dest.len, e.ub + um_dest.len, e.val);
         }
 
+        // Pos denotes where the unitig begins within the transcript. Since
+        // we're prepending um_dest to um_src, the new unitig begins
+        // um_dest.len + k - 1 base pairs earlier in the transcript
+        int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
         transcripts = data_dest->transcripts;
         for (const auto& kv : data_src->transcripts) {
             transcripts[kv.first] = kv.second;
             for (auto tr : transcripts[kv.first]) {
-                // Pos denotes where the unitig begins within the transcript. Since
-                // we're prepending um_dest to um_src, the new unitig begins
-                // um_dest.len + k - 1 base pairs earlier in the transcript
-                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+                tr.pos -= offset;
             }
         }
     }
@@ -80,18 +67,19 @@ class Node: public CDBG_Data_t<Node> {
     void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_src = um_src.getData();
 
-        ec.reserve(ec.size() + data_src->ec.size());
+        ec.reserve(ec.size() + data_src->transcripts.size());
         for (const auto& e : data_src->ec) {
-            ec.push_back(e);
+            ec.insert(e.lb + um_dest.len, e.ub + um_dest.len, e.val);
         }
 
+        int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
         for (const auto& kv : data_src->transcripts) {
             transcripts[kv.first] = kv.second;
             for (auto tr : transcripts[kv.first]) {
                 // Pos denotes where the unitig begins within the transcript. Since
                 // we're prepending um_dest to um_src, the new unitig begins
                 // um_dest.len + k - 1 base pairs earlier in the transcript
-                tr.pos -= (um_dest.len + um_dest.getGraph()->getK() - 1);
+                tr.pos -= offset;
             }
         }
     }
@@ -106,15 +94,13 @@ class Node: public CDBG_Data_t<Node> {
           return;
         }
         Node* data = um_src.getData();
-        data->ec.reserve(um_src.size);
 
-        std::set<int> ecs;
-        for (size_t i = um_src.dist; i < um_src.dist + um_src.len; ++i) {
-            data->ec.push_back(data->ec[i]);
-            ecs.insert(data->ec[i]);
-        }
+        ec = data->ec.get_slice(um_src.dist, um_src.dist + um_src.len);
 
-        for (const auto& i : ecs) {
+        std::vector<uint32_t> ecs;
+        ec.get_vals(ecs);
+
+        for (uint32_t i : ecs) {
             data->transcripts[i] = transcripts[i];
             for (auto tr : data->transcripts[i]) {
                 // We're cutting um_src.dist from the beginning of the unitig  so
@@ -132,12 +118,7 @@ class Node: public CDBG_Data_t<Node> {
         out.write((char *)&id, sizeof(id));
 
         // 2 Write mosaic equivalence class
-        out.write((char *)&monochrome, sizeof(monochrome));
-        tmp_size = ec.size();
-        out.write((char *)&tmp_size, sizeof(tmp_size));
-        for (uint32_t e : ec) {
-            out.write((char *)&e, sizeof(e));
-        }
+        ec.serialize(out);
 
         // 3 Write transcripts for each equivalence class
         tmp_size = transcripts.size();
@@ -165,13 +146,7 @@ class Node: public CDBG_Data_t<Node> {
         in.read((char *)&id, sizeof(id));
 
         // 2 Read mosaic equivalence class
-        in.read((char *)&monochrome, sizeof(monochrome));
-        in.read((char *)&tmp_size, sizeof(tmp_size));
-        ec.reserve(tmp_size);
-        for (size_t i = 0; i < tmp_size; ++i) {
-            in.read((char *)&tmp_uint, sizeof(tmp_uint));
-            ec.push_back(tmp_uint);
-        }
+        ec.deserialize(in);
 
         // 3 Read transcripts for each equivalence class
         size_t n_transcripts;

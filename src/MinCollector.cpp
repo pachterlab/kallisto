@@ -403,11 +403,9 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
 
     size_t contig_start = 0, contig_length = um.size - um.getGraph()->getK() + 1;
     const Node* n = um.getData();
-    if (!n->monochrome) {
-      auto p = n->get_mc_contig(um.dist);
-      contig_start += p.first;
-      contig_length = p.second - contig_start;
-    }
+    auto mc_bounds = n->get_mc_contig(um.dist);
+    contig_start += mc_bounds.first;
+    contig_length = mc_bounds.second - contig_start;
 
     size_t pos = um.dist - contig_start;
     if (( um.strand && (pos - p > pre)) ||

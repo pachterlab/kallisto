@@ -46,18 +46,6 @@ class BlockArray {
             return (--ub)->val;
         }
 
-        void reserve(size_t sz) {
-            blocks.reserve(sz);
-        }
-
-        void clear() {
-            blocks.clear();
-        }
-
-        size_t size() {
-            return blocks.size();
-        }
-
         std::pair<size_t, size_t> get_block_at(size_t idx) const {
             block<T> tmp(idx);
             auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
@@ -71,6 +59,72 @@ class BlockArray {
 
             return std::make_pair(ub->lb, ub->ub);
         }
+
+        void reserve(size_t sz) {
+            blocks.reserve(sz);
+        }
+
+        void clear() {
+            blocks.clear();
+        }
+
+        size_t size() const {
+            return blocks.size();
+        }
+
+        size_t length() const {
+            return blocks[blocks.size()-1].ub;
+        }
+
+        void get_vals(std::vector<T>& vals) const {
+            vals.clear();
+            vals.reserve(blocks.size());
+            for (const auto& b : blocks) {
+                vals.push_back(b.val);
+            }
+        }
+
+        typename std::vector<block<T> >::iterator begin() {
+            return blocks.begin();
+        }
+
+        typename std::vector<block<T> >::iterator end() {
+            return blocks.end();
+        }
+
+        void print() const {
+            for (const auto& b : blocks) {
+                std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << std::endl;
+            }
+        }
+
+        // Extracts the slice [lb, ub) from *this and shifts it such that it
+        // occupies the range [0, ub-lb).
+        BlockArray<T> get_slice(size_t lb, size_t ub) const {
+            BlockArray<T> slice;
+
+            block<T> tmp(lb);
+            auto upper = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+
+            if (upper == blocks.begin()) {
+                // No elements with lower bound <= lb
+                // TODO: Handle this
+            }
+
+            --upper;
+
+            do {
+                slice.insert(
+                        std::max(lb, upper->lb)-lb,
+                        std::min(ub, upper->ub)-lb,
+                        upper->val
+                );
+                ++upper;
+            } while(upper != blocks.end() && upper->lb < ub);
+
+            return slice;
+        }
+
 
         void serialize(std::ostream& out) const {
 

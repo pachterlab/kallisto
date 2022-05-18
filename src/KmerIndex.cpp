@@ -263,15 +263,12 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
   std::cout << "KmerIndex::PopulateMosaicECs(): entering" << std::endl;
 
   for (const auto& um : dbg) {
-    //std::cout << 1 << std::endl;
-    std::cout << um.getMappedHead().toString() << std::endl;
 
-    //std::cout << 2 << std::endl;
+    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA") {
+        std::cout << um.getMappedHead().toString() << std::endl;
+    }
+
     Node* n = um.getData();
-    // Mosaic EC vector should always be the length of the number of kmers
-    // in the corresponding unitig
-    n->ec.resize(um.size - k + 1);
-    //std::cout << 3 << std::endl;
 
     // Find the overlaps
     std::vector<int> brpoints;
@@ -279,28 +276,26 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       brpoints.push_back(x.start);
       brpoints.push_back(x.stop);
     }
-    //std::cout << 4 << std::endl;
+
     sort(brpoints.begin(), brpoints.end());
     assert(brpoints[0] == 0);
     assert(brpoints[brpoints.size()-1]==um.size());
-    //std::cout << 5 << std::endl;
 
     // Find unique break points
     if (!isUnique(brpoints)) {
       std::vector<int> u = unique(brpoints);
       swap(u,brpoints);
     }
-    //std::cout << 6 << std::endl;
 
+    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA")
+    std::cout << "before brpoints loop" << std::endl;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
-    //std::cout << 7 << std::endl;
-      //std::cout << "brpoints: " << i << std::endl;
+
       std::vector<int> u;
       std::vector<u2t> transcripts;
       for (const auto& tr : trinfos[n->id]) {
-    //std::cout << 8 << std::endl;
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.push_back(tr.trid);
@@ -308,40 +303,37 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         }
       }
 
-    //std::cout << 9 << std::endl;
       sort(u.begin(), u.end());
       if (!isUnique(u)){
         std::vector<int> v = unique(u);
         swap(u,v);
       }
-    //std::cout << 10 << std::endl;
 
       assert(!u.empty());
 
       auto search = ecmapinv.find(u);
       int ec = -1;
-    //std::cout << 11 << std::endl;
       if (search != ecmapinv.end()) {
-    //std::cout << 12 << std::endl;
         // See if we've created an EC for this set of transcripts yet
         ec = search->second;
       } else {
-    //std::cout << 13 << std::endl;
         // Otherwise, we create a new EC
         ec = ecmapinv.size();
         ecmapinv.insert({u,ec});
         ecmap.push_back(u);
       }
 
-    //std::cout << 14 << std::endl;
       // Assign mosaic EC to the corresponding part of unitig
-      for (size_t j = brpoints[i-1]; j < brpoints[i]; ++j) {
-        n->ec[j] = ec;
-      }
-    //std::cout << 15 << std::endl;
+      n->ec.insert(brpoints[i-1], brpoints[i], ec);
+      //for (size_t j = brpoints[i-1]; j < brpoints[i]; ++j) {
+        //n->ec[j] = ec;
+      //}
+
       // Assign the transcripts to the EC
       n->transcripts[ec] = transcripts;
     }
+    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA")
+    std::cout << "after brpoints loop" << std::endl;
   }
   std::cout << "KmerIndex::PopulateMosaicECs(): exiting" << std::endl;
 }
@@ -698,11 +690,9 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
-  
-  if (!um1.getData()->monochrome || !um2.getData()->monochrome) {
-    if (um1.getData()->get_mc_contig(um1.dist, true).second != um2.getData()->get_mc_contig(um2.dist, true).second) {
-      return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
-    }
+
+  if (um1.getData()->get_mc_contig(um1.dist).second != um2.getData()->get_mc_contig(um2.dist).second) {
+    return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
   }
 
   if (p1>p2) {
@@ -762,11 +752,10 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
       // Find start and end of O.G. kallisto contig w.r.t. the bifrost-kallisto
       // unitig
       size_t contig_start = 0, contig_length = um.size - k + 1;
-      if (!n->monochrome) {
-        auto p = n->get_mc_contig(um.dist);
-        contig_start += p.first;
-        contig_length = p.second - contig_start;
-      }
+      auto p = n->get_mc_contig(um.dist);
+      contig_start += p.first;
+      contig_length = p.second - contig_start;
+
       // Looks like kallisto thinks that canonical kmer means forward strand?
       //bool forward = (um.strand == (kit->first == kit->first.rep()));
       bool forward = um.strand;
