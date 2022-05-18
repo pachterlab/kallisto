@@ -52,7 +52,7 @@ bool checkFileExists(std::string fn) {
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
-  const char *opt_string = "i:k:";
+  const char *opt_string = "i:k:t:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -60,6 +60,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
+    {"threads", required_argument, 0, 't'},
     {0,0,0,0}
   };
   int c;
@@ -80,6 +81,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'k': {
       stringstream(optarg) >> opt.k;
+      break;
+    }
+    case 't': {
+      stringstream(optarg) >> opt.threads;
       break;
     }
     default: break;
