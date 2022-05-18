@@ -200,6 +200,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   dbg = CompactedDBG<Node>(k);
   dbg.build(c_opt);
 
+  uint32_t running_id = 0;
+  for (auto& um : dbg) {
+      um.getData()->id = running_id++;
+  }
+
   std::remove(tmp_file.c_str());
 }
 
@@ -209,23 +214,21 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
   std::vector<std::vector<TRInfo>> trinfos(dbg.size());
   UnitigMap<Node> um;
-  uint32_t running_id = 0;
   //std::cout << "Mapping target " << std::endl;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
     if (seq.size() < k) continue;
 
     int seqlen = seq.size() - k + 1; // number of k-mers
-    const char *s = seq.c_str();
     //std::cout << "sequence number " << i << std::endl;
     size_t proc = 0;
     while (proc < seqlen) {
       um = dbg.findUnitig(seq.c_str(), proc, seq.size());
+
       if (um.isEmpty) {
         ++proc;
         continue;
       }
-      if (um.getData()->id == -1) um.getData()->id = running_id++;
 
       TRInfo tr;
 
@@ -260,18 +263,24 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
-  std::cout << "KmerIndex::PopulateMosaicECs(): entering" << std::endl;
 
+  std::cout << std::endl;
   for (const auto& um : dbg) {
 
-    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA") {
-        std::cout << um.getMappedHead().toString() << std::endl;
+    Node* n = um.getData();
+    if (n->id > trinfos.size()) {
+    std::cout << um.getUnitigHead().toString() << std::endl;
+    std::cout << um.referenceUnitigToString() << std::endl;
+        std::cout << "uninitialized n->id" << std::endl;
+        std::cout << n->id << std::endl;
+        std::cout << trinfos.size() << std::endl;
+        std::cout << dbg.size() << std::endl;
     }
 
-    Node* n = um.getData();
 
     // Find the overlaps
     std::vector<int> brpoints;
+    brpoints.reserve(2 * trinfos[n->id].size());
     for (const auto& x : trinfos[n->id]) {
       brpoints.push_back(x.start);
       brpoints.push_back(x.stop);
@@ -287,12 +296,11 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       swap(u,brpoints);
     }
 
-    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA")
-    std::cout << "before brpoints loop" << std::endl;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
+      //std::cout << "processing breakpoint " << i << std::endl;
       std::vector<int> u;
       std::vector<u2t> transcripts;
       for (const auto& tr : trinfos[n->id]) {
@@ -308,8 +316,10 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         std::vector<int> v = unique(u);
         swap(u,v);
       }
+      //std::cout << "got unique transcripts" << std::endl;
 
       assert(!u.empty());
+
 
       auto search = ecmapinv.find(u);
       int ec = -1;
@@ -322,20 +332,16 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         ecmapinv.insert({u,ec});
         ecmap.push_back(u);
       }
+      //std::cout << "found ec" << std::endl;
 
       // Assign mosaic EC to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], ec);
-      //for (size_t j = brpoints[i-1]; j < brpoints[i]; ++j) {
-        //n->ec[j] = ec;
-      //}
 
       // Assign the transcripts to the EC
       n->transcripts[ec] = transcripts;
+      //std::cout << "created ec block" << std::endl;
     }
-    if (um.getMappedHead().toString() == "TCTGTGTGTGTGTGTGTGTGTGTGTGTGTGA")
-    std::cout << "after brpoints loop" << std::endl;
   }
-  std::cout << "KmerIndex::PopulateMosaicECs(): exiting" << std::endl;
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
