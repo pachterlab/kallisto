@@ -166,20 +166,19 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // for each target, create its own equivalence class
   for (int i = 0; i < seqs.size(); i++ ) {
     std::vector<int> single(1,i);
-    //ecmap.insert({i,single});
     ecmap.push_back(single);
     ecmapinv.insert({single,i});
   }
 
   BuildDeBruijnGraph(opt, seqs);
   BuildEquivalenceClasses(opt, seqs);
-  //BuildEdges(opt);
 
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
 
   std::string tmp_file = ".tmp_dbg.fasta";
+
   std::ofstream of(tmp_file);
   for (size_t i = 0; i < seqs.size(); ++i) {
     of << ">" << std::to_string(i) << std::endl;
@@ -193,7 +192,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   c_opt.build = true;
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
-  c_opt.useMercyKmers = true;
   c_opt.verbose = true;
   c_opt.filename_ref_in.push_back(tmp_file);
 

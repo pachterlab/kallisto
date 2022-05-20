@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
-#include <ostream>
+#include <iostream>
 
 #include "common.h"
 #include "Kmer.hpp"
@@ -102,6 +102,8 @@ struct KmerIndex {
   std::vector<int> intersect(int ec, const std::vector<int>& v) const;
 
   void BuildTranscripts(const ProgramOptions& opt);
+  //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
+  //void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
   //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);

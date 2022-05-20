@@ -60,7 +60,8 @@ bool isSubset(const std::vector<int>& x, const std::vector<int>& y) {
 }
 
 
-int findFirstMappingKmer(const std::vector<std::pair<const_UnitigMap<Node>, int>> &v, const_UnitigMap<Node> um) {
+std::pair<const_UnitigMap<Node>, int> findFirstMappingKmer(const std::vector<std::pair<const_UnitigMap<Node>, int>> &v) {
+  const_UnitigMap<Node> um;
   int p = -1;
   if (!v.empty()) {
     um = v[0].first;
@@ -72,7 +73,7 @@ int findFirstMappingKmer(const std::vector<std::pair<const_UnitigMap<Node>, int>
       }
     }
   }
-  return p;
+  return std::make_pair(um, p);
 }
 
 // constants
@@ -137,7 +138,6 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
   }
 
   return numreads;
-  
 
 }
 
@@ -325,21 +325,20 @@ void MasterProcessor::processReads() {
 
   // start worker threads
   if (!opt.batch_mode && !opt.bus_mode) {
+
     std::vector<std::thread> workers;
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
     }
-    
 
     // let the workers do their thing
     for (int i = 0; i < opt.threads; i++) {
       workers[i].join(); //wait for them to finish
     }
-    
 
     // now handle the modification of the mincollector
     for (auto &t : newECcount) {
-      
+
       if (t.second <= 0) {
         continue;
       }
@@ -367,11 +366,11 @@ void MasterProcessor::processReads() {
         FSRs.push_back(std::move(fSR));
       }
     }
-    
+
     for (int i = 0; i < opt.threads; i++) {
       workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this)));
     }
-    
+
     // let the workers do their thing
     for (int i = 0; i < opt.threads; i++) {
       workers[i].join(); //wait for them to finish
@@ -385,12 +384,11 @@ void MasterProcessor::processReads() {
       if (it->second != ec) {
         std::cout << "Error" << std::endl;
         exit(1);
-      }      
+      }
       index.ecmapinv.insert({u,ec});
       index.ecmap.push_back(u);
     }
 
-  
   } else if (opt.batch_mode && opt.batch_bus) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -418,7 +416,7 @@ void MasterProcessor::processReads() {
         }
       }
     }
-    
+
     // now handle the modification of the mincollector
     for (int i = 0; i < bus_ecmap.size(); i++) {
       auto &u = bus_ecmap[i];
@@ -501,21 +499,21 @@ void MasterProcessor::processReads() {
         }
       }
     }
-    
+
     int num_newEcs = 0;
-    if (!opt.umi) {      
+    if (!opt.umi) {
       // for each cell
       for (int id = 0; id < num_ids; id++) {
         // for each new ec
         for (auto &t : newBatchECcount[id]) {
           // add the ec and count number of new ecs
           if (t.second <= 0) {
-            continue;          
+            continue;
           }
           int ecsize = index.ecmap.size();
           int ec = tc.increaseCount(t.first);
-          if (ec != -1 && ecsize < index.ecmap.size()) {          
-            num_newEcs++; 
+          if (ec != -1 && ecsize < index.ecmap.size()) {
+            num_newEcs++;
           }
         }
       }
@@ -543,10 +541,10 @@ void MasterProcessor::processReads() {
       }
     } else {
       // UMI case
-      // for each cell      
+      // for each cell
       for (int id = 0; id < num_ids; id++) {
         // for each new ec
-        
+
         for (auto &t : newBatchECumis[id]) {
           // add the new ec
           int ecsize = index.ecmap.size();
@@ -556,7 +554,7 @@ void MasterProcessor::processReads() {
           }
         }
       }
-      
+
       std::vector<int> tmp_counts;
       tmp_counts.resize(tc.counts.size(), 0);
       // for each cell
@@ -566,7 +564,7 @@ void MasterProcessor::processReads() {
         umis.reserve(newBatchECumis[id].size());
         // for each new ec
         for (auto &t : newBatchECumis[id]) {
-          // record the ec,umi          
+          // record the ec,umi
           int ec = tc.findEC(t.first);
           umis.push_back({ec, std::move(t.second)});
         }
@@ -581,7 +579,7 @@ void MasterProcessor::processReads() {
             ++tmp_counts[umis[j].first];
           }
         }
-        
+
         auto& bc = batchCounts[id];
         for (int j = 0; j < tmp_counts.size(); j++) {
           if (tmp_counts[j] > 0) {
@@ -1169,16 +1167,21 @@ void ReadProcessor::processBuffer() {
       Kmer km;
 
       if (!v1.empty()) {
-        p = findFirstMappingKmer(v1, um);
+        auto res = findFirstMappingKmer(v1);
+        um = res.first;
+        p = res.second;
         km = um.getMappedHead();
       }
       if (!v2.empty()) {
-        p = findFirstMappingKmer(v2, um);
+        auto res = findFirstMappingKmer(v2);
+        um = res.first;
+        p = res.second;
         km = um.getMappedHead();
       }
 
       // for each transcript in the pseudoalignment
       for (auto tr : u) {
+
         auto x = index.findPosition(tr, km, um, p);
         // if the fragment is within bounds for this transcript, keep it
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
@@ -1199,20 +1202,27 @@ void ReadProcessor::processBuffer() {
     }
 
     if (mp.opt.strand_specific && !u.empty()) {
+
       int p = -1;
       Kmer km;
       const_UnitigMap<Node> um;
       if (!v1.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        p = findFirstMappingKmer(v1, um);
+        auto res = findFirstMappingKmer(v1);
+        um = res.first;
+        p = res.second;
         // might need to optimize this
         for (const auto& tr : u) {
+
           const Node* n = um.getData();
           const auto trs = n->transcripts.find(n->ec[um.dist]);
           for (const auto& ctx : trs->second) {
+
             if (tr == ctx.tr_id) {
+
               if ((um.strand == ctx.sense) == firstStrand) {
+
                 // swap out
                 vtmp.push_back(tr);
               }
@@ -1228,12 +1238,13 @@ void ReadProcessor::processBuffer() {
       if (!v2.empty()) {
         vtmp.clear();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        p = findFirstMappingKmer(v2, um);
-        km = Kmer((s2+p));
+        auto res = findFirstMappingKmer(v2);
+        um = res.first;
+        p = res.second;
         // might need to optimize this
+        const Node* n = um.getData();
+        const auto trs = n->transcripts.find(n->ec[um.dist]);
         for (const auto& tr : u) {
-          const Node* n = um.getData();
-          const auto trs = n->transcripts.find(n->ec[um.dist]);
           for (const auto& ctx : trs->second) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == secondStrand) {
@@ -1302,8 +1313,16 @@ void ReadProcessor::processBuffer() {
         info.r1empty = v1.empty();
         info.r2empty = v2.empty();
         const_UnitigMap<Node> um;
-        info.k1pos = (!info.r1empty) ? findFirstMappingKmer(v1, um) : -1;
-        info.k2pos = (!info.r2empty) ? findFirstMappingKmer(v2, um) : -1;
+        info.k1pos = -1;
+        info.k2pos = -1;
+        if (!info.r1empty) {
+          auto res = findFirstMappingKmer(v1);
+          info.k1pos = res.second;
+        }
+        if (!info.r2empty) {
+          auto res = findFirstMappingKmer(v2);
+          info.k1pos = res.second;
+        }
 
         if (ec != -1) {
           info.ec_id = ec;
@@ -1313,19 +1332,6 @@ void ReadProcessor::processBuffer() {
         }
       }
       pseudobatch.aln.push_back(std::move(info));
-      /*
-      if (paired) {
-        outputPseudoBam(index, u,
-          s1, names[i-1].first, quals[i-1].first, l1, names[i-1].second, v1,
-          s2, names[i].first, quals[i].first, l2, names[i].second, v2,
-          paired, mp.bamh, mp.bamfp);
-      } else {
-        outputPseudoBam(index, u,
-          s1, names[i].first, quals[i].first, l1, names[i].second, v1,
-          nullptr, nullptr, nullptr, 0, 0, v2,
-          paired, mp.bamh, mp.bamfp);
-      }
-      */
     }
 
     if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
@@ -1682,19 +1688,22 @@ void BUSProcessor::processBuffer() {
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
       int p = -1;
       Kmer km;
-      UnitigMap<Node> um;
+      const_UnitigMap<Node> um;
       // This is copied verbatim from ReadProcessor::processBuffer()
       // Is there a reason it's not offloaded into a function that both
       // BUSProcessor::processBuffer() and ReadProcessor::processBuffer() call?
       if (!v.empty()) {
         vtmp.clear();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        p = findFirstMappingKmer(v, um);
+        auto res = findFirstMappingKmer(v);
+        um = res.first;
+        p = res.second;
         km = Kmer((seq+p));
         // might need to optimize this
+        const Node* n = um.getData();
+        const auto trs = n->transcripts.find(n->ec[um.dist]);
         for (auto tr : u) {
-          Node* n = um.getData();
-          for (const auto& ctx : n->transcripts[n->ec[um.dist]]) {
+          for (const auto& ctx : trs->second) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == firstStrand) {
                 // swap out
@@ -1711,12 +1720,15 @@ void BUSProcessor::processBuffer() {
       if (!v2.empty()) {
         vtmp.clear();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        p = findFirstMappingKmer(v2, um);
+        auto res = findFirstMappingKmer(v2);
+        um = res.first;
+        p = res.second;
         km = Kmer((seq2+p));
         // might need to optimize this
+        const Node* n = um.getData();
+        const auto trs = n->transcripts.find(n->ec[um.dist]);
         for (auto tr : u) {
-          Node* n = um.getData();
-          for (const auto& ctx : n->transcripts[n->ec[um.dist]]) {
+          for (const auto& ctx : trs->second) {
             if (tr == ctx.tr_id) {
               if ((um.strand == ctx.sense) == secondStrand) {
                 // swap out
@@ -1787,12 +1799,13 @@ void BUSProcessor::processBuffer() {
       info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
       if (!u.empty()) {
         info.r1empty = v.empty();
-        UnitigMap<Node> um;
-        info.k1pos = findFirstMappingKmer(v, um);
+        auto res = findFirstMappingKmer(v);
+        info.k1pos = res.second;
         info.k2pos = -1;
         if (busopt.paired) {
           info.r2empty = v2.empty();
-          info.k2pos = findFirstMappingKmer(v2, um);
+          res = findFirstMappingKmer(v2);
+          info.k2pos = res.second;
         }
 
         if (ec != -1) {
