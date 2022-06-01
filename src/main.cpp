@@ -650,7 +650,7 @@ void ListSingleCellTechnologies() {
   << "10xv1            10x version 1 chemistry" << endl
   << "10xv2            10x version 2 chemistry" << endl
   << "10xv3            10x version 3 chemistry" << endl
-  << "10xv3_Ultima     10x version 3 chemistry sequencd with Ultima" << endl
+  << "10xv3_Ultima     10x version 3 chemistry sequenced with Ultima" << endl
   << "Bulk             Bulk RNA-seq or Smart-seq2 (multiplexed)" << endl
   << "BDWTA            BD Rhapsody WTA" << endl
   << "CELSeq           CEL-Seq" << endl
