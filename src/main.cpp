@@ -1381,11 +1381,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi.push_back(BUSOptionSubstr(0,6,16));
         busopt.bc.push_back(BUSOptionSubstr(0,0,6));
       } else if (opt.technology == "10XV3_ULTIMA") {
+        // 0,22,38:0,38,50:0,62,0
         busopt.nfiles = 1;
-        busopt.seq.push_back(BUSOptionSubstr(0,28,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-        strand = ProgramOptions::StrandType::FR;
+        busopt.seq.push_back(BUSOptionSubstr(0,62,0));
+        busopt.umi.push_back(BUSOptionSubstr(0,38,50));
+        busopt.bc.push_back(BUSOptionSubstr(0,22,38));
       } else if (opt.technology == "SMARTSEQ3") {
         busopt.nfiles = 4;
         busopt.seq.push_back(BUSOptionSubstr(2,22,0));
