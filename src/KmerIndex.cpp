@@ -172,17 +172,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   BuildDeBruijnGraph(opt, seqs);
   BuildEquivalenceClasses(opt, seqs);
-  std::cout << "at the end of build transcripts" << std::endl;
-        uint32_t max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
-
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
@@ -222,13 +211,11 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
   std::vector<std::vector<TRInfo>> trinfos(dbg.size());
   UnitigMap<Node> um;
-  //std::cout << "Mapping target " << std::endl;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
     if (seq.size() < k) continue;
 
     int seqlen = seq.size() - k + 1; // number of k-mers
-    //std::cout << "sequence number " << i << std::endl;
     size_t proc = 0;
     while (proc < seqlen) {
       um = dbg.findUnitig(seq.c_str(), proc, seq.size());
@@ -272,7 +259,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
-  std::cout << std::endl;
   for (const auto& um : dbg) {
 
     Node* n = um.getData();
@@ -345,16 +331,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     n->pos = pos;
     n->sense = sense;
   }
-  std::cout << "after populate mosaic ecs" << std::endl;
-        uint32_t max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -372,17 +348,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
-
-        std::cout << 1 << std::endl;
-        uint32_t max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 2. serialize dBG
   if (writeKmerTable) {
@@ -408,16 +373,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     tmp_size = 0;
     out.write((char *)&tmp_size, sizeof(tmp_size));
   }
-        std::cout << 2 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 3. serialize nodes
   tmp_size = dbg.size();
@@ -429,58 +384,18 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 3.2 serialize node
     um.getData()->serialize(out);
   }
-        std::cout << 3 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 4. write number of targets
   out.write((char *)&num_trans, sizeof(num_trans));
-        std::cout << 4 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 5. write out target lengths
   for (int tlen : target_lens_) {
     out.write((char *)&tlen, sizeof(tlen));
   }
-        std::cout << 5 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 6. write number of equivalence classes
   tmp_size = ecmap.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
-        std::cout << 6 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 7. write out each equiv class
   for (int ec = 0; ec < ecmap.size(); ec++) {
@@ -494,16 +409,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
       out.write((char *)&val, sizeof(val));
     }
   }
-        std::cout << 7 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 8. Write out target ids
   // XXX: num_trans should equal to target_names_.size(), so don't need
@@ -520,16 +425,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 8.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
-        std::cout << 8 << std::endl;
-        max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   out.flush();
   out.close();
@@ -591,7 +486,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     memset(buffer, 0, kmer_size);
     in.read(buffer, kmer_size);
     kmer = Kmer(buffer);
-    std::cout << kmer.toString() << std::endl;
     um = dbg.find(kmer);
 
     if (um.isEmpty) {
@@ -651,7 +545,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   target_names_.clear();
   target_names_.reserve(num_trans);
 
-  std::cout << "read target ids" << std::endl;
   size_t bufsz = 1024;
   buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
@@ -681,46 +574,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
-
-  std::cout << "number of nodes: " << dbg.size() << std::endl;
-  std::string seq = "CCTTGGGTGGGATTGAGTTTGTTCTCCTGGCGGTGATGGCCTATGACCGCTATGTGGCTG";
-  Kmer km(seq.substr(0, opt.k).c_str());
-  UnitigMap<Node> um_ = dbg.find(km);
-  std::cout << "um.isEmpty: " << um_.isEmpty << ", um.size: " << um_.size << std::endl;
-  Node* n = um_.getData();
-  std::cout << "id: " << n->id << std::endl;
-  std::cout << "block array: ";
-  n->ec.print();
-  std::cout << "pos: ";
-  for (auto p : n->pos) {
-      std::cout << p << ", ";
-  }
-  std::cout << std::endl;
-  std::cout << "sense: " << n->sense.toString() << std::endl;
-  std::vector<uint32_t> ecs;
-  n->ec.get_vals(ecs);
-  for (uint32_t ec : ecs) {
-    std::cout << ec << ": [";
-    for (auto tr : ecmap[ec]) {
-      std::cout << tr << ", ";
-    }
-    std::cout << "]" << std::endl;
-  }
-
-        std::cout << "ec: 714560" << std::endl;
-        for (auto tr : ecmap[714560]) {
-            std::cout << tr << ", ";
-        }
-        std::cout << std::endl;
-        uint32_t max_tr = 0;
-        for (auto ec : ecmap) {
-            for (auto tr : ec) {
-                if (tr > max_tr) {
-                    max_tr = tr;
-                }
-            }
-        }
-        std::cout << "highest transcript id: " << max_tr << std::endl;
 }
 
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
@@ -792,12 +645,10 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   int p2 = -1;
   int c1 = -1;
   int c2 = -1;
-  std::cout << "entering mapPair" << std::endl;
 
   KmerIterator kit1(s1), kit_end;
   const_UnitigMap<Node> um1, um2;
 
-  std::cout << "first search" << std::endl;
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
     um1 = dbg.find(kit1->first);
@@ -810,7 +661,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
       break;
     }
   }
-  std::cout << "first search done" << std::endl;
 
   if (!found1) {
     return -1;
@@ -819,7 +669,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   KmerIterator kit2(s2);
   bool found2 = false;
 
-  std::cout << "second search" << std::endl;
   for (; kit2 != kit_end; ++kit2) {
     um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
@@ -831,32 +680,26 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
       break;
     }
   }
-  std::cout << "second search done" << std::endl;
 
   if (!found2) {
     return -1;
   }
 
-  std::cout << "ec1: " << um1.getData()->ec.length() << ", ec2: " << um2.getData()->ec.length() << std::endl;
-  std::cout << "um1: " << um1.dist << ", um2: " << um2.dist << std::endl;
   // We want the reads to map within the same EC block on the same unitig
   if (!um1.isSameReferenceUnitig(um2) ||
       um1.getData()->ec[um1.dist] != um2.getData()->ec[um2.dist]) {
     return -1;
   }
 
-  std::cout << "strandedness" << std::endl;
   // Paired reads need to map to opposite strands
   if (!(um1.strand ^ um2.strand)) {
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
 
-  std::cout << "getting mc contig" << std::endl;
   if (um1.getData()->get_mc_contig(um1.dist).second != um2.getData()->get_mc_contig(um2.dist).second) {
     return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
   }
-  std::cout << "end of mapPair" << std::endl;
 
   if (p1>p2) {
     return p1-p2;
@@ -1134,7 +977,6 @@ void KmerIndex::loadTranscriptSequences() const {
 
   std::vector<std::vector<std::pair<std::string, u2t> > > trans_contigs(num_trans);
   for (auto& um : dbg) {
-    std::cout << um.referenceUnitigToString() << std::endl;
     const Node* data = um.getData();
     std::string um_seq = um.mappedSequenceToString();
     // XXX:
