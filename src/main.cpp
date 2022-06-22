@@ -2610,7 +2610,71 @@ int main(int argc, char *argv[]) {
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
         index.BuildTranscripts(opt);
+  std::cout << "after build transcripts" << std::endl;
+        uint32_t max_tr = 0;
+        for (auto ec : index.ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
         index.write(opt.index, true, opt.threads);
+  std::cout << "after write" << std::endl;
+        max_tr = 0;
+        for (auto ec : index.ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
+
+
+        // DEBUG
+        std::cout << "number of nodes: " << index.dbg.size() << std::endl;
+        std::string seq = "CCTTGGGTGGGATTGAGTTTGTTCTCCTGGCGGTGATGGCCTATGACCGCTATGTGGCTG";
+        Kmer km(seq.substr(0, opt.k).c_str());
+        UnitigMap<Node> um = index.dbg.find(km);
+        std::cout << "um.isEmpty: " << um.isEmpty << ", um.size: " << um.size << std::endl;
+        Node* n = um.getData();
+        std::cout << "id: " << n->id << std::endl;
+        std::cout << "block array: ";
+        n->ec.print();
+        std::cout << "pos: ";
+        for (auto p : n->pos) {
+            std::cout << p << ", ";
+        }
+        std::cout << std::endl;
+        std::cout << "sense: " << n->sense.toString() << std::endl;
+        std::vector<uint32_t> ecs;
+        n->ec.get_vals(ecs);
+        for (uint32_t ec : ecs) {
+          std::cout << ec << ": [";
+          for (auto tr : index.ecmap[ec]) {
+            std::cout << tr << ", ";
+          }
+          std::cout << "]" << std::endl;
+        }
+        std::cout << "ec: 714560" << std::endl;
+        for (auto tr : index.ecmap[714560]) {
+            std::cout << tr << ", ";
+        }
+        std::cout << std::endl;
+
+        max_tr = 0;
+        for (auto ec : index.ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
+
+        // END DEBUG
       }
       cerr << endl;
     } else if (cmd == "inspect") {
@@ -2828,6 +2892,7 @@ int main(int argc, char *argv[]) {
         std::vector<int> fld;
         if (opt.busOptions.paired) {
           fld = collection.flens; // copy
+            std::cout << "lelele: 4" << std::endl;
           collection.compute_mean_frag_lens_trunc();
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
@@ -2961,7 +3026,9 @@ int main(int argc, char *argv[]) {
         std::vector<int> fld;
         if (opt.fld == 0.0) {
           fld = collection.flens; // copy
+            std::cout << "lelele: 3" << std::endl;
           collection.compute_mean_frag_lens_trunc();
+          std::cout << "success" << std::endl;
         } else {
           auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
           auto sd_fl = opt.sd;
@@ -2975,18 +3042,23 @@ int main(int argc, char *argv[]) {
         }
 
         std::vector<int> preBias(4096,1);
+          std::cout << "pre prebias" << std::endl;
         if (opt.bias) {
           preBias = collection.bias5; // copy
         }
+          std::cout << "post prebias" << std::endl;
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
+          std::cout << "got frag len means" << std::endl;
 
         //for (int i = 0; i < collection.bias3.size(); i++) {
           //std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
         //}
 
         EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          std::cout << "created em" << std::endl;
         em.run(10000, 50, true, opt.bias);
+          std::cout << "run the em" << std::endl;
 
         std::string call = argv_to_string(argc, argv);
 
@@ -3416,6 +3488,7 @@ int main(int argc, char *argv[]) {
                 fld = FLDs[id];
               }
               collection.flens = fld;
+            std::cout << "lelele: 2" << std::endl;
               collection.compute_mean_frag_lens_trunc(false);
             }
             fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
@@ -3615,6 +3688,7 @@ int main(int argc, char *argv[]) {
             std::vector<int> fld;
             if (opt.fld == 0.0) {
               fld = collection.flens; // copy
+            std::cout << "lelele: 1" << std::endl;
               collection.compute_mean_frag_lens_trunc(false);
             } else {
               auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len(true);

@@ -172,6 +172,16 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   BuildDeBruijnGraph(opt, seqs);
   BuildEquivalenceClasses(opt, seqs);
+  std::cout << "at the end of build transcripts" << std::endl;
+        uint32_t max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
 }
 
@@ -266,15 +276,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
   for (const auto& um : dbg) {
 
     Node* n = um.getData();
-    if (n->id > trinfos.size()) {
-    std::cout << um.getUnitigHead().toString() << std::endl;
-    std::cout << um.referenceUnitigToString() << std::endl;
-        std::cout << "uninitialized n->id" << std::endl;
-        std::cout << n->id << std::endl;
-        std::cout << trinfos.size() << std::endl;
-        std::cout << dbg.size() << std::endl;
-    }
-
 
     // Find the overlaps
     std::vector<int> brpoints;
@@ -286,7 +287,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
     sort(brpoints.begin(), brpoints.end());
     assert(brpoints[0] == 0);
-    assert(brpoints[brpoints.size()-1]==um.size());
+    assert(brpoints[brpoints.size()-1]==um.size-k+1);
 
     // Find unique break points
     if (!isUnique(brpoints)) {
@@ -294,30 +295,36 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       swap(u,brpoints);
     }
 
+    size_t j = 0;
+    std::vector<uint32_t> pos;
+    Roaring sense;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
-      //std::cout << "processing breakpoint " << i << std::endl;
       std::vector<int> u;
-      std::vector<u2t> transcripts;
+
+      std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
+                [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
+                    return (lhs.trid < rhs.trid);
+                });
+
       for (const auto& tr : trinfos[n->id]) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.push_back(tr.trid);
-          transcripts.emplace_back(tr.trid, tr.pos, tr.sense);
+          pos.push_back(tr.pos);
+          if (tr.sense) sense.add(j);
+          ++j;
         }
       }
 
-      sort(u.begin(), u.end());
       if (!isUnique(u)){
         std::vector<int> v = unique(u);
         swap(u,v);
       }
-      //std::cout << "got unique transcripts" << std::endl;
 
       assert(!u.empty());
-
 
       auto search = ecmapinv.find(u);
       int ec = -1;
@@ -330,16 +337,24 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         ecmapinv.insert({u,ec});
         ecmap.push_back(u);
       }
-      //std::cout << "found ec" << std::endl;
 
       // Assign mosaic EC to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], ec);
-
-      // Assign the transcripts to the EC
-      n->transcripts[ec] = transcripts;
-      //std::cout << "created ec block" << std::endl;
     }
+    // Assign position and sense for all transcripts belonging to unitig
+    n->pos = pos;
+    n->sense = sense;
   }
+  std::cout << "after populate mosaic ecs" << std::endl;
+        uint32_t max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -358,18 +373,51 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
 
+        std::cout << 1 << std::endl;
+        uint32_t max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
+
   // 2. serialize dBG
   if (writeKmerTable) {
-    std::ostringstream dbg_stream;
-    dbg.writeBinary(dbg_stream, threads);
-    std::string dbg_bin = dbg_stream.str();
-    tmp_size = dbg_bin.length();
+    auto pos1 = out.tellp();
+    // Write dummy size of graph
+    tmp_size = 1337;
     out.write((char *)&tmp_size, sizeof(tmp_size));
-    out.write(dbg_bin.c_str(), tmp_size);
+    bool res = dbg.writeBinary(out, threads);
+
+    if (res == 0) {
+      std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
+      exit(1);
+    }
+
+    auto pos2 = out.tellp();
+    out.seekp(pos1);
+
+    // Write real size of graph
+    tmp_size = pos2 - pos1 - sizeof(tmp_size);
+    out.write((char *)&tmp_size, sizeof(tmp_size));
+    out.seekp(pos2);
   } else {
     tmp_size = 0;
     out.write((char *)&tmp_size, sizeof(tmp_size));
   }
+        std::cout << 2 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 3. serialize nodes
   tmp_size = dbg.size();
@@ -381,18 +429,58 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 3.2 serialize node
     um.getData()->serialize(out);
   }
+        std::cout << 3 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 4. write number of targets
   out.write((char *)&num_trans, sizeof(num_trans));
+        std::cout << 4 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 5. write out target lengths
   for (int tlen : target_lens_) {
     out.write((char *)&tlen, sizeof(tlen));
   }
+        std::cout << 5 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 6. write number of equivalence classes
   tmp_size = ecmap.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
+        std::cout << 6 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 7. write out each equiv class
   for (int ec = 0; ec < ecmap.size(); ec++) {
@@ -406,6 +494,16 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
       out.write((char *)&val, sizeof(val));
     }
   }
+        std::cout << 7 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   // 8. Write out target ids
   // XXX: num_trans should equal to target_names_.size(), so don't need
@@ -422,6 +520,16 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 8.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+        std::cout << 8 << std::endl;
+        max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 
   out.flush();
   out.close();
@@ -437,11 +545,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in;
+  std::ifstream in_dbg, in;
 
-  in.open(index_in, std::ios::in | std::ios::binary);
+  in_dbg.open(index_in, std::ios::in | std::ios::binary);
 
-  if (!in.is_open()) {
+  if (!in_dbg.is_open()) {
     // TODO: better handling
     std::cerr << "Error: index input file could not be opened!";
     exit(1);
@@ -449,7 +557,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 1. read version
   size_t header_version = 0;
-  in.read((char *)&header_version, sizeof(header_version));
+  in_dbg.read((char *)&header_version, sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -459,31 +567,31 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 2. deserialize dBG
   size_t tmp_size;
-  in.read((char *)&tmp_size, sizeof(tmp_size));
-  char* buffer = new char[tmp_size];
+  in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
   if (tmp_size > 0) {
-    in.read(buffer, tmp_size);
 
-    std::istringstream dbg_bin(std::string(buffer, tmp_size));
-
-    dbg.readBinary(dbg_bin);
-    // XXX:
-    // Do we need k if writeKmerTable == false?
+    dbg.readBinary(in_dbg);
     k = dbg.getK();
   }
-  delete[] buffer;
+
+  in_dbg.close();
+  // CompactedDBG::readBinary bug, need separate stream to read past the dbg
+  in.open(index_in, std::ios::in | std::ios::binary);
+  // Spool stream to the location just following the dbg
+  in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
 
   // 3. deserialize nodes
   in.read((char *)&tmp_size, sizeof(tmp_size));
   Kmer kmer;
   UnitigMap<Node> um;
   size_t kmer_size = k * sizeof(char);
-  buffer = new char[kmer_size];
+  char* buffer = new char[kmer_size];
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
     in.read(buffer, kmer_size);
     kmer = Kmer(buffer);
+    std::cout << kmer.toString() << std::endl;
     um = dbg.find(kmer);
 
     if (um.isEmpty) {
@@ -495,6 +603,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     um.getData()->deserialize(in);
   }
   delete[] buffer;
+  buffer = nullptr;
 
   // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
@@ -572,6 +681,46 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
+
+  std::cout << "number of nodes: " << dbg.size() << std::endl;
+  std::string seq = "CCTTGGGTGGGATTGAGTTTGTTCTCCTGGCGGTGATGGCCTATGACCGCTATGTGGCTG";
+  Kmer km(seq.substr(0, opt.k).c_str());
+  UnitigMap<Node> um_ = dbg.find(km);
+  std::cout << "um.isEmpty: " << um_.isEmpty << ", um.size: " << um_.size << std::endl;
+  Node* n = um_.getData();
+  std::cout << "id: " << n->id << std::endl;
+  std::cout << "block array: ";
+  n->ec.print();
+  std::cout << "pos: ";
+  for (auto p : n->pos) {
+      std::cout << p << ", ";
+  }
+  std::cout << std::endl;
+  std::cout << "sense: " << n->sense.toString() << std::endl;
+  std::vector<uint32_t> ecs;
+  n->ec.get_vals(ecs);
+  for (uint32_t ec : ecs) {
+    std::cout << ec << ": [";
+    for (auto tr : ecmap[ec]) {
+      std::cout << tr << ", ";
+    }
+    std::cout << "]" << std::endl;
+  }
+
+        std::cout << "ec: 714560" << std::endl;
+        for (auto tr : ecmap[714560]) {
+            std::cout << tr << ", ";
+        }
+        std::cout << std::endl;
+        uint32_t max_tr = 0;
+        for (auto ec : ecmap) {
+            for (auto tr : ec) {
+                if (tr > max_tr) {
+                    max_tr = tr;
+                }
+            }
+        }
+        std::cout << "highest transcript id: " << max_tr << std::endl;
 }
 
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
@@ -643,10 +792,12 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   int p2 = -1;
   int c1 = -1;
   int c2 = -1;
+  std::cout << "entering mapPair" << std::endl;
 
   KmerIterator kit1(s1), kit_end;
   const_UnitigMap<Node> um1, um2;
 
+  std::cout << "first search" << std::endl;
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
     um1 = dbg.find(kit1->first);
@@ -659,6 +810,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
       break;
     }
   }
+  std::cout << "first search done" << std::endl;
 
   if (!found1) {
     return -1;
@@ -667,6 +819,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
   KmerIterator kit2(s2);
   bool found2 = false;
 
+  std::cout << "second search" << std::endl;
   for (; kit2 != kit_end; ++kit2) {
     um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
@@ -678,26 +831,32 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
       break;
     }
   }
+  std::cout << "second search done" << std::endl;
 
   if (!found2) {
     return -1;
   }
 
+  std::cout << "ec1: " << um1.getData()->ec.length() << ", ec2: " << um2.getData()->ec.length() << std::endl;
+  std::cout << "um1: " << um1.dist << ", um2: " << um2.dist << std::endl;
   // We want the reads to map within the same EC block on the same unitig
   if (!um1.isSameReferenceUnitig(um2) ||
       um1.getData()->ec[um1.dist] != um2.getData()->ec[um2.dist]) {
     return -1;
   }
 
+  std::cout << "strandedness" << std::endl;
   // Paired reads need to map to opposite strands
   if (!(um1.strand ^ um2.strand)) {
     //std::cerr << "Reads map to same strand " << s1 << "\t" << s2 << std::endl;
     return -1;
   }
 
+  std::cout << "getting mc contig" << std::endl;
   if (um1.getData()->get_mc_contig(um1.dist).second != um2.getData()->get_mc_contig(um2.dist).second) {
     return -1; // If the mc contigs for um1 and um2 are actually not the same (despite having the same color)
   }
+  std::cout << "end of mapPair" << std::endl;
 
   if (p1>p2) {
     return p1-p2;
@@ -897,11 +1056,17 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
     return {-1, true};
   }
   const Node* n = um.getData();
-  const auto trs = n->transcripts.find(n->ec[um.dist]);
-  for (const auto& x : trs->second) {
-    if (x.tr_id == tr) {
-      trpos = x.pos;
-      trsense = x.sense;
+  auto ecs = n->ec.get_leading_vals(um.dist);
+  size_t offset = 0;
+  size_t ec = ecs[ecs.size() - 1];
+  for (size_t i = 0; i < ecs.size() - 1; ++i) {
+    offset += ecmap[ecs[i]].size();
+  }
+
+  for (size_t i = 0; i < ecmap[ec].size(); ++i) {
+    if (ecmap[ec][i] == tr) {
+      trpos = n->pos[offset + i];
+      trsense = !n->sense.contains(offset + i);
       break;
     }
   }
@@ -972,36 +1137,32 @@ void KmerIndex::loadTranscriptSequences() const {
     std::cout << um.referenceUnitigToString() << std::endl;
     const Node* data = um.getData();
     std::string um_seq = um.mappedSequenceToString();
+    // XXX:
+    // We also reverse complement in the following for-loop. Is this correct?
     if (!um.strand) {
       um_seq = revcomp(um_seq);
     }
-    const auto trs = data->transcripts.find(data->ec[um.dist]);
-    for (const auto& tr : trs->second) {
+
+    const Node* n = um.getData();
+    auto ecs = n->ec.get_leading_vals(um.dist);
+    size_t offset = 0;
+    size_t ec = ecs[ecs.size() - 1];
+    for (size_t i = 0; i < ecs.size() - 1; ++i) {
+      offset += ecmap[ecs[i]].size();
+    }
+
+    for (size_t i = 0; i < ecmap[ec].size(); ++i) {
+      bool sense = n->sense.contains(offset + i);
+      u2t tr(ecmap[ec][i], n->pos[offset + i], sense);
       // TODO:
       // Verify that this method of choosing to reverse complement is legit
-      if (um.strand ^ tr.sense) {
-        trans_contigs[tr.tr_id].push_back({revcomp(um_seq), tr});
+      if (um.strand ^ sense) {
+        trans_contigs[ecmap[ec][i]].emplace_back(revcomp(um_seq), tr);
       } else {
-        trans_contigs[tr.tr_id].push_back({um_seq, tr});
+        trans_contigs[ecmap[ec][i]].emplace_back(um_seq, tr);
       }
     }
   }
-  std::cout << "====================" << std::endl;
-  Kmer km("AGATGAT");
-  auto um = dbg.find(km);
-  std::cout << um.getMappedHead().toString() << std::endl;
-  std::cout << um.getUnitigHead().toString() << std::endl;
-  std::cout << um.strand << std::endl;
-  std::cout << um.dist << std::endl;
-  std::cout << "---" << std::endl;
-
-  km = Kmer("ATCATCT");
-  um = dbg.find(km);
-  std::cout << um.getMappedHead().toString() << std::endl;
-  std::cout << um.getUnitigHead().toString() << std::endl;
-  std::cout << um.strand << std::endl;
-  std::cout << um.dist << std::endl;
-  std::cout << (km == um.getMappedHead()) << std::endl;
 
   auto &target_seqs = const_cast<std::vector<std::string>&>(target_seqs_);
 

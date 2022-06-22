@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include "Kmer.hpp"
+#include "wyhash.h"
 
 /* Short description:
  *  - Compress a DNA string by using 2 bits per base instead of 8
@@ -34,20 +35,6 @@ class CompressedSequence {
 
         void clear();
 
-        void toString(char *s, const size_t offset, const size_t length) const;
-        string toString(const size_t offset, const size_t length) const;
-
-
-        inline string toString() const {
-
-            return toString(0, size());
-        }
-
-        inline void toString(char *s) const {
-
-            toString(s, 0, size());
-        }
-
         Kmer getKmer(size_t offset) const;
         Minimizer getMinimizer(size_t offset) const;
         char getChar(const size_t offset) const;
@@ -55,13 +42,45 @@ class CompressedSequence {
         //bool compareKmer(const size_t offset, const Kmer& km) const;
         bool compareKmer(const size_t offset, const size_t length, const Kmer& km) const;
 
-        //  void setSequence(const CompressedSequence &o, size_t length, size_t offset = 0, bool reversed=false);
-        void setSequence(const CompressedSequence& o, const size_t start, const size_t length, const size_t offset = 0, const bool reversed = false);
-        void setSequence(const char *s, const size_t length, const size_t offset = 0, const bool reversed = false);
-        void setSequence(const string& s, const size_t length, const size_t offset = 0, const bool reversed = false);
-        void setSequence(const Kmer& km, const size_t length, const size_t offset = 0, const bool reversed = false);
+        void setSequence(const CompressedSequence& o, const size_t offset_o, const size_t length_o, const size_t offset = 0, const bool reversed = false);
+        void setSequence(const char *s, const size_t offset, const size_t length, const bool reversed = false);
 
-        CompressedSequence rev() const;
+        void toString(char *s, const size_t offset, const size_t length) const;
+        string toString(const size_t offset, const size_t length) const;
+
+        BFG_INLINE string toString() const {
+
+            return toString(0, size());
+        }
+
+        BFG_INLINE void toString(char *s) const {
+
+            toString(s, 0, size());
+        }
+
+
+        BFG_INLINE void setSequence(const string& s, const size_t offset, const size_t length, const bool reversed = false) {
+
+            setSequence(s.c_str(), offset, length, reversed);
+        }
+
+
+        BFG_INLINE void setSequence(const Kmer& km, const size_t offset, const size_t length, const bool reversed = false) {
+
+            char s[Kmer::MAX_K + 1];
+
+            km.toString(s);
+            setSequence(s, offset, length, reversed);
+        }
+
+        BFG_INLINE CompressedSequence rev() const {
+
+            CompressedSequence r;
+
+            r.setSequence(*this, 0, size(), 0, true);
+
+            return r;
+        }
 
         size_t jump(const char *s, const size_t i, int pos, const bool reversed) const;
         //size_t bw_jump(const char *s, const size_t i, int pos, const bool reversed) const;
@@ -93,15 +112,20 @@ class CompressedSequence {
             return (asPointer._length >> 1);
         }
 
+        BFG_INLINE uint64_t hash(const uint64_t seed = 0) const {
+
+            return wyhash(getPointer(), round_to_bytes(size()), seed, _wyp);
+        }
+
     private:
 
         void _resize_and_copy(const size_t new_cap, const size_t copy_limit);
 
-        BFG_INLINE void initShort() {
+        BFG_INLINE size_t capacity() const {
 
-            asBits._size = 1; // short and size 0
+            if (isShort()) return 31; // 31 bytes
 
-            memset(&asBits._arr[0], 0, 31); // clear other bits
+            return asPointer._capacity;
         }
 
         BFG_INLINE size_t round_to_bytes(const size_t len) const {
@@ -109,11 +133,11 @@ class CompressedSequence {
             return (len+3)/4;
         }
 
-        BFG_INLINE size_t capacity() const {
+        BFG_INLINE void initShort() {
 
-            if (isShort()) return 31; // 31 bytes
+            asBits._size = 1; // short and size 0
 
-            return asPointer._capacity;
+            memset(&asBits._arr[0], 0, 31); // clear other bits
         }
 
         BFG_INLINE void setSize(const size_t size) {

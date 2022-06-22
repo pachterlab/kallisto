@@ -1,5 +1,5 @@
-#ifndef BIFROST_SEARCH_DBG_TCC
-#define BIFROST_SEARCH_DBG_TCC
+#ifndef BIFROST_SEARCH_CDBG_TCC
+#define BIFROST_SEARCH_CDBG_TCC
 
 template<typename U, typename G>
 vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const string& s, const bool exact, const bool insertion,

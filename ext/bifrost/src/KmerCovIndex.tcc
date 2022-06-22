@@ -187,6 +187,12 @@ void KmerCovIndex<T>::push_back(const Kmer& km) {
 
         v_blocks.push_back(nullptr);
         v_blocks.back() = new Block<T>;
+
+        Kmer km_empty;
+
+        km_empty.set_empty();
+
+        std::fill(v_blocks.back()->km_block, v_blocks.back()->km_block + block_sz, km_empty);
     }
 
     v_blocks[sz >> shift_div]->km_block[mod] = km;

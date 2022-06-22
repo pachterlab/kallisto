@@ -1213,15 +1213,18 @@ void ReadProcessor::processBuffer() {
         um = res.first;
         p = res.second;
         // might need to optimize this
-        for (const auto& tr : u) {
+        const Node* n = um.getData();
+        auto ecs = n->ec.get_leading_vals(um.dist);
+        size_t offset = 0;
+        size_t ec = ecs[ecs.size() - 1];
+        for (size_t i = 0; i < ecs.size() - 1; ++i) {
+          offset += index.ecmap[ecs[i]].size();
+        }
 
-          const Node* n = um.getData();
-          const auto trs = n->transcripts.find(n->ec[um.dist]);
-          for (const auto& ctx : trs->second) {
-
-            if (tr == ctx.tr_id) {
-
-              if ((um.strand == ctx.sense) == firstStrand) {
+        for (auto tr : u) {
+          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
+            if (tr == index.ecmap[ec][i]) {
+              if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
 
                 // swap out
                 vtmp.push_back(tr);
@@ -1243,11 +1246,17 @@ void ReadProcessor::processBuffer() {
         p = res.second;
         // might need to optimize this
         const Node* n = um.getData();
-        const auto trs = n->transcripts.find(n->ec[um.dist]);
-        for (const auto& tr : u) {
-          for (const auto& ctx : trs->second) {
-            if (tr == ctx.tr_id) {
-              if ((um.strand == ctx.sense) == secondStrand) {
+        auto ecs = n->ec.get_leading_vals(um.dist);
+        size_t offset = 0;
+        size_t ec = ecs[ecs.size() - 1];
+        for (size_t i = 0; i < ecs.size() - 1; ++i) {
+          offset += index.ecmap[ecs[i]].size();
+        }
+
+        for (auto tr : u) {
+          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
+            if (tr == index.ecmap[ec][i]) {
+              if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
                 // swap out
                 vtmp.push_back(tr);
               }
@@ -1458,7 +1467,7 @@ void BUSProcessor::operator()() {
       }
       // release the reader lock
     }
-    
+
     pseudobatch.aln.clear();
     pseudobatch.batch_id = readbatch_id;
     // process our sequences
@@ -1698,14 +1707,19 @@ void BUSProcessor::processBuffer() {
         auto res = findFirstMappingKmer(v);
         um = res.first;
         p = res.second;
-        km = Kmer((seq+p));
         // might need to optimize this
         const Node* n = um.getData();
-        const auto trs = n->transcripts.find(n->ec[um.dist]);
+        auto ecs = n->ec.get_leading_vals(um.dist);
+        size_t offset = 0;
+        size_t ec = ecs[ecs.size() - 1];
+        for (size_t i = 0; i < ecs.size() - 1; ++i) {
+          offset += index.ecmap[ecs[i]].size();
+        }
+
         for (auto tr : u) {
-          for (const auto& ctx : trs->second) {
-            if (tr == ctx.tr_id) {
-              if ((um.strand == ctx.sense) == firstStrand) {
+          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
+            if (tr == index.ecmap[ec][i]) {
+              if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
                 // swap out
                 vtmp.push_back(tr);
               }
@@ -1723,14 +1737,19 @@ void BUSProcessor::processBuffer() {
         auto res = findFirstMappingKmer(v2);
         um = res.first;
         p = res.second;
-        km = Kmer((seq2+p));
         // might need to optimize this
         const Node* n = um.getData();
-        const auto trs = n->transcripts.find(n->ec[um.dist]);
+        auto ecs = n->ec.get_leading_vals(um.dist);
+        size_t offset = 0;
+        size_t ec = ecs[ecs.size() - 1];
+        for (size_t i = 0; i < ecs.size() - 1; ++i) {
+          offset += index.ecmap[ecs[i]].size();
+        }
+
         for (auto tr : u) {
-          for (const auto& ctx : trs->second) {
-            if (tr == ctx.tr_id) {
-              if ((um.strand == ctx.sense) == secondStrand) {
+          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
+            if (tr == index.ecmap[ec][i]) {
+              if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
                 // swap out
                 vtmp.push_back(tr);
               }

@@ -93,7 +93,7 @@ CompressedSequence::CompressedSequence(const char *s) {
 
     initShort();
 
-    if (s != NULL) setSequence(s, strlen(s));
+    if (s != NULL) setSequence(s, 0, strlen(s));
 }
 
 
@@ -102,7 +102,7 @@ CompressedSequence::CompressedSequence(const string& s) {
 
     initShort();
 
-    setSequence(s.c_str(), s.length());
+    setSequence(s.c_str(), 0, s.length());
 }
 
 
@@ -113,57 +113,7 @@ CompressedSequence::CompressedSequence(const Kmer& km) {
 
     initShort();
 
-    setSequence(km, Kmer::k);
-}
-
-// use:  a.setSequence(b, start, length, offset, reversed);
-// pre:  start+length <= b._length, offset <= a._length
-// post: copies compressed sequence from b to a (reverse complement if reversed == true)
-//       the string copied from b is from [start,...,start+length-1]
-//          (reverse complement of [o._length-1-start-length,...,o._length-1-start] if reversed == true)
-//       the positions in a that are updated are [offset,...,offset+length-1]
-//       capacity of a might be updated to fit the new string.
-void CompressedSequence::setSequence(const CompressedSequence& o, const size_t start, const size_t length, const size_t offset, const bool reversed) {
-
-    assert(length + start <= o.size());
-
-    if (round_to_bytes(length+offset) > capacity()) _resize_and_copy(round_to_bytes(length+offset),size());
-
-    unsigned char* data = const_cast<unsigned char*>(getPointer());
-    const unsigned char *odata = o.getPointer();
-
-    size_t w_index = offset;
-    size_t wi, wj, r_index;
-
-    if (reversed){
-
-        r_index = o.size() - start - 1;
-
-        for (size_t i = 0; i < length; ++i, ++w_index, --r_index) {
-
-            wi = w_index >> 2;
-            wj = (w_index & 0x3) << 1;
-
-            data[wi] &= ~(0x3 << wj); // clear bits
-            data[wi] |= (3 - ((odata[r_index >> 2] >> ((r_index & 0x3) << 1)) & 0x3)) << wj;
-        }
-    }
-    else {
-
-        r_index = start;
-
-        for (size_t i = 0; i < length; ++i, ++w_index, ++r_index) {
-
-            wi = w_index >> 2;
-            wj = (w_index & 0x3) << 1;
-
-            data[wi] &= ~(0x3 << wj); // clear bits
-            data[wi] |= ((odata[r_index >> 2] >> ((r_index & 0x3) << 1)) & 0x3) << wj;
-        }
-    }
-
-    // new length?
-    if (offset + length > size()) setSize(offset+length);
+    setSequence(km, 0, Kmer::k);
 }
 
 
@@ -175,7 +125,7 @@ void CompressedSequence::_resize_and_copy(const size_t new_cap, const size_t cop
 
     if (new_cap <= capacity()) return;
 
-    unsigned char* new_data = new unsigned char[new_cap]; // allocate new storage
+    unsigned char* new_data = new unsigned char[new_cap](); // allocate new storage
     size_t bytes = round_to_bytes(copy_limit);
 
     memcpy(new_data, getPointer(), bytes); // copy old data
@@ -200,27 +150,66 @@ void CompressedSequence::_resize_and_copy(const size_t new_cap, const size_t cop
     }
 }
 
+void CompressedSequence::setSequence(const CompressedSequence& o, const size_t offset_o, const size_t length_o, const size_t offset, const bool reversed) {
 
-// use:  a.setSequence(s, length, offset, reversed);
-// pre:  length <= strlen(s), offset <= a._length
-// post: copies substring s[0,...,length-1] to a (reverse complement if reversed == true)
-//       the positions in a that are updated are [offset,...,offset+length-1]
-//       capacity of a might be updated to fit the new string.
-void CompressedSequence::setSequence(const char *s, const size_t length, const size_t offset, const bool reversed) {
+    const size_t nb_bytes_o = round_to_bytes(length_o + offset);
 
-    const size_t len = offset + length;
+    if (nb_bytes_o > capacity()) _resize_and_copy(nb_bytes_o, size());
 
-    if (round_to_bytes(len) > capacity()) _resize_and_copy(round_to_bytes(length + offset), size());
+    unsigned char* data = const_cast<unsigned char*>(getPointer());
+    const unsigned char* data_o = o.getPointer();
+
+    size_t w_index = offset;
+    size_t wi, wj, index_o;
+
+    if (reversed){
+
+        index_o = offset_o + length_o - 1;
+
+        for (size_t i = 0; i < length_o; ++i, ++w_index, --index_o) {
+
+            wi = w_index >> 2;
+            wj = (w_index & 0x3) << 1;
+
+            data[wi] &= ~(0x3 << wj); // clear bits
+            data[wi] |= (3 - ((data_o[index_o >> 2] >> ((index_o & 0x3) << 1)) & 0x3)) << wj;
+        }
+    }
+    else {
+
+        index_o = offset_o;
+
+        for (size_t i = 0; i < length_o; ++i, ++w_index, ++index_o) {
+
+            wi = w_index >> 2;
+            wj = (w_index & 0x3) << 1;
+
+            data[wi] &= ~(0x3 << wj); // clear bits
+            data[wi] |= ((data_o[index_o >> 2] >> ((index_o & 0x3) << 1)) & 0x3) << wj;
+        }
+    }
+
+    // new length?
+    if (length_o + offset > size()) setSize(length_o + offset);
+}
+
+void CompressedSequence::setSequence(const char *s, const size_t offset, const size_t length, const bool reversed) {
+
+    const size_t rounded_length = round_to_bytes(length);
+
+    const char* s_offset = s + offset;
+
+    if (rounded_length > capacity()) _resize_and_copy(rounded_length, size());
 
     unsigned char* data = const_cast<unsigned char*>(getPointer());
 
     if (reversed) {
 
-        for (size_t index = offset; index < len; ++index) {
+        for (size_t index = 0; index < length; ++index) {
 
             const size_t i = index >> 2;
             const size_t j = (index & 0x3) << 1;
-            const uint8_t c = bases[0x03-bits[(uint8_t)*(s+len-index-1)]];
+            const uint8_t c = bases[0x03-bits[static_cast<uint8_t>(s_offset[length-index-1])]];
 
             data[i] &= ~(0x03 << j); // set bits to 0, default
             data[i] |= (bits[c] << j);
@@ -228,44 +217,18 @@ void CompressedSequence::setSequence(const char *s, const size_t length, const s
     }
     else {
 
-        for (size_t index = offset; index < len; ++index) {
+        for (size_t index = 0; index < length; ++index) {
 
             const size_t i = index >> 2;
             const size_t j = (index & 0x3) << 1;
-            const uint8_t c = *(s+index-offset);
+            const uint8_t c = static_cast<uint8_t>(s_offset[index]);
 
             data[i] &= ~(0x03 << j); // set bits to 0, default
             data[i] |= (bits[c] << j);
         }
     }
 
-    if (len > size()) setSize(len);
-}
-
-
-// use:  cs.setSequence(s, start, length, offset, reversed);
-// pre:  0 <= start + length < o.size()
-// post: If reversed is false then: cs[offset,...,offset+length-1] = s[0,...,start+length-1]
-//       else: cs[offset,...,offset+length-1] is the reverse complement of s[0,...,start+length-1]
-void CompressedSequence::setSequence(const string& s, const size_t length, const size_t offset, const bool reversed) {
-
-    setSequence(s.c_str(),length,offset,reversed);
-}
-
-
-// use:  cs.setSequence(km, length, offset, reversed);
-// pre:  0 <= length < cs._length,
-//       length <= Kmer::k
-// post: If reversed is false then: cs[offset,...,offset+length-1]
-//         is the first length characters from the DNA string in km
-//       else: cs[offset,...,offset+length-1] is the first length characters from the
-//         reverse complement of the DNA string in km
-void CompressedSequence::setSequence(const Kmer& km, const size_t length, const size_t offset, const bool reversed) {
-
-    char s[Kmer::MAX_K + 1];
-
-    km.toString(s);
-    setSequence(s, length, offset, reversed);
+    if (length > size()) setSize(length);
 }
 
 
@@ -513,20 +476,6 @@ int64_t CompressedSequence::findKmer(const Kmer& km) const {
     }
 
     return -1;
-}
-
-// use:  _cs = cs.rev();
-// pre:
-// post: _cs is the reverse complement CompressedSequence with respect to cs,
-//       i.e. if the DNA string in cs is 'GTCA'
-//          then the DNA string in _cs is 'TGAC'
-CompressedSequence CompressedSequence::rev() const {
-
-    CompressedSequence r;
-
-    r.setSequence(*this, 0, size(), 0, true);
-
-    return r;
 }
 
 

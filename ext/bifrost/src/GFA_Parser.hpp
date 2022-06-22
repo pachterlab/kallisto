@@ -12,6 +12,8 @@
 #include <sstream>
 #include <memory>
 
+#include "zstr.hpp"
+
 using namespace std;
 
 class GFA_Parser {
@@ -91,8 +93,8 @@ class GFA_Parser {
         GFA_Parser(GFA_Parser&& o);
         GFA_Parser& operator=(GFA_Parser&& o);
 
-        bool open_write(const size_t version_GFA = 1, const string tags_line_header = "");
-        bool open_read();
+        bool open_write(const size_t version_GFA = 1, const string tags_line_header = "", const bool compressed_output = false);
+        pair<string, bool> open_read();
 
         void close();
 
@@ -106,15 +108,12 @@ class GFA_Parser {
 
     private:
 
-        bool open(const size_t idx_filename);
+        pair<string, bool> open(const size_t idx_filename);
 
         vector<string> graph_filenames;
 
-        ifstream* graphfile_in;
-        istream graph_in;
-
-        ofstream* graphfile_out;
-        ostream graph_out;
+        unique_ptr<istream> graph_in;
+        unique_ptr<ostream> graph_out;
 
         size_t v_gfa;
         size_t file_no;

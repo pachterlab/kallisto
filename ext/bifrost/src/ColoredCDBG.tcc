@@ -417,34 +417,160 @@ bool ColoredCDBG<U>::buildColors(const CCDBG_Build_opt& opt){
 }
 
 template<typename U>
-bool ColoredCDBG<U>::write(const string& prefix_output_filename, const size_t nb_threads, const bool verbose) const {
+bool ColoredCDBG<U>::write(const string& prefix_output_fn, const size_t nb_threads, const bool write_index_file, const bool compress_output, const bool verbose) const {
 
-    if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::write(prefix_output_filename, nb_threads, true, verbose)) return false; // Write graph
+    if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::write(prefix_output_fn, nb_threads, true, false, false, write_index_file, compress_output, verbose)) return false; // Write graph
 
-    return this->getData()->write(prefix_output_filename, verbose); // Write colors
+    return this->getData()->write(prefix_output_fn, verbose); // Write colors
 }
 
 template<typename U>
-bool ColoredCDBG<U>::read(const string& input_graph_filename, const string& input_colors_filename, const size_t nb_threads, const bool verbose) {
+bool ColoredCDBG<U>::loadColors(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads, const bool verbose) {
+
+    if (!this->getData()->read(input_colors_fn, nb_threads, verbose)) return false; // Read colors
+
+    if (verbose) cout << "ColoredCDBG::loadColors(): Joining unitigs to their color sets." << endl;
+
+    GFA_Parser graph(input_graph_fn);
+
+    graph.open_read();
+
+    auto reading_function = [&graph](vector<pair<Kmer, uint8_t>>& unitig_tags, const size_t chunk_size) {
+
+        size_t i = 0;
+        size_t graph_file_id = 0;
+
+        bool new_file_opened = false;
+
+        GFA_Parser::GFA_line r = graph.read(graph_file_id, new_file_opened, true);
+
+        while ((i < chunk_size) && ((r.first != nullptr) || (r.second != nullptr))){
+
+            if (r.first != nullptr){ // It is a sequence
+
+                if (r.first->tags.empty()){
+
+                    cerr << "ColoredCDBG::loadColors(): One sequence line in GFA file has no DataAccessor tag. Operation aborted." << endl;
+                    return false;
+                }
+
+                size_t i = 0;
+
+                for (; i < r.first->tags.size(); ++i){
+
+                    if (r.first->tags[i].substr(0, 5) == "DA:Z:") break;
+                }
+
+                if (i == r.first->tags.size()){
+
+                    cerr << "ColoredCDBG::loadColors(): One sequence line in GFA file has no DataAccessor tag. Operation aborted." << endl;
+                    return false;
+                }
+
+                unitig_tags.push_back({Kmer(r.first->seq.c_str()), atoi(r.first->tags[i].c_str() + 5)});
+
+                ++i;
+            }
+
+            r = graph.read(graph_file_id, new_file_opened, true);
+        }
+
+        return ((r.first != nullptr) || (r.second != nullptr));
+    };
+
+    auto join_function = [this](const vector<pair<Kmer, uint8_t>>& unitig_tags) {
+
+        for (const auto& p : unitig_tags){
+
+            UnitigColorMap<U> ucm(this->find(p.first, true));
+
+            if (ucm.isEmpty){
+
+                cerr << "ColoredCDBG::loadColors(): Internal error, operation aborted." << endl;
+                cerr << "ColoredCDBG::loadColors(): A unitig from GFA file is not found in the in-memory graph." << endl;
+                cerr << "ColoredCDBG::loadColors(): Graph from GFA file possibly incorrectly compacted." << endl;
+
+                return false;
+            }
+
+            DataAccessor<U>* da = ucm.getData();
+
+            *da = DataAccessor<U>(p.second);
+
+            if (!ucm.strand){ // Unitig has been inserted in reverse-complement, need to reverse order of color sets
+
+                UnitigColors* uc = da->getUnitigColors(ucm);
+                UnitigColors r_uc = uc->reverse(ucm);
+
+                *uc = move(r_uc);
+            }
+        }
+
+        return true;
+    };
+
+    {
+        const size_t chunk = 10000;
+
+        vector<thread> workers; // need to keep track of threads so we can join them
+
+        mutex mutex_file;
+
+        bool file_valid_for_read = true;
+
+        for (size_t t = 0; t < nb_threads; ++t){
+
+            workers.emplace_back(
+
+                [&]{
+
+                    vector<pair<Kmer, uint8_t>> v;
+
+                    while (true) {
+
+                        {
+                            unique_lock<mutex> lock(mutex_file);
+
+                            if (!file_valid_for_read) return;
+
+                            file_valid_for_read = reading_function(v, chunk);
+
+                        }
+
+                        join_function(v);
+                        v.clear();
+                    }
+                }
+            );
+        }
+
+        for (auto& t : workers) t.join();
+    }
+
+    return true;
+}
+
+template<typename U>
+bool ColoredCDBG<U>::read(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads, const bool verbose) {
 
     bool valid_input_files = true;
 
-    if (input_graph_filename.length() != 0){
+    if (input_graph_fn.length() != 0){
 
-        if (check_file_exists(input_graph_filename)){
+        if (check_file_exists(input_graph_fn)){
 
-            FILE* fp = fopen(input_graph_filename.c_str(), "r");
+            FILE* fp = fopen(input_graph_fn.c_str(), "r");
 
             if (fp == NULL) {
 
-                cerr << "ColoredCDBG::read(): Could not open input graph file " << input_graph_filename << endl;
+                cerr << "ColoredCDBG::read(): Could not open input graph file " << input_graph_fn << endl;
                 valid_input_files = false;
             }
             else fclose(fp);
         }
         else {
 
-            cerr << "ColoredCDBG::read(): Input graph file " << input_graph_filename << " does not exist." << endl;
+            cerr << "ColoredCDBG::read(): Input graph file " << input_graph_fn << " does not exist." << endl;
             valid_input_files = false;
         }
     }
@@ -454,22 +580,22 @@ bool ColoredCDBG<U>::read(const string& input_graph_filename, const string& inpu
         valid_input_files = false;
     }
 
-    if (input_colors_filename.length() != 0){
+    if (input_colors_fn.length() != 0){
 
-        if (check_file_exists(input_colors_filename)){
+        if (check_file_exists(input_colors_fn)){
 
-            FILE* fp = fopen(input_colors_filename.c_str(), "rb");
+            FILE* fp = fopen(input_colors_fn.c_str(), "rb");
 
             if (fp == NULL) {
 
-                cerr << "ColoredCDBG::read(): Could not open input colors file " << input_colors_filename << endl;
+                cerr << "ColoredCDBG::read(): Could not open input colors file " << input_colors_fn << endl;
                 valid_input_files = false;
             }
             else fclose(fp);
         }
         else {
 
-            cerr << "ColoredCDBG::read(): Input colors file " << input_colors_filename << " does not exist." << endl;
+            cerr << "ColoredCDBG::read(): Input colors file " << input_colors_fn << " does not exist." << endl;
             valid_input_files = false;
         }
     }
@@ -483,130 +609,105 @@ bool ColoredCDBG<U>::read(const string& input_graph_filename, const string& inpu
 
         if (verbose) cout << "ColoredCDBG::read(): Reading graph." << endl;
 
-        if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_filename, nb_threads, verbose)) return false; // Read graph
+        if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, nb_threads, verbose)) return false; // Read graph
 
         if (verbose) cout << "ColoredCDBG::read(): Reading colors." << endl;
 
-        if (!this->getData()->read(input_colors_filename, nb_threads, verbose)) return false; // Read colors
+        if (!loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose)) return false;
+    }
 
-        if (verbose) cout << "ColoredCDBG::read(): Joining unitigs to their color sets." << endl;
+    return valid_input_files;
+}
 
-        GFA_Parser graph(input_graph_filename);
+template<typename U>
+bool ColoredCDBG<U>::read(const string& input_graph_fn, const string& input_index_fn, const string& input_colors_fn, const size_t nb_threads, const bool verbose) {
 
-        graph.open_read();
+    bool valid_input_files = true;
 
-        auto reading_function = [&graph](vector<pair<Kmer, uint8_t>>& unitig_tags, const size_t chunk_size) {
+    if (input_graph_fn.length() != 0){
 
-            size_t i = 0;
-            size_t graph_file_id = 0;
+        if (check_file_exists(input_graph_fn)){
 
-            bool new_file_opened = false;
+            FILE* fp = fopen(input_graph_fn.c_str(), "r");
 
-            GFA_Parser::GFA_line r = graph.read(graph_file_id, new_file_opened, true);
+            if (fp == NULL) {
 
-            while ((i < chunk_size) && ((r.first != nullptr) || (r.second != nullptr))){
-
-                if (r.first != nullptr){ // It is a sequence
-
-                    if (r.first->tags.empty()){
-
-                        cerr << "ColoredCDBG::read(): One sequence line in GFA file has no DataAccessor tag. Operation aborted." << endl;
-                        return false;
-                    }
-
-                    size_t i = 0;
-
-                    for (; i < r.first->tags.size(); ++i){
-
-                        if (r.first->tags[i].substr(0, 5) == "DA:Z:") break;
-                    }
-
-                    if (i == r.first->tags.size()){
-
-                        cerr << "ColoredCDBG::read(): One sequence line in GFA file has no DataAccessor tag. Operation aborted." << endl;
-                        return false;
-                    }
-
-                    unitig_tags.push_back({Kmer(r.first->seq.c_str()), atoi(r.first->tags[i].c_str() + 5)});
-
-                    ++i;
-                }
-
-                r = graph.read(graph_file_id, new_file_opened, true);
+                cerr << "ColoredCDBG::read(): Could not open input graph file " << input_graph_fn << endl;
+                valid_input_files = false;
             }
-
-            return ((r.first != nullptr) || (r.second != nullptr));
-        };
-
-        auto join_function = [this](const vector<pair<Kmer, uint8_t>>& unitig_tags) {
-
-            for (const auto& p : unitig_tags){
-
-                UnitigColorMap<U> ucm(this->find(p.first, true));
-
-                if (ucm.isEmpty){
-
-                    cerr << "ColoredCDBG::read(): Internal error, operation aborted." << endl;
-                    cerr << "ColoredCDBG::read(): A unitig from GFA file is not found in the in-memory graph." << endl;
-                    cerr << "ColoredCDBG::read(): Graph from GFA file possibly incorrectly compacted." << endl;
-
-                    return false;
-                }
-
-                DataAccessor<U>* da = ucm.getData();
-
-                *da = DataAccessor<U>(p.second);
-
-                if (!ucm.strand){ // Unitig has been inserted in reverse-complement, need to reverse order of color sets
-
-                    UnitigColors* uc = da->getUnitigColors(ucm);
-
-                    UnitigColors r_uc = uc->reverse(ucm);
-
-                    *uc = move(r_uc);
-                }
-            }
-
-            return true;
-        };
-
-        {
-            const size_t chunk = 10000;
-
-            vector<thread> workers; // need to keep track of threads so we can join them
-
-            mutex mutex_file;
-
-            bool file_valid_for_read = true;
-
-            for (size_t t = 0; t < nb_threads; ++t){
-
-                workers.emplace_back(
-
-                    [&]{
-
-                        vector<pair<Kmer, uint8_t>> v;
-
-                        while (true) {
-
-                            {
-                                unique_lock<mutex> lock(mutex_file);
-
-                                if (!file_valid_for_read) return;
-
-                                file_valid_for_read = reading_function(v, chunk);
-
-                            }
-
-                            join_function(v);
-                            v.clear();
-                        }
-                    }
-                );
-            }
-
-            for (auto& t : workers) t.join();
+            else fclose(fp);
         }
+        else {
+
+            cerr << "ColoredCDBG::read(): Input graph file " << input_graph_fn << " does not exist." << endl;
+            valid_input_files = false;
+        }
+    }
+    else {
+
+        cerr << "ColoredCDBG::read(): No input graph file provided." << endl;
+        valid_input_files = false;
+    }
+
+    if (input_colors_fn.length() != 0){
+
+        if (check_file_exists(input_colors_fn)){
+
+            FILE* fp = fopen(input_colors_fn.c_str(), "rb");
+
+            if (fp == NULL) {
+
+                cerr << "ColoredCDBG::read(): Could not open input colors file " << input_colors_fn << endl;
+                valid_input_files = false;
+            }
+            else fclose(fp);
+        }
+        else {
+
+            cerr << "ColoredCDBG::read(): Input colors file " << input_colors_fn << " does not exist." << endl;
+            valid_input_files = false;
+        }
+    }
+    else {
+
+        cerr << "ColoredCDBG::read(): No input colors file provided." << endl;
+        valid_input_files = false;
+    }
+
+    if (input_index_fn.length() != 0){
+
+        if (check_file_exists(input_index_fn)){
+
+            FILE* fp = fopen(input_index_fn.c_str(), "rb");
+
+            if (fp == NULL) {
+
+                cerr << "ColoredCDBG::read(): Could not open input index file " << input_index_fn << endl;
+                valid_input_files = false;
+            }
+            else fclose(fp);
+        }
+        else {
+
+            cerr << "ColoredCDBG::read(): Input index file " << input_index_fn << " does not exist." << endl;
+            valid_input_files = false;
+        }
+    }
+    else {
+
+        cerr << "ColoredCDBG::read(): No input index file provided." << endl;
+        valid_input_files = false;
+    }
+
+    if (valid_input_files){
+
+        if (verbose) cout << "ColoredCDBG::read(): Reading graph." << endl;
+
+        if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, input_index_fn, nb_threads, verbose)) return false; // Read graph
+
+        if (verbose) cout << "ColoredCDBG::read(): Reading colors." << endl;
+
+        if (!loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose)) return false;
     }
 
     return valid_input_files;

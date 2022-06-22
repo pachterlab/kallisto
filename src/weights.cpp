@@ -227,7 +227,12 @@ WeightMap calc_weights(
   // and ec map are correct... as well as eff_lens size is reasonable
 
   // weights are stored _exactly_ in the same orientation as the ec map
+    std::cout << "size of counts: " << counts.size() << std::endl;
+    std::cout << "size of ecmap: " << ecmap.size() << std::endl;
+    std::cout << "size of eff_lens: " << eff_lens.size() << std::endl;
+    std::cout << 1 << std::endl;
   WeightMap weights(ecmap.size());
+    std::cout << 2 << std::endl;
 
   for (size_t ec = 0; ec < ecmap.size(); ec++) {
     auto& v = ecmap[ec];
@@ -236,12 +241,17 @@ WeightMap calc_weights(
     trans_weights.reserve(v.size());
 
     for (auto& trans_id : v) {
+        if (trans_id >= eff_lens.size()) {
+        std::cout << "trans_id longer than eff_lens.size(): " << trans_id << std::endl;
+        std::cout << "ec: " << ec << std::endl;
+        }
       trans_weights.push_back( static_cast<double>(counts[ec]) /
                                eff_lens[trans_id] );
     }
 
     weights[ec] = trans_weights;
   }
+    std::cout << 4 << std::endl;
 
 
   return weights;

@@ -21,11 +21,11 @@ struct BUSOptionSubstr {
 
 struct BUSOptions {
   int nfiles;
-  
+
   std::vector<BUSOptionSubstr> umi;
   std::vector<BUSOptionSubstr> bc;
   std::vector<BUSOptionSubstr> seq;
-  
+
   bool paired;
 
   int getBCLength() const {
@@ -83,7 +83,7 @@ struct ProgramOptions {
   bool bam;
   bool num;
   std::string batch_file_name;
-  std::vector<std::vector<std::string>> batch_files;
+  std::vector<std::vector<std::string> > batch_files;
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;

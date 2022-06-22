@@ -413,6 +413,10 @@ void BitContainer::addSortedVector(const vector<uint32_t>& v) { // Private, assu
 
     uintptr_t flag = setBits & flagMask;
 
+    const size_t flag_copy = flag;
+    const size_t v_sz = v.size();
+    const size_t b_sz = size();
+
     size_t i = 0;
 
     if (flag == localSingleInt){
@@ -498,21 +502,26 @@ void BitContainer::addSortedVector(const vector<uint32_t>& v) { // Private, assu
 
             const size_t sz_t_bmp = t_bmp.size();
 
-            uint32_t* values = new uint32_t[sz_t_bmp];
-
-            size_t j = 0;
-
             Bitmap* setPtrBmp = new Bitmap;
 
-            for (TinyBitmap::const_iterator it = t_bmp.begin(), it_end = t_bmp.end(); it != it_end; ++it) values[j++] = *it;
+            if (sz_t_bmp != 0) {
 
-            t_bmp.clear();
-            setPtrBmp->r.addMany(sz_t_bmp, values);
+                uint32_t* values = new uint32_t[sz_t_bmp];
+
+                size_t j = 0;
+
+                for (TinyBitmap::const_iterator it = t_bmp.begin(), it_end = t_bmp.end(); it != it_end; ++it) values[j++] = *it;
+
+                t_bmp.clear();
+                setPtrBmp->r.addMany(sz_t_bmp, values);
+
+                delete[] values;
+            }
 
             setBits = (reinterpret_cast<uintptr_t>(setPtrBmp) & pointerMask) | ptrBitmap;
             flag = ptrBitmap;
 
-            delete[] values;
+            i -= static_cast<size_t>(i != 0);
         }
     }
 

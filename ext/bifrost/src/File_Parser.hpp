@@ -6,6 +6,7 @@
 #include <string.h>
 #include <zlib.h>
 
+#include "Common.hpp"
 #include "FASTX_Parser.hpp"
 #include "GFA_Parser.hpp"
 
@@ -69,7 +70,7 @@ class FileParser {
                 if (!files_gfa.empty()){
 
                     gfap = GFA_Parser(files_gfa);
-                    invalid = !gfap.open_read();
+                    invalid = !gfap.open_read().second;
                     reading_fastx = (files[0] != files_gfa[0]);
                 }
             }
@@ -199,7 +200,7 @@ class FileParser {
             gfap.close();
         }
 
-        // Returns 0 for FASTA, 1 for FASTQ, 2 for GFA, -1 otherwise
+        // Returns 0 for FASTA, 1 for FASTQ, 2 for GFA, 3 for BFG binary, -1 otherwise
         static int getFileFormat(const char* filename) {
 
             char gfa_header[] = "H\tVN:Z:";
@@ -226,6 +227,8 @@ class FileParser {
                 if (buffer[0] == '>') ret_v = 0; // FASTA
                 else if (buffer[0] == '@') ret_v = 1;// FASTQ
                 else if (strncmp(buffer, static_cast<char*>(gfa_header), sz_gfa_header) == 0) ret_v = 2; // GFA
+                else if ((reinterpret_cast<size_t*>(buffer)[0] >> 32) == BFG_GRAPHBIN_FORMAT_HEADER) ret_v = 3; // BFG
+                else if ((reinterpret_cast<size_t*>(buffer)[0] >> 32) == BFG_METABIN_FORMAT_HEADER) ret_v = 4; // BFI
             }
 
             return ret_v;

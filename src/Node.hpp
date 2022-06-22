@@ -26,11 +26,12 @@ class Node: public CDBG_Data_t<Node> {
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
         BlockArray<uint32_t> ec;
-        // EC : [transcripts]
-        // Each equivalence class that is part of this unitig's mosaic
-        // equivalence class can have a different list of transcripits
-        // associated with it
-        std::unordered_map<uint32_t, std::vector<u2t> > transcripts;
+
+        // Positing of unitig within each of its transcripts
+        std::vector<uint32_t> pos;
+        // Denotes whether each transcript agrees with the strandedness of
+        // the unitig
+        Roaring sense;
 
     Node() : id(-1) {}
 
@@ -46,7 +47,7 @@ class Node: public CDBG_Data_t<Node> {
         Node* data_src = um_src.getData();
 
         ec = data_dest->ec;
-        ec.reserve(ec.size() + data_src->transcripts.size());
+        ec.reserve(ec.size() + data_src->ec.size());
         for (const auto& e : data_src->ec) {
             ec.insert(e.lb + um_dest.len, e.ub + um_dest.len, e.val);
         }
@@ -55,38 +56,34 @@ class Node: public CDBG_Data_t<Node> {
         // we're prepending um_dest to um_src, the new unitig begins
         // um_dest.len + k - 1 base pairs earlier in the transcript
         int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
-        transcripts = data_dest->transcripts;
-        for (const auto& kv : data_src->transcripts) {
-            transcripts[kv.first] = kv.second;
-            for (auto tr : transcripts[kv.first]) {
-                tr.pos -= offset;
-            }
+        pos = data_dest->pos;
+        for (uint32_t p : data_src->pos) {
+            pos.push_back(p + offset);
         }
+        // TODO:
+        // concat sense
     }
 
     void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
         Node* data_src = um_src.getData();
 
-        ec.reserve(ec.size() + data_src->transcripts.size());
+        ec.reserve(ec.size() + data_src->ec.size());
         for (const auto& e : data_src->ec) {
             ec.insert(e.lb + um_dest.len, e.ub + um_dest.len, e.val);
         }
 
         int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
-        for (const auto& kv : data_src->transcripts) {
-            transcripts[kv.first] = kv.second;
-            for (auto tr : transcripts[kv.first]) {
-                // Pos denotes where the unitig begins within the transcript. Since
-                // we're prepending um_dest to um_src, the new unitig begins
-                // um_dest.len + k - 1 base pairs earlier in the transcript
-                tr.pos -= offset;
-            }
+        for (uint32_t p : data_src->pos) {
+            pos.push_back(p + offset);
         }
+        // TODO:
+        // merge sense
     }
 
     void clear(const UnitigMap<Node>& um_dest) {
         ec.clear();
-        transcripts.clear();
+        pos.clear();
+        sense = Roaring();
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
@@ -96,18 +93,8 @@ class Node: public CDBG_Data_t<Node> {
         Node* data = um_src.getData();
 
         ec = data->ec.get_slice(um_src.dist, um_src.dist + um_src.len);
-
-        std::vector<uint32_t> ecs;
-        ec.get_vals(ecs);
-
-        for (uint32_t i : ecs) {
-            data->transcripts[i] = transcripts[i];
-            for (auto tr : data->transcripts[i]) {
-                // We're cutting um_src.dist from the beginning of the unitig  so
-                // the new unitig begins um_src.dist further into back.
-                tr.pos += um_src.dist;
-            }
-        }
+        // TODO:
+        // Extract pos and sense
     }
 
     void serialize(std::ofstream& out) const {
@@ -120,21 +107,26 @@ class Node: public CDBG_Data_t<Node> {
         // 2 Write mosaic equivalence class
         ec.serialize(out);
 
-        // 3 Write transcripts for each equivalence class
-        tmp_size = transcripts.size();
+        // 3 Write the positions of each transcript
+        tmp_size = pos.size();
         out.write((char *)&tmp_size, sizeof(tmp_size));
-        for (const auto& kv : transcripts) {
-            // 3.1 Write EC
-            out.write((char *)&kv.first, sizeof(kv.first));
-            // 3.2 Write transcripts
-            tmp_size = kv.second.size();
-            out.write((char *)&tmp_size, sizeof(tmp_size));
-            for (const auto& tr : kv.second) {
-                out.write((char *)&tr.tr_id, sizeof(tr.tr_id));
-                out.write((char *)&tr.pos, sizeof(tr.pos));
-                out.write((char *)&tr.sense, sizeof(tr.sense));
-            }
+        for (uint32_t p : pos) {
+            out.write((char *)&p, sizeof(p));
         }
+
+        // 4 Write sense of each transcript
+        size_t buf_sz = 1024;
+        char* buffer = new char[buf_sz];
+        while (sense.getSizeInBytes() > buf_sz) {
+            delete[] buffer;
+            buf_sz = 2*(buf_sz);
+            buffer = new char[buf_sz];
+        }
+        tmp_size = sense.write(buffer);
+        out.write((char *)&tmp_size, sizeof(tmp_size));
+        out.write(buffer, tmp_size);
+        delete[] buffer;
+        buffer = nullptr;
     }
 
     void deserialize(std::ifstream& in) {
@@ -148,26 +140,21 @@ class Node: public CDBG_Data_t<Node> {
         // 2 Read mosaic equivalence class
         ec.deserialize(in);
 
-        // 3 Read transcripts for each equivalence class
-        size_t n_transcripts;
-        uint32_t tr_id, pos;
-        bool sense;
+        // 3 Read the positions of each transcript
         in.read((char *)&tmp_size, sizeof(tmp_size));
-        transcripts.reserve(tmp_size);
+        pos.reserve(tmp_size);
         for (size_t i = 0; i < tmp_size; ++i) {
-            // 3.1 Read EC
             in.read((char *)&tmp_uint, sizeof(tmp_uint));
-            transcripts[tmp_uint] = std::vector<u2t>();
-            // 3.2 Read transcripts
-            in.read((char *)&n_transcripts, sizeof(n_transcripts));
-            transcripts[tmp_uint].reserve(n_transcripts);
-            for (size_t j = 0; j < n_transcripts; ++j) {
-                in.read((char *)&tr_id, sizeof(tr_id));
-                in.read((char *)&pos, sizeof(pos));
-                in.read((char *)&sense, sizeof(sense));
-                transcripts[tmp_uint].emplace_back(tr_id, pos, sense);
-            }
+            pos.push_back(tmp_uint);
         }
+
+        // 4 Write sense of each transcript
+        in.read((char *)&tmp_size, sizeof(tmp_size));
+        char* buffer = new char[tmp_size];
+        in.read(buffer, tmp_size);
+        sense = sense.read(buffer);
+        delete[] buffer;
+        buffer = nullptr;
     }
 };
 

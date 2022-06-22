@@ -1,40 +1,23 @@
 #include "GFA_Parser.hpp"
 
-GFA_Parser::GFA_Parser() : file_open_write(false), file_open_read(false), file_no(0), v_gfa(0), graph_out(nullptr), graph_in(nullptr),
-                           graphfile_in(nullptr), graphfile_out(nullptr) {}
+GFA_Parser::GFA_Parser() : file_open_write(false), file_open_read(false), file_no(0), v_gfa(0), graph_out(nullptr), graph_in(nullptr) {}
 
 GFA_Parser::GFA_Parser(const string& filename) :    file_open_write(false), file_open_read(false), file_no(0),
-                                                    v_gfa(0), graph_out(nullptr), graph_in(nullptr),
-                                                    graphfile_in(nullptr), graphfile_out(nullptr) {
+                                                    v_gfa(0), graph_out(nullptr), graph_in(nullptr) {
 
     graph_filenames.push_back(filename);
-
-    size_t pos_match_point = graph_filenames[0].find_last_of(".");
-
-    if ((pos_match_point == string::npos) || (graph_filenames[0].substr(pos_match_point + 1) != "gfa")) graph_filenames[0].append(".gfa");
 }
 
 GFA_Parser::GFA_Parser(const vector<string>& filenames) :   file_open_write(false), file_open_read(false), file_no(0),
-                                                            v_gfa(0), graph_out(nullptr), graph_in(nullptr),
-                                                            graphfile_in(nullptr), graphfile_out(nullptr) {
+                                                            v_gfa(0), graph_out(nullptr), graph_in(nullptr) {
 
     graph_filenames = filenames;
-
-    for (auto& filename : graph_filenames){
-
-        size_t pos_match_point = filename.find_last_of(".");
-
-        if ((pos_match_point == string::npos) || (filename.substr(pos_match_point + 1) != "gfa")) filename.append(".gfa");
-    }
 }
 
-GFA_Parser::GFA_Parser(GFA_Parser&& o) :    graph_filenames(o.graph_filenames), graphfile_out(move(o.graphfile_out)),
-                                            graphfile_in(move(o.graphfile_in)), graph_out(nullptr), graph_in(nullptr),
+GFA_Parser::GFA_Parser(GFA_Parser&& o) :    graph_filenames(move(o.graph_filenames)),
+                                            graph_out(move(o.graph_out)), graph_in(move(o.graph_in)),
                                             v_gfa(o.v_gfa), file_no(o.file_no),
                                             file_open_write(o.file_open_write), file_open_read(o.file_open_read) {
-
-    if (file_open_write) graph_out.rdbuf(graphfile_out->rdbuf());
-    if (file_open_read) graph_in.rdbuf(graphfile_in->rdbuf());
 
     o.file_open_write = false;
     o.file_open_read = false;
@@ -48,17 +31,14 @@ GFA_Parser& GFA_Parser::operator=(GFA_Parser&& o){
 
         graph_filenames = o.graph_filenames;
 
-        graphfile_in = move(o.graphfile_in);
-        graphfile_out = move(o.graphfile_out);
+        graph_in = move(o.graph_in);
+        graph_out = move(o.graph_out);
 
         v_gfa = o.v_gfa;
         file_no = o.file_no;
 
         file_open_write = o.file_open_write;
         file_open_read = o.file_open_read;
-
-        if (file_open_write) graph_out.rdbuf(graphfile_out->rdbuf());
-        if (file_open_read) graph_in.rdbuf(graphfile_in->rdbuf());
 
         o.file_open_write = false;
         o.file_open_read = false;
@@ -72,7 +52,7 @@ GFA_Parser::~GFA_Parser() {
     close();
 }
 
-bool GFA_Parser::open_write(const size_t version_GFA, const string tags_line_header) {
+bool GFA_Parser::open_write(const size_t version_GFA, const string tags_line_header, const bool compressed_output) {
 
     if (graph_filenames.size() == 0){
 
@@ -80,17 +60,27 @@ bool GFA_Parser::open_write(const size_t version_GFA, const string tags_line_hea
         return false;
     }
 
-    const string& filename = graph_filenames[0];
+    string fn = graph_filenames.front();
 
-    FILE* fp = fopen(filename.c_str(), "w");
+    {
+        const size_t pos_ext = fn.find_last_of(".");
 
-    if ((file_open_write = (fp != NULL)) == true) {
+        if (pos_ext == string::npos) fn.append(compressed_output ? ".gfa.gz" : ".gfa");
+        else if (!compressed_output && (fn.substr(pos_ext + 1) != "gfa")) fn.append(".gfa");
+        else if (compressed_output && (fn.substr(pos_ext + 1) != "gz")) fn.append(".gfa.gz");
+    }
+
+    FILE* fp = fopen(fn.c_str(), "w");
+
+    file_open_write = (fp != NULL);
+
+    if (file_open_write) {
 
         fclose(fp);
 
-        if (remove(filename.c_str()) != 0) cerr << "GFA_Parser::open_write(): Could not remove temporary file " << filename << endl;
+        if (remove(fn.c_str()) != 0) cerr << "GFA_Parser::open_write(): Could not remove temporary file " << fn << endl;
     }
-    else cerr << "GFA_Parser::open_write(): Could not open file " << filename << " for writing" << endl;
+    else cerr << "GFA_Parser::open_write(): Could not open file " << fn << " for writing" << endl;
 
     if ((version_GFA != 1) && (version_GFA != 2)) {
 
@@ -101,83 +91,85 @@ bool GFA_Parser::open_write(const size_t version_GFA, const string tags_line_hea
 
     if (file_open_write){
 
-        if (graphfile_out == nullptr) graphfile_out = new ofstream();
+        if (graph_out == nullptr) {
 
-        graphfile_out->open(filename.c_str(), ios_base::out);
-        graphfile_out->rdbuf()->pubsetbuf(buffer_stream, sizeof(buffer_stream));
+            if (compressed_output) graph_out = unique_ptr<ostream>(new zstr::ofstream(fn, ios_base::out));
+            else graph_out = unique_ptr<ostream>(new std::ofstream(fn, ios_base::out));
+        }
 
-        graph_out.rdbuf(graphfile_out->rdbuf());
-        //graph_out.sync_with_stdio(false);
+        {
+            ostream& gout = *graph_out;
 
-        graph_out << "H\tVN:Z:" << (v_gfa == 1 ? "1" : "2") << ".0";
+            gout << "H\tVN:Z:" << (v_gfa == 1 ? "1" : "2") << ".0";
 
-        if (!tags_line_header.empty() && (tags_line_header != "")) graph_out << "\t" << tags_line_header;
+            if (!tags_line_header.empty() && (tags_line_header != "")) gout << "\t" << tags_line_header;
 
-        graph_out << "\n";
+            gout << "\n";
+        }
     }
 
     return file_open_write;
 }
 
-bool GFA_Parser::open_read() {
+pair<string, bool> GFA_Parser::open_read() {
 
     if (graph_filenames.size() == 0){
 
         cerr << "GFA_Parser::open_read(): No file specified in input" << endl;
-        return false;
+        return {string(), false};
     }
 
-    for (const auto& filename : graph_filenames){
+    for (const auto& fn : graph_filenames){
 
-        FILE* fp = fopen(filename.c_str(), "r");
+        FILE* fp = fopen(fn.c_str(), "r");
 
         if (fp != NULL) fclose(fp);
-        else cerr << "GFA_Parser::open_read(): Could not open file " << filename << " for reading" << endl;
+        else {
+
+            cerr << "GFA_Parser::open_read(): Could not open file " << fn << " for reading" << endl;
+            return {string(), false};
+        }
     }
 
-    file_open_read = open(file_no);
-
-    return file_open_read;
+    return open(file_no);
 }
 
-bool GFA_Parser::open(const size_t idx_filename){
+pair<string, bool> GFA_Parser::open(const size_t fn_id){
 
-    if (idx_filename < graph_filenames.size()){
+    string header;
 
-        FILE* fp = fopen(graph_filenames[idx_filename].c_str(), "r");
+    if (fn_id < graph_filenames.size()){
 
-        if ((file_open_read = (fp != NULL)) == true) fclose(fp);
-        else cerr << "GFA_Parser::open(): Could not open file " << graph_filenames[idx_filename] << " for reading" << endl;
+        const string& fn = graph_filenames[fn_id];
+
+        FILE* fp = fopen(fn.c_str(), "r");
+
+        file_open_read = (fp != NULL);
+
+        if (file_open_read) fclose(fp);
+        else cerr << "GFA_Parser::open(): Could not open file " << fn << " for reading" << endl;
 
         if (file_open_read) {
 
-            if (graphfile_in == nullptr) graphfile_in = new ifstream();
+            if (graph_in == nullptr) graph_in = unique_ptr<istream>(new zstr::ifstream(fn, ios_base::in));
 
-            graphfile_in->open(graph_filenames[idx_filename], ios_base::in);
-            graphfile_in->rdbuf()->pubsetbuf(buffer_stream, sizeof(buffer_stream));
-
-            graph_in.rdbuf(graphfile_in->rdbuf());
-            //graph_in.sync_with_stdio(false);
-
-            string header;
-
-            getline(graph_in, header);
+            getline(*graph_in, header);
 
             if (header.empty()) {
 
-                cerr << "GFA_Parser::open(): Empty file: " << graph_filenames[idx_filename] << endl;
+                cerr << "GFA_Parser::open(): Empty file: " << fn << endl;
                 close();
             }
             else if (header[0] != 'H'){
 
-                cerr << "GFA_Parser::open(): Wrong GFA header in " << graph_filenames[idx_filename] << endl;
+                cerr << "GFA_Parser::open(): Wrong GFA header in " << fn << endl;
                 close();
             }
             else if (header.substr(0, 10) == "H\tVN:Z:1.0") v_gfa = 1;
             else if (header.substr(0, 10) == "H\tVN:Z:2.0") v_gfa = 2;
             else {
 
-                cerr << "GFA_Parser::open(): Unspecified GFA format version in " << graph_filenames[idx_filename] <<
+                cerr << "GFA_Parser::open(): Unspecified GFA format version in " << fn <<
                 ", version 1.0 is assumed by default." << endl;
 
                 v_gfa = 1;
@@ -186,27 +178,23 @@ bool GFA_Parser::open(const size_t idx_filename){
     }
     else file_open_read = false;
 
-    return file_open_read;
+    return {header, file_open_read};
 }
 
 void GFA_Parser::close(){
 
     if (file_open_write){
 
-        graphfile_out->close();
+        delete graph_out.release();
 
-        delete graphfile_out;
-
-        graphfile_out = nullptr;
+        graph_out = nullptr;
         file_open_write = false;
     }
     else if (file_open_read){
 
-        graphfile_in->close();
+        delete graph_in.release();
 
-        delete graphfile_in;
-
-        graphfile_in = nullptr;
+        graph_in = nullptr;
         file_open_read = false;
     }
 }
@@ -215,15 +203,17 @@ bool GFA_Parser::write_sequence(const string& id, const size_t len, const string
 
     if (file_open_write){
 
-        graph_out << "S" << "\t" << id;
+        ostream& gout = *graph_out;
 
-        if (v_gfa == 2) graph_out << "\t" << len;
+        gout << "S" << "\t" << id;
 
-        graph_out << "\t" << seq;
+        if (v_gfa == 2) gout << "\t" << len;
 
-        if (!tags_line.empty() && (tags_line != "")) graph_out << "\t" << tags_line;
+        gout << "\t" << seq;
 
-        graph_out << "\n";
+        if (!tags_line.empty() && (tags_line != "")) gout << "\t" << tags_line;
+
+        gout << "\n";
     }
     else cerr << "GFA_Parser::write_sequence(): Input file is not open in writing mode" << endl;
 
@@ -250,6 +240,8 @@ bool GFA_Parser::write_edge(const string vertexA_id, const size_t pos_start_over
             return false;
         }
 
+        ostream& gout = *graph_out;
+
         if (v_gfa == 1){
 
             if ((pos_end_overlapB - pos_start_overlapB) != (pos_end_overlapA - pos_start_overlapA)){
@@ -259,14 +251,14 @@ bool GFA_Parser::write_edge(const string vertexA_id, const size_t pos_start_over
                 return false;
             }
 
-            graph_out << "L" << "\t" <<
+            gout << "L" << "\t" <<
             vertexA_id << "\t" << (strand_overlapA ? "+" : "-") << "\t" <<
             vertexB_id << "\t" << (strand_overlapB ? "+" : "-") << "\t" <<
             (pos_end_overlapA - pos_start_overlapA) << "M\n";
         }
         else {
 
-            graph_out << "E" << "\t" << edge_id << "\t" <<
+            gout << "E" << "\t" << edge_id << "\t" <<
             vertexA_id << (strand_overlapA ? "+" : "-") << "\t" <<
             vertexB_id << (strand_overlapB ? "+" : "-") << "\t" <<
             pos_start_overlapA << "\t" << pos_end_overlapA << "\t" <<
@@ -291,7 +283,9 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id) {
 
         string line;
 
-        while (getline(graph_in, line).good()){
+        istream& gin = *graph_in;
+
+        while (getline(gin, line).good()){
 
             if (line[0] == 'S'){ // Segment line
 
@@ -447,11 +441,13 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id) {
             line_fields.clear();
         }
 
-        if (getline(graph_in, line).eof()){
+        if (getline(gin, line).eof()){
 
             close();
 
-            if ((file_open_read = open(file_no + 1))){
+            file_open_read = open(file_no + 1).second;
+
+            if (file_open_read){
 
                 ++file_no;
 
@@ -460,7 +456,7 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id) {
                 return read(file_id);
             }
         }
-        else if (getline(graph_in, line).fail()){
+        else if (getline(gin, line).fail()){
 
             cerr << "GFA_Parser::read(): Error while reading" << endl;
             close();
@@ -483,7 +479,9 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id, bool& new_file_opened, co
 
         string line;
 
-        while (getline(graph_in, line).good()){
+        istream& gin = *graph_in;
+
+        while (getline(gin, line).good()){
 
             if (line[0] == 'S'){ // Segment line
 
@@ -643,11 +641,13 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id, bool& new_file_opened, co
             line_fields.clear();
         }
 
-        if (getline(graph_in, line).eof()){
+        if (getline(gin, line).eof()){
 
             close();
 
-            if ((file_open_read = open(file_no + 1))){
+            file_open_read = open(file_no + 1).second;
+
+            if (file_open_read){
 
                 ++file_no;
 
@@ -655,7 +655,7 @@ GFA_Parser::GFA_line GFA_Parser::read(size_t& file_id, bool& new_file_opened, co
                 new_file_opened = true;
             }
         }
-        else if (getline(graph_in, line).fail()){
+        else if (getline(gin, line).fail()){
 
             cerr << "GFA_Parser::read(): Error while reading" << endl;
             close();

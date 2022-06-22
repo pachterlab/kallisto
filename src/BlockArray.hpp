@@ -34,16 +34,45 @@ class BlockArray {
 
         const T& operator[](size_t idx) const {
 
+            std::cout << "in here" << std::endl;
             // TODO: Find upper bound without having to create temp struct
             block<T> tmp(idx);
             auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+            std::cout << "blocks size: " << blocks.size() << std::endl;
+            if (blocks.size() > 0) {
+                block<T> bb = blocks[blocks.size() - 1];
+                std::cout << bb.lb << " - " << bb.ub << ": " << bb.val << std::endl;
+            }
+            std::cout << ub->val << std::endl;
 
             if (ub == blocks.begin()) {
                 // No elements with lb <= idx
                 // TODO: Handle this gracefully
+                std::cout << "not found????" << std::endl;
             }
 
+            std::cout << (ub-1)->val << std::endl;
+
             return (--ub)->val;
+        }
+
+        std::pair<size_t, T> block_index(size_t idx) const {
+            block<T> tmp(idx);
+            auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+            --ub;
+            return make_pair(ub - blocks.begin(), (ub)->val);
+        }
+
+        // Returns the ECs of the block up to and including the EC at idx
+        std::vector<T> get_leading_vals(size_t idx) const {
+            std::vector<T> vals;
+            vals.reserve(blocks.size());
+            for (const auto& b : blocks) {
+                if (b.lb < idx) {
+                    vals.push_back(b.val);
+                }
+            }
+            return vals;
         }
 
         std::pair<size_t, size_t> get_block_at(size_t idx) const {
@@ -94,8 +123,9 @@ class BlockArray {
 
         void print() const {
             for (const auto& b : blocks) {
-                std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << std::endl;
+                std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << ", ";
             }
+            std::cout << std::endl;
         }
 
         // Extracts the slice [lb, ub) from *this and shifts it such that it

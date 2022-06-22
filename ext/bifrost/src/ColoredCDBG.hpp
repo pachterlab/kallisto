@@ -241,25 +241,39 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         bool buildColors(const CCDBG_Build_opt& opt);
 
         /** Write a colored and compacted de Bruijn graph to disk.
-        * @param prefix_output_filename is a string which is the prefix of the filename for the two files that are
-        * going to be written to disk. Assuming the prefix is "XXX", two files "XXX.gfa" and "XXX.bfg_colors" will
+        * @param prefix_output_fn is a string which is the prefix of the filename for the two files that are
+        * going to be written to disk. Assuming the prefix is "XXX", two files "XXX.gfa" and "XXX.color.bfg" will
         * be written to disk.
         * @param nb_threads is the number of threads that can be used to write the graph to disk.
+        * @param write_meta_file indicates if a graph meta file is written to disk. Graph meta files enable faster graph loading.
+        * @param compressed_output indicates if the output file is compressed.
         * @param verbose is a boolean indicating if information message are printed during writing (true) or not (false).
         * @return a boolean indicating if the graph was successfully written.
         */
-        bool write(const string& prefix_output_filename, const size_t nb_threads = 1, const bool verbose = false) const;
+        bool write(const string& prefix_output_fn, const size_t nb_threads = 1, const bool write_index_file = true, const bool compress_output = false, const bool verbose = false) const;
 
-        /** Read a colored and compacted de Bruijn graph from disk. The graph (in GFA format) must have been produced
-        * by Bifrost.
-        * @param prefix_input_filename is a string which is the prefix of the filename for the two files that are
-        * going to be read from disk. Assuming the prefix is "XXX", two files "XXX.gfa" and "XXX.bfg_colors" will
-        * be read from disk.
+        /** Read a colored and compacted de Bruijn graph from disk. The graph (in GFA, FASTA or BFG format) must 
+        * have been produced by Bifrost. By default, the function detects if an index file (BFI format) exists for the
+        * input graph and will use it to load the graph. Otherwise, reading the graph will be much slower
+        * than function read() with the index filename in input parameter.
+        * @param input_graph_fn is a string which is the prefix of the graph filename to read
+        * @param input_colors_fn is a string which is the prefix of the color filename to read
         * @param nb_threads is the number of threads that can be used to read the graph and its colors from disk.
         * @param verbose is a boolean indicating if information messages are printed during reading (true) or not (false).
         * @return a boolean indicating if the graph was successfully read.
         */
-        bool read(const string& input_graph_filename, const string& input_colors_filename, const size_t nb_threads = 1, const bool verbose = false);
+        bool read(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
+
+        /** Read a colored and compacted de Bruijn graph from disk using an index file. The graph (in GFA, FASTA or BFG format)
+        * must have been produced by Bifrost. 
+        * @param input_graph_fn is a string which is the prefix of the graph filename to read
+        * @param input_index_fn is a string which is the prefix of the index filename to read
+        * @param input_colors_fn is a string which is the prefix of the color filename to read
+        * @param nb_threads is the number of threads that can be used to read the graph and its colors from disk.
+        * @param verbose is a boolean indicating if information messages are printed during reading (true) or not (false).
+        * @return a boolean indicating if the graph was successfully read.
+        */
+        bool read(const string& input_graph_fn, const string& input_index_fn, const string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Merge a colored and compacted de Bruijn graph.
         * After merging, all unitigs and colors of the input graph have been added to and compacted with the current
@@ -341,6 +355,7 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
     private:
 
         void checkColors(const vector<string>& filename_seq_in) const;
+        bool loadColors(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads, const bool verbose);
 
         void initUnitigColors(const CCDBG_Build_opt& opt, const size_t max_nb_hash = 31);
         void buildUnitigColors(const size_t nb_threads);
