@@ -265,7 +265,7 @@ public:
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;  
   EcMap bus_ecmap;
-  std::unordered_map<std::vector<int>, int, SortedVectorHasher> bus_ecmapinv;
+  std::unordered_map<std::vector<int32_t>, int32_t, SortedVectorHasher> bus_ecmapinv;
 
 
   std::ofstream ofusion;

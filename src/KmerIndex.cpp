@@ -518,8 +518,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
   ecmap.resize(ecmap_size);
-  int tmp_id;
-  int tmp_ecval;
+  int32_t tmp_id;
+  int32_t tmp_ecval;
   size_t vec_size;
 
   // 7. read each equiv class
@@ -530,7 +530,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char *)&vec_size, sizeof(vec_size));
 
     // 7.2 read each member
-    std::vector<int> tmp_vec;
+    std::vector<int32_t> tmp_vec;
     tmp_vec.reserve(vec_size);
     for (size_t j = 0; j < vec_size; ++j ) {
       in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
@@ -579,7 +579,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
   ecmap.clear();
   ecmapinv.clear();
-  int i = 0;
+  int32_t i = 0;
   std::ifstream in((opt.ecFile));
   if (in.is_open()) {
     std::string line;
@@ -593,7 +593,7 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
                   << " Found " << ec << ", expected " << i << std::endl;
         exit(1);
       }
-      std::vector<int> tmp_vec;
+      std::vector<int32_t> tmp_vec;
       std::stringstream ss2(transcripts);
       while(ss2.good()) {
         std::string tmp_ecval;

@@ -911,7 +911,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     int offset = index.ecmapinv.size();
     for (auto &bp : newBP) {
       auto& u = bp.second;
-      int ec = -1;
+      int32_t ec = -1;
       auto it = bus_ecmapinv.find(u);
       if (it != bus_ecmapinv.end()) {
         ec = it->second;

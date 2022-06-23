@@ -28,7 +28,7 @@ struct TRInfo {
   bool sense; // true for sense, false for anti-sense
 };
 
-using EcMap = std::vector<std::vector<int>>; //std::unordered_map<int, std::vector<int>>;
+using EcMap = std::vector<std::vector<int32_t>>; //std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
   size_t operator()(const std::vector<int>& v) const {
@@ -133,7 +133,7 @@ struct KmerIndex {
   CompactedDBG<Node> dbg;
   EcMap ecmap;
   DBGraph dbGraph;
-  std::unordered_map<std::vector<int>, int, SortedVectorHasher> ecmapinv;
+  std::unordered_map<std::vector<int32_t>, int32_t, SortedVectorHasher> ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
   std::vector<int> target_lens_;
