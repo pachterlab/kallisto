@@ -265,7 +265,7 @@ public:
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;  
   EcMap bus_ecmap;
-  std::unordered_map<std::vector<int32_t>, int32_t, SortedVectorHasher> bus_ecmapinv;
+  std::unordered_map<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
 
 
   std::ofstream ofusion;
@@ -283,7 +283,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);  
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);  
 };
 
 class ReadProcessor {
@@ -350,12 +350,12 @@ public:
   std::vector<std::pair<const char*, int>> quals;
   std::vector<uint32_t> flags;
 
-  std::vector<std::vector<int>> newEcs;
+  std::vector<std::vector<int32_t>> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;
   std::vector<int> counts;
   std::vector<BUSData> bv;
-  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
+  std::vector<std::pair<BUSData, Roaring>> newB;
 
   void operator()();
   void processBuffer();

@@ -34,8 +34,8 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1,
-                          std::vector<std::pair<const_UnitigMap<Node>, int>>& v2, bool nonpaired, std::vector<int> &u) const {
+int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, std::vector<int32_t> &u) const {
   std::vector<int> u1 = intersectECs(v1);
   std::vector<int> u2 = intersectECs(v2);
   //std::cout << "XXX" << u1.size() << ":" << v1.size() << "::" << u2.size() << ":" << v2.size() << std::endl; // XXX0:3::0:0 = needs fixing
@@ -78,14 +78,19 @@ int MinCollector::collect(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1
   }
 }
 
-int MinCollector::findEC(const std::vector<int>& u) const {
+int MinCollector::findEC(const std::vector<int32_t>& u) const {
   if (u.empty()) {
     return -1;
   }
   if (u.size() == 1) {
     return u[0];
   }
-  auto search = index.ecmapinv.find(u);
+
+  Roaring r;
+  for (int32_t i : u) {
+    r.add(i);
+  }
+  auto search = index.ecmapinv.find(r);
   if (search != index.ecmapinv.end()) {
     return search ->second;
   } else {
@@ -93,7 +98,7 @@ int MinCollector::findEC(const std::vector<int>& u) const {
   }
 }
 
-int MinCollector::increaseCount(const std::vector<int>& u) {
+int MinCollector::increaseCount(const std::vector<int32_t>& u) {
   int ec = findEC(u);
 
   if (u.empty()) {
@@ -105,8 +110,12 @@ int MinCollector::increaseCount(const std::vector<int>& u) {
     } else {
       auto necs = counts.size();
       //index.ecmap.insert({necs,u});
-      index.ecmap.push_back(u);
-      index.ecmapinv.insert({u,necs});
+      Roaring r;
+      for (int32_t i : u) {
+        r.add(i);
+      }
+      index.ecmap.push_back(r);
+      index.ecmapinv.insert({std::move(r), necs});
       counts.push_back(1);
       return necs;
     }
@@ -147,7 +156,7 @@ struct ComparePairsBySecond {
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>,int>>& v) const {
+std::vector<int32_t> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   if (v.empty()) {
     return {};
   }
@@ -164,7 +173,15 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMa
   //int ec = index.dbGraph.ecs[v[0].first.contig];
   int ec = v[0].first.getData()->ec[v[0].first.dist];
   int lastEC = ec;
-  std::vector<int> u = index.ecmap[ec];
+  Roaring& r = index.ecmap[ec];
+  std::vector<int32_t> u;
+  uint32_t* trs = new uint32_t[r.cardinality()];
+  r.toUint32Array(trs);
+  u.reserve(r.cardinality());
+  for (size_t i = 0; i < r.cardinality(); ++i) u.push_back(trs[i]);
+  delete[] trs;
+  trs = nullptr;
+
   /*
   std::cout << "YYY" << v.size() << " " << ec << " " << u.size() << " : " << v[0].first.getData()->ec.size() << " - ";
   for (auto xxx : v) {
@@ -266,17 +283,22 @@ void MinCollector::write(const std::string& pseudoprefix) const {
   for (int i = 0; i < index.ecmap.size(); i++) {
     ecof << i << "\t";
     // output the rest of the class
-    const auto &v = index.ecmap[i];
+    const Roaring& r = index.ecmap[i];
+    uint32_t* trs = new uint32_t[r.cardinality()];
+    r.toUint32Array(trs);
+
     bool first = true;
-    for (auto x : v) {
+    for (size_t i = 0; i < r.cardinality(); ++i) {
       if (!first) {
         ecof << ",";
       } else {
         first = false;
       }
-      ecof << x;
+      ecof << trs[i];
     }
     ecof << "\n";
+    delete[] trs;
+    trs = nullptr;
   }
   ecof.close();
 

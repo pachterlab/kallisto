@@ -165,9 +165,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   // for each target, create its own equivalence class
   for (int i = 0; i < seqs.size(); i++ ) {
-    std::vector<int> single(1,i);
-    ecmap.push_back(single);
-    ecmapinv.insert({single,i});
+    Roaring r;
+    r.add(i);
+    ecmap.push_back(r);
+    ecmapinv.insert({std::move(r),i});
   }
 
   BuildDeBruijnGraph(opt, seqs);
@@ -288,7 +289,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
-      std::vector<int> u;
+      Roaring u;
 
       std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
                 [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
@@ -298,19 +299,14 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       for (const auto& tr : trinfos[n->id]) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
-          u.push_back(tr.trid);
+          u.add(tr.trid);
           pos.push_back(tr.pos);
           if (tr.sense) sense.add(j);
           ++j;
         }
       }
 
-      if (!isUnique(u)){
-        std::vector<int> v = unique(u);
-        swap(u,v);
-      }
-
-      assert(!u.empty());
+      assert(!u.isEmpty());
 
       auto search = ecmapinv.find(u);
       int ec = -1;
@@ -398,16 +394,15 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   out.write((char *)&tmp_size, sizeof(tmp_size));
 
   // 7. write out each equiv class
-  for (int ec = 0; ec < ecmap.size(); ec++) {
-    out.write((char *)&ec, sizeof(ec));
-    auto& v = ecmap[ec];
-    // 7.1 write out the size of equiv class
-    tmp_size = v.size();
+  for (int32_t ec = 0; ec < ecmap.size(); ec++) {
+    Roaring& v = ecmap[ec];
+    size_t buf_sz = 1024;
+    char* buffer = new char[v.getSizeInBytes()];
+    tmp_size = v.write(buffer);
     out.write((char *)&tmp_size, sizeof(tmp_size));
-    // 7.2 write each member
-    for (auto& val: v) {
-      out.write((char *)&val, sizeof(val));
-    }
+    out.write(buffer, tmp_size);
+    delete[] buffer;
+    buffer = nullptr;
   }
 
   // 8. Write out target ids
@@ -524,21 +519,19 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 7. read each equiv class
   for (size_t ec = 0; ec < ecmap_size; ++ec) {
-    in.read((char *)&tmp_id, sizeof(tmp_id));
 
     // 7.1 read size of equiv class
     in.read((char *)&vec_size, sizeof(vec_size));
+    char* buffer = new char[vec_size];
+    // 7.2 deserialize bit vector
+    in.read((char *)&buffer, vec_size);
+    Roaring r;
+    r.read(buffer);
+    ecmap[ec] = r;
+    ecmapinv.insert({std::move(r), ec});
 
-    // 7.2 read each member
-    std::vector<int32_t> tmp_vec;
-    tmp_vec.reserve(vec_size);
-    for (size_t j = 0; j < vec_size; ++j ) {
-      in.read((char *)&tmp_ecval, sizeof(tmp_ecval));
-      tmp_vec.push_back(tmp_ecval);
-    }
-    //ecmap.insert({tmp_id, tmp_vec});
-    ecmap[tmp_id] = tmp_vec;
-    ecmapinv.insert({tmp_vec, tmp_id});
+    delete[] buffer;
+    buffer = nullptr;
   }
 
   // 8. read in target ids
@@ -593,7 +586,8 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
                   << " Found " << ec << ", expected " << i << std::endl;
         exit(1);
       }
-      std::vector<int32_t> tmp_vec;
+
+      Roaring r;
       std::stringstream ss2(transcripts);
       while(ss2.good()) {
         std::string tmp_ecval;
@@ -604,10 +598,10 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
                     << tmp_ecval << " in " << transcripts << std::endl;
           exit(1);
         }
-        tmp_vec.push_back(tmp_ecval_num);
+        r.add(tmp_ecval_num);
       }
-      ecmap.push_back(tmp_vec); // copy
-      ecmapinv.insert({std::move(tmp_vec), i}); // move
+      ecmap.push_back(r); // copy
+      ecmapinv.insert({std::move(r), i}); // move
       i++;
     }
   } else {
@@ -902,12 +896,16 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   auto ecs = n->ec.get_leading_vals(um.dist);
   size_t offset = 0;
   size_t ec = ecs[ecs.size() - 1];
+
   for (size_t i = 0; i < ecs.size() - 1; ++i) {
-    offset += ecmap[ecs[i]].size();
+    offset += ecmap[ecs[i]].cardinality();
   }
 
-  for (size_t i = 0; i < ecmap[ec].size(); ++i) {
-    if (ecmap[ec][i] == tr) {
+  uint32_t* trs = new uint32_t[ecmap[ec].cardinality()];
+  ecmap[ec].toUint32Array(trs);
+
+  for (size_t i = 0; i < ecmap[ec].cardinality(); ++i) {
+    if (trs[i] == tr) {
       trpos = n->pos[offset + i];
       trsense = !n->sense.contains(offset + i);
       break;
@@ -942,30 +940,35 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
 //       v is sorted in increasing order
 // post: res contains the intersection  of ecmap[ec] and v sorted increasing
 //       res is empty if ec is not in ecma
-std::vector<int> KmerIndex::intersect(int ec, const std::vector<int>& v) const {
-  std::vector<int> res;
+std::vector<int32_t> KmerIndex::intersect(int32_t ec, const std::vector<int32_t>& v) const {
+  std::vector<int32_t> res;
   //auto search = ecmap.find(ec);
   if (ec < ecmap.size()) {
     //if (search != ecmap.end()) {
     //auto& u = search->second;
-    auto& u = ecmap[ec];
-    res.reserve(v.size());
+    const Roaring& r = ecmap[ec];
+    size_t ec_sz = ecmap[ec].cardinality();
 
-    auto a = u.begin();
+    uint32_t* trs = new uint32_t[ec_sz];
+    r.toUint32Array(trs);
+
+    size_t a = 0;
     auto b = v.begin();
 
-    while (a != u.end() && b != v.end()) {
-      if (*a < *b) {
+    while (a != ec_sz && b != v.end()) {
+      if (trs[a] < *b) {
         ++a;
-      } else if (*b < *a) {
+      } else if (*b < trs[a]) {
         ++b;
       } else {
         // match
-        res.push_back(*a);
+        res.push_back(trs[a]);
         ++a;
         ++b;
       }
     }
+    delete[] trs;
+    trs = nullptr;
   }
   return res;
 }
@@ -990,18 +993,20 @@ void KmerIndex::loadTranscriptSequences() const {
     size_t offset = 0;
     size_t ec = ecs[ecs.size() - 1];
     for (size_t i = 0; i < ecs.size() - 1; ++i) {
-      offset += ecmap[ecs[i]].size();
+      offset += ecmap[ecs[i]].cardinality();
     }
 
-    for (size_t i = 0; i < ecmap[ec].size(); ++i) {
+    uint32_t* trs = new uint32_t[ecmap[ec].cardinality()];
+    ecmap[ec].toUint32Array(trs);
+    for (size_t i = 0; i < ecmap[ec].cardinality(); ++i) {
       bool sense = n->sense.contains(offset + i);
-      u2t tr(ecmap[ec][i], n->pos[offset + i], sense);
+      u2t tr(trs[i], n->pos[offset + i], sense);
       // TODO:
       // Verify that this method of choosing to reverse complement is legit
       if (um.strand ^ sense) {
-        trans_contigs[ecmap[ec][i]].emplace_back(revcomp(um_seq), tr);
+        trans_contigs[trs[i]].emplace_back(revcomp(um_seq), tr);
       } else {
-        trans_contigs[ecmap[ec][i]].emplace_back(um_seq, tr);
+        trans_contigs[trs[i]].emplace_back(um_seq, tr);
       }
     }
   }

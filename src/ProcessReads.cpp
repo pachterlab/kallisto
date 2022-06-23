@@ -262,7 +262,7 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     for (const auto& t : MP.model.genes) {
       if (t.chr != -1 && t.stop > 0) {
         chrWeights[t.chr].push_back({t.stop, 1});
-      }      
+      }
     }
 
     double sum = 0;
@@ -419,7 +419,7 @@ void MasterProcessor::processReads() {
 
     // now handle the modification of the mincollector
     for (int i = 0; i < bus_ecmap.size(); i++) {
-      auto &u = bus_ecmap[i];
+      Roaring& u = bus_ecmap[i];
       int ec = index.ecmapinv.size();
       auto it = bus_ecmapinv.find(u);
       if (it->second != ec) {
@@ -550,7 +550,7 @@ void MasterProcessor::processReads() {
           int ecsize = index.ecmap.size();
           int ec = tc.increaseCount(t.first);
           if (ec != -1 && ecsize < index.ecmap.size()) {
-            num_newEcs++;  
+            num_newEcs++;
           }
         }
       }
@@ -619,7 +619,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
       bamfp = sam_open(bamfn.c_str(), "wb");
       int r = sam_hdr_write(bamfp, bamh);    
     }
-    
+
     if (opt.threads > 1 && !opt.genomebam) {
       // makes no sens to use threads on unsorted bams
       hts_set_threads(bamfp, opt.threads);
@@ -781,10 +781,10 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     }
 
     sam_close(bamfp);
-    bamfp = nullptr;    
+    bamfp = nullptr;
     std::cerr << "done" << std::endl;
     // if we are multithreaded we need to construct the index last
-    
+
     std::cerr << "[  bam] indexing BAM file .. "; std::cerr.flush();
 
     ret = sam_index_build3(bamfn.c_str(), (bamfn+".bai").c_str(), 0, opt.threads);
@@ -792,13 +792,13 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
       std::cerr << " invalid return code when indexing file " << ret << " .. ";
     }
     std::cerr << "done" << std::endl;
-    
+
   }
 }
 
 void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
                             std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
 
@@ -926,7 +926,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
     }
 
     //copy bus mode information, write to disk or queue up
-    writeBUSData(busf_out, bv); 
+    writeBUSData(busf_out, bv);
     /*for (auto &bp : newBP) {
       newB.push_back(std::move(bp));
     } */
@@ -944,10 +944,10 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
     /*
     std::cout << "name: " <<  b.data << ", ldata:" << (int)b.l_data << " ,mdata: " << (int) b.m_data  
       <<  ", lqname " << (int) b.core.l_qname <<", lqseq " <<  (int) b.core.l_qseq << ", enull " << (int) b.core.l_extranul << std::endl;
-    for (int i = 0; i < b.l_data; ++i) {      
+    for (int i = 0; i < b.l_data; ++i) {
       std::cout << (int) b.data[i] << " ";
     }
-    std::cout << std::endl;    
+    std::cout << std::endl;
     std::cout << "tid: " << b.core.tid << ", pos: " << (int) b.core.pos
               << ", flag: " << b.core.flag << ", ncigar: " << b.core.n_cigar << ", mtid: " <<(int) b.core.mtid << ", mpos: " << (int) b.core.mpos << ", isize" << (int) b.core.isize <<  std::endl;
     kstring_t str = { 0, 0, NULL };
@@ -1066,7 +1066,7 @@ void ReadProcessor::operator()() {
 
     // update the results, MP acquires the lock
     std::vector<BUSData> tmp_v{};
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, tmp_v, std::vector<std::pair<BUSData, std::vector<int32_t>>>{}, nullptr, nullptr, id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, paired ? seqs.size()/2 : seqs.size(), flens, bias5, pseudobatch, tmp_v, std::vector<std::pair<BUSData, Roaring>>{}, nullptr, nullptr, id, local_id);
     clear();
   }
 }
@@ -1074,9 +1074,9 @@ void ReadProcessor::operator()() {
 void ReadProcessor::processBuffer() {
 
   // set up thread variables
-  std::vector<std::pair<const_UnitigMap<Node>, int>> v1, v2;
-  std::vector<int> vtmp;
-  std::vector<int> u;
+  std::vector<std::pair<const_UnitigMap<Node>, int32_t>> v1, v2;
+  std::vector<int32_t> vtmp;
+  std::vector<int32_t> u;
 
 
   u.reserve(1000);
@@ -1218,12 +1218,14 @@ void ReadProcessor::processBuffer() {
         size_t offset = 0;
         size_t ec = ecs[ecs.size() - 1];
         for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].size();
+          offset += index.ecmap[ecs[i]].cardinality();
         }
 
         for (auto tr : u) {
-          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
-            if (tr == index.ecmap[ec][i]) {
+          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
+          index.ecmap[ec].toUint32Array(trs);
+          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
+            if (tr == trs[i]) {
               if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
 
                 // swap out
@@ -1232,6 +1234,8 @@ void ReadProcessor::processBuffer() {
               break;
             }
           }
+          delete[] trs;
+          trs = nullptr;
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1250,12 +1254,14 @@ void ReadProcessor::processBuffer() {
         size_t offset = 0;
         size_t ec = ecs[ecs.size() - 1];
         for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].size();
+          offset += index.ecmap[ecs[i]].cardinality();
         }
 
         for (auto tr : u) {
-          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
-            if (tr == index.ecmap[ec][i]) {
+          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
+          index.ecmap[ec].toUint32Array(trs);
+          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
+            if (tr == trs[i]) {
               if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
                 // swap out
                 vtmp.push_back(tr);
@@ -1263,6 +1269,8 @@ void ReadProcessor::processBuffer() {
               break;
             }
           }
+          delete[] trs;
+          trs = nullptr;
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1713,12 +1721,14 @@ void BUSProcessor::processBuffer() {
         size_t offset = 0;
         size_t ec = ecs[ecs.size() - 1];
         for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].size();
+          offset += index.ecmap[ecs[i]].cardinality();
         }
 
         for (auto tr : u) {
-          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
-            if (tr == index.ecmap[ec][i]) {
+          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
+          index.ecmap[ec].toUint32Array(trs);
+          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
+            if (tr == trs[i]) {
               if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
                 // swap out
                 vtmp.push_back(tr);
@@ -1726,6 +1736,8 @@ void BUSProcessor::processBuffer() {
               break;
             }
           }
+          delete[] trs;
+          trs = nullptr;
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1743,12 +1755,13 @@ void BUSProcessor::processBuffer() {
         size_t offset = 0;
         size_t ec = ecs[ecs.size() - 1];
         for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].size();
+          offset += index.ecmap[ecs[i]].cardinality();
         }
 
         for (auto tr : u) {
-          for (size_t i = 0; i < index.ecmap[ec].size(); ++i) {
-            if (tr == index.ecmap[ec][i]) {
+          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
+          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
+            if (tr == trs[i]) {
               if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
                 // swap out
                 vtmp.push_back(tr);
@@ -1756,6 +1769,8 @@ void BUSProcessor::processBuffer() {
               break;
             }
           }
+          delete[] trs;
+          trs = nullptr;
         }
         if (vtmp.size() < u.size()) {
           u = vtmp; // copy
@@ -1798,8 +1813,10 @@ void BUSProcessor::processBuffer() {
       // count the pseudoalignment
       if (ec == -1 || ec >= counts.size()) {
         // something we haven't seen before
+        Roaring r;
+        for (uint32_t i : u) r.add(i);
         newEcs.push_back(u);
-        newB.push_back({b,u});
+        newB.push_back({b, std::move(r)});
       } else {
         // add to count vector
         ++counts[ec];
@@ -1855,7 +1872,7 @@ void BUSProcessor::clear() {
   numreads=0;
   memset(buffer,0,bufsize);
   newEcs.clear();
-  counts.clear();  
+  counts.clear();
   counts.resize(tc.counts.size(),0);
   bv.clear();
   newB.clear();
@@ -1869,7 +1886,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
    buffer = new char[bufsize];
    bambufsize = 1<<20;
    bambuffer = new char[bambufsize]; // refactor this?
-   
+
    if (opt.batch_mode) {
      /* need to check this later */
      assert(id != -1);
@@ -1886,9 +1903,9 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
    if (opt.umi) {
     umis.reserve(bufsize/50);
    }
-   
+
    clear();
-   
+
 }
 
 
@@ -1958,7 +1975,7 @@ void AlnProcessor::operator()() {
         // nothing to do
         return;
       } else {
-        // get new sequences        
+        // get new sequences
         mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, true);
         readPseudoAlignmentBatch(mp.pseudobatchf_in, pseudobatch);
         assert(pseudobatch.batch_id == readbatch_id);
@@ -2239,7 +2256,6 @@ void AlnProcessor::processBufferTrans() {
           } else {
             pos1 = {std::numeric_limits<int>::min(), true};
           }
-          
 
           if (paired) {
             if (!pi.r2empty) {
@@ -2264,8 +2280,7 @@ void AlnProcessor::processBufferTrans() {
               reverseComplementSeqInData(b2c);
             }
           }
-          
-          
+
           // set strandedness
           if (paired) {
             // todo handle non mapping reads
@@ -2767,13 +2782,13 @@ void AlnProcessor::processBufferGenome() {
         for (auto &x : alnmap) {
           auto &tra = x.first;
           float prob = (float) x.second; // explicit cast
-          
+
           bool bestTr = (bestprob == 1.0) || (tra == bestTra);
 
           b1c = b1;
           // b1c.id = idnum++;
           b1c.data = new uint8_t[b1c.m_data];
-          memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));          
+          memcpy(b1c.data, b1.data, b1c.m_data*sizeof(uint8_t));
           if (!strInfo1.first && !tra.first.strand) {
             reverseComplementSeqInData(b1c);
           }
@@ -3047,8 +3062,8 @@ void reverseComplementSeqInData(bam1_t &b) {
 }
 
 int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, const char *qual, int slen, int nlen, bool unmapped, int auxlen) {
- 
-  b.core.l_extranul =  (3 - (nlen % 4));  
+
+  b.core.l_extranul =  (3 - (nlen % 4));
   b.core.l_qname = nlen + b.core.l_extranul + 1;
   b.core.l_qseq = slen;
 
@@ -3068,17 +3083,16 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
   }
 
   // 99% of the time we just report a *, match. 1% there is some softclipping
-  
+
   if (!unmapped) {
-    b.core.n_cigar = 1;  
+    b.core.n_cigar = 1;
     uint32_t* cig = (uint32_t*) (buf+p);
     *cig = BAM_CMATCH | (((uint32_t) slen) << BAM_CIGAR_SHIFT);
     p += sizeof(uint32_t);
   } else {
-    b.core.n_cigar = 0;    
+    b.core.n_cigar = 0;
   }
-  
-  
+
   // copy the sequence
   int lseq = (slen+1)>>1;
   uint8_t *seqp = (uint8_t *) (buf+p);
@@ -3204,24 +3218,24 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
         }
         // close current umi file
         if (usingUMIfiles) {
-          // read up the rest of the files          
+          // read up the rest of the files
           f_umi->close();
         }
-        
+
         // open the next one
         for (int i = 0; i < nfiles; i++) {
           fp[i] = gzopen(files[current_file+i].c_str(), "r");
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
-          
+
         }
         if (usingUMIfiles) {
           // open new umi file
-          f_umi->open(umi_files[current_file]);  
-          current_file++;        
+          f_umi->open(umi_files[current_file]);
+          current_file++;
         }
         current_file+=nfiles;
-        state = true; 
+        state = true;
       }
     }
     // the file is open and we have read into seq1 and seq2
@@ -3231,7 +3245,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
       all_l = all_l && l[i] >= 0;
       bufadd += l[i]; // includes seq
     }
-    if (all_l) {      
+    if (all_l) {
       // fits into the buffer
       if (full) {
         for (int i = 0; i < nfiles; i++) {

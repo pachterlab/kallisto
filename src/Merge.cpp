@@ -108,10 +108,10 @@ bool MergeBatchDirectories(const ProgramOptions &opt, int& num_targets, int64_t&
     std::vector<int> ctrans;
     std::ifstream ecFile(opt.files[i] + "/matrix.ec");
 
-    std::string line,t;    
-    std::vector<int> c;
-    while (std::getline(ecFile,line)) {   
-      c.clear();
+    std::string line,t;
+    Roaring r;
+    while (std::getline(ecFile,line)) {
+      r = Roaring();
       int ec = -1;
       if (line.size() == 0) {
         continue;
@@ -119,21 +119,21 @@ bool MergeBatchDirectories(const ProgramOptions &opt, int& num_targets, int64_t&
       std::stringstream ss(line);
       ss >> ec;
       while (std::getline(ss, t, ',')) {
-        c.push_back(std::stoi(t));
+        r.add(std::stoi(t));
       }
 
       assert(ctrans.size() == ec);
 
       int index_ec = -1;
-      auto search = index.ecmapinv.find(c);
+      auto search = index.ecmapinv.find(r);
       if (search != index.ecmapinv.end()) {
         index_ec = search->second;
-      } else {        
+      } else {
          index_ec = index.ecmap.size();
-         index.ecmap.push_back(c);
-         index.ecmapinv.insert({c,index_ec});         
+         index.ecmap.push_back(r);
+         index.ecmapinv.insert({std::move(r), index_ec});
       }
-      ctrans.push_back(index_ec);            
+      ctrans.push_back(index_ec);
     }
     numEcs.push_back(ctrans.size());
     ecTrans.push_back(std::move(ctrans));
@@ -153,17 +153,23 @@ bool MergeBatchDirectories(const ProgramOptions &opt, int& num_targets, int64_t&
   for (int j = 0; j < index.ecmap.size(); j++) {
     ecFile << j << "\t";
     // output the rest of the class
-    const auto &v = index.ecmap[j];
+    const Roaring& r = index.ecmap[j];
+    uint32_t* trs = new uint32_t[r.cardinality()];
+    r.toUint32Array(trs);
+
     bool first = true;
-    for (auto x : v) {
+    for (size_t i = 0; i < r.cardinality(); ++i) {
       if (!first) {
         ecFile << ",";
       } else {
         first = false;
       }
-      ecFile << x;
+      ecFile << trs[i];
     }
     ecFile << "\n";
+
+    delete[] trs;
+    trs = nullptr;
   }
   ecFile.close();
 

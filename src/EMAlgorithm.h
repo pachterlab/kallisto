@@ -94,13 +94,15 @@ struct EMAlgorithm {
         //assert( w_search->second.size() == ec_kv.second.size() );
 
         // wv is weights vector
-        // v is ec vector
+        // trs is a vector of transcript ids
 
-        auto& v = ecmap_[ec]; //ecmap_.find(ec)->second;
-        auto numEC = v.size();
+        auto& r = ecmap_[ec]; //ecmap_.find(ec)->second;
+        auto numEC = r.cardinality();
+        uint32_t* trs = new uint32_t[numEC];
+        r.toUint32Array(trs);
 
         for (auto t_it = 0; t_it < numEC; ++t_it) {
-          denom += alpha_[v[t_it]] * wv[t_it];
+          denom += alpha_[trs[t_it]] * wv[t_it];
         }
 
         if (denom < TOLERANCE) {
@@ -110,7 +112,7 @@ struct EMAlgorithm {
         // compute the update step
         auto countNorm = counts_[ec] / denom;
         for (auto t_it = 0; t_it < numEC; ++t_it) {
-          next_alpha[v[t_it]] +=  (wv[t_it] * alpha_[v[t_it]]) * countNorm;
+          next_alpha[trs[t_it]] +=  (wv[t_it] * alpha_[trs[t_it]]) * countNorm;
         }
 
       }

@@ -28,7 +28,7 @@ struct TRInfo {
   bool sense; // true for sense, false for anti-sense
 };
 
-using EcMap = std::vector<std::vector<int32_t>>; //std::unordered_map<int, std::vector<int>>;
+using EcMap = std::vector<Roaring>; //std::unordered_map<int, std::vector<int>>;
 
 struct SortedVectorHasher {
   size_t operator()(const std::vector<int>& v) const {
@@ -42,6 +42,25 @@ struct SortedVectorHasher {
       i = (i+1)%64;
     }
     return r;
+  }
+};
+
+struct RoaringHasher {
+  size_t operator()(const Roaring& r) const {
+    uint32_t* trs = new uint32_t[r.cardinality()];
+    r.toUint32Array(trs);
+    uint64_t h = 0;
+    int i=0;
+    for (size_t j = 0; j < r.cardinality(); ++j) {
+      uint64_t t;
+      MurmurHash3_x64_64(&trs[j], sizeof(trs[j]), 0, &t);
+      t = (trs[j]>>i) | (trs[j]<<(64-i));
+      h = h ^ t;
+      i = (i+1)%64;
+    }
+    delete[] trs;
+    trs = nullptr;
+    return h;
   }
 };
 
@@ -133,7 +152,7 @@ struct KmerIndex {
   CompactedDBG<Node> dbg;
   EcMap ecmap;
   DBGraph dbGraph;
-  std::unordered_map<std::vector<int32_t>, int32_t, SortedVectorHasher> ecmapinv;
+  std::unordered_map<Roaring, int32_t, RoaringHasher> ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
   std::vector<int> target_lens_;
