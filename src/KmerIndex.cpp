@@ -396,7 +396,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   // 7. write out each equiv class
   for (int32_t ec = 0; ec < ecmap.size(); ec++) {
     Roaring& v = ecmap[ec];
-    size_t buf_sz = 1024;
     char* buffer = new char[v.getSizeInBytes()];
     tmp_size = v.write(buffer);
     out.write((char *)&tmp_size, sizeof(tmp_size));
@@ -524,9 +523,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     in.read((char *)&vec_size, sizeof(vec_size));
     char* buffer = new char[vec_size];
     // 7.2 deserialize bit vector
-    in.read((char *)&buffer, vec_size);
-    Roaring r;
-    r.read(buffer);
+    in.read(buffer, vec_size);
+    Roaring r = Roaring::read(buffer);
     ecmap[ec] = r;
     ecmapinv.insert({std::move(r), ec});
 
