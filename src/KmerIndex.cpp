@@ -252,7 +252,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   }
 
   uint32_t tmp_id = 0;
-  std::vector<int> tr_map(-1, seqs.size());
+  std::vector<int> tr_map(seqs.size(), -1);
   for (auto& trinfo : trinfos) {
     for (auto& tr : trinfo) {
       if (tr_map[tr.trid] == -1) {
