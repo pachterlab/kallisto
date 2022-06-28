@@ -4,7 +4,7 @@
 
 const double MIN_ALPHA = 1e-8;
 
-std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
+std::vector<double> get_frag_len_means(const std::vector<uint32_t>& lengths,
     const std::vector<double>& mean_frag_len_trunc) {
 
   std::vector<double> frag_len_means;
@@ -28,7 +28,7 @@ std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
 }
 
 // XXX: DEPRECATED
-std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
+std::vector<double> calc_eff_lens(const std::vector<uint32_t>& lengths, double mean)
 {
   // for now do the total naive thing and subtract mean frag length
   std::vector<double> eff_lens;
@@ -55,7 +55,7 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
   return eff_lens;
 }
 
-std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
+std::vector<double> calc_eff_lens(const std::vector<uint32_t>& lengths,
     const std::vector<double>& means) {
   std::vector<double> eff_lens;
   eff_lens.reserve( lengths.size() );
@@ -118,7 +118,7 @@ std::vector<double> update_eff_lens(
   dbias5.resize(num6mers, 0.0); // clear the bias
 
   index.loadTranscriptSequences();
-  
+
 
   for (int i = 0; i < index.num_trans; i++) {
     if (index.target_lens_[i] < means[i]) {
@@ -144,7 +144,7 @@ std::vector<double> update_eff_lens(
       for (int j = 0; j < fwlimit; j++) {
         dbias5[hex] += contrib;
         hex = update_hexamer(hex,*(cs+j+6),false);
-      } 
+      }
     }
 
     if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::RF)) {
@@ -193,8 +193,8 @@ std::vector<double> update_eff_lens(
           }
         }
       }
-      
-      
+
+
       if (!opt.strand_specific) {
         efflen *= 0.5*biasAlphaNorm/biasDataNorm;
       } else {

@@ -31,7 +31,7 @@ void plaintext_writer(
     const std::vector<std::string>& targ_ids,
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens,
-    const std::vector<int>& lens
+    const std::vector<uint32_t>& lens
     ){
 
   std::ofstream of;
@@ -71,16 +71,16 @@ void plaintext_writer_gene(
     const std::vector<double>& eff_lens,
     const Transcriptome& model
 ){
-  
+
   std::ofstream of;
   of.open( out_name );
-  
+
   if (!of.is_open()) {
     std::cerr << "Error: Couldn't open file: " << out_name << std::endl;
-    
+
     exit(1);
   }
-  
+
   std::vector<double> gc;
   std::vector<double> gc_tpm;
   gc.assign(model.genes.size(), 0.0);
@@ -150,7 +150,7 @@ void plaintext_aux(
     const std::string& call) {
   std::ofstream of;
   of.open( out_name );
-  
+
   double p_uniq =0.0;
   double p_aln = 0.0;
   std::stringstream ss;
@@ -165,7 +165,7 @@ void plaintext_aux(
       p_aln = 100.0* naln / nreads;
     }
   } catch (std::invalid_argument) {}
-  
+
 
   ss << std::fixed << std::setprecision(1) << p_uniq;
   p_uniq_s = ss.str();
@@ -178,9 +178,9 @@ void plaintext_aux(
     to_json("n_bootstraps", n_bootstrap, false) << std::endl <<
     to_json("n_processed", n_processed, false) << std::endl <<
     to_json("n_pseudoaligned", n_pseudoaligned, false) << std::endl <<
-    to_json("n_unique", n_unique, false) << std::endl << 
-    to_json("p_pseudoaligned", p_aln_s, false) << std::endl << 
-    to_json("p_unique", p_uniq_s, false) << std::endl << 
+    to_json("n_unique", n_unique, false) << std::endl <<
+    to_json("p_pseudoaligned", p_aln_s, false) << std::endl <<
+    to_json("p_unique", p_uniq_s, false) << std::endl <<
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
     to_json("start_time", start_time, true) << std::endl <<
@@ -190,7 +190,7 @@ void plaintext_aux(
   of.close();
 }
 
- 
+
 void writeBatchMatrix(
   const std::string &prefix,
   const KmerIndex &index,
@@ -204,10 +204,10 @@ void writeBatchMatrix(
   writeECList(ecfilename, index);
   writeCellIds(cellnamesfilename, ids);
   writeSparseBatchMatrix(countsfilename, counts, index.ecmap.size());
-  
+
 /*
     countsof.open(countsfilename.c_str(), std::ios::out);
-    if (!counts.empty()) {      
+    if (!counts.empty()) {
       for (int j = 0; j < counts.size(); j++) {
         const auto &v = counts[j];
         for (int i = 0; i < v.size(); i++) {
@@ -258,7 +258,7 @@ void writeCellIds(
   const std::string &filename,
   const std::vector<std::string> &ids) {
 
-    std::ofstream cellsof;    
+    std::ofstream cellsof;
     // write cell ids, one line per id
     cellsof.open(filename.c_str(), std::ios::out);
 
@@ -302,4 +302,3 @@ void writeGeneList(const std::string &filename, const Transcriptome& model, bool
   }
   of.close();
 }
-

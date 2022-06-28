@@ -155,7 +155,7 @@ struct KmerIndex {
   std::unordered_map<Roaring, int32_t, RoaringHasher> ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
-  std::vector<int> target_lens_;
+  std::vector<uint32_t> target_lens_;
 
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand

@@ -18,7 +18,7 @@ void plaintext_writer(
     const std::vector<std::string>& targ_ids,
     const std::vector<double>& alpha,
     const std::vector<double>& eff_lens,
-    const std::vector<int>& lens
+    const std::vector<uint32_t>& lens
     );
 
 void plaintext_writer_gene(
@@ -84,14 +84,14 @@ void writeSparseBatchMatrix(
     }
   }
   of.open(filename.c_str(), std::ios::out);
-  of << "%%MatrixMarket matrix coordinate real general\n"; 
+  of << "%%MatrixMarket matrix coordinate real general\n";
   of << num_rows << "\t" << num_cols << "\t" << num_entries << "\n";
-  if (!data.empty()) {      
+  if (!data.empty()) {
     for (size_t j = 0; j < data.size(); j++) {
       const auto &v = data[j];
       for (size_t i = 0; i < v.size(); i++) {
         if (v[i].second != T(0)) {
-          // everything is 1-based 
+          // everything is 1-based
           of << (j+1) << "\t" << (v[i].first+1) << "\t" << v[i].second << "\n";
         }
       }

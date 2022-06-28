@@ -210,7 +210,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
   std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
 
-  std::vector<std::vector<TRInfo>> trinfos(dbg.size());
+  std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
@@ -250,6 +250,32 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       proc += um.len;
     }
   }
+
+  uint32_t tmp_id = 0;
+  std::vector<int> tr_map(-1, seqs.size());
+  for (auto& trinfo : trinfos) {
+    for (auto& tr : trinfo) {
+      if (tr_map[tr.trid] == -1) {
+        tr_map[tr.trid] = tmp_id++;
+      }
+      tr.trid = tr_map[tr.trid];
+    }
+  }
+
+  std::vector<std::string> new_target_names_;
+  std::vector<uint32_t> new_target_lens_;
+  std::vector<std::string> new_target_seqs_;
+  new_target_names_.reserve(target_names_.size());
+  new_target_lens_.reserve(target_lens_.size());
+  new_target_seqs_.reserve(target_seqs_.size());
+  for (size_t i = 0; i < target_names_.size(); ++i) {
+    new_target_names_[i] = target_names_[tr_map[i]];
+    new_target_lens_[i] = target_lens_[tr_map[i]];
+    new_target_seqs_[i] = target_seqs_[tr_map[i]];
+  }
+  target_names_ = new_target_names_;
+  target_lens_ = new_target_lens_;
+  target_seqs_ = new_target_seqs_;
 
   PopulateMosaicECs(trinfos);
 
@@ -887,7 +913,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
 
   int trpos = -1;
   bool trsense = true;
-  if (um.getData()->id < 0) {
+  if (um.getData()->id == -1) {
     return {-1, true};
   }
   const Node* n = um.getData();
@@ -1043,7 +1069,7 @@ void KmerIndex::clear() {
     std::unordered_map<std::vector<int>, int, SortedVectorHasher> empty;
     std::swap(ecmapinv, empty);
   }
-  
+
   target_lens_.resize(0);
   target_names_.resize(0);
   target_seqs_.resize(0);

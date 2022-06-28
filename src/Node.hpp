@@ -17,12 +17,12 @@ struct u2t {
     // Strandedness
     bool sense;
     u2t() {};
-    u2t(int tr_id, int pos, bool sense) : tr_id(tr_id), pos(pos), sense(sense) {};
+    u2t(uint32_t tr_id, uint32_t pos, bool sense) : tr_id(tr_id), pos(pos), sense(sense) {};
 };
 
 class Node: public CDBG_Data_t<Node> {
     public:
-        int id;
+        uint32_t id;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
         BlockArray<uint32_t> ec;
