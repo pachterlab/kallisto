@@ -15,7 +15,7 @@ EMAlgorithm Bootstrap::run_em() {
 BootstrapThreadPool::BootstrapThreadPool(
     size_t n_threads,
     std::vector<size_t> seeds,
-    const std::vector<int>& true_counts,
+    const std::vector<uint32_t>& true_counts,
     const KmerIndex& index,
     const MinCollector& tc,
     const std::vector<double>& eff_lens,

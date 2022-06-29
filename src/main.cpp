@@ -2733,7 +2733,7 @@ int main(int argc, char *argv[]) {
           if (!opt.single_end) {
             std::ofstream flensout_f((opt.output + "/flens.txt"));
             for (size_t id = 0; id < opt.batch_ids.size(); id++) {
-              std::vector<int> fld = MP.batchFlens[id];
+              std::vector<uint32_t> fld = MP.batchFlens[id];
               for ( size_t i = 0 ; i < fld.size(); ++i ) {
                 if (i != 0) {
                   flensout_f << " ";
@@ -2826,7 +2826,7 @@ int main(int argc, char *argv[]) {
         }
         transout_f.close();
 
-        std::vector<int> fld;
+        std::vector<uint32_t> fld;
         if (opt.busOptions.paired) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
@@ -2959,7 +2959,7 @@ int main(int argc, char *argv[]) {
         }
 
         // if mean FL not provided, estimate
-        std::vector<int> fld;
+        std::vector<uint32_t> fld;
         if (opt.fld == 0.0) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
@@ -2975,7 +2975,7 @@ int main(int argc, char *argv[]) {
           // }
         }
 
-        std::vector<int> preBias(4096,1);
+        std::vector<int32_t> preBias(4096,1);
         if (opt.bias) {
           preBias = collection.bias5; // copy
         }
@@ -3331,7 +3331,7 @@ int main(int argc, char *argv[]) {
         TPM_mat_gene.resize(nrow, {});
         std::vector<std::pair<double, double>> FLD_mat;
         FLD_mat.resize(nrow, {});
-        std::vector<std::vector<int>> FLDs;
+        std::vector<std::vector<uint32_t>> FLDs;
         Transcriptome model; // empty model
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
@@ -3358,7 +3358,7 @@ int main(int argc, char *argv[]) {
               if (line.empty() || line.rfind("#", 0) == 0) {
                 continue; // Ignore empty lines or lines that begin with a #
               }
-              std::vector<int> tmp_vec;
+              std::vector<uint32_t> tmp_vec;
               std::stringstream ss(line);
               while(ss.good()) {
                 std::string tmp_val;
@@ -3410,7 +3410,7 @@ int main(int argc, char *argv[]) {
             if (opt.fld != 0.0) {
               collection.init_mean_fl_trunc(opt.fld, opt.sd);
             } else {
-              std::vector<int> fld;
+              std::vector<uint32_t> fld;
               if (FLDs.size() == 1) { // Only one distribution supplied; will use this for everything
                 fld = FLDs[0];
               } else {
@@ -3613,7 +3613,7 @@ int main(int argc, char *argv[]) {
               collection.counts[p.first] = p.second;
             }
             // if mean FL not provided, estimate
-            std::vector<int> fld;
+            std::vector<uint32_t> fld;
             if (opt.fld == 0.0) {
               fld = collection.flens; // copy
               collection.compute_mean_frag_lens_trunc(false);
@@ -3627,7 +3627,7 @@ int main(int argc, char *argv[]) {
               collection.init_mean_fl_trunc( mean_fl, sd_fl );
               fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
             }
-            std::vector<int> preBias(4096,1);
+            std::vector<int32_t> preBias(4096,1);
             if (opt.bias) {
               //preBias = collection.bias5; // copy
             }
@@ -3703,7 +3703,7 @@ int main(int argc, char *argv[]) {
           if (!opt.single_end) {
             std::ofstream flensout_f((opt.output + "/flens.txt"));
             for (size_t id = 0; id < opt.batch_ids.size(); id++) {
-              std::vector<int> fld = MP.batchFlens[id];
+              std::vector<uint32_t> fld = MP.batchFlens[id];
               for ( size_t i = 0 ; i < fld.size(); ++i ) {
                 if (i != 0) {
                   flensout_f << " ";

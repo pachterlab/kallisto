@@ -34,7 +34,7 @@ std::vector<double> update_eff_lens(const std::vector<double>& means,
 
 
 WeightMap calc_weights(
-  const std::vector<int>& counts,
+  const std::vector<uint32_t>& counts,
   const EcMap& ecmap,
   const std::vector<double>& eff_lens);
 
@@ -49,7 +49,7 @@ WeightMap calc_weights(
 std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
     double sd);
 
-std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+std::vector<uint32_t> trunc_gaussian_counts(int start, int stop, double mean,
         double sd, int total_count);
 
 

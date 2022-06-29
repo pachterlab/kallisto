@@ -268,7 +268,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   new_target_names_.reserve(target_names_.size());
   new_target_lens_.reserve(target_lens_.size());
   new_target_seqs_.reserve(target_seqs_.size());
-  std::cout << "tr_map.size(): " << tr_map.size() << ", target_names_.size(): " << target_names_.size() << ", target_lens_.size(): " << target_lens_.size() << std::endl;
   for (size_t i = 0; i < target_names_.size(); ++i) {
     new_target_names_.push_back(target_names_[tr_map[i]]);
     new_target_lens_.push_back(target_lens_[tr_map[i]]);

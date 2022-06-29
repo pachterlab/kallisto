@@ -46,7 +46,7 @@ public:
   SequenceReader() : state(false), readbatch_id(-1) {};
   virtual ~SequenceReader() {}
 //  SequenceReader(SequenceReader&& o);
-  
+
   virtual bool empty() = 0;
   virtual void reset();
   virtual void reserveNfiles(int n) = 0;
@@ -72,20 +72,20 @@ public:
     SequenceReader::state = false;
 
     if (opt.bus_mode) {
-      nfiles = opt.busOptions.nfiles;      
+      nfiles = opt.busOptions.nfiles;
     } else {
       nfiles = paired ? 2 : 1;
     }
     reserveNfiles(nfiles);
   }
-  FastqSequenceReader() : SequenceReader(), 
-  paired(false), 
+  FastqSequenceReader() : SequenceReader(),
+  paired(false),
   f_umi(new std::ifstream{}),
   current_file(0) {};
   FastqSequenceReader(FastqSequenceReader &&o);
   ~FastqSequenceReader();
 
-  bool empty();  
+  bool empty();
   void reset();
   void reserveNfiles(int n);
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
@@ -119,7 +119,7 @@ public:
     fp = bgzf_open(opt.files[0].c_str(), "rb");
     head = bam_hdr_read(fp);
     rec = bam_init1();
-    
+
     err = bam_read1(fp, rec);
     eseq = bam_get_seq(rec);
     l_seq = rec->core.l_qseq;
@@ -139,7 +139,7 @@ public:
   BamSequenceReader() : SequenceReader() {};
   BamSequenceReader(BamSequenceReader &&o);
   ~BamSequenceReader();
-  
+
   bool empty();
   void reset();
   void reserveNfiles(int n);
@@ -161,8 +161,8 @@ public:
   char *umi;
   int l_umi;
   int err;
-  
-  
+
+
 private:
   static const std::string seq_enc;
 };
@@ -171,7 +171,7 @@ class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
     : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0)
-    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
+    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
       if (opt.bam) {
         SR = new BamSequenceReader(opt);
       } else {
@@ -181,7 +181,7 @@ public:
       if (opt.batch_mode) {
         batchCounts.assign(opt.batch_ids.size(), {});
         tlencounts.assign(opt.batch_ids.size(), 0);
-        batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
+        batchFlens.assign(opt.batch_ids.size(), std::vector<uint32_t>(1000,0));
         /*for (auto &t : batchCounts) {
           t.resize(tc.counts.size(),0);
         }*/
@@ -220,7 +220,7 @@ public:
           hts_close(bamfps[i]);
           bamfps[i] = nullptr;
         }
-      } 
+      }
       bamfps = nullptr;
     }
     if (bamh) {
@@ -258,12 +258,12 @@ public:
   std::atomic<int> tlencount;
   std::vector<int> tlencounts;
   std::atomic<int> biasCount;
-  std::vector<std::vector<int>> batchFlens;
+  std::vector<std::vector<uint32_t>> batchFlens;
   std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
   std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
-  //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;  
+  //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
   EcMap bus_ecmap;
   std::unordered_map<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
 
@@ -283,7 +283,7 @@ public:
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);  
+  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
 };
 
 class ReadProcessor {
@@ -383,7 +383,7 @@ public:
   PseudoAlignmentBatch pseudobatch;
   const Transcriptome& model;
   bool useEM;
-  
+
 
 
   std::vector<std::pair<const char*, int>> seqs;

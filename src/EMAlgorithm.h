@@ -23,7 +23,7 @@ struct EMAlgorithm {
   // counts is vector from collector, with indices corresponding to ec ids
   // target_names is the target_names_ from collector
   // TODO: initialize alpha a bit more intelligently
-  EMAlgorithm(const std::vector<int>& counts,
+  EMAlgorithm(const std::vector<uint32_t>& counts,
               const KmerIndex& index,
               const MinCollector& tc,
               const std::vector<double>& all_means,
@@ -68,7 +68,7 @@ struct EMAlgorithm {
     for (i = 0; i < n_iter; ++i) {
       if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
         eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_, post_bias_, opt);
-        weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
+        weight_map_ = calc_weights(tc_.counts, ecmap_, eff_lens_);
       }
 
 
@@ -282,7 +282,7 @@ struct EMAlgorithm {
   const KmerIndex& index_;
   const MinCollector& tc_;
   const EcMap& ecmap_;
-  const std::vector<int>& counts_;
+  const std::vector<uint32_t>& counts_;
   const std::vector<std::string>& target_names_;
   const std::vector<double>& all_fl_means;
   std::vector<double> eff_lens_;

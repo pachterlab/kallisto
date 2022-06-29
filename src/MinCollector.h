@@ -80,9 +80,9 @@ struct MinCollector {
   void init_mean_fl_trunc(double mean, double sd);
 
   KmerIndex& index;
-  std::vector<int> counts;
-  std::vector<int> flens;
-  std::vector<int> bias3, bias5;
+  std::vector<uint32_t> counts;
+  std::vector<uint32_t> flens;
+  std::vector<int32_t> bias3, bias5;
   int min_range;
   int k;
 

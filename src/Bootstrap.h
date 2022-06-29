@@ -18,7 +18,7 @@ class Bootstrap {
     // - target_names
     // - eff_lens
 public:
-  Bootstrap(const std::vector<int>& true_counts,
+  Bootstrap(const std::vector<uint32_t>& true_counts,
             const KmerIndex& index,
             const MinCollector& tc,
             const std::vector<double>& eff_lens,
@@ -71,7 +71,7 @@ class BootstrapThreadPool {
     BootstrapThreadPool(
         size_t n_threads,
         std::vector<size_t> seeds,
-        const std::vector<int>& true_counts,
+        const std::vector<uint32_t>& true_counts,
         const KmerIndex& index,
         const MinCollector& tc,
         const std::vector<double>& eff_lens,
@@ -94,7 +94,7 @@ class BootstrapThreadPool {
     size_t n_complete_;
 
     // things to run bootstrap
-    const std::vector<int> true_counts_;
+    const std::vector<uint32_t> true_counts_;
     const KmerIndex& index_;
     const MinCollector& tc_;
     const std::vector<double>& eff_lens_;
