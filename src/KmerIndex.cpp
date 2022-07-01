@@ -163,13 +163,13 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   num_trans = seqs.size();
 
-  // for each target, create its own equivalence class
-  for (int i = 0; i < seqs.size(); i++ ) {
-    Roaring r;
-    r.add(i);
-    ecmap.push_back(r);
-    ecmapinv.insert({std::move(r),i});
-  }
+  //// for each target, create its own equivalence class
+  //for (int i = 0; i < seqs.size(); i++ ) {
+    //Roaring r;
+    //r.add(i);
+    //ecmap.push_back(r);
+    //ecmapinv.insert({std::move(r),i});
+  //}
 
   BuildDeBruijnGraph(opt, seqs);
   BuildEquivalenceClasses(opt, seqs);
@@ -212,6 +212,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
+  std::cout << 1 << std::endl;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
     if (seq.size() < k) continue;
@@ -250,6 +251,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       proc += um.len;
     }
   }
+  std::cout << 2 << std::endl;
 
   uint32_t tmp_id = 0;
   std::vector<int> tr_map(seqs.size(), -1);
@@ -261,6 +263,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       tr.trid = tr_map[tr.trid];
     }
   }
+  std::cout << 3 << std::endl;
 
   std::vector<std::string> new_target_names_;
   std::vector<uint32_t> new_target_lens_;
@@ -275,11 +278,13 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   for (size_t i = 0; i < target_seqs_.size(); ++i) {
     new_target_seqs_.push_back(target_seqs_[tr_map[i]]);
   }
+  std::cout << 4 << std::endl;
 
   target_names_ = new_target_names_;
   target_lens_ = new_target_lens_;
   target_seqs_ = new_target_seqs_;
 
+  std::cout << 5 << std::endl;
   PopulateMosaicECs(trinfos);
 
   std::cerr << " done" << std::endl;
@@ -288,6 +293,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
+
+  std::cout << "Entering PopulateMosaicECs" << std::endl;
 
   for (const auto& um : dbg) {
 
@@ -537,6 +544,21 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 6. read number of equivalence classes
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
+
+
+  std::vector<uint32_t> eccount(ecmap_size, 0);
+  for (const auto& um : dbg) {
+    Node* n = um.getData();
+    std::vector<uint32_t> ecs;
+    n->ec.get_vals(ecs);
+    for (uint32_t ec : ecs) {
+      eccount[ec]++;
+    }
+  }
+  for (uint32_t ecc : eccount) {
+      std::cout << "eccount:\t" << ecc << std::endl;
+  }
+
 
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
