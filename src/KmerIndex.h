@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <stdint.h>
 #include <iostream>
+#include <numeric>
+#include <limits>
 
 #include "common.h"
 #include "Kmer.hpp"
@@ -124,7 +126,7 @@ struct KmerIndex {
   //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
   //void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
-  void BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs);
+  void BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs);
   //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
 

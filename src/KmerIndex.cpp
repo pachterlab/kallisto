@@ -163,7 +163,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   num_trans = seqs.size();
 
-  //// for each target, create its own equivalence class
+  // for each target, create its own equivalence class
   //for (int i = 0; i < seqs.size(); i++ ) {
     //Roaring r;
     //r.add(i);
@@ -206,13 +206,12 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
   std::remove(tmp_file.c_str());
 }
 
-void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
+void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs) {
 
-  std::cerr << "[build] creating equivalence classes ... "; std::cerr.flush();
+  std::cerr << "[build] creating equivalence classes ... " << std::endl;
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
-  std::cout << 1 << std::endl;
   for (size_t i = 0; i < seqs.size(); ++i) {
     const auto& seq = seqs[i];
     if (seq.size() < k) continue;
@@ -234,36 +233,75 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
       tr.sense = um.strand;
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
-      /*
-      if (tr.sense) {
-        tr.start = um.dist;
-        // tr = um[start, stop)
-        tr.stop  = um.dist + um.len;
-      } else {
-        tr.start = um.dist + um.len;
-        // tr = um[start, stop)
-        tr.stop  = um.dist + 1;
-      }
-      */
 
-      trinfos[um.getData()->id].push_back(tr);
+      const Node* n = um.getData();
+      trinfos[n->id].push_back(tr);
 
       proc += um.len;
     }
   }
-  std::cout << 2 << std::endl;
 
+  seqs.clear();
+
+  size_t N_ITER = 50;
   uint32_t tmp_id = 0;
-  std::vector<int> tr_map(seqs.size(), -1);
+
+  // Threshold large ECs
+  size_t n_removed;
   for (auto& trinfo : trinfos) {
-    for (auto& tr : trinfo) {
-      if (tr_map[tr.trid] == -1) {
-        tr_map[tr.trid] = tmp_id++;
-      }
-      tr.trid = tr_map[tr.trid];
+    if (trinfo.size() > 1000) {
+      //trinfo.clear();
+      ++n_removed;
     }
   }
-  std::cout << 3 << std::endl;
+  std::cerr << "[build] discarded " << n_removed << " ECs larger than threshold." << std::endl;
+
+  // Two-sided crossing minimization
+  std::cerr << std::endl << "[build] compacting equivalence classes for " << N_ITER << " rounds ... "; std::cerr.flush();
+  std::vector<size_t> ec_idx(trinfos.size()), idx_ec(trinfos.size()),
+                      tr_idx(target_names_.size()), idx_tr(target_names_.size());
+
+  std::vector<std::vector<uint32_t> > tr_ec(target_names_.size());
+
+  for (size_t i = 0; i < trinfos.size(); ++i) {
+    for (const auto& trinfo : trinfos[i]) {
+      tr_ec[trinfo.trid].push_back(i);
+    }
+  }
+
+  std::iota(ec_idx.begin(), ec_idx.end(), 0);
+  std::iota(idx_ec.begin(), idx_ec.end(), 0);
+  std::iota(tr_idx.begin(), tr_idx.end(), 0);
+  std::iota(idx_tr.begin(), idx_tr.end(), 0);
+
+  for (size_t i = 0; i < N_ITER; ++i) {
+    // Sort ECs w.r.t. transcript id
+    std::sort(ec_idx.begin(), ec_idx.end(),
+              [&idx_tr, &trinfos](size_t a, size_t b) -> bool {
+                size_t ec1 = (!trinfos[a].empty()) ? idx_tr[trinfos[a][0].trid] : std::numeric_limits<size_t>::max();
+                size_t ec2 = (!trinfos[b].empty()) ? idx_tr[trinfos[b][0].trid] : std::numeric_limits<size_t>::max();
+                return ec1 < ec2;
+              });
+    for (size_t i = 0; i < ec_idx.size(); ++i) idx_ec[ec_idx[i]] = i;
+
+    // Sort transcripts w.r.t. a randomly picked EC
+    std::sort(tr_idx.begin(), tr_idx.end(),
+              [&idx_ec, &tr_ec](size_t a, size_t b) -> bool {
+                size_t tr1 = (!tr_ec[a].empty()) ? idx_ec[tr_ec[a][0]] : std::numeric_limits<size_t>::max();
+                size_t tr2 = (!tr_ec[b].empty()) ? idx_ec[tr_ec[b][0]] : std::numeric_limits<size_t>::max();
+                return tr1 < tr2;
+              });
+    for (size_t i = 0; i < tr_idx.size(); ++i) idx_tr[tr_idx[i]] = i;
+  }
+  ec_idx.clear();
+  idx_ec.clear();
+  tr_idx.clear();
+
+  for (auto& trinfo : trinfos) {
+    for (auto& tr : trinfo) {
+      tr.trid = idx_tr[tr.trid];
+    }
+  }
 
   std::vector<std::string> new_target_names_;
   std::vector<uint32_t> new_target_lens_;
@@ -272,24 +310,37 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::ve
   new_target_lens_.reserve(target_lens_.size());
   new_target_seqs_.reserve(target_seqs_.size());
   for (size_t i = 0; i < target_names_.size(); ++i) {
-    new_target_names_.push_back(target_names_[tr_map[i]]);
-    new_target_lens_.push_back(target_lens_[tr_map[i]]);
+    new_target_names_.push_back(target_names_[idx_tr[i]]);
+    new_target_lens_.push_back(target_lens_[idx_tr[i]]);
   }
   for (size_t i = 0; i < target_seqs_.size(); ++i) {
-    new_target_seqs_.push_back(target_seqs_[tr_map[i]]);
+    new_target_seqs_.push_back(target_seqs_[idx_tr[i]]);
   }
-  std::cout << 4 << std::endl;
+
+  idx_tr.clear();
 
   target_names_ = new_target_names_;
   target_lens_ = new_target_lens_;
   target_seqs_ = new_target_seqs_;
 
-  std::cout << 5 << std::endl;
   PopulateMosaicECs(trinfos);
 
   std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
+
+
+  for (const auto& r : ecmap) {
+      Roaring r2;
+      uint32_t* trs = new uint32_t[r.cardinality()];
+      r.toUint32Array(trs);
+      for (size_t i = 0; i < r.cardinality(); ++i) {
+          r2.add(trs[i] - trs[0]);
+      }
+      r2.runOptimize();
+      std::cout << "r\t" << r2.getSizeInBytes() << std::endl;
+  }
+
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
@@ -352,8 +403,9 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       } else {
         // Otherwise, we create a new EC
         ec = ecmapinv.size();
+        u.runOptimize();
         ecmapinv.insert({u,ec});
-        ecmap.push_back(u);
+        ecmap.push_back(std::move(u));
       }
 
       // Assign mosaic EC to the corresponding part of unitig
