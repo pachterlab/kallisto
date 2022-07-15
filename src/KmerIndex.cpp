@@ -241,16 +241,18 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
     }
   }
 
-  seqs.clear();
+  // TODO:
+  // Replace seqs with a file on disk
+  //seqs.clear();
 
-  size_t N_ITER = 50;
+  size_t N_ITER = 10;
   uint32_t tmp_id = 0;
 
   // Threshold large ECs
   size_t n_removed;
   for (auto& trinfo : trinfos) {
-    if (trinfo.size() > 1000) {
-      //trinfo.clear();
+    if (trinfo.size() > 200) {
+      trinfo.clear();
       ++n_removed;
     }
   }
@@ -329,7 +331,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 
-
+  /*
   for (const auto& r : ecmap) {
       Roaring r2;
       uint32_t* trs = new uint32_t[r.cardinality()];
@@ -340,6 +342,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
       r2.runOptimize();
       std::cout << "r\t" << r2.getSizeInBytes() << std::endl;
   }
+  */
 
 }
 
@@ -347,9 +350,20 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
   std::cout << "Entering PopulateMosaicECs" << std::endl;
 
+  // Create the empty EC
+  Roaring r;
+  ecmapinv.insert({r,0});
+  ecmap.push_back(std::move(r));
+
   for (const auto& um : dbg) {
 
     Node* n = um.getData();
+
+    // Process empty ECs
+    if (trinfos[n->id].size() == 0) {
+      n->ec.insert(0, um.len, 0);
+      continue;
+    }
 
     // Find the overlaps
     std::vector<int> brpoints;
@@ -1043,33 +1057,50 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
 //       res is empty if ec is not in ecma
 std::vector<int32_t> KmerIndex::intersect(int32_t ec, const std::vector<int32_t>& v) const {
   std::vector<int32_t> res;
-  //auto search = ecmap.find(ec);
-  if (ec < ecmap.size()) {
-    //if (search != ecmap.end()) {
-    //auto& u = search->second;
+  if (ecmap[ec].cardinality() == 0) {
+    // If the EC has no transcripts, it has been filtered due to its size
+    res.assign(v.begin(), v.end());
+  } else if (v.size() == 0) {
+    // If transcript vector is empty, it represents an EC that has been filtered
+    // due to its size
     const Roaring& r = ecmap[ec];
-    size_t ec_sz = ecmap[ec].cardinality();
-
+    size_t ec_sz = r.cardinality();
     uint32_t* trs = new uint32_t[ec_sz];
     r.toUint32Array(trs);
-
-    size_t a = 0;
-    auto b = v.begin();
-
-    while (a != ec_sz && b != v.end()) {
-      if (trs[a] < *b) {
-        ++a;
-      } else if (*b < trs[a]) {
-        ++b;
-      } else {
-        // match
-        res.push_back(trs[a]);
-        ++a;
-        ++b;
-      }
+    res.reserve(ec_sz);
+    for (size_t i = 0; i < ec_sz; ++i) {
+      res.push_back(trs[i]);
     }
     delete[] trs;
     trs = nullptr;
+  } else {
+    // Do an actual intersect
+    if (ec < ecmap.size()) {
+
+      const Roaring& r = ecmap[ec];
+      size_t ec_sz = r.cardinality();
+
+      uint32_t* trs = new uint32_t[ec_sz];
+      r.toUint32Array(trs);
+
+      size_t a = 0;
+      auto b = v.begin();
+
+      while (a != ec_sz && b != v.end()) {
+        if (trs[a] < *b) {
+          ++a;
+        } else if (*b < trs[a]) {
+          ++b;
+        } else {
+          // match
+          res.push_back(trs[a]);
+          ++a;
+          ++b;
+        }
+      }
+      delete[] trs;
+      trs = nullptr;
+    }
   }
   return res;
 }
