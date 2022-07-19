@@ -488,11 +488,12 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   }
 
   // 6. write number of equivalence classes
-  tmp_size = ecmap.size();
+  //tmp_size = ecmap.size();
+  tmp_size = 0;
   out.write((char *)&tmp_size, sizeof(tmp_size));
 
   // 7. write out each equiv class
-  for (int32_t ec = 0; ec < ecmap.size(); ec++) {
+  for (int32_t ec = 0; ec < tmp_size; ec++) {
     Roaring& v = ecmap[ec];
     char* buffer = new char[v.getSizeInBytes()];
     tmp_size = v.write(buffer);
@@ -609,7 +610,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
-  ecmap.resize(ecmap_size);
+  //ecmap.resize(ecmap_size);
   int32_t tmp_id;
   int32_t tmp_ecval;
   size_t vec_size;
@@ -622,9 +623,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     char* buffer = new char[vec_size];
     // 7.2 deserialize bit vector
     in.read(buffer, vec_size);
-    Roaring r = Roaring::read(buffer);
-    ecmap[ec] = r;
-    ecmapinv.insert({std::move(r), ec});
+    //Roaring r = Roaring::read(buffer);
+    //ecmap[ec] = r;
+    //ecmapinv.insert({std::move(r), ec});
 
     delete[] buffer;
     buffer = nullptr;
