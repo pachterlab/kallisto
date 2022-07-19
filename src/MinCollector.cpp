@@ -35,33 +35,32 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
 }
 
 int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, std::vector<int32_t> &u) const {
-  std::vector<int> u1 = intersectECs(v1);
-  std::vector<int> u2 = intersectECs(v2);
-  //std::cout << "XXX" << u1.size() << ":" << v1.size() << "::" << u2.size() << ":" << v2.size() << std::endl; // XXX0:3::0:0 = needs fixing
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
+  Roaring u1 = intersectECs(v1);
+  Roaring u2 = intersectECs(v2);
 
-  if (u1.empty() && u2.empty()) {
+  if (u1.isEmpty() && u2.isEmpty()) {
     return -1;
   }
 
   // non-strict intersection.
-  if (u1.empty()) {
+  if (u1.isEmpty()) {
     if (v1.empty()) {
-      u = u2;
+      r = u2;
     } else {
       return -1;
     }
-  } else if (u2.empty()) {
+  } else if (u2.isEmpty()) {
     if (v2.empty()) {
-      u = u1;
+      r = u1;
     } else {
       return -1;
     }
   } else {
-    u = intersect(u1,u2);
+    r = u1 & u2;
   }
 
-  if (u.empty()) {
+  if (r.isEmpty()) {
     return -1;
   }
   return 1;
@@ -69,7 +68,7 @@ int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, in
 
 int MinCollector::collect(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int>>& v2, bool nonpaired) {
-  std::vector<int> u;
+  Roaring u;
   int r = intersectKmers(v1, v2, nonpaired, u);
   if (r != -1) {
     return increaseCount(u);
@@ -98,50 +97,24 @@ int MinCollector::findEC(const std::vector<int32_t>& u) const {
   }
 }
 
-int MinCollector::increaseCount(const std::vector<int32_t>& u) {
-  int ec = findEC(u);
+int MinCollector::increaseCount(const Roaring& r) {
 
-  if (u.empty()) {
+  int ret = 0;
+  if (r.isEmpty()) {
     return -1;
   } else {
-    if (ec != -1) {
-      ++counts[ec];
-      return ec;
+    auto elem = index.ecmapinv.find(r);
+    if (elem != index.ecmapinv.end()) {
+      ++counts[elem->second];
+      ret = elem->second;
     } else {
-      auto necs = counts.size();
-      //index.ecmap.insert({necs,u});
-      Roaring r;
-      for (int32_t i : u) {
-        r.add(i);
-      }
-      index.ecmap.push_back(r);
-      index.ecmapinv.insert({std::move(r), necs});
+      size_t n_elems = index.ecmapinv.size();
+      index.ecmapinv.insert({r, n_elems});
       counts.push_back(1);
-      return necs;
+      ret = n_elems;
     }
   }
-
-  /* -- removable
-  if (u.size() == 1) {
-    int ec = u[0];
-    ++counts[ec];
-    return ec;
-  }
-  auto search = index.ecmapinv.find(u);
-  if (search != index.ecmapinv.end()) {
-    // ec class already exists, update count
-    ++counts[search->second];
-    return search->second;
-  } else {
-    // new ec class, update the index and count
-    auto necs = counts.size();
-    //index.ecmap.insert({necs,u});
-    index.ecmap.push_back(u);
-    index.ecmapinv.insert({u,necs});
-    counts.push_back(1);
-    return necs;
-  }
-  */
+  return ret;
 }
 
 int MinCollector::decreaseCount(const int ec) {
@@ -156,9 +129,10 @@ struct ComparePairsBySecond {
   }
 };
 
-std::vector<int32_t> MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+  Roaring r;
   if (v.empty()) {
-    return {};
+    return r;
   }
   sort(v.begin(), v.end(), [&](std::pair<const_UnitigMap<Node>, int>& a, std::pair<const_UnitigMap<Node>, int>& b)
        {
@@ -171,56 +145,23 @@ std::vector<int32_t> MinCollector::intersectECs(std::vector<std::pair<const_Unit
        }); // sort by contig, and then first position
 
   //int ec = index.dbGraph.ecs[v[0].first.contig];
-  int ec = v[0].first.getData()->ec[v[0].first.dist];
-  int lastEC = ec;
-  Roaring& r = index.ecmap[ec];
-  std::vector<int32_t> u;
-  uint32_t* trs = new uint32_t[r.cardinality()];
-  r.toUint32Array(trs);
-  u.reserve(r.cardinality());
-  for (size_t i = 0; i < r.cardinality(); ++i) u.push_back(trs[i]);
-  delete[] trs;
-  trs = nullptr;
-
-  /*
-  std::cout << "YYY" << v.size() << " " << ec << " " << u.size() << " : " << v[0].first.getData()->ec.size() << " - ";
-  for (auto xxx : v) {
-    std::cout << xxx.second << " ";
-  }
-  std::cout << " = ";
-  for (auto eee : v[0].first.getData()->ec) {
-    std::cout << eee << " ";
-  }
-  std::cout << std::endl;
-  */
+  Roaring ec = v[0].first.getData()->ec[v[0].first.dist];
+  Roaring lastEC = ec;
+  r = ec;
 
   for (int i = 1; i < v.size(); i++) {
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
-        v[i].first.getData()->ec[v[i].first.dist] != v[i-1].first.getData()->ec[v[i-1].first.dist]) {
+        !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
       ec = v[i].first.getData()->ec[v[i].first.dist];
-      if (ec != lastEC) {
-        u = index.intersect(ec, u);
+      if (!(ec == lastEC)) {
+        r = r & ec;
         lastEC = ec;
-        if (u.empty()) {
-          return u;
+        if (r.isEmpty()) {
+          return r;
         }
       }
     }
   }
-
-  /*for (auto &x : vp) {
-    //tmp = index.intersect(x.first,u);
-    u = index.intersect(x.first,u);
-    //if (!tmp.empty()) {
-     // u = tmp;
-      //count++; // increase the count
-     // }
-  }*/
-
-  // if u is empty do nothing
-  /*if (u.empty()) {
-    return u;
-    }*/
 
   // find the range of support
   int minpos = std::numeric_limits<int>::max();
@@ -235,7 +176,7 @@ std::vector<int32_t> MinCollector::intersectECs(std::vector<std::pair<const_Unit
     return {};
   }
 
-  return u;
+  return r;
 }
 
 

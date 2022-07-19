@@ -10,7 +10,6 @@
 #include "EMAlgorithm.h"
 #include "Multinomial.hpp"
 
-
 class Bootstrap {
     // needs:
     // - "true" counts

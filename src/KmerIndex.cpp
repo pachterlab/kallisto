@@ -329,7 +329,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
 
   std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
-  std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
+  //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 
   /*
   for (const auto& r : ecmap) {
@@ -350,18 +350,14 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
   std::cout << "Entering PopulateMosaicECs" << std::endl;
 
-  // Create the empty EC
-  Roaring r;
-  ecmapinv.insert({r,0});
-  ecmap.push_back(std::move(r));
-
   for (const auto& um : dbg) {
 
     Node* n = um.getData();
 
     // Process empty ECs
     if (trinfos[n->id].size() == 0) {
-      n->ec.insert(0, um.len, 0);
+      Roaring r;
+      n->ec.insert(0, um.len, std::move(r));
       continue;
     }
 
@@ -409,21 +405,21 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
       assert(!u.isEmpty());
 
-      auto search = ecmapinv.find(u);
-      int ec = -1;
-      if (search != ecmapinv.end()) {
-        // See if we've created an EC for this set of transcripts yet
-        ec = search->second;
-      } else {
-        // Otherwise, we create a new EC
-        ec = ecmapinv.size();
-        u.runOptimize();
-        ecmapinv.insert({u,ec});
-        ecmap.push_back(std::move(u));
-      }
+      //auto search = ecmapinv.find(u);
+      //int ec = -1;
+      //if (search != ecmapinv.end()) {
+        //// See if we've created an EC for this set of transcripts yet
+        //ec = search->second;
+      //} else {
+        //// Otherwise, we create a new EC
+        //ec = ecmapinv.size();
+        //u.runOptimize();
+        //ecmapinv.insert({u,ec});
+        //ecmap.push_back(std::move(u));
+      //}
 
       // Assign mosaic EC to the corresponding part of unitig
-      n->ec.insert(brpoints[i-1], brpoints[i], ec);
+      n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
     }
     // Assign position and sense for all transcripts belonging to unitig
     n->pos = pos;
@@ -611,21 +607,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t ecmap_size;
   in.read((char *)&ecmap_size, sizeof(ecmap_size));
 
-
-  std::vector<uint32_t> eccount(ecmap_size, 0);
-  for (const auto& um : dbg) {
-    Node* n = um.getData();
-    std::vector<uint32_t> ecs;
-    n->ec.get_vals(ecs);
-    for (uint32_t ec : ecs) {
-      eccount[ec]++;
-    }
-  }
-  for (uint32_t ecc : eccount) {
-      std::cout << "eccount:\t" << ecc << std::endl;
-  }
-
-
   std::cerr << "[index] number of equivalence classes: "
     << pretty_num(ecmap_size) << std::endl;
   ecmap.resize(ecmap_size);
@@ -747,7 +728,7 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
-int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const {
+int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   bool d1 = true;
   bool d2 = true;
   int p1 = -1;
@@ -796,7 +777,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2, int ec) c
 
   // We want the reads to map within the same EC block on the same unitig
   if (!um1.isSameReferenceUnitig(um2) ||
-      um1.getData()->ec[um1.dist] != um2.getData()->ec[um2.dist]) {
+      !(um1.getData()->ec[um1.dist] == um2.getData()->ec[um2.dist])) {
     return -1;
   }
 
@@ -1010,22 +991,23 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   const Node* n = um.getData();
   auto ecs = n->ec.get_leading_vals(um.dist);
   size_t offset = 0;
-  size_t ec = ecs[ecs.size() - 1];
+  const Roaring& ec = ecs[ecs.size() - 1];
 
   for (size_t i = 0; i < ecs.size() - 1; ++i) {
-    offset += ecmap[ecs[i]].cardinality();
+    offset += ecs[i].cardinality();
   }
 
-  uint32_t* trs = new uint32_t[ecmap[ec].cardinality()];
-  ecmap[ec].toUint32Array(trs);
-
-  for (size_t i = 0; i < ecmap[ec].cardinality(); ++i) {
+  uint32_t* trs = new uint32_t[ec.cardinality()];
+  ec.toUint32Array(trs);
+  for (size_t i = 0; i < ec.cardinality(); ++i) {
     if (trs[i] == tr) {
       trpos = n->pos[offset + i];
       trsense = !n->sense.contains(offset + i);
       break;
     }
   }
+  delete[] trs;
+  trs = nullptr;
 
   if (trpos == -1) {
     return {-1,true};
@@ -1055,52 +1037,18 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
 //       v is sorted in increasing order
 // post: res contains the intersection  of ecmap[ec] and v sorted increasing
 //       res is empty if ec is not in ecma
-std::vector<int32_t> KmerIndex::intersect(int32_t ec, const std::vector<int32_t>& v) const {
-  std::vector<int32_t> res;
-  if (ecmap[ec].cardinality() == 0) {
+Roaring KmerIndex::intersect(const Roaring& ec, const Roaring& v) const {
+  Roaring res;
+  if (ec.cardinality() == 0) {
     // If the EC has no transcripts, it has been filtered due to its size
-    res.assign(v.begin(), v.end());
-  } else if (v.size() == 0) {
+    res = v;
+  } else if (v.cardinality() == 0) {
     // If transcript vector is empty, it represents an EC that has been filtered
     // due to its size
-    const Roaring& r = ecmap[ec];
-    size_t ec_sz = r.cardinality();
-    uint32_t* trs = new uint32_t[ec_sz];
-    r.toUint32Array(trs);
-    res.reserve(ec_sz);
-    for (size_t i = 0; i < ec_sz; ++i) {
-      res.push_back(trs[i]);
-    }
-    delete[] trs;
-    trs = nullptr;
+    res = ec;
   } else {
     // Do an actual intersect
-    if (ec < ecmap.size()) {
-
-      const Roaring& r = ecmap[ec];
-      size_t ec_sz = r.cardinality();
-
-      uint32_t* trs = new uint32_t[ec_sz];
-      r.toUint32Array(trs);
-
-      size_t a = 0;
-      auto b = v.begin();
-
-      while (a != ec_sz && b != v.end()) {
-        if (trs[a] < *b) {
-          ++a;
-        } else if (*b < trs[a]) {
-          ++b;
-        } else {
-          // match
-          res.push_back(trs[a]);
-          ++a;
-          ++b;
-        }
-      }
-      delete[] trs;
-      trs = nullptr;
-    }
+    res = ec & v;
   }
   return res;
 }
@@ -1123,14 +1071,14 @@ void KmerIndex::loadTranscriptSequences() const {
     const Node* n = um.getData();
     auto ecs = n->ec.get_leading_vals(um.dist);
     size_t offset = 0;
-    size_t ec = ecs[ecs.size() - 1];
+    const Roaring& ec = ecs[ecs.size() - 1];
     for (size_t i = 0; i < ecs.size() - 1; ++i) {
-      offset += ecmap[ecs[i]].cardinality();
+      offset += ecs[i].cardinality();
     }
 
-    uint32_t* trs = new uint32_t[ecmap[ec].cardinality()];
-    ecmap[ec].toUint32Array(trs);
-    for (size_t i = 0; i < ecmap[ec].cardinality(); ++i) {
+    uint32_t* trs = new uint32_t[ec.cardinality()];
+    ec.toUint32Array(trs);
+    for (size_t i = 0; i < ec.cardinality(); ++i) {
       bool sense = n->sense.contains(offset + i);
       u2t tr(trs[i], n->pos[offset + i], sense);
       // TODO:

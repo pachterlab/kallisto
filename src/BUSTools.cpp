@@ -9,13 +9,15 @@ void writeBUSHeader(std::ofstream &out, int bclen, int umilen) {
   out.write((char*)(&umilen), sizeof(umilen));
   std::string header_text = "BUS file produced by kallisto";
   uint32_t len = header_text.size();
-  out.write((char*)(&len),sizeof(len));  
+  out.write((char*)(&len),sizeof(len));
   out.write(header_text.c_str(), len);
 }
 
 void writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
   for (const auto &b : bv) {
-    if (b.ec != -1) { // maybe keep non-mapping reads ?!?
+    if (!b.ec.isEmpty()) { // maybe keep non-mapping reads ?!?
+      // XXX:
+      // Write out the actual EC
       out.write((char*)(&b), sizeof(b));
     }
   }
@@ -23,10 +25,13 @@ void writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
 
 void writeBUSMatrix(const std::string &filename,
                     std::vector<std::vector<std::pair<int,int>>> &data, int cols) {
+  // TODO:
+  // Figure this out
+  /*
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out | std::ios::binary);
   writeBUSHeader(of, BUSFORMAT_FAKE_BARCODE_LEN, 1);
-  if (!data.empty()) { // reduntant  
+  if (!data.empty()) { // reduntant
     for (size_t j = 0; j < data.size(); j++) {
       const auto &v = data[j];
       for (size_t i = 0; i < v.size(); i++) {
@@ -43,4 +48,5 @@ void writeBUSMatrix(const std::string &filename,
     }
   }
   of.close();
+  */
 }

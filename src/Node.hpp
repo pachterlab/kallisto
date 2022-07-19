@@ -25,9 +25,11 @@ class Node: public CDBG_Data_t<Node> {
         uint32_t id;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
-        BlockArray<uint32_t> ec;
+        BlockArray<Roaring> ec;
 
         // Positing of unitig within each of its transcripts
+        // TODO:
+        // Change to -pos/+pos and remove sense
         std::vector<uint32_t> pos;
         // Denotes whether each transcript agrees with the strandedness of
         // the unitig
@@ -115,13 +117,7 @@ class Node: public CDBG_Data_t<Node> {
         }
 
         // 4 Write sense of each transcript
-        size_t buf_sz = 1024;
         char* buffer = new char[sense.getSizeInBytes()];
-        //while (sense.getSizeInBytes() > buf_sz) {
-            //delete[] buffer;
-            //buf_sz = 2*(buf_sz);
-            //buffer = new char[buf_sz];
-        //}
         tmp_size = sense.write(buffer);
         out.write((char *)&tmp_size, sizeof(tmp_size));
         out.write(buffer, tmp_size);

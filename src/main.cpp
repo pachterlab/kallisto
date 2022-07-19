@@ -2676,11 +2676,11 @@ int main(int argc, char *argv[]) {
             }
           }
         } else {
-          for (int i = 0; i < index.num_trans; i++) {
-            num_unique += collection.counts[i];
-          }
-          for (int i = 0; i < collection.counts.size(); i++) {
-            num_pseudoaligned += collection.counts[i];
+          for (const auto& elem : index.ecmapinv) {
+            if (elem.first.cardinality() == 1) {
+              num_unique += collection.counts[elem.second];
+            }
+            num_pseudoaligned += collection.counts[elem.second];
           }
         }
 
@@ -2849,12 +2849,12 @@ int main(int argc, char *argv[]) {
 
         // gather stats
         num_unique = 0;
-        for (int i = 0; i < index.num_trans; i++) {
-          num_unique += collection.counts[i];
-        }
         num_pseudoaligned = 0;
-        for (int i = 0; i < collection.counts.size(); i++) {
-          num_pseudoaligned += collection.counts[i];
+        for (const auto& elem : index.ecmapinv) {
+          if (elem.first.cardinality() == 1) {
+            num_unique += collection.counts[elem.second];
+          }
+          num_pseudoaligned += collection.counts[elem.second];
         }
 
         // write json file
@@ -3000,11 +3000,11 @@ int main(int argc, char *argv[]) {
         }
         #endif // USE_HDF5
 
-        for (int i = 0; i < index.num_trans; i++) {
-          num_unique += collection.counts[i];
-        }
-        for (int i = 0; i < collection.counts.size(); i++) {
-          num_pseudoaligned += collection.counts[i];
+        for (const auto& elem : index.ecmapinv) {
+          if (elem.first.cardinality() == 1) {
+            num_unique += collection.counts[elem.second];
+          }
+          num_pseudoaligned += collection.counts[elem.second];
         }
 
         if (num_pseudoaligned == 0) {
@@ -3229,6 +3229,9 @@ int main(int argc, char *argv[]) {
       }
       */
     } else if (cmd == "quant-tcc") {
+      // TODO:
+      // Implement this
+      /*
       if (argc==2) {
         usageTCCQuant();
         return 0;
@@ -3240,9 +3243,9 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
-        size_t num_ecs = index.ecmap.size();
+        //size_t num_ecs = index.ecmap.size();
         MinCollector collection(index, opt);
-        std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts; // Stores TCCs
+        std::vector<std::vector<std::pair<uint32_t, uint32_t>>> batchCounts; // Stores TCCs
         std::ifstream in((opt.tccFile));
         bool firstline = true;
         bool isMatrixFile = false;
@@ -3318,11 +3321,16 @@ int main(int argc, char *argv[]) {
                     << "expected " << pretty_num(nlines) << std::endl;
           exit(1);
         }
+        */
+        // XXX:
+        /*
         if ((isMatrixFile && ncol != num_ecs) || (!isMatrixFile && ncol > num_ecs)) {
           std::cerr << "Error: number of equivalence classes does not match index. Found "
                     << pretty_num(ncol) << ", expected " << pretty_num(num_ecs) << std::endl;
           exit(1);
         }
+        */
+        /*
 
         std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
         Abundance_mat.resize(nrow, {});
@@ -3399,7 +3407,6 @@ int main(int argc, char *argv[]) {
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
         auto EM_lambda = [&](int id) {
           MinCollector collection(index, opt);
-          collection.counts.assign(index.ecmap.size(), 0);
           const auto& bc = batchCounts[id];
           for (const auto &p : bc) {
             collection.counts[p.first] = p.second;
@@ -3523,6 +3530,7 @@ int main(int argc, char *argv[]) {
           writeFLD(fldfilename, FLD_mat);
         }
       }
+      */
     } else if (cmd == "pseudo") {
       if (argc==2) {
         usagePseudo();
@@ -3568,11 +3576,11 @@ int main(int argc, char *argv[]) {
             }
           }
         } else {
-          for (int i = 0; i < index.num_trans; i++) {
-            num_unique += collection.counts[i];
-          }
-          for (int i = 0; i < collection.counts.size(); i++) {
-            num_pseudoaligned += collection.counts[i];
+          for (const auto& elem : index.ecmapinv) {
+            if (elem.first.cardinality() == 1) {
+              num_unique += collection.counts[elem.second];
+            }
+            num_pseudoaligned += collection.counts[elem.second];
           }
         }
 

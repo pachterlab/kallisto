@@ -12,7 +12,7 @@
 #include "KmerIndex.h"
 #include "GeneModel.h"
 
-void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
+void outputPseudoBam(const KmerIndex &index, const Roaring& u,
                     const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<KmerEntry,int>>& v1,
                     const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<KmerEntry,int>>& v2,
                     bool paired, bam_hdr_t *h, samFile *fp);
@@ -29,12 +29,11 @@ struct PseudoAlignmentInfo {
   bool r2empty; // 4
   int k1pos; // -1 for not present, 0-based position of first mapping k-mer in read 1
   int k2pos;
-  int32_t ec_id;
-  std::vector<int32_t> u;
+  Roaring ec;
   uint64_t barcode;
   uint64_t UMI;
 
-  PseudoAlignmentInfo() : id(-1), r1empty (true), r2empty(true), paired(true), k1pos(-1), k2pos(-1), ec_id(-1), barcode(0), UMI(0) {}
+  PseudoAlignmentInfo() : id(-1), r1empty (true), r2empty(true), paired(true), k1pos(-1), k2pos(-1), barcode(0), UMI(0) {}
 };
 
 

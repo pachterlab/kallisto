@@ -262,7 +262,7 @@ public:
   std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
-  std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
+  std::unordered_map<Roaring, uint32_t, RoaringHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
   EcMap bus_ecmap;
   std::unordered_map<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
@@ -275,15 +275,15 @@ public:
   std::vector<PseudoAlignmentBatch> pseudobatch_stragglers;
   int last_pseudobatch_id;
   void outputFusion(const std::stringstream &o);
-  std::vector<std::unordered_map<std::vector<int>, int, SortedVectorHasher>> newBatchECcount;
-  std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
-  std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
+  std::vector<std::unordered_map<Roaring, int, RoaringHasher>> newBatchECcount;
+  std::vector<std::vector<std::pair<Roaring, std::string>>> batchUmis;
+  std::vector<std::vector<std::pair<Roaring, std::string>>> newBatchECumis;
   void processReads();
   void processAln(const EMAlgorithm& em, bool useEM);
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
+  void update(const std::vector<uint32_t>& c, const std::vector<Roaring>& newEcs, std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
 };
 
 class ReadProcessor {
@@ -296,8 +296,8 @@ public:
   size_t bufsize;
   bool paired;
   const MinCollector& tc;
-  std::vector<std::pair<int, std::string>> ec_umi;
-  std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
+  std::vector<std::pair<Roaring, std::string>> ec_umi;
+  std::vector<std::pair<Roaring, std::string>> new_ec_umi;
   const KmerIndex& index;
   MasterProcessor& mp;
   FastqSequenceReader batchSR;
@@ -311,11 +311,11 @@ public:
   std::vector<std::pair<const char*, int>> quals;
   std::vector<uint32_t> flags;
   std::vector<std::string> umis;
-  std::vector<std::vector<int>> newEcs;
+  std::vector<Roaring> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;
 
-  std::vector<int> counts;
+  std::vector<uint32_t> counts;
 
   void operator()();
   void processBuffer();
@@ -350,10 +350,10 @@ public:
   std::vector<std::pair<const char*, int>> quals;
   std::vector<uint32_t> flags;
 
-  std::vector<std::vector<int32_t>> newEcs;
+  std::vector<Roaring> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;
-  std::vector<int> counts;
+  std::vector<uint32_t> counts;
   std::vector<BUSData> bv;
   std::vector<std::pair<BUSData, Roaring>> newB;
 

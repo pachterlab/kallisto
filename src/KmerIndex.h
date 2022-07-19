@@ -119,8 +119,8 @@ struct KmerIndex {
 
   void match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const;
 //  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
-  int mapPair(const char *s1, int l1, const char *s2, int l2, int ec) const;
-  std::vector<int> intersect(int ec, const std::vector<int>& v) const;
+  int mapPair(const char *s1, int l1, const char *s2, int l2) const;
+  Roaring intersect(const Roaring& ec, const Roaring& v) const;
 
   void BuildTranscripts(const ProgramOptions& opt);
   //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);

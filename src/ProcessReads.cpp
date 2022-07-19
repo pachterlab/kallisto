@@ -83,7 +83,7 @@ const int default_genome_auxlen = 7; // for ZW:f:0.0
 //methods
 
 int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
-  int limit = 1048576; 
+  int limit = 1048576;
   std::vector<std::pair<const char*, int>> seqs;
   seqs.reserve(limit/50);
 
@@ -96,14 +96,14 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
   size_t nummapped = 0;
 
   bool paired = !opt.single_end;
-  
+
   if (paired) {
     std::cerr << "[quant] running in paired-end mode" << std::endl;
   } else {
     std::cerr << "[quant] running in single-end mode" << std::endl;
   }
 
-  for (const auto& fs : opt.batch_files) { 
+  for (const auto& fs : opt.batch_files) {
     for (int i = 0; i < fs.size(); i += (paired) ? 2 : 1) {
       if (paired) {
         std::cerr << "[quant] will process pair " << (i/2 +1) << ": "  << fs[i] << std::endl
@@ -199,7 +199,7 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
 
-  
+
 
   /*
   for (int i = 0; i < 4096; i++) {
@@ -314,7 +314,7 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
-  
+
   return numreads;
 }
 
@@ -342,6 +342,7 @@ void MasterProcessor::processReads() {
       if (t.second <= 0) {
         continue;
       }
+
       int ec = tc.increaseCount(t.first); // modifies the ecmap
 
       if (ec != -1 && t.second > 1) {
@@ -377,6 +378,8 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
+    // XXX
+    /*
     for (int i = 0; i < bus_ecmap.size(); i++) {
       auto &u = bus_ecmap[i];
       int ec = index.ecmapinv.size();
@@ -388,6 +391,7 @@ void MasterProcessor::processReads() {
       index.ecmapinv.insert({u,ec});
       index.ecmap.push_back(u);
     }
+    */
 
   } else if (opt.batch_mode && opt.batch_bus) {
     std::vector<std::thread> workers;
@@ -418,6 +422,8 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
+    // XXX
+    /*
     for (int i = 0; i < bus_ecmap.size(); i++) {
       Roaring& u = bus_ecmap[i];
       int ec = index.ecmapinv.size();
@@ -429,6 +435,7 @@ void MasterProcessor::processReads() {
       index.ecmapinv.insert({u,ec});
       index.ecmap.push_back(u);
     }
+    */
   } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -446,7 +453,7 @@ void MasterProcessor::processReads() {
         }
         for (int i = 0; i < opt.threads; i++) {
           workers[i].join();
-        } 
+        }
         id++;
         assert(id == num_ids);
       } else {
@@ -470,6 +477,8 @@ void MasterProcessor::processReads() {
           }
         }
       } else {
+        // TODO
+        /*
         std::vector<int32_t> tmp_counts;
         tmp_counts.resize(tc.counts.size(), 0);
         // process the regular EC umi now
@@ -497,6 +506,7 @@ void MasterProcessor::processReads() {
           }
           umis.clear();
         }
+        */
       }
     }
 
@@ -510,15 +520,15 @@ void MasterProcessor::processReads() {
           if (t.second <= 0) {
             continue;
           }
-          int ecsize = index.ecmap.size();
+          int ecsize = index.ecmapinv.size();
           int ec = tc.increaseCount(t.first);
-          if (ec != -1 && ecsize < index.ecmap.size()) {
+          if (ec != -1 && ecsize < index.ecmapinv.size()) {
             num_newEcs++;
           }
         }
       }
       // for each cell
-      std::vector<int> tmp_counts;
+      std::vector<uint32_t> tmp_counts;
       tmp_counts.resize(tc.counts.size(), 0);
       for (int id = 0; id < num_ids; id++) {
         tmp_counts.assign(tmp_counts.size(), 0);
@@ -528,9 +538,11 @@ void MasterProcessor::processReads() {
           if (t.second <= 0) {
             continue;
           }
-          int ec = tc.findEC(t.first);
-          assert(ec != -1);
-          tmp_counts[ec] += t.second;
+
+          auto elem = index.ecmapinv.find(t.first);
+
+          assert(elem->second != -1);
+          tmp_counts[elem->second] += t.second;
         }
         auto& bc = batchCounts[id];
         for (int j = 0; j < tmp_counts.size(); j++) {
@@ -540,6 +552,8 @@ void MasterProcessor::processReads() {
         }
       }
     } else {
+      // TODO
+      /*
       // UMI case
       // for each cell
       for (int id = 0; id < num_ids; id++) {
@@ -547,7 +561,7 @@ void MasterProcessor::processReads() {
 
         for (auto &t : newBatchECumis[id]) {
           // add the new ec
-          int ecsize = index.ecmap.size();
+          int ecsize = index.ecmapinv.size();
           int ec = tc.increaseCount(t.first);
           if (ec != -1 && ecsize < index.ecmap.size()) {
             num_newEcs++;
@@ -555,18 +569,17 @@ void MasterProcessor::processReads() {
         }
       }
 
-      std::vector<int> tmp_counts;
+      std::vector<uint32_t> tmp_counts;
       tmp_counts.resize(tc.counts.size(), 0);
       // for each cell
       for (int id = 0; id < num_ids; id++) {
         tmp_counts.assign(tmp_counts.size(), 0);
-        std::vector<std::pair<int, std::string>> umis;
+        std::vector<std::pair<Roaring, std::string>> umis;
         umis.reserve(newBatchECumis[id].size());
         // for each new ec
         for (auto &t : newBatchECumis[id]) {
           // record the ec,umi
-          int ec = tc.findEC(t.first);
-          umis.push_back({ec, std::move(t.second)});
+          umis.push_back({t.first, std::move(t.second)});
         }
         // find unique umis per ec
         std::sort(umis.begin(), umis.end());
@@ -590,6 +603,7 @@ void MasterProcessor::processReads() {
           num_umi += x.second;
         }
       }
+      */
     }
   }
 
@@ -617,7 +631,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     } else {
       bamh = createPseudoBamHeaderTrans(index);
       bamfp = sam_open(bamfn.c_str(), "wb");
-      int r = sam_hdr_write(bamfp, bamh);    
+      int r = sam_hdr_write(bamfp, bamh);
     }
 
     if (opt.threads > 1 && !opt.genomebam) {
@@ -629,7 +643,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
   // figure out where to place breakpoints!
   breakpoints.clear();
-  breakpoints.assign(numSortFiles -1 , (((uint64_t)-1)<<32));  
+  breakpoints.assign(numSortFiles -1 , (((uint64_t)-1)<<32));
   std::vector<std::vector<std::pair<uint32_t, uint32_t>>> chrWeights(model.chr.size());
   for (const auto& t : model.transcripts) {
     if (t.id >= 0 && t.id < index.num_trans) {
@@ -646,10 +660,10 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
       sum += p.second;
     }
   }
-  
+
   double bpLimit = sum / (numSortFiles-1);
 
-  // place breakpoints on evenly spaced   
+  // place breakpoints on evenly spaced
   for (auto& chrw : chrWeights) {
     // sort each by stop point
     std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t> a, std::pair<uint32_t, uint32_t> b) { return a.first < b.first;});
@@ -697,7 +711,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   for (int i = 0; i < opt.threads; i++) {
     workers.emplace_back(std::thread(AlnProcessor(index,opt,*this, em, model, useEM)));
   }
-  
+
   // let the workers do their thing
   for (int i = 0; i < opt.threads; i++) {
     workers[i].join(); //wait for them to finish
@@ -726,7 +740,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     int ret;
     std::vector<bam1_t> bv;
     std::vector<std::pair<uint64_t, uint64_t>> bb;
-    bam1_t b;  
+    bam1_t b;
     int tid;
     BGZF* ofp = bamfp->fp.bgzf;
     for (int i = 0; i < numSortFiles; i++) {
@@ -739,12 +753,12 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
       // init
       memset(&b, 0, sizeof(b));
-      
+
       if (i < numSortFiles-1) {
         // sort the vector
-        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
-          bv.push_back(b);  
-          memset(&b, 0, sizeof(b));        
+        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {
+          bv.push_back(b);
+          memset(&b, 0, sizeof(b));
         }
 
         sam_close(bamfps[i]);
@@ -753,27 +767,27 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
 
         uint64_t n = bv.size();
         for (uint64_t j = 0; j < n; j++) {
-          b = bv[j];          
+          b = bv[j];
           uint64_t pos = ((uint64_t) b.core.tid) << 32 | ((uint64_t) b.core.pos+1) << 1 | (b.core.flag & BAM_FREVERSE) >>4;
           bb.push_back({pos,j});
         }
-        
+
         std::sort(bb.begin(), bb.end(), [](std::pair<uint64_t, uint64_t> a, std::pair<uint64_t, uint64_t> b) {return a.first < b.first;});
 
         for (auto &x : bb) {
-          b = bv[x.second];           
-          ret = bam_write1(ofp, &b);               
+          b = bv[x.second];
+          ret = bam_write1(ofp, &b);
           free(bv[x.second].data);
           bv[x.second].l_data = 0;
           bv[x.second].m_data = 0;
-          
+
         }
       } else {
         // for unsorted files, just copy directly
         memset(&b, 0, sizeof(b));
-        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {        
+        while ((ret = bam_read1(bamfps[i]->fp.bgzf, &b)) >= 0) {
           ret = bam_write1(ofp, &b);
-        }  
+        }
         sam_close(bamfps[i]);
         bamfps[i] = nullptr;
         remove(tmpFileName.c_str());
@@ -796,8 +810,8 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   }
 }
 
-void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::vector<int> > &newEcs, 
-                            std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, 
+void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<Roaring> &newEcs,
+                            std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi,
                             int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
@@ -877,7 +891,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
         break;
       }
       // find the smallest batch id
-      auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(), 
+      auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(),
       [](const PseudoAlignmentBatch &p1, const PseudoAlignmentBatch &p2) -> bool {
         return p1.batch_id < p2.batch_id;
       });
@@ -921,7 +935,7 @@ void MasterProcessor::update(const std::vector<int>& c, const std::vector<std::v
         bus_ecmap.push_back(u);
       }
       auto &b = bp.first;
-      b.ec = ec;
+      b.ec = bp.second;
       bv.push_back(b);
     }
 
@@ -942,7 +956,7 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   //kstring_t str = { 0, 0, NULL };
   for (const auto &b : bv) {
     /*
-    std::cout << "name: " <<  b.data << ", ldata:" << (int)b.l_data << " ,mdata: " << (int) b.m_data  
+    std::cout << "name: " <<  b.data << ", ldata:" << (int)b.l_data << " ,mdata: " << (int) b.m_data
       <<  ", lqname " << (int) b.core.l_qname <<", lqseq " <<  (int) b.core.l_qseq << ", enull " << (int) b.core.l_extranul << std::endl;
     for (int i = 0; i < b.l_data; ++i) {
       std::cout << (int) b.data[i] << " ";
@@ -955,14 +969,14 @@ void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
     kputc('\n', &str);
     std::cout << str.s << std::endl;
     */
-    int r = sam_write1(bamfp, bamh, &b);    
-  } 
+    int r = sam_write1(bamfp, bamh, &b);
+  }
 }
 
-// bvv needs to be sorted according to MasterProcessor::bucketSplits. 
-void MasterProcessor::writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv) { 
+// bvv needs to be sorted according to MasterProcessor::bucketSplits.
+void MasterProcessor::writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv) {
   assert(bvv.size() == numSortFiles);
-  
+
   for (int i = 0; i < numSortFiles; i++) {
     std::lock_guard<std::mutex> lock(this->writer_lock);
     for (const auto &b : bvv[i]) {
@@ -1075,18 +1089,14 @@ void ReadProcessor::processBuffer() {
 
   // set up thread variables
   std::vector<std::pair<const_UnitigMap<Node>, int32_t>> v1, v2;
-  std::vector<int32_t> vtmp;
-  std::vector<int32_t> u;
+  Roaring u, vtmp;
 
-
-  u.reserve(1000);
   v1.reserve(1000);
   v2.reserve(1000);
-  vtmp.reserve(1000);
 
   const char* s1 = 0;
   const char* s2 = 0;
-  int l1,l2;
+  int l1, l2;
 
   bool findFragmentLength = (mp.opt.fld == 0) && (mp.tlencount < 10000);
   if (mp.opt.batch_mode) {
@@ -1108,7 +1118,7 @@ void ReadProcessor::processBuffer() {
   int maxBiasCount = 0;
   bool findBias = mp.opt.bias && (mp.biasCount < mp.maxBiasCount);
 
-  int biasgoal  = 0;
+  int biasgoal = 0;
   bias5.clear();
   if (findBias) {
     biasgoal = (mp.maxBiasCount - mp.biasCount);
@@ -1133,7 +1143,7 @@ void ReadProcessor::processBuffer() {
     numreads++;
     v1.clear();
     v2.clear();
-    u.clear();
+    u = Roaring();
 
     // process read
     index.match(s1, l1, v1);
@@ -1144,22 +1154,20 @@ void ReadProcessor::processBuffer() {
     // collect the target information
     int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired, u);
-    if (u.empty()) {
+    if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
         std:cerr << "TODO: Implement fusion" << std::endl;
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
-    } else {
-      ec = tc.findEC(u);
     }
 
     /* --  possibly modify the pseudoalignment  -- */
 
     // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (!mp.opt.single_overhang && !mp.opt.umi && !u.empty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
-      vtmp.clear();
+    if (!mp.opt.single_overhang && !mp.opt.umi && !u.isEmpty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
+      vtmp = Roaring();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
       int p = -1;
@@ -1185,29 +1193,29 @@ void ReadProcessor::processBuffer() {
         auto x = index.findPosition(tr, km, um, p);
         // if the fragment is within bounds for this transcript, keep it
         if (x.second && x.first + fl <= index.target_lens_[tr]) {
-          vtmp.push_back(tr);
+          vtmp.add(tr);
         } else {
           //pass
         }
         if (!x.second && x.first - fl >= 0) {
-          vtmp.push_back(tr);
+          vtmp.add(tr);
         } else {
           //pass
         }
       }
 
-      if (vtmp.size() < u.size()) {
+      if (vtmp.cardinality() < u.cardinality()) {
         u = vtmp; // copy
       }
     }
 
-    if (mp.opt.strand_specific && !u.empty()) {
+    if (mp.opt.strand_specific && !u.isEmpty()) {
 
       int p = -1;
       Kmer km;
       const_UnitigMap<Node> um;
       if (!v1.empty()) {
-        vtmp.clear();
+        vtmp = Roaring();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
         auto res = findFirstMappingKmer(v1);
         um = res.first;
@@ -1216,20 +1224,19 @@ void ReadProcessor::processBuffer() {
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
         size_t offset = 0;
-        size_t ec = ecs[ecs.size() - 1];
-        for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].cardinality();
+        const Roaring& ec = ecs[ecs.size() - 1];
+        for (size_t j = 0; j < ecs.size() - 1; ++j) {
+          offset += ecs[j].cardinality();
         }
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
-          index.ecmap[ec].toUint32Array(trs);
-          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
-            if (tr == trs[i]) {
-              if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
-
+          uint32_t* trs = new uint32_t[ec.cardinality()];
+          ec.toUint32Array(trs);
+          for (size_t j = 0; j < ec.cardinality(); ++j) {
+            if (tr == trs[j]) {
+              if ((um.strand == n->sense.contains(offset + j)) == firstStrand) {
                 // swap out
-                vtmp.push_back(tr);
+                vtmp.add(tr);
               }
               break;
             }
@@ -1237,13 +1244,14 @@ void ReadProcessor::processBuffer() {
           delete[] trs;
           trs = nullptr;
         }
-        if (vtmp.size() < u.size()) {
+
+        if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
       }
 
       if (!v2.empty()) {
-        vtmp.clear();
+        vtmp = Roaring();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
         auto res = findFirstMappingKmer(v2);
         um = res.first;
@@ -1252,19 +1260,19 @@ void ReadProcessor::processBuffer() {
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
         size_t offset = 0;
-        size_t ec = ecs[ecs.size() - 1];
-        for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].cardinality();
+        const Roaring& ec = ecs[ecs.size() - 1];
+        for (size_t j = 0; j < ecs.size() - 1; ++j) {
+          offset += ecs[j].cardinality();
         }
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
-          index.ecmap[ec].toUint32Array(trs);
-          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
+          uint32_t* trs = new uint32_t[ec.cardinality()];
+          ec.toUint32Array(trs);
+          for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[i]) {
-              if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
+              if ((um.strand == n->sense.contains(offset + j)) == secondStrand) {
                 // swap out
-                vtmp.push_back(tr);
+                vtmp.add(tr);
               }
               break;
             }
@@ -1272,36 +1280,37 @@ void ReadProcessor::processBuffer() {
           delete[] trs;
           trs = nullptr;
         }
-        if (vtmp.size() < u.size()) {
+        if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
       }
     }
 
     // find the ec
-    if (!u.empty()) {
-      ec = tc.findEC(u);
+    if (!u.isEmpty()) {
 
       if (!mp.opt.umi) {
         // count the pseudoalignment
-        if (ec == -1 || ec >= counts.size()) {
+        auto elem = index.ecmapinv.find(u);
+        if (elem == index.ecmapinv.end()) {
           // something we haven't seen before
           newEcs.push_back(u);
         } else {
           // add to count vector
-          ++counts[ec];
+          ++counts[elem->second];
         }
       } else {
-        if (ec == -1 || ec >= counts.size()) {
+        auto elem = index.ecmapinv.find(u);
+        if (elem == index.ecmapinv.end()) {
           new_ec_umi.emplace_back(u, std::move(umis[i]));
         } else {
-          ec_umi.emplace_back(ec, std::move(umis[i]));
+          ec_umi.emplace_back(u, std::move(umis[i]));
         }
       }
 
       /* -- collect extra information -- */
       // collect bias info
-      if (findBias && !u.empty() && biasgoal > 0) {
+      if (findBias && !u.isEmpty() && biasgoal > 0) {
         // collect sequence specific bias info
 
         if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
@@ -1312,7 +1321,7 @@ void ReadProcessor::processBuffer() {
       // collect fragment length info
       if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
         // try to map the reads
-        int tl = index.mapPair(s1, l1, s2, l2, ec);
+        int tl = index.mapPair(s1, l1, s2, l2);
         if (0 < tl && tl < flens.size()) {
           flens[tl]++;
           flengoal--;
@@ -1326,7 +1335,7 @@ void ReadProcessor::processBuffer() {
       PseudoAlignmentInfo info;
       info.id = (paired) ? (i/2) : i; // read id
       info.paired = paired;
-      if (!u.empty()) {
+      if (!u.isEmpty()) {
         info.r1empty = v1.empty();
         info.r2empty = v2.empty();
         const_UnitigMap<Node> um;
@@ -1341,24 +1350,19 @@ void ReadProcessor::processBuffer() {
           info.k1pos = res.second;
         }
 
-        if (ec != -1) {
-          info.ec_id = ec;
-        } else {
-          info.ec_id = -1;
-          info.u = u; // copy
-        }
+        info.ec = u;
       }
       pseudobatch.aln.push_back(std::move(info));
     }
 
     if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
       int nmap = mp.nummapped;
-      for (int i = 0; i < counts.size(); i++) {
-        nmap += counts[i];
+      for (const auto& count : counts) {
+        nmap += count;
       }
       nmap += newEcs.size();
 
-      std::cerr << '\r' << (numreads/1000000) << "M reads processed (" 
+      std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
         << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
         << "% pseudoaligned)"; std::cerr.flush();
     }
@@ -1414,14 +1418,14 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   local_id(o.local_id),
   bufsize(o.bufsize),
   numreads(o.numreads),
-  seqs(std::move(o.seqs)), 
+  seqs(std::move(o.seqs)),
   names(std::move(o.names)),
   quals(std::move(o.quals)),
   flags(std::move(o.flags)),
   newEcs(std::move(o.newEcs)),
   flens(std::move(o.flens)),
   bias5(std::move(o.bias5)),
-  bv(std::move(o.bv)),  
+  bv(std::move(o.bv)),
   batchSR(std::move(o.batchSR)),
   counts(std::move(o.counts)) {
     memcpy(&bc_len[0], &o.bc_len[0], sizeof(bc_len));
@@ -1482,8 +1486,8 @@ void BUSProcessor::operator()() {
     processBuffer();
 
     // update the results, MP acquires the lock
-    std::vector<std::pair<int, std::string>> ec_umi;
-    std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
+    std::vector<std::pair<Roaring, std::string>> ec_umi;
+    std::vector<std::pair<Roaring, std::string>> new_ec_umi;
     mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
@@ -1492,13 +1496,10 @@ void BUSProcessor::operator()() {
 void BUSProcessor::processBuffer() {
   // set up thread variables
   std::vector<std::pair<const_UnitigMap<Node>, int>> v, v2;
-  std::vector<int> vtmp;
-  std::vector<int> u;
+  Roaring vtmp, u;
 
-  u.reserve(1000);
   v.reserve(1000);
   v2.reserve(1000);
-  vtmp.reserve(1000);
 
   memset(&bc_len[0], 0, sizeof(bc_len));
   memset(&umi_len[0], 0, sizeof(umi_len));
@@ -1557,7 +1558,6 @@ void BUSProcessor::processBuffer() {
     uint32_t f = 0;
     tag_binary = stringToBinary(mp.opt.tagsequence, f);
   }
-
 
   //int incf = (bam) ? 1 : busopt.nfiles-1;
   for (int i = 0; i + incf < seqs.size(); i++) {
@@ -1678,31 +1678,22 @@ void BUSProcessor::processBuffer() {
     if (blen >= 0 && blen <= 32) {
       bc_len[blen]++;
     }
-    /* debugging
-    std::cout << "seq " << seq << std::endl;
-    std::cout << "bc  " << bc << std::endl;
-    std::cout << "umi " << umi << std::endl << std::endl;
-    */
 
     numreads++;
     v.clear();
-    u.clear();
+    u = Roaring();
 
     // process 2nd read
-    index.match(seq,seqlen, v);
+    index.match(seq, seqlen, v);
     if (busopt.paired) {
       v2.clear();
-      index.match(seq2,seqlen2, v2);
+      index.match(seq2, seqlen2, v2);
     }
 
     // collect the target information
-    int ec = -1;
-    int r = tc.intersectKmers(v, v2, !busopt.paired,u);
-    if (!u.empty()) {
-      ec = tc.findEC(u);
-    }
+    int r = tc.intersectKmers(v, v2, !busopt.paired, u);
 
-    if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.empty()) { // Strand-specificity
+    if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       int p = -1;
       Kmer km;
       const_UnitigMap<Node> um;
@@ -1710,7 +1701,7 @@ void BUSProcessor::processBuffer() {
       // Is there a reason it's not offloaded into a function that both
       // BUSProcessor::processBuffer() and ReadProcessor::processBuffer() call?
       if (!v.empty()) {
-        vtmp.clear();
+        vtmp = Roaring();
         bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
         auto res = findFirstMappingKmer(v);
         um = res.first;
@@ -1719,19 +1710,19 @@ void BUSProcessor::processBuffer() {
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
         size_t offset = 0;
-        size_t ec = ecs[ecs.size() - 1];
-        for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].cardinality();
+        const auto& ec = ecs[ecs.size() - 1];
+        for (size_t j = 0; j < ecs.size() - 1; ++j) {
+          offset += ecs[j].cardinality();
         }
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
-          index.ecmap[ec].toUint32Array(trs);
-          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
-            if (tr == trs[i]) {
-              if ((um.strand == n->sense.contains(offset + i)) == firstStrand) {
+          uint32_t* trs = new uint32_t[ec.cardinality()];
+          ec.toUint32Array(trs);
+          for (size_t j = 0; j < ec.cardinality(); ++j) {
+            if (tr == trs[j]) {
+              if ((um.strand == n->sense.contains(offset + j)) == firstStrand) {
                 // swap out
-                vtmp.push_back(tr);
+                vtmp.add(tr);
               }
               break;
             }
@@ -1739,12 +1730,12 @@ void BUSProcessor::processBuffer() {
           delete[] trs;
           trs = nullptr;
         }
-        if (vtmp.size() < u.size()) {
+        if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
       }
       if (!v2.empty()) {
-        vtmp.clear();
+        vtmp = Roaring();
         bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
         auto res = findFirstMappingKmer(v2);
         um = res.first;
@@ -1753,18 +1744,19 @@ void BUSProcessor::processBuffer() {
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
         size_t offset = 0;
-        size_t ec = ecs[ecs.size() - 1];
-        for (size_t i = 0; i < ecs.size() - 1; ++i) {
-          offset += index.ecmap[ecs[i]].cardinality();
+        const Roaring& ec = ecs[ecs.size() - 1];
+        for (size_t j = 0; j < ecs.size() - 1; ++j) {
+          offset += ecs[j].cardinality();
         }
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[index.ecmap[ec].cardinality()];
-          for (size_t i = 0; i < index.ecmap[ec].cardinality(); ++i) {
-            if (tr == trs[i]) {
-              if ((um.strand == n->sense.contains(offset + i)) == secondStrand) {
+          uint32_t* trs = new uint32_t[ec.cardinality()];
+          ec.toUint32Array(trs);
+          for (size_t j = 0; j < ec.cardinality(); ++j) {
+            if (tr == trs[j]) {
+              if ((um.strand == n->sense.contains(offset + j)) == secondStrand) {
                 // swap out
-                vtmp.push_back(tr);
+                vtmp.add(tr);
               }
               break;
             }
@@ -1772,18 +1764,14 @@ void BUSProcessor::processBuffer() {
           delete[] trs;
           trs = nullptr;
         }
-        if (vtmp.size() < u.size()) {
+        if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
-      }
-      ec = -1;
-      if (!u.empty()) { // update the ec
-        ec = tc.findEC(u);
       }
     }
 
     // find the ec
-    if (!u.empty()) {
+    if (!u.isEmpty()) {
       BUSData b;
       uint32_t f = 0;
       b.flags = 0;
@@ -1797,12 +1785,10 @@ void BUSProcessor::processBuffer() {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
-      //ec = tc.findEC(u);
-
       if (busopt.paired && ignore_umi) {
-        if (findFragmentLength && flengoal > 0 && 0 <= ec && ec < index.num_trans && !v.empty() && !v2.empty()) {
+        if (findFragmentLength && flengoal > 0 && /*0 <= ec && ec < index.num_trans &&*/ !v.empty() && !v2.empty()) {
           // try to map the reads
-          int tl = index.mapPair(seq, seqlen, seq2, seqlen2, ec);
+          int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
           if (0 < tl && tl < flens.size()) {
             flens[tl]++;
             flengoal--;
@@ -1811,17 +1797,16 @@ void BUSProcessor::processBuffer() {
       }
 
       // count the pseudoalignment
-      if (ec == -1 || ec >= counts.size()) {
+      auto elem = index.ecmapinv.find(u);
+      if (elem != index.ecmapinv.end()) {
         // something we haven't seen before
-        Roaring r;
-        for (uint32_t i : u) r.add(i);
         newEcs.push_back(u);
-        newB.push_back({b, std::move(r)});
+        newB.push_back({b, u});
       } else {
         // add to count vector
-        ++counts[ec];
+        ++counts[elem->second];
         // push back BUS record
-        b.ec = ec;
+        b.ec = u;
         bv.push_back(b);
       }
     }
@@ -1833,7 +1818,7 @@ void BUSProcessor::processBuffer() {
       uint32_t f = 0;
       info.barcode = stringToBinary(bc, blen, f);
       info.UMI = check_tag_sequence ? umi_binary : stringToBinary(umi, ulen, f);
-      if (!u.empty()) {
+      if (!u.isEmpty()) {
         info.r1empty = v.empty();
         auto res = findFirstMappingKmer(v);
         info.k1pos = res.second;
@@ -1843,25 +1828,20 @@ void BUSProcessor::processBuffer() {
           res = findFirstMappingKmer(v2);
           info.k2pos = res.second;
         }
+        info.ec = u;
 
-        if (ec != -1) {
-          info.ec_id = ec;
-        } else {
-          info.ec_id = -1;
-          info.u = u; // copy
-        }
       }
       pseudobatch.aln.push_back(std::move(info));
     }
 
     if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
         int nmap = mp.nummapped;
-        for (int i = 0; i < counts.size(); i++) {
-          nmap += counts[i];
+        for (const auto& count : counts) {
+          nmap += count;
         }
         nmap += newEcs.size();
 
-        std::cerr << '\r' << (numreads/1000000) << "M reads processed (" 
+        std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
           << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
           << "% pseudoaligned)"; std::cerr.flush();
       }
@@ -1873,7 +1853,7 @@ void BUSProcessor::clear() {
   memset(buffer,0,bufsize);
   newEcs.clear();
   counts.clear();
-  counts.resize(tc.counts.size(),0);
+  counts.resize(tc.counts.size(), 0);
   bv.clear();
   newB.clear();
 }
@@ -1901,7 +1881,7 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
 
    seqs.reserve(bufsize/50);
    if (opt.umi) {
-    umis.reserve(bufsize/50);
+     umis.reserve(bufsize/50);
    }
 
    clear();
@@ -2020,7 +2000,7 @@ void AlnProcessor::processBufferTrans() {
   if (!useEM) {
     trans_auxlen -= 7;
   }
-  
+
 
   Kmer km1,km2;
   KmerEntry val1, val2;
@@ -2034,7 +2014,7 @@ void AlnProcessor::processBufferTrans() {
     if (paired) {
       rlen2 = seqs[si2].second;
     }
-    
+
     // fill in the bam core info
     b1.core.tid = -1;
     b1.core.pos = -1;
@@ -2053,7 +2033,7 @@ void AlnProcessor::processBufferTrans() {
       b2.core.pos = -1;
       b2.core.bin = 4680; // magic bin for unmapped reads
       b2.core.qual = 0;
-      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;
       b2.core.mtid = -1;
       b2.core.mpos = -1;
       b2.core.isize = 0;
@@ -2067,9 +2047,9 @@ void AlnProcessor::processBufferTrans() {
       fillBamRecord(b2, nullptr, seqs[si2].first, names[si2].first,  quals[si2].first, seqs[si2].second, names[si2].second, pi.r2empty, trans_auxlen);
     }
 
-    if (pi.r1empty && pi.r2empty) {      
+    if (pi.r1empty && pi.r2empty) {
       bv.push_back(b1);
-      if (paired) {      
+      if (paired) {
         bv.push_back(b2);
       }
     } else {
@@ -2090,7 +2070,7 @@ void AlnProcessor::processBufferTrans() {
         }
       }
 
-      
+
       // modify u and compute norm
       int32_t nmap = u.size();
       int bestProbTr = -1;
@@ -2100,11 +2080,11 @@ void AlnProcessor::processBufferTrans() {
 
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
-        
+
         for (int i = 0; i < nmap; ++i) {
           denom += em.alpha_[u[i]] * wv[i];
         }
-        
+
         if (denom < TOLERANCE) {
           u.clear();
           ua.clear();
@@ -2135,7 +2115,7 @@ void AlnProcessor::processBufferTrans() {
         bv.push_back(b1);
         if (paired) {
           bv.push_back(b2);
-        }        
+        }
       } else {
         // set flags
         if (!pi.r1empty) {
@@ -2152,12 +2132,12 @@ void AlnProcessor::processBufferTrans() {
           if (!pi.r1empty && !pi.r2empty) {
             b1.core.flag |= BAM_FPROPER_PAIR;
             b2.core.flag |= BAM_FPROPER_PAIR;
-          }              
+          }
         }
-        
+
         // set aux
         float zero = 0.0;
-        assert(b1.l_data + trans_auxlen <= b1.m_data);      
+        assert(b1.l_data + trans_auxlen <= b1.m_data);
 
         b1.data[b1.l_data] = 'N';
         b1.data[b1.l_data+1] = 'H';
@@ -2175,7 +2155,7 @@ void AlnProcessor::processBufferTrans() {
 
         if (paired) {
           assert(b2.l_data + trans_auxlen <= b2.m_data);
-          
+
           b2.data[b2.l_data] = 'N';
           b2.data[b2.l_data+1] = 'H';
           b2.data[b2.l_data+2] = 'i';
@@ -2210,7 +2190,7 @@ void AlnProcessor::processBufferTrans() {
                 if (x.sense != trsense) {
                   for (const auto &y : ua) {
                     if (y.first == x.trid) {
-                      return {false,reptrue}; 
+                      return {false,reptrue};
                     }
                   }
                 }
@@ -2220,7 +2200,7 @@ void AlnProcessor::processBufferTrans() {
           }
         };
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
-        
+
         if (!pi.r1empty) {
           km1 = Kmer(seqs[si1].first + pi.k1pos);
           strInfo1 = strandednessInfo(km1, val1, ua);
@@ -2230,14 +2210,14 @@ void AlnProcessor::processBufferTrans() {
           km2 = Kmer(seqs[si2].first + pi.k2pos);
           strInfo2 = strandednessInfo(km2, val2, ua);
         }
-        
-        
+
+
         // first read is all on reverse strand
         if (strInfo1.first && !strInfo1.second) {
           // reverse complement
           reverseComplementSeqInData(b1);
         }
-        
+
         // we have second read and it is all on reverse strand
         if (paired && strInfo2.first && !strInfo2.second) {
           reverseComplementSeqInData(b2);
@@ -2245,12 +2225,12 @@ void AlnProcessor::processBufferTrans() {
 
 
         bool bestTr = false;
-        for (auto tp : ua) {        
+        for (auto tp : ua) {
           auto t = tp.first;
           float prob = (float) tp.second; // explicit cast
           bestTr = (t == bestProbTr);
           std::pair<int,bool> pos1, pos2;
-          
+
           if (!pi.r1empty) {
             pos1 = index.findPosition(t, km1, val1, pi.k1pos);
           } else {
@@ -2273,7 +2253,7 @@ void AlnProcessor::processBufferTrans() {
             reverseComplementSeqInData(b1c);
           }
           if (paired) {
-            b2c = b2;    
+            b2c = b2;
             b2c.data = new uint8_t[b2c.m_data];
             memcpy(b2c.data, b2.data, b2c.m_data*sizeof(uint8_t));
             if (!strInfo2.first && !pos2.second) {
@@ -2291,7 +2271,7 @@ void AlnProcessor::processBufferTrans() {
             if (!pi.r2empty && !pos2.second) {
               b1c.core.flag |= BAM_FMREVERSE;
               b2c.core.flag |= BAM_FREVERSE;
-            }            
+            }
           } else {
             if (!pi.r1empty && !pos1.second) {
               b1c.core.flag |= BAM_FREVERSE;
@@ -2304,7 +2284,7 @@ void AlnProcessor::processBufferTrans() {
               b2c.core.flag |= BAM_FSECONDARY;
             }
           }
-          
+
 
           int softclip1, softclip2, overhang1, overhang2;
           int targetlength = index.target_lens_[t];
@@ -2320,7 +2300,7 @@ void AlnProcessor::processBufferTrans() {
             b1c.core.bin = hts_reg2bin(b1c.core.pos, b1c.core.pos + seqs[si1].second-1, 14, 5);
             b1c.core.qual = 255;
             if (useEM) {
-              memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag           
+              memcpy(b1c.data + b1c.l_data - 4, &prob, 4); // set ZW tag
             }
           }
 
@@ -2384,14 +2364,14 @@ void AlnProcessor::processBufferTrans() {
           if (paired && (!pi.r2empty || bestTr)) {
             bv.push_back(b2c);
           }
-        } 
+        }
 
         delete[] b1.data;
         if (paired) {
           delete[] b2.data;
         }
       }
-    }    
+    }
   }
 
   mp.writePseudoBam(bv);
@@ -2422,7 +2402,7 @@ void AlnProcessor::processBufferGenome() {
 
   int bclen = 0;
   int umilen = 0;
-  
+
   int genome_auxlen = default_genome_auxlen;
   if (!useEM) {
     genome_auxlen -= 7;
@@ -2448,7 +2428,7 @@ void AlnProcessor::processBufferGenome() {
     genome_auxlen += (bclen + umilen) + 8;
   }
   std::string bc, umi;
-  
+
 
   Kmer km1,km2;
   KmerEntry val1, val2;
@@ -2478,7 +2458,7 @@ void AlnProcessor::processBufferGenome() {
     if (paired) {
       rlen2 = seqs[si2].second;
     }
-    
+
     // fill in the bam core info
     b1.core.tid = -1;
     b1.core.pos = -1;
@@ -2497,14 +2477,14 @@ void AlnProcessor::processBufferGenome() {
       b2.core.pos = -1;
       b2.core.bin = 4680; // magic bin for unmapped reads
       b2.core.qual = 0;
-      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;
       b2.core.mtid = -1;
       b2.core.mpos = -1;
       b2.core.isize = 0;
     }
 
     PseudoAlignmentInfo &pi = pseudobatch.aln[i];
-    
+
     if (!mp.opt.bus_mode) {
       // fill in the data info
       fillBamRecord(b1, nullptr, seqs[si1].first, names[si1].first,  quals[si1].first, seqs[si1].second, names[si1].second, pi.r1empty, genome_auxlen);
@@ -2546,7 +2526,7 @@ void AlnProcessor::processBufferGenome() {
       bc = binaryToString(pi.barcode, bclen);
       memcpy(b1.data + b1.l_data + 3, bc.c_str(), bclen+1);
       b1.l_data += bclen + 4;
-      
+
       b1.data[b1.l_data] = 'U';
       b1.data[b1.l_data+1] = 'R';
       b1.data[b1.l_data+2] = 'Z';
@@ -2594,17 +2574,17 @@ void AlnProcessor::processBufferGenome() {
         }
       }
 
-      
+
       // modify u and compute norm
       int32_t nmap = u.size();
       if (useEM) {
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
-        
+
         for (int i = 0; i < nmap; ++i) {
           denom += em.alpha_[u[i]] * wv[i];
         }
-        
+
         if (denom < TOLERANCE) {
           u.clear();
           ua.clear();
@@ -2630,7 +2610,7 @@ void AlnProcessor::processBufferGenome() {
         bv.push_back(b1);
         if (paired) {
           bv.push_back(b2);
-        }        
+        }
       } else {
         // set flags
         if (!pi.r1empty) {
@@ -2647,13 +2627,13 @@ void AlnProcessor::processBufferGenome() {
           if (!pi.r1empty && !pi.r2empty) {
             b1.core.flag |= BAM_FPROPER_PAIR;
             b2.core.flag |= BAM_FPROPER_PAIR;
-          }              
+          }
         }
-          
+
         // set aux
         float zero = 0.0;
         //assert(b1.l_data + genome_auxlen <= b1.m_data);
-        
+
         if (useEM) {
           b1.data[b1.l_data] = 'Z';
           b1.data[b1.l_data+1] = 'W';
@@ -2673,7 +2653,7 @@ void AlnProcessor::processBufferGenome() {
 
 
         // everything maps to the same strand on all transcriptomes
-        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {          
+        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
           bool reptrue = (km == km.rep());
           auto search = index.kmap.find(km.rep());
           if (search == index.kmap.end()) {
@@ -2692,7 +2672,7 @@ void AlnProcessor::processBufferGenome() {
                 if ((model.transcripts[x.trid].strand == x.sense) != chrsense) {
                   for (const auto &y : ua) {
                     if (y.first == x.trid) {
-                      return {false,reptrue}; 
+                      return {false,reptrue};
                     }
                   }
                 }
@@ -2702,7 +2682,7 @@ void AlnProcessor::processBufferGenome() {
           }
         };
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
-        
+
         if (!pi.r1empty) {
           km1 = Kmer(seqs[si1].first + seq1_offset + pi.k1pos);
           strInfo1 = strandednessInfo(km1, val1, ua);
@@ -2711,13 +2691,13 @@ void AlnProcessor::processBufferGenome() {
           km2 = Kmer(seqs[si2].first + seq2_offset + pi.k2pos);
           strInfo2 = strandednessInfo(km2, val2, ua);
         }
-        
-        
+
+
         // first read is all on reverse strand
         if (strInfo1.first && !strInfo1.second) {
-          reverseComplementSeqInData(b1);          
+          reverseComplementSeqInData(b1);
         }
-        
+
         // we have second read and it is all on reverse strand
         if (paired && strInfo2.first && !strInfo2.second) {
           reverseComplementSeqInData(b2);
@@ -2737,7 +2717,7 @@ void AlnProcessor::processBufferGenome() {
               continue;
             }
           }
-          
+
           if (paired) {
             if (!pi.r2empty) {
               pos2 = index.findPosition(t, km2, val2, pi.k2pos);
@@ -2759,7 +2739,7 @@ void AlnProcessor::processBufferGenome() {
           }
           continue;
         }
-    
+
         double bestprob = 0.0;
         std::pair<TranscriptAlignment, TranscriptAlignment> bestTra;
         if (alnmap.size() == 1) {
@@ -2810,9 +2790,9 @@ void AlnProcessor::processBufferGenome() {
               b2c.core.flag |= BAM_FMREVERSE;
             }
             if (!pi.r2empty && !tra.second.strand) {
-              b1c.core.flag |= BAM_FMREVERSE; // 
+              b1c.core.flag |= BAM_FMREVERSE; //
               b2c.core.flag |= BAM_FREVERSE;
-            }            
+            }
           } else {
             if (!pi.r1empty && !tra.first.strand) {
               b1c.core.flag |= BAM_FREVERSE;
@@ -2825,7 +2805,7 @@ void AlnProcessor::processBufferGenome() {
               b2c.core.flag |= BAM_FSECONDARY;
             }
           }
-        
+
           b1c.core.tid = tra.first.chr;
           if (!pi.r1empty) {
             b1c.core.pos = tra.first.chrpos;
@@ -2862,16 +2842,16 @@ void AlnProcessor::processBufferGenome() {
             b1c.core.mpos = b2c.core.pos;
             b2c.core.mtid = b1c.core.tid;
             b2c.core.mpos = b1c.core.pos;
-  
+
           }
 
-          
+
           if (!pi.r1empty && !pi.r2empty) {
             int tlen = bam_endpos(&b2c) - b1c.core.pos;
             b1c.core.isize = tlen;
             b2c.core.isize = -tlen;
-          }          
-        
+          }
+
 
           if (!pi.r1empty && tra.first.cigar.size() > 1) {
             fixCigarStringGenome(b1c, tra.first);
@@ -2880,15 +2860,15 @@ void AlnProcessor::processBufferGenome() {
             fixCigarStringGenome(b2c, tra.second);
           }
 
-        
+
           if (!pi.r1empty || bestTr) {
             bv.push_back(b1c);
           }
           if (paired && (!pi.r2empty || bestTr)) {
             bv.push_back(b2c);
           }
-        }  
-      
+        }
+
         delete[] b1.data;
         // std::cerr << "deleting" << b1.id << std::endl;
         if (paired) {
@@ -2896,11 +2876,11 @@ void AlnProcessor::processBufferGenome() {
           // std::cerr << "deleting" << b2.id << std::endl;
         }
       }
-    }    
+    }
   }
 
 
-  // partition the vectors. 
+  // partition the vectors.
   int k = mp.numSortFiles;
   int logk = 1;
   while (k > (1<<logk)) {
@@ -2908,11 +2888,11 @@ void AlnProcessor::processBufferGenome() {
   }
   const auto& bp = mp.breakpoints;
   std::vector<std::vector<bam1_t>> bvv(k);
-  
+
   for (auto &b : bv) {
     uint64_t pos = ((uint64_t) b.core.tid) << 32 | ((uint64_t) b.core.pos+1) << 1 | (b.core.flag & BAM_FREVERSE) >>4;
     int i=0,j=k;
-    
+
     if (b.core.tid == -1) {
       i = k-1;
     } else {
@@ -2921,7 +2901,7 @@ void AlnProcessor::processBufferGenome() {
         int m = (i+j)/2;
         //assert(i <= j);
         //assert(i == 0 || bp[i-1] <= pos);
-        //assert(j == k || bp[j] > pos);         
+        //assert(j == k || bp[j] > pos);
         //assert(i <= m);
         //assert(m <= j);
         if (pos < bp[m]) {
@@ -2985,7 +2965,7 @@ void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
 
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   int ncig = 1;
-  
+
   if (softclip > 0) {
     if (overhang > 0) {
       ncig = 3;
@@ -2998,7 +2978,7 @@ void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   if (ncig == 1) {
     return; // no-op
   }
-  
+
   uint8_t *cigafter = b.data + b.core.l_qname + b.core.n_cigar * sizeof(uint32_t);
   int copylen = b.l_data - (b.core.l_qname + b.core.n_cigar * sizeof(uint32_t));
   uint8_t *dst = cigafter+((int) (ncig-b.core.n_cigar))*sizeof(uint32_t);
@@ -3007,13 +2987,13 @@ void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang) {
   b.l_data += ((int) (ncig - b.core.n_cigar))*sizeof(uint32_t);
   b.core.n_cigar = ncig;
 
-  if (softclip > 0) {  
-    if (overhang > 0) {       
+  if (softclip > 0) {
+    if (overhang > 0) {
       *cig = BAM_CSOFT_CLIP | (((uint32_t) softclip) << BAM_CIGAR_SHIFT);
       ++cig;
       *cig = BAM_CMATCH | (((uint32_t) (rlen - overhang - softclip)) << BAM_CIGAR_SHIFT);
       ++cig;
-      *cig = BAM_CSOFT_CLIP | (((uint32_t) overhang) << BAM_CIGAR_SHIFT);      
+      *cig = BAM_CSOFT_CLIP | (((uint32_t) overhang) << BAM_CIGAR_SHIFT);
     } else {
       *cig = BAM_CSOFT_CLIP | (((uint32_t) softclip) << BAM_CIGAR_SHIFT);
       ++cig;
@@ -3030,21 +3010,21 @@ void reverseComplementSeqInData(bam1_t &b) {
 
   const int bitrev[] = {0, 8, 4, 12, 2, 10, 6, 14, 1, 9, 5, 13, 3, 11, 7, 15};
   int slen = b.core.l_qseq;
-  int lseq = (b.core.l_qseq+1)>>1;  
+  int lseq = (b.core.l_qseq+1)>>1;
   uint8_t *s = b.data + (b.core.n_cigar << 2) + b.core.l_qname;
-  
+
   for (int i = 0; i < (slen>>1); ++i) {
     int i1 = i>>1, i2=((slen-i-1)>>1);
     // let's just do the obvious thing and optimize later if needed
     int ca = s[i1] >> ((~i&1)<<2) & 0xf;
     int cb = s[i2] >> ((~(slen-1-i)&1)<<2) & 0xf;
-    
+
     s[i1] &= 0xF << ((i&1)<<2);
     s[i1] |= bitrev[cb] << ((~i&1)<<2);
     s[i2] &= 0xF << (((slen-i-1)&1)<<2);
     s[i2] |= bitrev[ca] << ((~(slen-1-i)&1)<<2);
   }
-  
+
   if ((slen & 1) == 1) {
     int i = slen >> 1;
     int i1 = i >> 1;
@@ -3053,7 +3033,7 @@ void reverseComplementSeqInData(bam1_t &b) {
     s[i1] |= bitrev[ca] << ((~i&1)<<2);
   }
 
-  uint8_t *q = b.data + (b.core.n_cigar << 2) + b.core.l_qname + ((b.core.l_qseq+1)>>1);  
+  uint8_t *q = b.data + (b.core.n_cigar << 2) + b.core.l_qname + ((b.core.l_qseq+1)>>1);
   for (int i = 0; i < (slen>>1); ++i) {
     uint8_t t = q[i];
     q[i] = q[slen-1-i];
@@ -3130,7 +3110,7 @@ FastqSequenceReader::~FastqSequenceReader() {
     kseq_destroy(s);
   }
 
-  
+
   // check if umi stream is open, then close
   if (f_umi && f_umi->is_open()) {
     f_umi->close();
@@ -3144,7 +3124,7 @@ bool FastqSequenceReader::empty() {
 
 void FastqSequenceReader::reset() {
   SequenceReader::reset();
-   
+
   for (auto &f : fp) {
     if (f) {
       gzclose(f);
@@ -3153,7 +3133,7 @@ void FastqSequenceReader::reset() {
   }
 
   if (f_umi && f_umi->is_open()) {
-    f_umi->close();    
+    f_umi->close();
   }
 
   f_umi->clear();
@@ -3164,7 +3144,7 @@ void FastqSequenceReader::reset() {
   for (auto &nll : nl) {
     nll = 0;
   }
-  
+
   current_file = 0;
   for (auto &s : seq) {
     kseq_destroy(s);
@@ -3186,7 +3166,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
   std::vector<uint32_t>& flags,
   std::vector<std::string> &umis, int& read_id,
   bool full) {
-    
+
   std::string line;
   std::string umi;
   readbatch_id += 1; // increase the batch id
@@ -3198,10 +3178,10 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
     quals.clear();
   }
   flags.clear();
-   
+
   bool usingUMIfiles = !umi_files.empty();
   int umis_read = 0;
-  
+
   int bufpos = 0;
   int pad = nfiles; //(paired) ? 2 : 1;
   while (true) {
@@ -3292,7 +3272,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
       // read for the next one
       for (int i = 0; i < nfiles; i++) {
         l[i] = kseq_read(seq[i]);
-      }        
+      }
     } else {
       state = false; // haven't opened file yet
     }
@@ -3353,12 +3333,12 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
   std::vector<uint32_t>& flags,
   std::vector<std::string> &umis, int& read_id,
   bool full) {
-  
+
   readbatch_id += 1; // increase the batch id
   read_id = readbatch_id; // copy now because we are inside a lock
   seqs.clear();
   flags.clear();
-  
+
   int bufpos = 0;
   while (true) {
     if (!state) { // should we open a file
@@ -3397,7 +3377,7 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
           return true; // read it next time
         }
       }
-      
+
       // read for the next one
       err = bam_read1(fp, rec);
       if (err < 0) {
@@ -3423,4 +3403,3 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
     }
   }
 }
-

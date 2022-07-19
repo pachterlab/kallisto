@@ -156,14 +156,19 @@ class BlockArray {
             for (const auto b : blocks) {
                 out.write((char *)&b.lb, sizeof(b.lb));
                 out.write((char *)&b.ub, sizeof(b.ub));
-                out.write((char *)&b.val, sizeof(b.val));
+                char* buffer = new char[b.val.getSizeInBytes()];
+                tmp_size = b.val.write(buffer);
+                out.write((char *)&tmp_size, sizeof(tmp_size));
+                out.write(buffer, tmp_size);
+                delete[] buffer;
+                buffer = nullptr;
             }
         }
 
         void deserialize(std::istream& in) {
 
             blocks.clear();
-            size_t tmp_size, lb, ub;
+            size_t tmp_size, roaring_size, lb, ub;
             T val;
             in.read((char *)&tmp_size, sizeof(tmp_size));
             blocks.reserve(tmp_size);
@@ -171,7 +176,12 @@ class BlockArray {
             for (size_t i = 0; i < tmp_size; ++i) {
                 in.read((char *)&lb, sizeof(lb));
                 in.read((char *)&ub, sizeof(ub));
-                in.read((char *)&val, sizeof(val));
+                in.read((char *)&roaring_size, sizeof(roaring_size));
+                char* buffer = new char[roaring_size];
+                in.read(buffer, roaring_size);
+                val = val.read(buffer);
+                delete[] buffer;
+                buffer = nullptr;
                 blocks.emplace_back(lb, ub, val);
             }
         }
