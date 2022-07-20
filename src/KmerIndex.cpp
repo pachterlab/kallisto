@@ -574,6 +574,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   UnitigMap<Node> um;
   size_t kmer_size = k * sizeof(char);
   char* buffer = new char[kmer_size];
+
+  // XXX
+  size_t roaring_size = 0, vector_size = 0;
+  // XXX
+
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
@@ -588,9 +593,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     // 3.2 deserialize node
     um.getData()->deserialize(in);
+
+
+    // XXX
+    // BEGIN BENCHMARKING
+    std::vector<Roaring> roarings;
+    um.getData()->ec.get_vals(roarings);
+    for (auto& r : roarings) {
+        r.runOptimize();
+        roaring_size += r.getSizeInBytes();
+        vector_size += sizeof(std::vector<uint32_t>) + (r.cardinality() * sizeof(uint32_t));
+    }
+    // END BENCHMARKING
   }
   delete[] buffer;
   buffer = nullptr;
+
+  // XXX
+  std::cout << "Total size of roarings in nodes: " << roaring_size << std::endl;
+  std::cout << "Total size of vectors: " << vector_size << std::endl;
+  exit(0);
 
   // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
