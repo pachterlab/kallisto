@@ -14,10 +14,8 @@ struct u2t {
     uint32_t tr_id;
     // Position of unitig within transcript
     uint32_t pos;
-    // Strandedness
-    bool sense;
     u2t() {};
-    u2t(uint32_t tr_id, uint32_t pos, bool sense) : tr_id(tr_id), pos(pos), sense(sense) {};
+    u2t(uint32_t tr_id, uint32_t pos) : tr_id(tr_id), pos(pos) {};
 };
 
 class Node: public CDBG_Data_t<Node> {
@@ -28,12 +26,9 @@ class Node: public CDBG_Data_t<Node> {
         BlockArray<Roaring> ec;
 
         // Positing of unitig within each of its transcripts
-        // TODO:
-        // Change to -pos/+pos and remove sense
+        // Most significant bit stores the sense of the transcript w.r.t. the
+        // unitig
         std::vector<uint32_t> pos;
-        // Denotes whether each transcript agrees with the strandedness of
-        // the unitig
-        Roaring sense;
 
     Node() : id(-1) {}
 
@@ -57,13 +52,13 @@ class Node: public CDBG_Data_t<Node> {
         // Pos denotes where the unitig begins within the transcript. Since
         // we're prepending um_dest to um_src, the new unitig begins
         // um_dest.len + k - 1 base pairs earlier in the transcript
+        // XXX:
+        // Fix concating pos w.r.t. the sense of the new unitig
         int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
         pos = data_dest->pos;
         for (uint32_t p : data_src->pos) {
             pos.push_back(p + offset);
         }
-        // TODO:
-        // concat sense
     }
 
     void merge(const UnitigMap<Node>& um_dest, const UnitigMap<Node>& um_src) {
@@ -74,18 +69,17 @@ class Node: public CDBG_Data_t<Node> {
             ec.insert(e.lb + um_dest.len, e.ub + um_dest.len, e.val);
         }
 
+        // XXX:
+        // Fix merging pos w.r.t. the sense of the new unitig
         int offset = (um_dest.len + um_dest.getGraph()->getK() - 1);
         for (uint32_t p : data_src->pos) {
             pos.push_back(p + offset);
         }
-        // TODO:
-        // merge sense
     }
 
     void clear(const UnitigMap<Node>& um_dest) {
         ec.clear();
         pos.clear();
-        sense = Roaring();
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
@@ -115,14 +109,6 @@ class Node: public CDBG_Data_t<Node> {
         for (uint32_t p : pos) {
             out.write((char *)&p, sizeof(p));
         }
-
-        // 4 Write sense of each transcript
-        char* buffer = new char[sense.getSizeInBytes()];
-        tmp_size = sense.write(buffer);
-        out.write((char *)&tmp_size, sizeof(tmp_size));
-        out.write(buffer, tmp_size);
-        delete[] buffer;
-        buffer = nullptr;
     }
 
     void deserialize(std::ifstream& in) {
@@ -143,14 +129,6 @@ class Node: public CDBG_Data_t<Node> {
             in.read((char *)&tmp_uint, sizeof(tmp_uint));
             pos.push_back(tmp_uint);
         }
-
-        // 4 Write sense of each transcript
-        in.read((char *)&tmp_size, sizeof(tmp_size));
-        char* buffer = new char[tmp_size];
-        in.read(buffer, tmp_size);
-        sense = sense.read(buffer);
-        delete[] buffer;
-        buffer = nullptr;
     }
 };
 

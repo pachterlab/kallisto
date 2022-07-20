@@ -381,7 +381,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
     size_t j = 0;
     std::vector<uint32_t> pos;
-    Roaring sense;
+    uint32_t sense = 0x80000000, missense = 0;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
@@ -397,9 +397,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.add(tr.trid);
-          pos.push_back(tr.pos);
-          if (tr.sense) sense.add(j);
-          ++j;
+          pos.push_back(tr.pos | (tr.sense ? sense : missense));
         }
       }
 
@@ -423,7 +421,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     }
     // Assign position and sense for all transcripts belonging to unitig
     n->pos = pos;
-    n->sense = sense;
   }
 }
 
@@ -985,6 +982,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   bool csense = um.strand;
 
   int trpos = -1;
+  uint32_t bitmask = 0x7FFFFFFF, rawpos;
   bool trsense = true;
   if (um.getData()->id == -1) {
     return {-1, true};
@@ -1002,8 +1000,9 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   ec.toUint32Array(trs);
   for (size_t i = 0; i < ec.cardinality(); ++i) {
     if (trs[i] == tr) {
-      trpos = n->pos[offset + i];
-      trsense = !n->sense.contains(offset + i);
+      rawpos = n->pos[offset + i];
+      trpos = rawpos & bitmask;
+      trsense = (rawpos != trpos);
       break;
     }
   }
@@ -1080,8 +1079,8 @@ void KmerIndex::loadTranscriptSequences() const {
     uint32_t* trs = new uint32_t[ec.cardinality()];
     ec.toUint32Array(trs);
     for (size_t i = 0; i < ec.cardinality(); ++i) {
-      bool sense = n->sense.contains(offset + i);
-      u2t tr(trs[i], n->pos[offset + i], sense);
+      bool sense = (n->pos[offset + i] & 0x7FFFFFFF) != n->pos[offset + i];
+      u2t tr(trs[i], n->pos[offset + i]);
       // TODO:
       // Verify that this method of choosing to reverse complement is legit
       if (um.strand ^ sense) {

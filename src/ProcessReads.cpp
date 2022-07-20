@@ -1234,7 +1234,8 @@ void ReadProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              if ((um.strand == n->sense.contains(offset + j)) == firstStrand) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
               }
@@ -1270,7 +1271,8 @@ void ReadProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[i]) {
-              if ((um.strand == n->sense.contains(offset + j)) == secondStrand) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
               }
@@ -1720,7 +1722,8 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              if ((um.strand == n->sense.contains(offset + j)) == firstStrand) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
               }
@@ -1754,7 +1757,8 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              if ((um.strand == n->sense.contains(offset + j)) == secondStrand) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
               }
