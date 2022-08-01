@@ -77,7 +77,17 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
-  std::vector<std::string> seqs;
+  //std::vector<std::string> seqs;
+  //
+  std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  std::string tmp_file = ".";
+  int pos;
+  while(tmp_file.size() != 16) {
+    pos = ((rand() % (base.size() - 1)));
+    tmp_file += base.substr(pos, 1);
+  }
+  std::ofstream of(tmp_file);
+  num_trans = 0;
 
   // read fasta file
   gzFile fp = 0;
@@ -96,8 +106,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       if (l <= 0) {
         break;
       }
-      seqs.emplace_back(seq->seq.s);
-      std::string& str = *seqs.rbegin();
+      //seqs.emplace_back(seq->seq.s);
+      //std::string& str = *seqs.rbegin();
+      std::string str = seq->seq.s;
       auto n = str.size();
       for (auto i = 0; i < n; i++) {
         char c = str[i];
@@ -120,6 +131,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
         for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
         str = str.substr(0,j+1);
       }
+      of << ">" << num_trans++ << "\n" << str << std::endl;
 
       target_lens_.push_back(seq->seq.l);
       std::string name(seq->name.s);
@@ -150,6 +162,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     fp=0;
   }
 
+  of.close();
+
   if (polyAcount > 0) {
     std::cerr << "[build] warning: clipped off poly-A tail (longer than 10)" << std::endl << "        from " << polyAcount << " target sequences" << std::endl;
   }
@@ -161,30 +175,12 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
     std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
   }
 
-  num_trans = seqs.size();
-
-  // for each target, create its own equivalence class
-  //for (int i = 0; i < seqs.size(); i++ ) {
-    //Roaring r;
-    //r.add(i);
-    //ecmap.push_back(r);
-    //ecmapinv.insert({std::move(r),i});
-  //}
-
-  BuildDeBruijnGraph(opt, seqs);
-  BuildEquivalenceClasses(opt, seqs);
+  BuildDeBruijnGraph(opt, tmp_file);
+  BuildEquivalenceClasses(opt, tmp_file);
+  std::remove(tmp_file.c_str());
 }
 
-void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs) {
-
-  std::string tmp_file = ".tmp_dbg.fasta";
-
-  std::ofstream of(tmp_file);
-  for (size_t i = 0; i < seqs.size(); ++i) {
-    of << ">" << std::to_string(i) << std::endl;
-    of << seqs[i] << std::endl;
-  }
-  of.close();
+void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file) {
 
   CDBG_Build_opt c_opt;
   c_opt.k = k;
@@ -200,20 +196,24 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
-      um.getData()->id = running_id++;
+    um.getData()->id = running_id++;
   }
-
-  std::remove(tmp_file.c_str());
 }
 
-void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs) {
+void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
 
   std::cerr << "[build] creating equivalence classes ... " << std::endl;
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
-  for (size_t i = 0; i < seqs.size(); ++i) {
-    const auto& seq = seqs[i];
+
+  std::ifstream infile(tmp_file);
+  std::string line;
+  size_t j = 0;
+  //for (size_t i = 0; i < seqs.size(); ++i) {
+  while (infile >> line) {
+    if (line[0] == '>') continue;
+    const auto& seq = line;
     if (seq.size() < k) continue;
 
     int seqlen = seq.size() - k + 1; // number of k-mers
@@ -228,7 +228,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
 
       TRInfo tr;
 
-      tr.trid = i;
+      tr.trid = j++;
       tr.pos = proc;
       tr.sense = um.strand;
       tr.start = um.dist;
@@ -240,6 +240,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
       proc += um.len;
     }
   }
+  infile.close();
 
   // TODO:
   // Replace seqs with a file on disk
@@ -330,20 +331,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<s
   std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
-
-  /*
-  for (const auto& r : ecmap) {
-      Roaring r2;
-      uint32_t* trs = new uint32_t[r.cardinality()];
-      r.toUint32Array(trs);
-      for (size_t i = 0; i < r.cardinality(); ++i) {
-          r2.add(trs[i] - trs[0]);
-      }
-      r2.runOptimize();
-      std::cout << "r\t" << r2.getSizeInBytes() << std::endl;
-  }
-  */
-
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
@@ -402,19 +389,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       }
 
       assert(!u.isEmpty());
-
-      //auto search = ecmapinv.find(u);
-      //int ec = -1;
-      //if (search != ecmapinv.end()) {
-        //// See if we've created an EC for this set of transcripts yet
-        //ec = search->second;
-      //} else {
-        //// Otherwise, we create a new EC
-        //ec = ecmapinv.size();
-        //u.runOptimize();
-        //ecmapinv.insert({u,ec});
-        //ecmap.push_back(std::move(u));
-      //}
 
       // Assign mosaic EC to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));

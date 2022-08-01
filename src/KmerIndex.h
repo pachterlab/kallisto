@@ -123,10 +123,10 @@ struct KmerIndex {
   Roaring intersect(const Roaring& ec, const Roaring& v) const;
 
   void BuildTranscripts(const ProgramOptions& opt);
-  //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
-  //void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
-  void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
-  void BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs);
+  void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
+  void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
+  //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
+  //void BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs);
   //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
 
