@@ -2713,7 +2713,7 @@ int main(int argc, char *argv[]) {
         writeCellIds(cellnamesfilename, opt.batch_ids);
         if (opt.batch_bus || opt.batch_bus_write) {
           if (opt.batch_bus_write) {
-            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmapinv.size());
           }
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell
@@ -3542,7 +3542,7 @@ int main(int argc, char *argv[]) {
         writeCellIds(cellnamesfilename, opt.batch_ids);
         if (opt.batch_bus || opt.batch_bus_write) {
           if (opt.batch_bus_write) {
-            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmap.size());
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmapinv.size());
           }
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell

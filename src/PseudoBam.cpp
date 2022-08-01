@@ -388,8 +388,7 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
 /** -- pseudoalignment info methods -- **/
 
 void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& batch) {
-  // TODO:
-  /*
+
   of.write("BATCH=",6);
   of.write((char*)&(batch.batch_id), sizeof(int32_t));
   uint32_t bsz = batch.aln.size();
@@ -405,26 +404,18 @@ void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& ba
     uint8_t k2 = (0 <= x.k2pos && x.k2pos < 255) ? x.k2pos : 255;
     of.write((char*)&k1, 1);
     of.write((char*)&k2, 1);
-    of.write((char*)&x.ec_id,sizeof(int32_t));
+    char* buffer = new char[x.ec.getSizeInBytes()];
+    size_t roaring_size = x.ec.write(buffer);
+    of.write((char*)&roaring_size, sizeof(roaring_size));
+    of.write(buffer, roaring_size);
     of.write((char*)&x.barcode, sizeof(uint64_t));
     of.write((char*)&x.UMI, sizeof(uint64_t));
-    if (x.ec_id == -1) {
-      // exceptional case, no ec_id, yet, but need to write the v vector
-      uint32_t sz = x.u.size();
-      of.write((char*)&sz, sizeof(uint32_t));
-      for (int i = 0; i < sz; i++) {
-        of.write((char*)&x.u[i], sizeof(int32_t));
-      }
-    }
     of.put(0); // mark the end of record
   }
-  */
 }
 
 
 void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
-  // TODO:
-  /*
   batch.aln.clear();
   char bb[7];
   char mark0;
@@ -448,22 +439,20 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     in.read((char*)&k2,1);
     info.k1pos = (k1 == 255) ? -1 : k1;
     info.k2pos = (k2 == 255) ? -1 : k2;
-    in.read((char*)&info.ec_id, sizeof(int32_t));
+    size_t roaring_size;
+    in.read((char*)&roaring_size, sizeof(roaring_size));
+
+    char* buffer = new char[roaring_size];
+    in.read(buffer, roaring_size);
+    info.ec = info.ec.read(buffer);
+    delete[] buffer;
+    buffer = nullptr;
+
     in.read((char*)&info.barcode, sizeof(uint64_t));
     in.read((char*)&info.UMI, sizeof(uint64_t));
-    if (info.ec_id == -1) {
-      uint32_t sz;
-      in.read((char*)&sz, sizeof(uint32_t));
-      info.u.reserve(sz);
-      int32_t tmp;
-      for (int i = 0; i < sz; i++) {
-        in.read((char*)&tmp, sizeof(tmp));
-        info.u.push_back(tmp);
-      }
-    }
+
     mark0 = in.get();
     assert(mark0 == '\0');
     batch.aln.push_back(std::move(info));
   }
-  */
 }

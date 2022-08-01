@@ -30,7 +30,7 @@ struct BUSHeader {
 struct BUSData {
   uint64_t barcode;
   uint64_t UMI;
-  Roaring ec;
+  int32_t ec;
   uint32_t count;
   uint32_t flags;
   uint32_t pad;

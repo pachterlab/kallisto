@@ -214,7 +214,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   while (infile >> line) {
     if (line[0] == '>') continue;
     const auto& seq = line;
-    std::cout << seq << std::endl;
     if (seq.size() < k) continue;
 
     int seqlen = seq.size() - k + 1; // number of k-mers
@@ -460,35 +459,16 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     out.write((char *)&tlen, sizeof(tlen));
   }
 
-  // 6. write number of equivalence classes
-  //tmp_size = ecmap.size();
-  tmp_size = 0;
-  out.write((char *)&tmp_size, sizeof(tmp_size));
-
-  // 7. write out each equiv class
-  for (int32_t ec = 0; ec < tmp_size; ec++) {
-    Roaring& v = ecmap[ec];
-    char* buffer = new char[v.getSizeInBytes()];
-    tmp_size = v.write(buffer);
-    out.write((char *)&tmp_size, sizeof(tmp_size));
-    out.write(buffer, tmp_size);
-    delete[] buffer;
-    buffer = nullptr;
-  }
-
-  // 8. Write out target ids
+  // 6. Write out target ids
   // XXX: num_trans should equal to target_names_.size(), so don't need
   // to write out again.
   assert(num_trans == target_names_.size());
   for (auto& tid : target_names_) {
-    // 8.1 write out how many bytes
-    // XXX: Note: this doesn't actually encore the max targ id size.
-    // might cause problems in the future
-    // tmp_size = tid.size();
+    // 6.1 write out how many bytes
     tmp_size = strlen(tid.c_str());
     out.write((char *)&tmp_size, sizeof(tmp_size));
 
-    // 8.2 write out the actual string
+    // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
 
@@ -577,41 +557,14 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     target_lens_.push_back(tmp_int);
   }
 
-  // 6. read number of equivalence classes
-  size_t ecmap_size;
-  in.read((char *)&ecmap_size, sizeof(ecmap_size));
-
-  std::cerr << "[index] number of equivalence classes: "
-    << pretty_num(ecmap_size) << std::endl;
-  //ecmap.resize(ecmap_size);
-  int32_t tmp_id;
-  int32_t tmp_ecval;
-  size_t vec_size;
-
-  // 7. read each equiv class
-  for (size_t ec = 0; ec < ecmap_size; ++ec) {
-
-    // 7.1 read size of equiv class
-    in.read((char *)&vec_size, sizeof(vec_size));
-    char* buffer = new char[vec_size];
-    // 7.2 deserialize bit vector
-    in.read(buffer, vec_size);
-    //Roaring r = Roaring::read(buffer);
-    //ecmap[ec] = r;
-    //ecmapinv.insert({std::move(r), ec});
-
-    delete[] buffer;
-    buffer = nullptr;
-  }
-
-  // 8. read in target ids
+  // 6. read in target ids
   target_names_.clear();
   target_names_.reserve(num_trans);
 
   size_t bufsz = 1024;
   buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
-    // 8.1 read in the size
+    // 6.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
     if (tmp_size +1 > bufsz) {
@@ -622,7 +575,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     // clear the buffer
     memset(buffer,0,bufsz);
-    // 8.2 read in the character string
+    // 6.2 read in the character string
     in.read(buffer, tmp_size);
 
     target_names_.push_back(std::string(buffer));

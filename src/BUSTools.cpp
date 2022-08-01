@@ -15,7 +15,7 @@ void writeBUSHeader(std::ofstream &out, int bclen, int umilen) {
 
 void writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
   for (const auto &b : bv) {
-    if (!b.ec.isEmpty()) { // maybe keep non-mapping reads ?!?
+    if (b.ec != -1) { // maybe keep non-mapping reads ?!?
       // XXX:
       // Write out the actual EC
       out.write((char*)(&b), sizeof(b));
@@ -24,10 +24,7 @@ void writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
 }
 
 void writeBUSMatrix(const std::string &filename,
-                    std::vector<std::vector<std::pair<int,int>>> &data, int cols) {
-  // TODO:
-  // Figure this out
-  /*
+                    std::vector<std::vector<std::pair<int,int> > > &data, int cols) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out | std::ios::binary);
   writeBUSHeader(of, BUSFORMAT_FAKE_BARCODE_LEN, 1);
@@ -48,5 +45,4 @@ void writeBUSMatrix(const std::string &filename,
     }
   }
   of.close();
-  */
 }

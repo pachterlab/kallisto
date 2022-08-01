@@ -378,8 +378,6 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    // XXX
-    /*
     for (int i = 0; i < bus_ecmap.size(); i++) {
       auto &u = bus_ecmap[i];
       int ec = index.ecmapinv.size();
@@ -389,9 +387,7 @@ void MasterProcessor::processReads() {
         exit(1);
       }
       index.ecmapinv.insert({u,ec});
-      index.ecmap.push_back(u);
     }
-    */
 
   } else if (opt.batch_mode && opt.batch_bus) {
     std::vector<std::thread> workers;
@@ -422,8 +418,6 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    // XXX
-    /*
     for (int i = 0; i < bus_ecmap.size(); i++) {
       Roaring& u = bus_ecmap[i];
       int ec = index.ecmapinv.size();
@@ -433,9 +427,7 @@ void MasterProcessor::processReads() {
         exit(1);
       }
       index.ecmapinv.insert({u,ec});
-      index.ecmap.push_back(u);
     }
-    */
   } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -477,15 +469,18 @@ void MasterProcessor::processReads() {
           }
         }
       } else {
-        // TODO
-        /*
-        std::vector<int32_t> tmp_counts;
+        std::vector<uint32_t> tmp_counts;
         tmp_counts.resize(tc.counts.size(), 0);
         // process the regular EC umi now
         for (int i = 0; i < nt; i++) {
           tmp_counts.assign(tmp_counts.size(), 0);
           int l_id = id - nt + i;
-          auto &umis = batchUmis[l_id];
+          auto &r_umis = batchUmis[l_id];
+          std::vector<std::pair<uint32_t, std::string> > umis;
+          umis.reserve(r_umis.size());
+          for (const auto& umi : r_umis) {
+            umis.emplace_back(index.ecmapinv[umi.first], umi.second);
+          }
           std::sort(umis.begin(), umis.end());
           size_t sz = umis.size();
           nummapped += sz;
@@ -506,7 +501,6 @@ void MasterProcessor::processReads() {
           }
           umis.clear();
         }
-        */
       }
     }
 
@@ -552,8 +546,6 @@ void MasterProcessor::processReads() {
         }
       }
     } else {
-      // TODO
-      /*
       // UMI case
       // for each cell
       for (int id = 0; id < num_ids; id++) {
@@ -563,7 +555,7 @@ void MasterProcessor::processReads() {
           // add the new ec
           int ecsize = index.ecmapinv.size();
           int ec = tc.increaseCount(t.first);
-          if (ec != -1 && ecsize < index.ecmap.size()) {
+          if (ec != -1 && ecsize < index.ecmapinv.size()) {
             num_newEcs++;
           }
         }
@@ -574,15 +566,16 @@ void MasterProcessor::processReads() {
       // for each cell
       for (int id = 0; id < num_ids; id++) {
         tmp_counts.assign(tmp_counts.size(), 0);
-        std::vector<std::pair<Roaring, std::string>> umis;
+        std::vector<std::pair<uint32_t, std::string> > umis;
         umis.reserve(newBatchECumis[id].size());
         // for each new ec
         for (auto &t : newBatchECumis[id]) {
           // record the ec,umi
-          umis.push_back({t.first, std::move(t.second)});
+          umis.push_back({index.ecmapinv[t.first], std::move(t.second)});
         }
         // find unique umis per ec
         std::sort(umis.begin(), umis.end());
+
         size_t sz = umis.size();
         if (sz > 0) {
           ++tmp_counts[umis[0].first];
@@ -603,7 +596,6 @@ void MasterProcessor::processReads() {
           num_umi += x.second;
         }
       }
-      */
     }
   }
 
@@ -666,7 +658,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   // place breakpoints on evenly spaced
   for (auto& chrw : chrWeights) {
     // sort each by stop point
-    std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t> a, std::pair<uint32_t, uint32_t> b) { return a.first < b.first;});
+    std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t>& a, std::pair<uint32_t, uint32_t>& b) { return a.first < b.first;});
   }
 
   double bp = 0.0;
@@ -935,7 +927,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
         bus_ecmap.push_back(u);
       }
       auto &b = bp.first;
-      b.ec = bp.second;
+      b.ec = ec;
       bv.push_back(b);
     }
 
@@ -1088,7 +1080,7 @@ void ReadProcessor::operator()() {
 void ReadProcessor::processBuffer() {
 
   // set up thread variables
-  std::vector<std::pair<const_UnitigMap<Node>, int32_t>> v1, v2;
+  std::vector<std::pair<const_UnitigMap<Node>, int32_t> > v1, v2;
   Roaring u, vtmp;
 
   v1.reserve(1000);
@@ -1810,7 +1802,7 @@ void BUSProcessor::processBuffer() {
         // add to count vector
         ++counts[elem->second];
         // push back BUS record
-        b.ec = u;
+        b.ec = elem->second;
         bv.push_back(b);
       }
     }
@@ -1988,16 +1980,10 @@ void AlnProcessor::operator()() {
 void AlnProcessor::processBufferTrans() {
   /* something simple where we can construct the bam records */
 
-  // TODO:
-  // Fix this for use with Bifrost
-  /*
   std::vector<bam1_t> bv;
 
-
   int n = pseudobatch.aln.size();
-  std::vector<int> u;
-  std::vector<std::pair<int,double>> ua;
-  u.reserve(1000);
+  std::vector<std::pair<int,double> > ua;
   ua.reserve(1000);
 
   int trans_auxlen = default_trans_auxlen;
@@ -2005,9 +1991,8 @@ void AlnProcessor::processBufferTrans() {
     trans_auxlen -= 7;
   }
 
-
   Kmer km1,km2;
-  KmerEntry val1, val2;
+  const_UnitigMap<Node> val1, val2;
 
   for (int i = 0; i < n; i++) {
     bam1_t b1,b2, b1c, b2c;
@@ -2057,60 +2042,56 @@ void AlnProcessor::processBufferTrans() {
         bv.push_back(b2);
       }
     } else {
-      u.clear();
       ua.clear();
-      int ec = pi.ec_id;
-      if (ec != -1) {
-        u = index.ecmap[ec]; // copy, but meh
-      } else {
-        u = pi.u;
-        auto it = index.ecmapinv.find(u);
-        if (it != index.ecmapinv.end()) {
-          ec = it->second;
-        }
 
-        if (ec == -1) {
-          assert(false && "Problem with ecmapinv");
-        }
+      auto it = index.ecmapinv.find(pi.ec);
+      uint32_t ec;
+      if (it != index.ecmapinv.end()) {
+        ec = it->second;
+      } else {
+        assert(false && "Problem with ecmapinv");
       }
 
-
-      // modify u and compute norm
-      int32_t nmap = u.size();
+      // compute norm
+      size_t nmap = pi.ec.cardinality();
       int bestProbTr = -1;
       double bestProb = 0.0;
 
+      uint32_t* trs = new uint32_t[nmap];
+      pi.ec.toUint32Array(trs);
       if (useEM) {
 
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
 
         for (int i = 0; i < nmap; ++i) {
-          denom += em.alpha_[u[i]] * wv[i];
+          denom += em.alpha_[trs[i]] * wv[i];
         }
 
         if (denom < TOLERANCE) {
-          u.clear();
           ua.clear();
         } else {
           // compute the update step
           for (int i = 0; i < nmap; ++i) {
-            if (em.alpha_[u[i]] > 0.0) {
-              double prob = em.alpha_[u[i]] * wv[i] / denom;
-              ua.push_back({u[i],prob});
+            if (em.alpha_[trs[i]] > 0.0) {
+              double prob = em.alpha_[trs[i]] * wv[i] / denom;
+              ua.push_back({trs[i],prob});
               if (bestProb < prob) {
                 bestProb = prob;
-                bestProbTr = u[i];
+                bestProbTr = trs[i];
               }
             }
           }
         }
       } else {
         for (int i = 0; i < nmap; i++) {
-          ua.push_back({u[i], 0.0}); // probability is never used
+          ua.push_back({trs[i], 0.0}); // probability is never used
         }
-        bestProbTr = u[0];
+        bestProbTr = trs[0];
       }
+
+      delete[] trs;
+      trs = nullptr;
 
       nmap = ua.size();
 
@@ -2175,32 +2156,45 @@ void AlnProcessor::processBufferTrans() {
           }
         }
 
-        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
+        auto strandednessInfo = [&](Kmer km, const_UnitigMap<Node>& val, const std::vector<std::pair<int, double>> &ua) -> std::pair<bool,bool> {
+          val = index.dbg.find(km);
           bool reptrue = (km == km.rep());
-          auto search = index.kmap.find(km.rep());
-          if (search == index.kmap.end()) {
-            return {false,reptrue};
+          if (val.isEmpty) {
+            return {false, reptrue};
           } else {
-            val = search->second;
-            if (val.contig == -1) {
-              return {false,reptrue};
-            } else {
-              const Contig &c = index.dbGraph.contigs[val.contig];
-              if (c.transcripts.empty()) {
-                return {false,reptrue};
-              }
-              bool trsense = c.transcripts[0].sense;
-              for (const auto & x : c.transcripts) {
-                if (x.sense != trsense) {
-                  for (const auto &y : ua) {
-                    if (y.first == x.trid) {
-                      return {false,reptrue};
-                    }
+            const Node* n = val.getData();
+            const auto& r = n->ec[val.dist];
+            if (r.isEmpty()) {
+              return {false, reptrue};
+            }
+
+            auto ecs = n->ec.get_leading_vals(val.dist);
+            size_t offset = 0;
+            const Roaring& ec = ecs[ecs.size() - 1];
+
+            for (size_t i = 0; i < ecs.size() - 1; ++i) {
+              offset += ecs[i].cardinality();
+            }
+
+            uint32_t bitmask = 0x7FFFFFFF;
+            bool trsense = (n->pos[offset] & bitmask) != n->pos[offset];
+
+            uint32_t* trs = new uint32_t[ec.cardinality()];
+            ec.toUint32Array(trs);
+            for (size_t i = 0; i < ec.cardinality(); ++i) {
+              // If sense does not agree
+              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+                for (const auto& y : ua) {
+                  if (y.first == trs[i]) {
+                    return {false, reptrue};
                   }
                 }
               }
-              return {true, trsense == (reptrue == val.isFw())};
             }
+            delete[] trs;
+            trs = nullptr;
+
+            return {true, trsense == val.strand};
           }
         };
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
@@ -2385,23 +2379,17 @@ void AlnProcessor::processBufferTrans() {
      delete[] b.data;
   }
   bv.clear();
-  */
 }
 
 
 void AlnProcessor::processBufferGenome() {
   /* something simple where we can construct the bam records */
 
-  // TODO:
-  // Fix this for use with Bifrost
-  /*
   std::vector<bam1_t> bv;
   int idnum = 0;
 
   int n = pseudobatch.aln.size();
-  std::vector<int> u;
   std::vector<std::pair<int,double>> ua;
-  u.reserve(1000);
   ua.reserve(1000);
 
   int bclen = 0;
@@ -2435,7 +2423,7 @@ void AlnProcessor::processBufferGenome() {
 
 
   Kmer km1,km2;
-  KmerEntry val1, val2;
+  const_UnitigMap<Node> val1, val2;
   if  (mp.opt.bus_mode) {
     paired = false;
     if (mp.opt.busOptions.paired) {
@@ -2561,51 +2549,54 @@ void AlnProcessor::processBufferGenome() {
         bv.push_back(b2);
       }
     } else {
-      u.clear();
-      ua.clear();
-      int ec = pi.ec_id;
-      if (ec != -1) {
-        u = index.ecmap[ec]; // copy, but meh
+      auto it = index.ecmapinv.find(pi.ec);
+      uint32_t ec;
+      if (it != index.ecmapinv.end()) {
+        ec = it->second;
       } else {
-        u = pi.u;
-        auto it = index.ecmapinv.find(u);
-        if (it != index.ecmapinv.end()) {
-          ec = it->second;
-        }
-
-        if (ec == -1) {
-          assert(false && "Problem with ecmapinv");
-        }
+        assert(false && "Problem with ecmapinv");
       }
 
+      // compute norm
+      size_t nmap = pi.ec.cardinality();
+      int bestProbTr = -1;
+      double bestProb = 0.0;
 
-      // modify u and compute norm
-      int32_t nmap = u.size();
+      uint32_t* trs = new uint32_t[nmap];
+      pi.ec.toUint32Array(trs);
       if (useEM) {
+
         double denom = 0.0;
         const auto& wv = em.weight_map_[ec];
 
         for (int i = 0; i < nmap; ++i) {
-          denom += em.alpha_[u[i]] * wv[i];
+          denom += em.alpha_[trs[i]] * wv[i];
         }
 
         if (denom < TOLERANCE) {
-          u.clear();
           ua.clear();
         } else {
-           // compute the update step
+          // compute the update step
           for (int i = 0; i < nmap; ++i) {
-            if (em.alpha_[u[i]] > 0.0) {
-              double prob = em.alpha_[u[i]] * wv[i] / denom;
-              ua.push_back({u[i],prob});
+            if (em.alpha_[trs[i]] > 0.0) {
+              double prob = em.alpha_[trs[i]] * wv[i] / denom;
+              ua.push_back({trs[i],prob});
+              if (bestProb < prob) {
+                bestProb = prob;
+                bestProbTr = trs[i];
+              }
             }
           }
         }
       } else {
         for (int i = 0; i < nmap; i++) {
-          ua.push_back({u[i], 0.0}); // never used
+          ua.push_back({trs[i], 0.0}); // probability is never used
         }
+        bestProbTr = trs[0];
       }
+
+      delete[] trs;
+      trs = nullptr;
 
       nmap = ua.size();
 
@@ -2655,34 +2646,45 @@ void AlnProcessor::processBufferGenome() {
           }
         }
 
-
-        // everything maps to the same strand on all transcriptomes
-        auto strandednessInfo = [&](Kmer km, KmerEntry& val, const std::vector<std::pair<int,double>> &ua) -> std::pair<bool,bool> {
+        auto strandednessInfo = [&](Kmer km, const_UnitigMap<Node>& val, const std::vector<std::pair<int, double>> &ua) -> std::pair<bool,bool> {
+          val = index.dbg.find(km);
           bool reptrue = (km == km.rep());
-          auto search = index.kmap.find(km.rep());
-          if (search == index.kmap.end()) {
-            return {false,reptrue};
+          if (val.isEmpty) {
+            return {false, reptrue};
           } else {
-            val = search->second;
-            if (val.contig == -1) {
-              return {false,reptrue};
-            } else {
-              const Contig &c = index.dbGraph.contigs[val.contig];
-              if (c.transcripts.empty()) {
-                return {false,reptrue};
-              }
-              bool chrsense = model.transcripts[c.transcripts[0].trid].strand == c.transcripts[0].sense;
-              for (const auto & x : c.transcripts) {
-                if ((model.transcripts[x.trid].strand == x.sense) != chrsense) {
-                  for (const auto &y : ua) {
-                    if (y.first == x.trid) {
-                      return {false,reptrue};
-                    }
+            const Node* n = val.getData();
+            const auto& r = n->ec[val.dist];
+            if (r.isEmpty()) {
+              return {false, reptrue};
+            }
+
+            auto ecs = n->ec.get_leading_vals(val.dist);
+            size_t offset = 0;
+            const Roaring& ec = ecs[ecs.size() - 1];
+
+            for (size_t i = 0; i < ecs.size() - 1; ++i) {
+              offset += ecs[i].cardinality();
+            }
+
+            uint32_t bitmask = 0x7FFFFFFF;
+            bool trsense = (n->pos[offset] & bitmask) != n->pos[offset];
+
+            uint32_t* trs = new uint32_t[ec.cardinality()];
+            ec.toUint32Array(trs);
+            for (size_t i = 0; i < ec.cardinality(); ++i) {
+              // If sense does not agree
+              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+                for (const auto& y : ua) {
+                  if (y.first == trs[i]) {
+                    return {false, reptrue};
                   }
                 }
               }
-              return {true, chrsense == (reptrue == val.isFw())};
             }
+            delete[] trs;
+            trs = nullptr;
+
+            return {true, trsense == val.strand};
           }
         };
         std::pair<bool,bool> strInfo1 = {true,true}, strInfo2 = {true,true};
@@ -2695,7 +2697,6 @@ void AlnProcessor::processBufferGenome() {
           km2 = Kmer(seqs[si2].first + seq2_offset + pi.k2pos);
           strInfo2 = strandednessInfo(km2, val2, ua);
         }
-
 
         // first read is all on reverse strand
         if (strInfo1.first && !strInfo1.second) {
@@ -2883,7 +2884,6 @@ void AlnProcessor::processBufferGenome() {
     }
   }
 
-
   // partition the vectors.
   int k = mp.numSortFiles;
   int logk = 1;
@@ -2929,7 +2929,6 @@ void AlnProcessor::processBufferGenome() {
     // std::cerr << "deleting" << b.id  << std::endl;
   }
   bv.clear();
-  */
 }
 
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra) {
