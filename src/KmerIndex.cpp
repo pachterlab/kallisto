@@ -214,6 +214,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   while (infile >> line) {
     if (line[0] == '>') continue;
     const auto& seq = line;
+    std::cout << seq << std::endl;
     if (seq.size() < k) continue;
 
     int seqlen = seq.size() - k + 1; // number of k-mers
@@ -228,7 +229,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
       TRInfo tr;
 
-      tr.trid = j++;
+      tr.trid = j;
       tr.pos = proc;
       tr.sense = um.strand;
       tr.start = um.dist;
@@ -239,6 +240,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
       proc += um.len;
     }
+    j++;
   }
   infile.close();
 

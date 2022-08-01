@@ -42,11 +42,11 @@ std::vector<ECStruct> merge_contigs(std::vector<ECStruct> ecv) {
         continue; // ok, trivial to merge empty set
       }
 
-      if (ecv[b-1].stop <= ecv[b].start) {           
+      if (ecv[b-1].stop <= ecv[b].start) {
         if (b+1 == ecv.size() || ecv[b].stop <= ecv[b+1].start) {
           b++;
           continue;
-        }        
+        }
       }
     }
     // ok, push back ecv[a:b]
@@ -61,13 +61,13 @@ std::vector<ECStruct> merge_contigs(std::vector<ECStruct> ecv) {
       ecs.stop = ecv[b-1].stop;
       int pos,len;
       for (int i = a; i < b; i++) {
-        // len = 0;        
+        // len = 0;
         pos = ecv[i].start - ecs.start;
         auto& sp = ecs.start_lens;
         for (auto x : ecv[i].start_lens) {
           sp.push_back({pos+x.first, x.second});
           // len += x.second;
-        }       
+        }
         tset.insert(ecv[i].tlist.begin(), ecv[i].tlist.end());
       }
       for (auto t : tset) {
@@ -76,7 +76,7 @@ std::vector<ECStruct> merge_contigs(std::vector<ECStruct> ecv) {
       std::sort(ecs.tlist.begin(), ecs.tlist.end());
       out.push_back(ecs);
     }
-    // 
+    //
     a = b;
   }
 
@@ -117,7 +117,7 @@ void printHisto(const unordered_map<int,int>& m, const string& header) {
 }
 
 void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
-    /*
+
   std::string gfa = opt.gfa;
   std::string bed = opt.bedFile;
 
@@ -129,94 +129,18 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
   cout << "#[inspect] k = " << index.k << endl;;
   cout << "#[inspect] number of targets = " << index.num_trans << endl;
 
-  cout << "#[inspect] number of equivalence classes = " << index.ecmap.size() << endl;
+  cout << "#[inspect] number of unitigs = " << index.dbg.size() << endl;
 
-  if (index.ecmap.size() != index.ecmapinv.size()) {
-    cout << "Error: sizes do not match. ecmap.size = " << index.ecmap.size()
-         << ", ecmapinv.size = " << index.ecmapinv.size() << endl;
-    exit(1);
-  }
-
-  cout << "#[inspect] number of contigs = " << index.dbg.size() << endl;
-
-  unordered_map<int,int> echisto;
-
-  //for (auto& ecv : index.ecmap) {
-  for (int ec = 0; ec < index.ecmap.size(); ec++) {
-    const vector<int>& v = index.ecmap[ec];
-    ++echisto[v.size()];
-
-    if (opt.inspect_thorough) {
-      if (v.empty()) {
-        cout << "Error: ec = " << ec  << " is empty!" << endl;
-        exit(1);
-      }
-      for (int i = 0; i < v.size(); i++) {
-        if (v[i] < 0 || v[i] >= index.num_trans) {
-          cout << "Error: ec = " << ec  << " has invalid target id " << v[i] << endl;
-          exit(1);
-        }
-
-        if (i > 0 && v[i] == v[i-1]) {
-          cout << "Error: ec = " << ec  << " has repeated target id " << v[i] << endl;
-          exit(1);
-        }
-
-        if (i > 0 && v[i] < v[i-1]) {
-          cout << "Error: ec = " << ec  << " is not sorted!" << endl;
-          exit(1);
-        }
-      }
-
-      auto search = index.ecmapinv.find(v);
-      if (search == index.ecmapinv.end()) {
-        cout << "Error: could not find inverse for " << ec << endl;
-        exit(1);
-      } else {
-        if (search->second != ec) {
-          cout << "Error: inverse incorrect for ecmap -> ecmapinv,  ecv.first = "
-              << ec <<  ", ecmapinv[ecv.second] = " << search->second << endl;
-          exit(1);
-        }
-      }
-    }
-  }
-
-  if (opt.inspect_thorough) {
-    for (auto& eiv : index.ecmapinv) {
-      //auto search = index.ecmap.find(eiv.second);
-      //if (search == index.ecmap.end()) {
-      if (eiv.second < 0 || eiv.second >= index.ecmap.size()) {
-        cout << "Error: could not find inverse for ";
-        printVector(eiv.first);
-        cout << ", ecid = " << eiv.second << endl;
-        exit(1);
-      } else {
-        auto &v = index.ecmap[eiv.second];
-        if (v != eiv.first) {
-          cout << "Error: inverse incorrect for ecmapinv -> ecmap,  eiv.first = ";
-          printVector(eiv.first);
-          cout <<  ", ecmap[eiv.second] = ";
-          printVector(v);
-          cout << endl;
-          exit(1);
-        }
-      }
-    }
-  }
 
   cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
 
-  if (gfa.empty() && bed.empty()) {
-    printHisto(echisto, "#EC.size\tNum.targets");
-    cout << endl << endl;
-
-  }
-
   if (!gfa.empty()) {
-    index.dbg.write(gfa);
+    //index.dbg.write(gfa);
   }
 
+  // TODO:
+  // Implement bedfile output for Bifrost index
+  /*
   if (!bed.empty()) {
     // export bed track with TCC information
     bool guessChromosomes = false;

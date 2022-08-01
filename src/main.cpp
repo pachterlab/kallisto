@@ -2624,12 +2624,9 @@ int main(int argc, char *argv[]) {
         usageInspect();
         exit(1);
       } else {
-        // TODO:
-          std::cout << "InspectIndex not implemented" << std::endl;
-          exit(1);
-        //KmerIndex index(opt);
-        //index.load(opt);
-        //InspectIndex(index,opt);
+        KmerIndex index(opt);
+        index.load(opt);
+        InspectIndex(index,opt);
       }
     } else if (cmd == "bus") {
       if (argc ==2) {
@@ -3092,146 +3089,9 @@ int main(int argc, char *argv[]) {
         }
       }
     } else if (cmd == "quant-only") {
-      if (argc==2) {
-        usageEMOnly();
-        return 0;
-      }
-      // TODO:
-      /*
-      ParseOptionsEMOnly(argc-1,argv+1,opt);
-      if (!CheckOptionsEM(opt, true)) {
-        usageEMOnly();
-        exit(1);
-      } else {
-        // run the em algorithm
-        // TODO:
-        KmerIndex index(opt);
-        index.load(opt, false); // skip the k-mer map
-        MinCollector collection(index, opt);
-        collection.loadCounts(opt);
-
-        std::vector<int> fld;
-        // if mean FL not provided, estimate
-        if (opt.fld == 0.0) {
-          collection.compute_mean_frag_lens_trunc();
-          fld = collection.flens;
-        } else {
-          auto mean_fl = (opt.fld > 0.0) ? opt.fld : collection.get_mean_frag_len();
-          auto sd_fl = opt.sd;
-          collection.init_mean_fl_trunc( mean_fl, sd_fl );
-          //cout << collection.mean_fl_trunc.size() << endl;
-          //fld.resize(MAX_FRAG_LEN,0);
-          fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
-          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-          // }
-        }
-
-        std::vector<int> preBias(4096,1); // default
-        if (opt.bias) {
-          // fetch the observed bias
-          preBias = collection.bias5; // copy
-        }
-
-        auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
-
-        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
-        em.run(10000, 50, true, opt.bias);
-
-        std::string call = argv_to_string(argc, argv);
-        //H5Writer writer;
-
-        if (!opt.plaintext) {
-          // setting num_processed to 0 because quant-only is for debugging/special ops
-          //writer.init(opt.output + "/abundance.h5", opt.bootstrap, 0, fld, preBias, em.post_bias_, 6,
-              index.INDEX_VERSION, call, start_time);
-          //writer.write_main(em, index.target_names_, index.target_lens_);
-        } else {
-          plaintext_aux(
-              opt.output + "/run_info.json",
-              std::string(std::to_string(index.num_trans)),
-              std::string(std::to_string(opt.bootstrap)),
-              std::string(std::to_string(0)),
-              std::string(std::to_string(0)),
-              std::string(std::to_string(0)),
-              KALLISTO_VERSION,
-              std::string(std::to_string(index.INDEX_VERSION)),
-              start_time,
-              call);
-
-          plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
-              em.alpha_, em.eff_lens_, index.target_lens_);
-        }
-
-        int64_t num_pseudoaligned =0;
-
-        for (int i = 0; i < collection.counts.size(); i++) {
-          num_pseudoaligned += collection.counts[i];
-        }
-
-        if (num_pseudoaligned == 0) {
-          std::cerr << "[~warn] Warning, zero reads pseudoaligned check your input files and index" << std::endl;
-        }
-
-        if (opt.bootstrap > 0 && num_pseudoaligned == 0) {
-          // this happens if nothing aligns, then we write an empty bootstrap file
-          for (int b = 0; b < opt.bootstrap; b++) {
-            if (!opt.plaintext) {
-              //writer.write_bootstrap(em, b); // em is empty
-            } else {
-              plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
-                    em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_); // re-use empty input
-            }
-          }
-        } else if (opt.bootstrap > 0 && num_pseudoaligned > 0) {
-          std::cerr << "Bootstrapping!" << std::endl;
-          auto B = opt.bootstrap;
-          std::mt19937_64 rand;
-          rand.seed( opt.seed );
-
-          std::vector<size_t> seeds;
-          for (auto s = 0; s < B; ++s) {
-            seeds.push_back( rand() );
-          }
-
-          if (opt.threads > 1) {
-            auto n_threads = opt.threads;
-            if (opt.threads > opt.bootstrap) {
-              cerr << "[btstrp] Warning: number of threads (" << opt.threads <<
-                ") greater than number of bootstraps." << endl
-                << "[btstrp] (cont'd): Updating threads to number of bootstraps "
-                << opt.bootstrap << endl;
-              n_threads = opt.bootstrap;
-            }
-
-            //BootstrapThreadPool pool(n_threads, seeds, collection.counts, index,
-            //    collection, em.eff_lens_, opt, writer, fl_means);
-          } else {
-            for (auto b = 0; b < B; ++b) {
-              Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
-              cerr << "[bstrp] running EM for the bootstrap: " << b + 1 << "\r";
-              auto res = bs.run_em();
-
-              if (!opt.plaintext) {
-                //writer.write_bootstrap(res, b);
-              } else {
-                plaintext_writer(opt.output + "/bs_abundance_" + std::to_string(b) + ".tsv",
-                    em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
-              }
-            }
-          }
-        }
-        cerr << endl;
-
-        if (num_pseudoaligned == 0) {
-          exit(1);
-        }
-      }
-      */
+      std::cerr << "[deprecated] quant-only option has been deprecated." << std::endl;
+      exit(0);
     } else if (cmd == "quant-tcc") {
-      // TODO:
-      // Implement this
-      /*
       if (argc==2) {
         usageTCCQuant();
         return 0;
@@ -3243,9 +3103,8 @@ int main(int argc, char *argv[]) {
       } else {
         KmerIndex index(opt);
         index.load(opt, false); // skip the k-mer map
-        //size_t num_ecs = index.ecmap.size();
         MinCollector collection(index, opt);
-        std::vector<std::vector<std::pair<uint32_t, uint32_t>>> batchCounts; // Stores TCCs
+        std::vector<std::vector<std::pair<uint32_t, uint32_t> > > batchCounts; // Stores TCCs
         std::ifstream in((opt.tccFile));
         bool firstline = true;
         bool isMatrixFile = false;
@@ -3321,18 +3180,8 @@ int main(int argc, char *argv[]) {
                     << "expected " << pretty_num(nlines) << std::endl;
           exit(1);
         }
-        */
-        // XXX:
-        /*
-        if ((isMatrixFile && ncol != num_ecs) || (!isMatrixFile && ncol > num_ecs)) {
-          std::cerr << "Error: number of equivalence classes does not match index. Found "
-                    << pretty_num(ncol) << ", expected " << pretty_num(num_ecs) << std::endl;
-          exit(1);
-        }
-        */
-        /*
 
-        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
+        std::vector<std::vector<std::pair<int32_t, double> > > Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
         Abundance_mat.resize(nrow, {});
         Abundance_mat_gene.resize(nrow, {});
         TPM_mat.resize(nrow, {});
@@ -3530,7 +3379,6 @@ int main(int argc, char *argv[]) {
           writeFLD(fldfilename, FLD_mat);
         }
       }
-      */
     } else if (cmd == "pseudo") {
       if (argc==2) {
         usagePseudo();
@@ -3602,8 +3450,8 @@ int main(int argc, char *argv[]) {
             start_time,
             call);
 
-        std::vector<std::vector<std::pair<int32_t, double>>> Abundance_mat;
-        std::vector<std::pair<double, double>> FLD_mat;
+        std::vector<std::vector<std::pair<int32_t, double> > > Abundance_mat;
+        std::vector<std::pair<double, double> > FLD_mat;
 
         if (opt.pseudo_quant) {
           int n_batch_files = opt.batch_files.size();
