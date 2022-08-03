@@ -237,6 +237,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
+      trinfos[n->id].reserve(trinfos[n->id].size()+1);
       trinfos[n->id].push_back(tr);
     }
     j++;
