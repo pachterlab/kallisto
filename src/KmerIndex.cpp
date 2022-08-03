@@ -77,8 +77,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
-  //std::vector<std::string> seqs;
-  //
+  // Generate random file name
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   std::string tmp_file = ".";
   int pos;
@@ -106,8 +105,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
       if (l <= 0) {
         break;
       }
-      //seqs.emplace_back(seq->seq.s);
-      //std::string& str = *seqs.rbegin();
       std::string str = seq->seq.s;
       auto n = str.size();
       for (auto i = 0; i < n; i++) {
@@ -206,6 +203,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
+  size_t EC_THRESHOLD = 200;
+  uint32_t sense = 0x80000000, missense = 0;
 
   std::ifstream infile(tmp_file);
   std::string line;
@@ -226,18 +225,19 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
         continue;
       }
 
+      proc += um.len;
+      const Node* n = um.getData();
+      if (trinfos[n->id].size() > EC_THRESHOLD) {
+        continue;
+      }
       TRInfo tr;
 
       tr.trid = j;
-      tr.pos = proc;
-      tr.sense = um.strand;
+      tr.pos = proc & (um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
-      const Node* n = um.getData();
       trinfos[n->id].push_back(tr);
-
-      proc += um.len;
     }
     j++;
   }
@@ -253,7 +253,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   // Threshold large ECs
   size_t n_removed;
   for (auto& trinfo : trinfos) {
-    if (trinfo.size() > 200) {
+    if (trinfo.size() > EC_THRESHOLD) {
       trinfo.clear();
       ++n_removed;
     }
@@ -385,7 +385,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.add(tr.trid);
-          pos.push_back(tr.pos | (tr.sense ? sense : missense));
+          pos.push_back(tr.pos);
         }
       }
 

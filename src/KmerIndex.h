@@ -21,13 +21,13 @@ std::string revcomp(const std::string s);
 struct TRInfo {
   uint32_t trid;
   // denotes where the transcript begins, with respect to a given contig
-  uint32_t start;
+  uint16_t start;
   // denotes where the transcript ends, with respect to a given contig
   // exclusive [start,stop)
-  uint32_t stop;
+  uint16_t stop;
   // denotes where the given contig starts with respect to the transcript
+  // sense is encoded into MSB: 1 for sense, 0 for anti-sense
   uint32_t pos;
-  bool sense; // true for sense, false for anti-sense
 };
 
 using EcMap = std::vector<Roaring>; //std::unordered_map<int, std::vector<int>>;
