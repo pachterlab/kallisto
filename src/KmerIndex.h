@@ -21,10 +21,10 @@ std::string revcomp(const std::string s);
 struct TRInfo {
   uint32_t trid;
   // denotes where the transcript begins, with respect to a given contig
-  uint16_t start;
+  uint32_t start;
   // denotes where the transcript ends, with respect to a given contig
   // exclusive [start,stop)
-  uint16_t stop;
+  uint32_t stop;
   // denotes where the given contig starts with respect to the transcript
   // sense is encoded into MSB: 1 for sense, 0 for anti-sense
   uint32_t pos;
