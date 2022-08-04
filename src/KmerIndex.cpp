@@ -228,6 +228,14 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
+        trinfos[n->id].clear();
+        std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
+        TRInfo tr_discard;
+        tr_discard.trid = std::numeric_limits<uint32_t>::max();
+        trinfos[n->id].reserve(1);
+        trinfos[n->id].push_back(tr_discard);
+        continue;
+      } else if (trinfos[n->id].size() == 1 && trinfos[n->id][0].trid == std::numeric_limits<uint32_t>::max()) {
         continue;
       }
       TRInfo tr;
@@ -244,10 +252,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   }
   infile.close();
 
-  // TODO:
-  // Replace seqs with a file on disk
-  //seqs.clear();
-
   size_t N_ITER = 10;
   uint32_t tmp_id = 0;
 
@@ -255,6 +259,10 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   size_t n_removed;
   for (auto& trinfo : trinfos) {
     if (trinfo.size() > EC_THRESHOLD) {
+      trinfo.clear();
+      std::vector<TRInfo>().swap(trinfo); // potentially free up memory
+      ++n_removed;
+    } else if (trinfo.size() == 1 && trinfo[0].trid == std::numeric_limits<uint32_t>::max()) {
       trinfo.clear();
       ++n_removed;
     }
