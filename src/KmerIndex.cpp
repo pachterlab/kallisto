@@ -203,7 +203,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
-  size_t EC_THRESHOLD = 200;
+  size_t EC_THRESHOLD = 250;
   uint32_t sense = 0x80000000, missense = 0;
 
   std::ifstream infile(tmp_file);
