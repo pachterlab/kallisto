@@ -252,9 +252,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   }
   infile.close();
 
-  size_t N_ITER = 10;
-  uint32_t tmp_id = 0;
-
   // Threshold large ECs
   size_t n_removed;
   for (auto& trinfo : trinfos) {
@@ -338,6 +335,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     }
     // Assign position and sense for all transcripts belonging to unitig
     n->pos = pos;
+    std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
   }
 }
 
