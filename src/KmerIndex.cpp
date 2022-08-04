@@ -209,6 +209,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   std::ifstream infile(tmp_file);
   std::string line;
   size_t j = 0;
+  size_t n_above_threshold = 0;
   //for (size_t i = 0; i < seqs.size(); ++i) {
   while (infile >> line) {
     if (line[0] == '>') continue;
@@ -228,13 +229,18 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
-        trinfos[n->id].clear();
-        std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
-        TRInfo tr_discard;
-        tr_discard.trid = std::numeric_limits<uint32_t>::max();
-        trinfos[n->id].reserve(1);
-        trinfos[n->id].push_back(tr_discard);
-        continue;
+        if (trinfos[n->id].size() == EC_THRESHOLD+1) {
+          n_above_threshold++;
+        }
+        if (n_above_threshold > EC_MAX_N_ABOVE_THRESHOLD) {
+          trinfos[n->id].clear();
+          std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
+          TRInfo tr_discard;
+          tr_discard.trid = std::numeric_limits<uint32_t>::max();
+          trinfos[n->id].reserve(1);
+          trinfos[n->id].push_back(tr_discard);
+          continue;
+        }
       } else if (trinfos[n->id].size() == 1 && trinfos[n->id][0].trid == std::numeric_limits<uint32_t>::max()) {
         continue;
       }
@@ -253,29 +259,28 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   infile.close();
 
   // Threshold large ECs
-  size_t n_removed;
-  for (auto& trinfo : trinfos) {
-    if (trinfo.size() > EC_THRESHOLD) {
-      trinfo.clear();
-      std::vector<TRInfo>().swap(trinfo); // potentially free up memory
-      ++n_removed;
-    } else if (trinfo.size() == 1 && trinfo[0].trid == std::numeric_limits<uint32_t>::max()) {
-      trinfo.clear();
-      ++n_removed;
+  if (n_above_threshold > EC_MAX_N_ABOVE_THRESHOLD) {
+    size_t n_removed = 0;
+    for (auto& trinfo : trinfos) {
+      if (trinfo.size() > EC_THRESHOLD) {
+        trinfo.clear();
+        std::vector<TRInfo>().swap(trinfo); // potentially free up memory
+        ++n_removed;
+      } else if (trinfo.size() == 1 && trinfo[0].trid == std::numeric_limits<uint32_t>::max()) {
+        trinfo.clear();
+        ++n_removed;
+      }
     }
+    std::cerr << "[build] discarded " << n_removed << " ECs larger than threshold." << std::endl;
   }
-  std::cerr << "[build] discarded " << n_removed << " ECs larger than threshold." << std::endl;
 
   PopulateMosaicECs(trinfos);
 
-  std::cerr << " done" << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
-
-  std::cout << "Entering PopulateMosaicECs" << std::endl;
 
   for (const auto& um : dbg) {
 
