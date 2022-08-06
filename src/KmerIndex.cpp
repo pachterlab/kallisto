@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <zlib.h>
 #include <unordered_set>
+#include <functional>
 #include "kseq.h"
 #include "KmerIndex.h"
 
@@ -79,7 +80,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   // Generate random file name
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  std::string tmp_file = ".";
+  std::string tmp_file = ".kallisto.";
+  srand((unsigned int)std::hash<std::string>{}(opt.index));
   int pos;
   while(tmp_file.size() != 16) {
     pos = ((rand() % (base.size() - 1)));
