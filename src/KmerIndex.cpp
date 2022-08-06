@@ -204,6 +204,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
   size_t EC_THRESHOLD = 250;
+  size_t EC_SOFT_THRESHOLD = 800;
+  size_t EC_MAX_N_ABOVE_THRESHOLD = 6000; // Thresholding ECs to size EC_THRESHOLD will only occur if we encounter >EC_MAX_N_ABOVE_THRESHOLD number of nodes that have size >EC_SOFT_THRESHOLD
   uint32_t sense = 0x80000000, missense = 0;
 
   std::ifstream infile(tmp_file);
@@ -229,7 +231,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
-        if (trinfos[n->id].size() == EC_THRESHOLD+1) {
+        if (trinfos[n->id].size() == EC_SOFT_THRESHOLD+1) {
           n_above_threshold++;
         }
         if (n_above_threshold > EC_MAX_N_ABOVE_THRESHOLD) {
