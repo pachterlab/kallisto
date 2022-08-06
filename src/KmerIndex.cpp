@@ -83,7 +83,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   std::string tmp_file = ".kallisto.";
   srand((unsigned int)std::hash<std::string>{}(opt.index));
   int pos;
-  while(tmp_file.size() != 16) {
+  while(tmp_file.length() < 32) {
     pos = ((rand() % (base.size() - 1)));
     tmp_file += base.substr(pos, 1);
   }
