@@ -66,6 +66,8 @@ struct ProgramOptions {
   int threads;
   std::string index;
   int k;
+  int g;
+  int max_ec_size;
   int iterations;
   std::string output;
   int skip;
@@ -120,6 +122,8 @@ ProgramOptions() :
   verbose(false),
   threads(1),
   k(31),
+  g(0),
+  max_ec_size(0),
   iterations(500),
   skip(1),
   seed(42),
