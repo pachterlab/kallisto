@@ -190,7 +190,12 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   c_opt.verbose = true;
   c_opt.filename_ref_in.push_back(tmp_file);
 
-  dbg = CompactedDBG<Node>(k);
+  if (opt.g > 0) { // If minimizer length supplied, override the default
+    c_opt.g = opt.g;
+    dbg = CompactedDBG<Node>(k, c_opt.g);
+  } else {
+    dbg = CompactedDBG<Node>(k);
+  }
   dbg.build(c_opt);
 
   uint32_t running_id = 0;
@@ -208,6 +213,11 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   size_t EC_THRESHOLD = 250;
   size_t EC_SOFT_THRESHOLD = 800;
   size_t EC_MAX_N_ABOVE_THRESHOLD = 6000; // Thresholding ECs to size EC_THRESHOLD will only occur if we encounter >EC_MAX_N_ABOVE_THRESHOLD number of nodes that have size >EC_SOFT_THRESHOLD
+  if (opt.max_ec_size > 0) { // If max EC size is supplied, override the default thresholds
+    EC_THRESHOLD = opt.max_ec_size;
+    EC_SOFT_THRESHOLD = EC_THRESHOLD;
+    EC_MAX_N_ABOVE_THRESHOLD = 0;
+  }
   uint32_t sense = 0x80000000, missense = 0;
 
   std::ifstream infile(tmp_file);
@@ -280,6 +290,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   PopulateMosaicECs(trinfos);
 
+  std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
