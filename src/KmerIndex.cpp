@@ -192,10 +192,18 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   if (opt.g > 0) { // If minimizer length supplied, override the default
     c_opt.g = opt.g;
-    dbg = CompactedDBG<Node>(k, c_opt.g);
-  } else {
-    dbg = CompactedDBG<Node>(k);
+  } else { // Define minimizer length defaults
+    int g = k-8;
+    if (k <= 15) {
+      g = k-2;
+    } else if (k <= 17) {
+      g = k-4;
+    } else if (k <= 19) {
+      g = k-6;
+    }
+    c_opt.g = g;
   }
+  dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
   uint32_t running_id = 0;
