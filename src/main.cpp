@@ -2430,6 +2430,7 @@ void usageIndex() {
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (MAX_KMER_SIZE-1) << ")" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl
        << endl;
