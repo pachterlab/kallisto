@@ -333,6 +333,11 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       std::vector<int> u = unique(brpoints);
       swap(u,brpoints);
     }
+    
+    std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
+              [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
+                return (lhs.trid < rhs.trid);
+              });
 
     size_t j = 0;
     std::vector<uint32_t> pos;
@@ -342,11 +347,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
       Roaring u;
-
-      std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
-                [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
-                    return (lhs.trid < rhs.trid);
-                });
 
       for (const auto& tr : trinfos[n->id]) {
         // If a transcript encompasses the full breakpoint interval
