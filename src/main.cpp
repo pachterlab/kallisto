@@ -52,7 +52,7 @@ bool checkFileExists(std::string fn) {
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
-  const char *opt_string = "i:k:t:b:";
+  const char *opt_string = "i:k:m:e:t:b:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -60,6 +60,8 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
+    {"min-size", required_argument, 0, 'm'},
+    {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
     {"blacklist", required_argument, 0, 'b'},
     {0,0,0,0}
@@ -82,6 +84,14 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'k': {
       stringstream(optarg) >> opt.k;
+      break;
+    }
+    case 'm': {
+      stringstream(optarg) >> opt.g;
+      break;
+    }
+    case 'e': {
+      stringstream(optarg) >> opt.max_ec_size;
       break;
     }
     case 't': {
@@ -1517,7 +1527,7 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   bool ret = true;
 
   if (opt.k <= 1 || opt.k >= MAX_KMER_SIZE) {
-    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and  maximum is " << (MAX_KMER_SIZE -1) << endl;
+    cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and maximum is " << (MAX_KMER_SIZE -1) << endl;
     ret = false;
   }
 
@@ -1544,6 +1554,17 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
+    ret = false;
+  }
+  
+  if (opt.g != 0) {
+    if (opt.g <= 2 || opt.g > opt.k - 2) {
+      cerr << "Error: invalid minimizer size " << opt.g << ", minimum is 3 and maximum is k - 2" << endl;
+      ret = false;
+    }
+  }
+  if (opt.max_ec_size < 0) {
+    cerr << "Error: invalid max ec size " << opt.max_ec_size << endl;
     ret = false;
   }
 
@@ -2416,6 +2437,9 @@ void usageIndex() {
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-b, --blacklist=STRING      Path to a FASTA-file containing sequences to exclude from index" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
+       << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
+       << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
+       << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl
        << endl;
 
 }

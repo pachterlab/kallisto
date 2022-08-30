@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <zlib.h>
 #include <unordered_set>
+#include <functional>
 #include "kseq.h"
 #include "KmerIndex.h"
 
@@ -79,9 +80,10 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
 
   // Generate random file name
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  std::string tmp_file = ".";
+  std::string tmp_file = ".kallisto.";
+  srand((unsigned int)std::hash<std::string>{}(opt.index));
   int pos;
-  while(tmp_file.size() != 16) {
+  while(tmp_file.length() < 32) {
     pos = ((rand() % (base.size() - 1)));
     tmp_file += base.substr(pos, 1);
   }
@@ -188,7 +190,20 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   c_opt.verbose = true;
   c_opt.filename_ref_in.push_back(tmp_file);
 
-  dbg = CompactedDBG<Node>(k);
+  if (opt.g > 0) { // If minimizer length supplied, override the default
+    c_opt.g = opt.g;
+  } else { // Define minimizer length defaults
+    int g = k-8;
+    if (k <= 15) {
+      g = k-2;
+    } else if (k <= 17) {
+      g = k-4;
+    } else if (k <= 19) {
+      g = k-6;
+    }
+    c_opt.g = g;
+  }
+  dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
   Blacklist(opt.blacklist);
@@ -243,12 +258,20 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
-  size_t EC_THRESHOLD = 200;
+  size_t EC_THRESHOLD = 250;
+  size_t EC_SOFT_THRESHOLD = 800;
+  size_t EC_MAX_N_ABOVE_THRESHOLD = 6000; // Thresholding ECs to size EC_THRESHOLD will only occur if we encounter >EC_MAX_N_ABOVE_THRESHOLD number of nodes that have size >EC_SOFT_THRESHOLD
+  if (opt.max_ec_size > 0) { // If max EC size is supplied, override the default thresholds
+    EC_THRESHOLD = opt.max_ec_size;
+    EC_SOFT_THRESHOLD = EC_THRESHOLD;
+    EC_MAX_N_ABOVE_THRESHOLD = 0;
+  }
   uint32_t sense = 0x80000000, missense = 0;
 
   std::ifstream infile(tmp_file);
   std::string line;
   size_t j = 0;
+  size_t n_above_threshold = 0;
   //for (size_t i = 0; i < seqs.size(); ++i) {
   while (infile >> line) {
     if (line[0] == '>') continue;
@@ -268,6 +291,19 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
+        if (trinfos[n->id].size() == EC_SOFT_THRESHOLD+1) {
+          n_above_threshold++;
+        }
+        if (n_above_threshold > EC_MAX_N_ABOVE_THRESHOLD) {
+          trinfos[n->id].clear();
+          std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
+          TRInfo tr_discard;
+          tr_discard.trid = std::numeric_limits<uint32_t>::max();
+          trinfos[n->id].reserve(1);
+          trinfos[n->id].push_back(tr_discard);
+          continue;
+        }
+      } else if (trinfos[n->id].size() == 1 && trinfos[n->id][0].trid == std::numeric_limits<uint32_t>::max()) {
         continue;
       }
       TRInfo tr;
@@ -277,106 +313,37 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
+      trinfos[n->id].reserve(trinfos[n->id].size()+1);
       trinfos[n->id].push_back(tr);
     }
     j++;
   }
   infile.close();
 
-  // TODO:
-  // Replace seqs with a file on disk
-  //seqs.clear();
-
-  size_t N_ITER = 10;
-  uint32_t tmp_id = 0;
-
   // Threshold large ECs
-  size_t n_removed;
-  for (auto& trinfo : trinfos) {
-    if (trinfo.size() > EC_THRESHOLD) {
-      trinfo.clear();
-      ++n_removed;
+  if (n_above_threshold > EC_MAX_N_ABOVE_THRESHOLD) {
+    size_t n_removed = 0;
+    for (auto& trinfo : trinfos) {
+      if (trinfo.size() > EC_THRESHOLD) {
+        trinfo.clear();
+        std::vector<TRInfo>().swap(trinfo); // potentially free up memory
+        ++n_removed;
+      } else if (trinfo.size() == 1 && trinfo[0].trid == std::numeric_limits<uint32_t>::max()) {
+        trinfo.clear();
+        ++n_removed;
+      }
     }
+    std::cerr << "[build] discarded " << n_removed << " ECs larger than threshold." << std::endl;
   }
-  std::cerr << "[build] discarded " << n_removed << " ECs larger than threshold." << std::endl;
-
-  // Two-sided crossing minimization
-  std::cerr << std::endl << "[build] compacting equivalence classes for " << N_ITER << " rounds ... "; std::cerr.flush();
-  std::vector<size_t> ec_idx(trinfos.size()), idx_ec(trinfos.size()),
-                      tr_idx(target_names_.size()), idx_tr(target_names_.size());
-
-  std::vector<std::vector<uint32_t> > tr_ec(target_names_.size());
-
-  for (size_t i = 0; i < trinfos.size(); ++i) {
-    for (const auto& trinfo : trinfos[i]) {
-      tr_ec[trinfo.trid].push_back(i);
-    }
-  }
-
-  std::iota(ec_idx.begin(), ec_idx.end(), 0);
-  std::iota(idx_ec.begin(), idx_ec.end(), 0);
-  std::iota(tr_idx.begin(), tr_idx.end(), 0);
-  std::iota(idx_tr.begin(), idx_tr.end(), 0);
-
-  for (size_t i = 0; i < N_ITER; ++i) {
-    // Sort ECs w.r.t. transcript id
-    std::sort(ec_idx.begin(), ec_idx.end(),
-              [&idx_tr, &trinfos](size_t a, size_t b) -> bool {
-                size_t ec1 = (!trinfos[a].empty()) ? idx_tr[trinfos[a][0].trid] : std::numeric_limits<size_t>::max();
-                size_t ec2 = (!trinfos[b].empty()) ? idx_tr[trinfos[b][0].trid] : std::numeric_limits<size_t>::max();
-                return ec1 < ec2;
-              });
-    for (size_t i = 0; i < ec_idx.size(); ++i) idx_ec[ec_idx[i]] = i;
-
-    // Sort transcripts w.r.t. a randomly picked EC
-    std::sort(tr_idx.begin(), tr_idx.end(),
-              [&idx_ec, &tr_ec](size_t a, size_t b) -> bool {
-                size_t tr1 = (!tr_ec[a].empty()) ? idx_ec[tr_ec[a][0]] : std::numeric_limits<size_t>::max();
-                size_t tr2 = (!tr_ec[b].empty()) ? idx_ec[tr_ec[b][0]] : std::numeric_limits<size_t>::max();
-                return tr1 < tr2;
-              });
-    for (size_t i = 0; i < tr_idx.size(); ++i) idx_tr[tr_idx[i]] = i;
-  }
-  ec_idx.clear();
-  idx_ec.clear();
-  tr_idx.clear();
-
-  for (auto& trinfo : trinfos) {
-    for (auto& tr : trinfo) {
-      tr.trid = idx_tr[tr.trid];
-    }
-  }
-
-  std::vector<std::string> new_target_names_;
-  std::vector<uint32_t> new_target_lens_;
-  std::vector<std::string> new_target_seqs_;
-  new_target_names_.reserve(target_names_.size());
-  new_target_lens_.reserve(target_lens_.size());
-  new_target_seqs_.reserve(target_seqs_.size());
-  for (size_t i = 0; i < target_names_.size(); ++i) {
-    new_target_names_.push_back(target_names_[idx_tr[i]]);
-    new_target_lens_.push_back(target_lens_[idx_tr[i]]);
-  }
-  for (size_t i = 0; i < target_seqs_.size(); ++i) {
-    new_target_seqs_.push_back(target_seqs_[idx_tr[i]]);
-  }
-
-  idx_tr.clear();
-
-  target_names_ = new_target_names_;
-  target_lens_ = new_target_lens_;
-  target_seqs_ = new_target_seqs_;
 
   PopulateMosaicECs(trinfos);
 
-  std::cerr << " done" << std::endl;
+  std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
   //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
-
-  std::cout << "Entering PopulateMosaicECs" << std::endl;
 
   for (const auto& um : dbg) {
 
@@ -406,6 +373,11 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       std::vector<int> u = unique(brpoints);
       swap(u,brpoints);
     }
+    
+    std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
+              [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
+                return (lhs.trid < rhs.trid);
+              });
 
     size_t j = 0;
     std::vector<uint32_t> pos;
@@ -415,11 +387,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
       Roaring u;
-
-      std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
-                [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
-                    return (lhs.trid < rhs.trid);
-                });
 
       for (const auto& tr : trinfos[n->id]) {
         // If a transcript encompasses the full breakpoint interval
@@ -436,6 +403,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
     }
     // Assign position and sense for all transcripts belonging to unitig
     n->pos = pos;
+    std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
   }
 }
 
