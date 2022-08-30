@@ -249,7 +249,7 @@ void KmerIndex::Blacklist(const std::string& path) {
       buf << line;
     }
   }
-  std::cerr << "[build] " << count << " blacklisted kmers removed from graph." << std::endl;
+  std::cerr << "[build] Removed " << count << " blacklisted kmers from graph." << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
@@ -373,7 +373,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       std::vector<int> u = unique(brpoints);
       swap(u,brpoints);
     }
-    
+
     std::sort(trinfos[n->id].begin(), trinfos[n->id].end(),
               [](const TRInfo& lhs, const TRInfo& rhs) -> bool {
                 return (lhs.trid < rhs.trid);
