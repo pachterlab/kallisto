@@ -124,10 +124,12 @@ struct KmerIndex {
 
   void BuildTranscripts(const ProgramOptions& opt);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
+
+  // Removes all kmers occurring in opt.blacklist from the dBG.
+  void Blacklist(const std::string& path);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
-  //void BuildDeBruijnGraph(const ProgramOptions& opt, const std::vector<std::string>& seqs);
-  //void BuildEquivalenceClasses(const ProgramOptions& opt, std::vector<std::string>& seqs);
-  //void FixSplitContigs(const ProgramOptions& opt, std::vector<std::vector<TRInfo>>& trinfos);
+  // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
+  // i.e. have more than one color.
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
 
   // output methods

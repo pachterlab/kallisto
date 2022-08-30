@@ -191,10 +191,50 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg = CompactedDBG<Node>(k);
   dbg.build(c_opt);
 
+  Blacklist(opt.blacklist);
+
   uint32_t running_id = 0;
   for (auto& um : dbg) {
     um.getData()->id = running_id++;
   }
+}
+
+void KmerIndex::Blacklist(const std::string& path) {
+  std::ifstream infile(path.c_str());
+  if (!infile.good()) return;
+
+  size_t count = 0;
+  std::string line;
+  std::stringstream buf;
+  const_UnitigMap<Node> um;
+  while (std::getline(infile, line)) {
+    if (line[0] == '>' && buf.str() != "") {
+      // Search for everything in buffer in graph and delete the corresponding
+      // nodes in case of a hit.
+      size_t pos = 0;
+      std::string seq = buf.str();
+      while (pos < seq.size() - k + 1) {
+
+        um = dbg.findUnitig(seq.c_str(), pos, seq.size());
+
+        if (um.isEmpty) {
+          ++pos;
+          continue;
+        }
+
+        pos += um.len;
+        count += um.len;
+
+        dbg.remove(um);
+      }
+
+      // Clear buffer.
+      buf.str("");
+    } else {
+      buf << line;
+    }
+  }
+  std::cerr << "[build] " << count << " blacklisted kmers removed from graph." << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
