@@ -1996,7 +1996,6 @@ bool CheckOptionsMerge(ProgramOptions& opt) {
     }
   }
 
-
   return ret;
 }
 
@@ -2102,7 +2101,7 @@ void PrintCite() {
 }
 
 void PrintVersion() {
-  cout << "kallisto, version " << 	KALLISTO_VERSION << endl;
+  cout << "kallisto, version " << KALLISTO_VERSION << endl;
 }
 
 void usage() {
@@ -2219,36 +2218,6 @@ void usageEM(bool valid_input = true) {
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
-
-}
-
-void usagePseudo(bool valid_input = true) {
-  if (valid_input) {
-    cout << "kallisto " << KALLISTO_VERSION << endl
-         << "Computes equivalence classes for reads and quantifies abundances (deprecated)" << endl << endl;
-  }
-
-  cout << "Usage: kallisto pseudo [arguments] FASTQ-files" << endl << endl
-       << "Required arguments:" << endl
-       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl
-       << "                              pseudoalignment" << endl
-       << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
-       << "Optional arguments:" << endl
-       << "-u  --umi                     First file in pair is a UMI file" << endl
-       << "-b  --batch=FILE              Process files listed in FILE" << endl
-       << "    --quant                   Quantify using EM algorithm (only in batch mode)" << endl
-       << "    --bus                     Output a BUS file" << endl
-       << "    --single                  Quantify single-end reads" << endl
-       << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
-       << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
-       << "                              (default: -l, -s values are estimated from paired" << endl
-       << "                               end data, but are required when using --single" << endl
-       << "                               unless outputting a BUS file via --bus)" << endl
-       << "    --fr-stranded             Strand specific reads, first read forward" << endl
-       << "    --rf-stranded             Strand specific reads, first read reverse" << endl
-       << "-n, --num                     Output number of read in BUS file flag column (only with --bus)" << endl
-       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl;
-//       << "    --pseudobam               Output pseudoalignments in SAM format to stdout" << endl;
 
 }
 
