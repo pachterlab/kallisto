@@ -3103,7 +3103,7 @@ int main(int argc, char *argv[]) {
         }
       }
     } else if (cmd == "pseudo") {
-      cerr << "Deprecated: `kallisto pseudo` is deprecated. See `kallisto bus`.
+      cerr << "Deprecated: `kallisto pseudo` is deprecated. See `kallisto bus`." << endl;
     } else if (cmd == "h5dump") {
 
       if (argc == 2) {

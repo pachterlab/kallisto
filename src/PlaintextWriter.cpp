@@ -203,7 +203,7 @@ void writeBatchMatrix(
 
   writeECList(ecfilename, index);
   writeCellIds(cellnamesfilename, ids);
-  writeSparseBatchMatrix(countsfilename, counts, index.ecmap.size());
+  writeSparseBatchMatrix(countsfilename, counts, index.ecmapinv.size());
 
 /*
     countsof.open(countsfilename.c_str(), std::ios::out);
@@ -236,12 +236,11 @@ void writeECList(
     }
 
     // output equivalence classes in the form "EC TXLIST";
-    for (int i = 0; i < index.ecmap.size(); i++) {
-      ecof << i << "\t";
+    for (const auto& it : index.ecmapinv) {
+      ecof << it.second << "\t";
       // output the rest of the class
-      const auto &v = index.ecmap[i];
       bool first = true;
-      for (auto x : v) {
+      for (auto x : it.first) {
         if (!first) {
           ecof << ",";
         } else {
