@@ -601,7 +601,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 }
 
 void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
-  ecmap.clear();
   ecmapinv.clear();
   int32_t i = 0;
   std::ifstream in((opt.ecFile));
@@ -631,7 +630,6 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
         }
         r.add(tmp_ecval_num);
       }
-      ecmap.push_back(r); // copy
       ecmapinv.insert({std::move(r), i}); // move
       i++;
     }
@@ -640,7 +638,7 @@ void KmerIndex::loadECsFromFile(const ProgramOptions& opt) {
     exit(1);
   }
   std::cerr << "[index] number of equivalence classes loaded from file: "
-            << pretty_num(ecmap.size()) << std::endl;
+            << pretty_num(ecmapinv.size()) << std::endl;
 }
 
 void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
@@ -970,10 +968,9 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
 }
 
 // use:  res = intersect(ec,v)
-// pre:  ec is in ecmap, v is a vector of valid targets
+// pre:  ec is an equivalence class, v is a vector of valid targets
 //       v is sorted in increasing order
-// post: res contains the intersection  of ecmap[ec] and v sorted increasing
-//       res is empty if ec is not in ecma
+// post: res contains the intersection  of ec and v
 Roaring KmerIndex::intersect(const Roaring& ec, const Roaring& v) const {
   Roaring res;
   if (ec.cardinality() == 0) {
@@ -1053,24 +1050,19 @@ void KmerIndex::loadTranscriptSequences() const {
 }
 
 void KmerIndex::clear() {
-  /*
-  kmap.clear_table();
-  ecmap.resize(0);
-  dbGraph.ecs.resize(0);
-  dbGraph.contigs.resize(0);
+  dbg.clear();
+
   {
-    std::unordered_map<std::vector<int>, int, SortedVectorHasher> empty;
+    EcMapInv empty;
     std::swap(ecmapinv, empty);
   }
 
   target_lens_.resize(0);
   target_names_.resize(0);
   target_seqs_.resize(0);
-  */
 }
 
 void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
-  /*
   // write out header
   o << "@HD\tVN:1.0\n";
   for (int i = 0; i < num_trans; i++) {
@@ -1078,5 +1070,4 @@ void KmerIndex::writePseudoBamHeader(std::ostream &o) const {
   }
   o << "@PG\tID:kallisto\tPN:kallisto\tVN:"<< KALLISTO_VERSION << "\n";
   o.flush();
-  */
 }
