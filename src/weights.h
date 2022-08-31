@@ -35,7 +35,7 @@ std::vector<double> update_eff_lens(const std::vector<double>& means,
 
 WeightMap calc_weights(
   const std::vector<uint32_t>& counts,
-  const EcMap& ecmap,
+  const EcMapInv& ecmapinv,
   const std::vector<double>& eff_lens);
 
 

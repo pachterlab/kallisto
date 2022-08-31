@@ -219,7 +219,7 @@ std::vector<double> update_eff_lens(
 
 WeightMap calc_weights(
   const std::vector<uint32_t>& counts,
-  const EcMap& ecmap,
+  const EcMapInv& ecmapinv,
   const std::vector<double>& eff_lens)
 {
 
@@ -227,10 +227,10 @@ WeightMap calc_weights(
   // and ec map are correct... as well as eff_lens size is reasonable
 
   // weights are stored _exactly_ in the same orientation as the ec map
-  WeightMap weights(ecmap.size());
+  WeightMap weights(ecmapinv.size());
 
-  for (size_t ec = 0; ec < ecmap.size(); ec++) {
-    auto& v = ecmap[ec];
+  for (const auto& it : ecmapinv) {
+    auto& v = it.first;
     uint32_t* trs = new uint32_t[v.cardinality()];
     v.toUint32Array(trs);
 
@@ -238,11 +238,11 @@ WeightMap calc_weights(
     trans_weights.reserve(v.cardinality());
 
     for (size_t i = 0; i < v.cardinality(); ++i) {
-      trans_weights.push_back( static_cast<double>(counts[ec]) /
+      trans_weights.push_back( static_cast<double>(counts[it.second]) /
                                eff_lens[trs[i]] );
     }
 
-    weights[ec] = trans_weights;
+    weights[it.second] = trans_weights;
     delete[] trs;
     trs = nullptr;
   }

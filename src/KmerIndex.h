@@ -65,6 +65,7 @@ struct RoaringHasher {
     return h;
   }
 };
+typedef std::unordered_map<Roaring, int32_t, RoaringHasher> EcMapInv;
 
 struct KmerEntry {
   int32_t contig; // id of contig
@@ -156,7 +157,7 @@ struct KmerIndex {
   CompactedDBG<Node> dbg;
   EcMap ecmap;
   DBGraph dbGraph;
-  std::unordered_map<Roaring, int32_t, RoaringHasher> ecmapinv;
+  EcMapInv ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
   std::vector<uint32_t> target_lens_;
