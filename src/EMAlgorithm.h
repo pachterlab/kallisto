@@ -72,13 +72,15 @@ struct EMAlgorithm {
       }
 
 
-      for (int ec = 0; ec < num_trans_; ++ec) {
-        next_alpha[ec] = counts_[ec];
-      }
-
       for (const auto& it : ecmapinv_) {
         if (it.first.cardinality() == 1) {
           next_alpha[it.first.maximum()] = counts_[it.second];
+        }
+      }
+
+      for (const auto& it : ecmapinv_) {
+        if (it.first.cardinality() == 1) { // Individual transcript
+          continue;
         }
 
         denom = 0.0;
@@ -116,6 +118,9 @@ struct EMAlgorithm {
         for (auto t_it = 0; t_it < numEC; ++t_it) {
           next_alpha[trs[t_it]] += (wv[t_it] * alpha_[trs[t_it]]) * countNorm;
         }
+        
+        delete[] trs;
+        trs = nullptr;
 
       }
 
