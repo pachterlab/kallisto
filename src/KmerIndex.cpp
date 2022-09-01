@@ -276,7 +276,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   while (infile >> line) {
     if (line[0] == '>') continue;
     const auto& seq = line;
-    if (seq.size() < k) continue;
+    if (seq.size() < k) { j++; continue; }
 
     int seqlen = seq.size() - k + 1; // number of k-mers
     size_t proc = 0;
