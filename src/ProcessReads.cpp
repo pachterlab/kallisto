@@ -2177,7 +2177,7 @@ void AlnProcessor::processBufferTrans() {
             }
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) != n->pos[offset];
+            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
@@ -2667,7 +2667,7 @@ void AlnProcessor::processBufferGenome() {
             }
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) != n->pos[offset];
+            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
