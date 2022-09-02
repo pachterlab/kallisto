@@ -181,22 +181,18 @@ echo "[INDEX]"
 # Test k=7
 
 cmdexec "$kallisto index -i $test_dir/basic7.idx -k 7 $test_dir/simple.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/basic7.idx 2>&1|head -4" 356d498c030cb270a124ca06ad42a9d5
 
 # Test k=9
 
 cmdexec "$kallisto index -i $test_dir/basic9.idx -k 9 $test_dir/simple.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/basic9.idx 2>&1|head -4" 9f9246d5073d8e6ba90b8644e4ed9cc9
 
 # Test non-ATCG bases
 
 cmdexec "$kallisto index -i $test_dir/nonATCG.idx -k 5 $test_dir/nonATCG.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/nonATCG.idx 2>&1|head -4" 5fcab956573ca37c2220d154e7760db2
 
 # Test polyA truncation
 
 cmdexec "$kallisto index -i $test_dir/polyA.idx -k 5 $test_dir/polyA.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/polyA.idx 2>&1|head -4" 8fe4f599c55a62f87e56067ccdbf865e
 
 # Test k = even number (should fail)
 
@@ -209,7 +205,6 @@ cmdexec "$kallisto index -i $test_dir/duplicates_fail.idx -k 11 $test_dir/duplic
 # Test duplicate transcript names with --make-unique
 
 cmdexec "$kallisto index -i $test_dir/duplicates.idx -k 11 --make-unique $test_dir/duplicates.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/duplicates.idx 2>&1|head -4" b57f37128e2f2e66775aa811ed994cec
 
 
 ### TEST - kallisto quant ###
