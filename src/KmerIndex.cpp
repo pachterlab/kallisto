@@ -937,7 +937,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
     if (trs[i] == tr) {
       rawpos = n->pos[offset + i];
       trpos = rawpos & bitmask;
-      trsense = (rawpos != trpos);
+      trsense = (rawpos == trpos);
       break;
     }
   }
