@@ -273,7 +273,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   size_t j = 0;
   size_t n_above_threshold = 0;
   //for (size_t i = 0; i < seqs.size(); ++i) {
-  while (infile >> line) {
+  while (std::getline(infile, line)) {
     if (line[0] == '>') continue;
     const auto& seq = line;
     if (seq.size() < k) { j++; continue; }
