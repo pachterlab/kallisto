@@ -61,7 +61,7 @@ class BlockArray {
             std::vector<T> vals;
             vals.reserve(blocks.size());
             for (const auto& b : blocks) {
-                if (b.lb < idx) {
+                if (b.lb <= idx) {
                     vals.push_back(b.val);
                 }
             }
