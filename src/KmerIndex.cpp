@@ -288,6 +288,9 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
         continue;
       }
 
+      Kmer head(seq.substr(proc, k).c_str());
+      bool fwd = (head == head.rep());
+
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
@@ -309,7 +312,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       TRInfo tr;
 
       tr.trid = j;
-      tr.pos = proc | (um.strand ? sense : missense);
+      tr.pos = proc | (um.strand == fwd ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
