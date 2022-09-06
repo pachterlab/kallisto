@@ -62,7 +62,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"min-size", required_argument, 0, 'm'},
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
-    {"blacklist", required_argument, 0, 'b'},
+    {"offlist", required_argument, 0, 'b'},
     {0,0,0,0}
   };
   int c;
@@ -98,7 +98,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'b': {
-      stringstream(optarg) >> opt.blacklist;
+      stringstream(optarg) >> opt.offlist;
       break;
     }
     default: break;
@@ -2035,7 +2035,7 @@ void usageIndex() {
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (MAX_KMER_SIZE-1) << ")" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
-       << "-b, --blacklist=STRING      Path to a FASTA-file containing sequences to exclude from index" << endl
+       << "-b, --offlist=STRING      Path to a FASTA-file containing sequences to exclude from index" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl

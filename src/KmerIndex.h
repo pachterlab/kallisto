@@ -127,7 +127,7 @@ struct KmerIndex {
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
 
   // Removes all kmers occurring in opt.blacklist from the dBG.
-  void Blacklist(const std::string& path);
+  void Offlist(const std::string& path);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
   // i.e. have more than one color.

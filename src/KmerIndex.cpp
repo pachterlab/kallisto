@@ -206,7 +206,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
-  Blacklist(opt.blacklist);
+  Offlist(opt.offlist);
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -214,7 +214,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::Blacklist(const std::string& path) {
+void KmerIndex::Offlist(const std::string& path) {
   std::ifstream infile(path.c_str());
   if (!infile.good()) return;
 
