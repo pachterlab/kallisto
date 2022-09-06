@@ -309,7 +309,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       TRInfo tr;
 
       tr.trid = j;
-      tr.pos = proc & (um.strand ? sense : missense);
+      tr.pos = proc | (um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
@@ -381,7 +381,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
     size_t j = 0;
     std::vector<uint32_t> pos;
-    uint32_t sense = 0x80000000, missense = 0;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
