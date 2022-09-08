@@ -1144,7 +1144,6 @@ void ReadProcessor::processBuffer() {
     }
 
     // collect the target information
-    int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired, u);
     if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
@@ -1204,7 +1203,6 @@ void ReadProcessor::processBuffer() {
     if (mp.opt.strand_specific && !u.isEmpty()) {
 
       int p = -1;
-      Kmer km;
       const_UnitigMap<Node> um;
       if (!v1.empty()) {
         vtmp = Roaring();
@@ -1226,7 +1224,7 @@ void ReadProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1262,8 +1260,8 @@ void ReadProcessor::processBuffer() {
           uint32_t* trs = new uint32_t[ec.cardinality()];
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[i]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+            if (tr == trs[j]) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1313,7 +1311,7 @@ void ReadProcessor::processBuffer() {
       }
 
       // collect fragment length info
-      if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+      if (findFragmentLength && flengoal > 0 && paired && u.cardinality() == 1 && !v1.empty() && !v2.empty()) {
         // try to map the reads
         int tl = index.mapPair(s1, l1, s2, l2);
         if (0 < tl && tl < flens.size()) {
@@ -1714,7 +1712,7 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1749,7 +1747,7 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1782,7 +1780,7 @@ void BUSProcessor::processBuffer() {
       }
 
       if (busopt.paired && ignore_umi) {
-        if (findFragmentLength && flengoal > 0 && /*0 <= ec && ec < index.num_trans &&*/ !v.empty() && !v2.empty()) {
+        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
           // try to map the reads
           int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
           if (0 < tl && tl < flens.size()) {
