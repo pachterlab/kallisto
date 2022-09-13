@@ -1792,7 +1792,7 @@ void BUSProcessor::processBuffer() {
 
       // count the pseudoalignment
       auto elem = index.ecmapinv.find(u);
-      if (elem != index.ecmapinv.end()) {
+      if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
         newEcs.push_back(u);
         newB.push_back({b, u});
