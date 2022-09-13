@@ -1183,7 +1183,7 @@ void ReadProcessor::processBuffer() {
 
         auto x = index.findPosition(tr, km, um, p);
         // if the fragment is within bounds for this transcript, keep it
-        if (x.second && x.first + fl <= index.target_lens_[tr]) {
+        if (x.second && x.first + fl <= (int)index.target_lens_[tr]) {
           vtmp.add(tr);
         } else {
           //pass
