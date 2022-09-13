@@ -986,6 +986,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
+    opt.single_overhang = true;
     if (!opt.num) {
       opt.batch_bus_write = true;
     } else {
