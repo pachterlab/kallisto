@@ -952,16 +952,16 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   // If something doesn't work, it's most likely this!
   if (trsense) {
     if (csense) {
-      return {trpos + um.dist - p + 1, csense}; // 1-based, case I
+      return {(trpos - p - (um.size - um.dist - k)), csense}; // 1-based, case I
     } else {
-      return {trpos + um.dist + k + p, csense}; // 1-based, case III
+      return {(trpos + p + k - (um.size - k + 1 - um.dist)), csense}; // 1-based, case III
     }
   } else {
     if (csense) {
       // UnitigMapBase.size is the length in base pairs
-      return {trpos + (um.size - um.dist - 1) + k + p, !csense};  // 1-based, case IV
+      return {trpos + (-um.dist - 1) + k + p, !csense};  // 1-based, case IV
     } else {
-      return {trpos + (um.size - um.dist) - p, !csense}; // 1-based, case II
+      return {trpos + (-um.dist) - p, !csense}; // 1-based, case II
     }
   }
 }
