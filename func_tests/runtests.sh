@@ -265,7 +265,7 @@ fi
 
 cmdexec "$kallisto bus -o $test_dir/buslarge -t 12 -i $test_dir/basic7.idx -x 0,0,2:0,2,6:1,0,0 $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/buslarge/output.s.bus -t 12 $test_dir/buslarge/output.bus"
-checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus" f3db94e1c983a1d51b8f8525bb1a5beb
+checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus|cut -f1,2,4" 2b4e7120a9ee3d419c1de5e1689d1634
 
 # Try a simple 10XV3 (with unstranded pseudoalignment)
 
