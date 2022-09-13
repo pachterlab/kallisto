@@ -401,7 +401,7 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
     }
     // Assign position and sense for all transcripts belonging to unitig
-    n->pos = pos;
+    n->pos = std::move(pos);
     std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
   }
 }
