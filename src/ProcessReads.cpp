@@ -378,14 +378,9 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    for (int i = 0; i < bus_ecmap.size(); i++) {
-      auto &u = bus_ecmap[i];
-      int ec = index.ecmapinv.size();
-      auto it = bus_ecmapinv.find(u);
-      if (it->second != ec) {
-        std::cout << "Error" << std::endl;
-        exit(1);
-      }
+    for (auto &x : bus_ecmapinv) {
+      auto &u = x.first;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
 
@@ -418,14 +413,9 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    for (int i = 0; i < bus_ecmap.size(); i++) {
-      Roaring& u = bus_ecmap[i];
-      int ec = index.ecmapinv.size();
-      auto it = bus_ecmapinv.find(u);
-      if (it->second != ec) {
-        std::cout << "Error" << std::endl;
-        exit(1);
-      }
+    for (auto &x : bus_ecmapinv) {
+      auto &u = x.first;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
   } else if (opt.batch_mode) {
@@ -924,7 +914,6 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       } else {
         ec = offset + bus_ecmapinv.size();
         bus_ecmapinv.insert({u,ec});
-        bus_ecmap.push_back(u);
       }
       auto &b = bp.first;
       b.ec = ec;
