@@ -121,7 +121,7 @@ std::vector<double> update_eff_lens(
 
 
   for (int i = 0; i < index.num_trans; i++) {
-    if (index.target_lens_[i] < means[i]) {
+    if ((int)index.target_lens_[i] < means[i]) {
       // this should never happen.. but I'll sleep better at night with this
       // condition -HP
       continue;
@@ -167,7 +167,7 @@ std::vector<double> update_eff_lens(
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
-    if (index.target_lens_[i] >= means[i] && alpha[i] >= MIN_ALPHA) {
+    if ((int)index.target_lens_[i] >= means[i] && alpha[i] >= MIN_ALPHA) {
 
       int seqlen = index.target_seqs_[i].size();
       const char* cs = index.target_seqs_[i].c_str();
