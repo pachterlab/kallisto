@@ -264,7 +264,6 @@ public:
   const int maxBiasCount;
   std::unordered_map<Roaring, uint32_t, RoaringHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
-  EcMap bus_ecmap;
   std::unordered_map<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
 
 
