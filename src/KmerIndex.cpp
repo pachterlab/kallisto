@@ -391,11 +391,13 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.add(tr.trid);
+          pos.reserve(pos.size()+1);
           pos.push_back(tr.pos);
         }
       }
 
       assert(!u.isEmpty());
+      u.runOptimize();
 
       // Assign mosaic EC to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
