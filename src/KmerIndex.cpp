@@ -217,7 +217,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   std::string tmp_bin = generate_tmp_file(tmp_file);
   dbg.writeBinary(tmp_bin, opt.threads);
   dbg = CompactedDBG<Node>(k, c_opt.g);
-  dbg.readBinary(tmp_bin, true);
+  dbg.readBinary(tmp_bin, true, opt.threads);
   std::remove(tmp_bin.c_str());
 
   uint32_t running_id = 0;
@@ -537,7 +537,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
   if (tmp_size > 0) {
 
-    dbg.readBinary(in_dbg, true);
+    dbg.readBinary(in_dbg, true, opt.threads);
     k = dbg.getK();
   }
 

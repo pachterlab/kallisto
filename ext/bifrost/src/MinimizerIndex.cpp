@@ -138,7 +138,7 @@ void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uin
 
     clear();
 
-    mphf = new boophf_t(minimizers.size(), minimizers, threads, gamma);
+    mphf = new boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
 
     init_tables(minimizers.size());
 

@@ -631,8 +631,8 @@ class CompactedDBG {
         bool writeBinary(const string& fn, const size_t nb_threads = 1) const;
         bool writeBinary(ostream& out, const size_t nb_threads = 1) const;
 
-        bool readBinary(const string& fn, bool static_m=false);
-        bool readBinary(istream& in, bool static_m=false);
+        bool readBinary(const string& fn, bool static_m=false, uint32_t threads=1);
+        bool readBinary(istream& in, bool static_m=false, uint32_t threads=1);
 
     protected:
 
@@ -660,8 +660,8 @@ class CompactedDBG {
         pair<uint64_t, bool> readBinaryGraph(istream& in);
         pair<uint64_t, bool> readBinaryGraph(const string& fn);
 
-        bool readBinaryIndex(istream& in, const uint64_t checksum, bool static_m=false);
-        bool readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m=false);
+        bool readBinaryIndex(istream& in, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
+        bool readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
 
         bool readBinaryIndexHead(const string& fn, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
                                 size_t& h_kmers_ccov_sz, size_t& hmap_min_unitigs_sz, uint64_t& read_checksum) const;

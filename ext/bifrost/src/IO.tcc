@@ -906,7 +906,7 @@ bool CompactedDBG<U, G>::writeFASTA(const string& fn, const bool compressed_outp
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(const string& fn, bool static_m) {
+bool CompactedDBG<U, G>::readBinary(const string& fn, bool static_m, uint32_t threads) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
@@ -920,7 +920,7 @@ bool CompactedDBG<U, G>::readBinary(const string& fn, bool static_m) {
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(istream& in, bool static_m) {
+bool CompactedDBG<U, G>::readBinary(istream& in, bool static_m, uint32_t threads) {
 
     if (!in.fail()) {
 
@@ -933,7 +933,7 @@ bool CompactedDBG<U, G>::readBinary(istream& in, bool static_m) {
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m) {
+bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m, uint32_t threads) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
@@ -979,7 +979,7 @@ bool CompactedDBG<U, G>::readBinaryIndexHead(istream& in, size_t& file_format_ve
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, bool static_m) {
+bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, bool static_m, uint32_t threads) {
 
     bool read_success = !in.fail();
 
