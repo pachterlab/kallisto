@@ -450,14 +450,19 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   }
 
   // 3. serialize nodes
-  tmp_size = dbg.size();
-  out.write((char *)&tmp_size, sizeof(tmp_size));
-  for (const auto& um : dbg) {
-    // 3.1 write head kmer to associate unitig with node
-    std::string kmer = um.getUnitigHead().toString();
-    out.write(kmer.c_str(), strlen(kmer.c_str()));
-    // 3.2 serialize node
-    um.getData()->serialize(out);
+  if (writeKmerTable) {
+    tmp_size = dbg.size();
+    out.write((char *)&tmp_size, sizeof(tmp_size));
+    for (const auto& um : dbg) {
+      // 3.1 write head kmer to associate unitig with node
+      std::string kmer = um.getUnitigHead().toString();
+      out.write(kmer.c_str(), strlen(kmer.c_str()));
+      // 3.2 serialize node
+      um.getData()->serialize(out);
+    }
+  } else {
+    tmp_size = 0;
+    out.write((char *)&tmp_size, sizeof(tmp_size));
   }
 
   // 4. write number of targets
