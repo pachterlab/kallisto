@@ -1,0 +1,129 @@
+\hypertarget{Unitig_8hpp_source}{}\doxysection{Unitig.\+hpp}
+\label{Unitig_8hpp_source}\index{src/Unitig.hpp@{src/Unitig.hpp}}
+\mbox{\hyperlink{Unitig_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_UNITIG\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_UNITIG\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}Common.hpp"{}}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{Kmer_8hpp}{Kmer.hpp}}"{}}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include "{}CompressedSequence.hpp"{}}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include "{}CompressedCoverage.hpp"{}}}
+\DoxyCodeLine{8 }
+\DoxyCodeLine{21 \textcolor{keyword}{template}<\textcolor{keyword}{typename} T = \textcolor{keywordtype}{void}>}
+\DoxyCodeLine{22 \textcolor{keyword}{class }\mbox{\hyperlink{classUnitig}{Unitig}} \{}
+\DoxyCodeLine{23 }
+\DoxyCodeLine{24     \textcolor{keyword}{public}:}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{26         \mbox{\hyperlink{classUnitig}{Unitig}}() \{\}}
+\DoxyCodeLine{27         \mbox{\hyperlink{classUnitig}{Unitig}}(\textcolor{keyword}{const} CompressedSequence\& s, \textcolor{keyword}{const} CompressedCoverage\& c) : seq(s), cov(c) \{\}}
+\DoxyCodeLine{28         \mbox{\hyperlink{classUnitig}{Unitig}}(CompressedSequence\&\& s, CompressedCoverage\&\& c) : seq(move(s)), cov(move(c)) \{\}}
+\DoxyCodeLine{29         \mbox{\hyperlink{classUnitig}{Unitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keywordtype}{bool} full = \textcolor{keyword}{false}) : seq(s), cov(seq.size() -\/ Kmer::k + 1, full) \{\}}
+\DoxyCodeLine{30 }
+\DoxyCodeLine{31         BFG\_INLINE \textcolor{keywordtype}{size\_t} numKmers()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{32 }
+\DoxyCodeLine{33             \textcolor{keywordflow}{return} seq.size( ) -\/ Kmer::k + 1;}
+\DoxyCodeLine{34         \}}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36         BFG\_INLINE \textcolor{keywordtype}{size\_t} length()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{37 }
+\DoxyCodeLine{38             \textcolor{keywordflow}{return} seq.size();}
+\DoxyCodeLine{39         \}}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41         BFG\_INLINE \textcolor{keyword}{const} CompressedSequence\& getSeq()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43             \textcolor{keywordflow}{return} seq;}
+\DoxyCodeLine{44         \}}
+\DoxyCodeLine{45 }
+\DoxyCodeLine{46         BFG\_INLINE CompressedSequence\& getSeq() \{}
+\DoxyCodeLine{47 }
+\DoxyCodeLine{48             \textcolor{keywordflow}{return} seq;}
+\DoxyCodeLine{49         \}}
+\DoxyCodeLine{50 }
+\DoxyCodeLine{51         BFG\_INLINE \textcolor{keyword}{const} CompressedCoverage\& getCov()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{52 }
+\DoxyCodeLine{53             \textcolor{keywordflow}{return} cov;}
+\DoxyCodeLine{54         \}}
+\DoxyCodeLine{55 }
+\DoxyCodeLine{56         BFG\_INLINE CompressedCoverage\& getCov() \{}
+\DoxyCodeLine{57 }
+\DoxyCodeLine{58             \textcolor{keywordflow}{return} cov;}
+\DoxyCodeLine{59         \}}
+\DoxyCodeLine{60 }
+\DoxyCodeLine{61         BFG\_INLINE \textcolor{keyword}{const} T* getData()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{62 }
+\DoxyCodeLine{63             \textcolor{keywordflow}{return} \&data;}
+\DoxyCodeLine{64         \}}
+\DoxyCodeLine{65 }
+\DoxyCodeLine{66         BFG\_INLINE T* getData() \{}
+\DoxyCodeLine{67 }
+\DoxyCodeLine{68             \textcolor{keywordflow}{return} \&data;}
+\DoxyCodeLine{69         \}}
+\DoxyCodeLine{70 }
+\DoxyCodeLine{71     \textcolor{keyword}{private}:}
+\DoxyCodeLine{72 }
+\DoxyCodeLine{73         CompressedSequence seq;}
+\DoxyCodeLine{74         CompressedCoverage cov;}
+\DoxyCodeLine{75 }
+\DoxyCodeLine{76         T data;}
+\DoxyCodeLine{77 \};}
+\DoxyCodeLine{78 }
+\DoxyCodeLine{80 \textcolor{keyword}{template}<>}
+\DoxyCodeLine{81 \textcolor{keyword}{class }\mbox{\hyperlink{classUnitig}{Unitig}}<void> \{}
+\DoxyCodeLine{82 }
+\DoxyCodeLine{83     \textcolor{keyword}{public}:}
+\DoxyCodeLine{84 }
+\DoxyCodeLine{85         \mbox{\hyperlink{classUnitig}{Unitig}}() \{\}}
+\DoxyCodeLine{86         \mbox{\hyperlink{classUnitig}{Unitig}}(\textcolor{keyword}{const} CompressedSequence\& s, \textcolor{keyword}{const} CompressedCoverage\& c) : seq(s), cov(c) \{\}}
+\DoxyCodeLine{87         \mbox{\hyperlink{classUnitig}{Unitig}}(CompressedSequence\&\& s, CompressedCoverage\&\& c) : seq(move(s)), cov(move(c)) \{\}}
+\DoxyCodeLine{88         \mbox{\hyperlink{classUnitig}{Unitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keywordtype}{bool} full = \textcolor{keyword}{false}) : seq(s), cov(seq.size() -\/ \mbox{\hyperlink{classKmer}{Kmer}}::k + 1, full) \{\}}
+\DoxyCodeLine{89 }
+\DoxyCodeLine{90         BFG\_INLINE \textcolor{keywordtype}{size\_t} numKmers()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{91 }
+\DoxyCodeLine{92             \textcolor{keywordflow}{return} seq.size( ) -\/ Kmer::k + 1;}
+\DoxyCodeLine{93         \}}
+\DoxyCodeLine{94 }
+\DoxyCodeLine{95         BFG\_INLINE \textcolor{keywordtype}{size\_t} length()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{96 }
+\DoxyCodeLine{97             \textcolor{keywordflow}{return} seq.size();}
+\DoxyCodeLine{98         \}}
+\DoxyCodeLine{99 }
+\DoxyCodeLine{100         BFG\_INLINE \textcolor{keyword}{const} CompressedSequence\& getSeq()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{101 }
+\DoxyCodeLine{102             \textcolor{keywordflow}{return} seq;}
+\DoxyCodeLine{103         \}}
+\DoxyCodeLine{104 }
+\DoxyCodeLine{105         BFG\_INLINE CompressedSequence\& getSeq() \{}
+\DoxyCodeLine{106 }
+\DoxyCodeLine{107             \textcolor{keywordflow}{return} seq;}
+\DoxyCodeLine{108         \}}
+\DoxyCodeLine{109 }
+\DoxyCodeLine{110         BFG\_INLINE \textcolor{keyword}{const} CompressedCoverage\& getCov()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{111 }
+\DoxyCodeLine{112             \textcolor{keywordflow}{return} cov;}
+\DoxyCodeLine{113         \}}
+\DoxyCodeLine{114 }
+\DoxyCodeLine{115         BFG\_INLINE CompressedCoverage\& getCov() \{}
+\DoxyCodeLine{116 }
+\DoxyCodeLine{117             \textcolor{keywordflow}{return} cov;}
+\DoxyCodeLine{118         \}}
+\DoxyCodeLine{119 }
+\DoxyCodeLine{120         BFG\_INLINE \textcolor{keyword}{const} \textcolor{keywordtype}{void}* getData()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{121 }
+\DoxyCodeLine{122             \textcolor{keywordflow}{return} \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{123         \}}
+\DoxyCodeLine{124 }
+\DoxyCodeLine{125         BFG\_INLINE \textcolor{keywordtype}{void}* getData() \{}
+\DoxyCodeLine{126 }
+\DoxyCodeLine{127             \textcolor{keywordflow}{return} \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{128         \}}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{130     \textcolor{keyword}{private}:}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{132         CompressedSequence seq;}
+\DoxyCodeLine{133         CompressedCoverage cov;}
+\DoxyCodeLine{134 \};}
+\DoxyCodeLine{136 }
+\DoxyCodeLine{137 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// BFG\_CONTIG\_HPP}}
+
+\end{DoxyCode}

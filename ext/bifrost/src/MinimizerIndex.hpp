@@ -10,6 +10,10 @@
 #include "Lock.hpp"
 #include "TinyVector.hpp"
 
+#include "../ext/bbhash/BooPHF.h"
+
+typedef boomphf::mphf<Minimizer, MinimizerHash> boophf_t;
+
 class MinimizerIndex {
 
     template<bool is_const = true>
@@ -126,6 +130,11 @@ class MinimizerIndex {
             return (pop == 0);
         }
 
+        // Generates an MPHF for all the minimizers
+        // gamma=1. yields lowest bit/elem ratio. Higher values yield faster
+        // construction and query times. gamma=2. is a good trade-off
+        void generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads=1, float gamma=2.0);
+
         void clear();
 
         iterator find(const Minimizer& key);
@@ -172,6 +181,8 @@ class MinimizerIndex {
         Minimizer* table_keys;
         packed_tiny_vector* table_tinyv;
         uint8_t* table_tinyv_sz;
+
+        boophf_t* mphf;
 
         mutable vector<SpinLock> lck_min;
         mutable SpinLockRW lck_edit_table;

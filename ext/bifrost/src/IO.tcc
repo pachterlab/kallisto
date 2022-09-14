@@ -102,7 +102,7 @@ bool CompactedDBG<U, G>::write(const string& output_fn, const size_t nb_threads,
         if (fp == NULL) {
 
             cerr << "CompactedDBG::write(): Could not open file " << fn << " for writing index file" << endl;
-            
+
             return false;
         }
         else {
@@ -146,7 +146,7 @@ bool CompactedDBG<U, G>::read(const string& input_graph_fn, const size_t nb_thre
     {
         size_t pos_ext = input_index_fn.find_last_of(".");
 
-        string ext; 
+        string ext;
 
         if ((pos_ext != string::npos) && (input_index_fn.substr(pos_ext) == ".gz")) {
 
@@ -157,7 +157,7 @@ bool CompactedDBG<U, G>::read(const string& input_graph_fn, const size_t nb_thre
         if (pos_ext != string::npos) ext = input_index_fn.substr(pos_ext);
         if ((pos_ext != string::npos) && ((ext == ".gfa")) || (ext == ".fasta") || (ext == ".bfg")) input_index_fn = input_index_fn.substr(0, pos_ext);
 
-        input_index_fn += ".bfi"; // Add Bifrost graph index extension 
+        input_index_fn += ".bfi"; // Add Bifrost graph index extension
     }
 
     if ((input_graph_fn != input_index_fn) && check_file_exists(input_index_fn)) {
@@ -906,7 +906,7 @@ bool CompactedDBG<U, G>::writeFASTA(const string& fn, const bool compressed_outp
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(const string& fn) {
+bool CompactedDBG<U, G>::readBinary(const string& fn, bool static_m) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
@@ -916,24 +916,24 @@ bool CompactedDBG<U, G>::readBinary(const string& fn) {
     infile.open(fn.c_str());
     in.rdbuf(infile.rdbuf());
 
-    return readBinary(in);
+    return readBinary(in, static_m);
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(istream& in) {
+bool CompactedDBG<U, G>::readBinary(istream& in, bool static_m) {
 
     if (!in.fail()) {
 
     	const pair<uint64_t, bool> p_readSuccess_checksum = readBinaryGraph(in);
 
-    	if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first);
+    	if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first, static_m);
     }
 
     return false;
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checksum) {
+bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
@@ -943,7 +943,7 @@ bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checks
     infile.open(fn.c_str());
     in.rdbuf(infile.rdbuf());
 
-    return readBinaryIndex(in, checksum);
+    return readBinaryIndex(in, checksum, static_m);
 }
 
 template<typename U, typename G>
@@ -979,7 +979,7 @@ bool CompactedDBG<U, G>::readBinaryIndexHead(istream& in, size_t& file_format_ve
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum) {
+bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, bool static_m) {
 
     bool read_success = !in.fail();
 
@@ -1009,8 +1009,42 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum) {
 
         if (read_success && !v_bmp_unitigs.empty() && !v_bmp_unitigs.front().isEmpty()) {
 
-            size_t unitig_id = 0, tot_unitig_len = 0, curr_unitig_len = v_unitigs[0]->getSeq().size() - g_ + 1;
+            size_t unitig_id = 0,
+                   tot_unitig_len = 0,
+                   curr_unitig_len = v_unitigs[0]->getSeq().size() - g_ + 1;
 
+            if (static_m) {
+                // Build a static MPHF preemptively
+                std::vector<Minimizer> minimizers;
+                for (size_t i = 0; i < nb_bmp_unitigs; ++i) {
+
+                    const size_t id_bmp = i << 32;
+
+                    for (const auto pos_bmp : v_bmp_unitigs[i]) {
+
+                        const size_t pos = id_bmp + pos_bmp;
+
+                        while (pos >= (tot_unitig_len + curr_unitig_len)) {
+
+                            ++unitig_id;
+                            tot_unitig_len += curr_unitig_len;
+
+                            curr_unitig_len = v_unitigs[unitig_id]->getSeq().size() - g_ + 1;
+                        }
+
+                        const size_t relative_pos = pos - tot_unitig_len;
+
+                        minimizers.push_back(v_unitigs[unitig_id]->getSeq().getMinimizer(relative_pos).rep());
+                    }
+                }
+                hmap_min_unitigs.generate_mphf(minimizers);
+                minimizers.clear();
+            }
+
+
+            unitig_id = 0;
+            tot_unitig_len = 0;
+            curr_unitig_len = v_unitigs[0]->getSeq().size() - g_ + 1;
             for (size_t i = 0; i < nb_bmp_unitigs; ++i) {
 
                 const size_t id_bmp = i << 32;

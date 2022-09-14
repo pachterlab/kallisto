@@ -1,0 +1,125 @@
+\hypertarget{ColoredCDBG_8hpp_source}{}\doxysection{Colored\+CDBG.\+hpp}
+\label{ColoredCDBG_8hpp_source}\index{src/ColoredCDBG.hpp@{src/ColoredCDBG.hpp}}
+\mbox{\hyperlink{ColoredCDBG_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_COLOREDCDBG\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_COLOREDCDBG\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <iostream>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <random>}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <unordered\_map>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <unordered\_set>}}
+\DoxyCodeLine{8 }
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{CompactedDBG_8hpp}{CompactedDBG.hpp}}"{}}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#include "{}DataManager.hpp"{}}}
+\DoxyCodeLine{11 }
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include "{}getRSS.h"{}}}
+\DoxyCodeLine{13 }
+\DoxyCodeLine{30 \textcolor{keyword}{struct }\mbox{\hyperlink{structCCDBG__Build__opt}{CCDBG\_Build\_opt}} : \mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}} \{}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{32     \textcolor{keywordtype}{string} \mbox{\hyperlink{structCCDBG__Build__opt_a5a0ffdd2103dcc0087f99731dcbcdc9f}{filename\_colors\_in}};}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{34     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCCDBG__Build__opt_a8139bdba04c0dbb93c653c9a451b05f6}{outputColors}};}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36     \mbox{\hyperlink{structCCDBG__Build__opt}{CCDBG\_Build\_opt}}() : \mbox{\hyperlink{structCCDBG__Build__opt_a8139bdba04c0dbb93c653c9a451b05f6}{outputColors}}(true) \{\}}
+\DoxyCodeLine{37 \};}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U = \textcolor{keywordtype}{void}> \textcolor{keyword}{using} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap}} = \mbox{\hyperlink{classUnitigMap}{UnitigMap<DataAccessor<U>}}, \mbox{\hyperlink{classDataStorage}{DataStorage<U>}}>;}
+\DoxyCodeLine{40 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U = \textcolor{keywordtype}{void}> \textcolor{keyword}{using} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap}} = \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<DataAccessor<U>}}, \mbox{\hyperlink{classDataStorage}{DataStorage<U>}}>;}
+\DoxyCodeLine{41 }
+\DoxyCodeLine{59 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t> \textcolor{comment}{//Curiously Recurring Template Pattern (CRTP)}}
+\DoxyCodeLine{60 \textcolor{keyword}{class }\mbox{\hyperlink{classCCDBG__Data__t}{CCDBG\_Data\_t}} \{}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{62     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{63 }
+\DoxyCodeLine{64     \textcolor{keyword}{public}:}
+\DoxyCodeLine{65 }
+\DoxyCodeLine{72         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCCDBG__Data__t_adcdd42b81067d6095534f53b09c24aac}{clear}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_dest)\{\}}
+\DoxyCodeLine{73 }
+\DoxyCodeLine{88         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCCDBG__Data__t_a0ce6821deb4441f8a7dd3d270ed8b3a6}{concat}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_src)\{\}}
+\DoxyCodeLine{89 }
+\DoxyCodeLine{100         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCCDBG__Data__t_af358cb00cd1aa29b90780d8c065954e8}{merge}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um\_src)\{\}}
+\DoxyCodeLine{101 }
+\DoxyCodeLine{117         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCCDBG__Data__t_a45794343781dc4e482537125f26ef61f}{extract}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* uc\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_src, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} last\_extraction)\{\}}
+\DoxyCodeLine{118 }
+\DoxyCodeLine{126         \textcolor{keywordtype}{string} \mbox{\hyperlink{classCCDBG__Data__t_ab29386cdf5ae12239c0a87d510f7aa40}{serialize}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um\_src)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{128             \textcolor{keywordflow}{return} string();}
+\DoxyCodeLine{129         \}}
+\DoxyCodeLine{130 \};}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{150 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}>}
+\DoxyCodeLine{151 \textcolor{keyword}{class }\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}} : \textcolor{keyword}{public} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG}}<DataAccessor<Unitig\_data\_t>, DataStorage<Unitig\_data\_t>> \{}
+\DoxyCodeLine{152 }
+\DoxyCodeLine{153     \textcolor{keyword}{static\_assert}(is\_void<Unitig\_data\_t>::value || is\_base\_of<CCDBG\_Data\_t<Unitig\_data\_t>, Unitig\_data\_t>::value,}
+\DoxyCodeLine{154                   \textcolor{stringliteral}{"{}Type Unitig\_data\_t of data associated with vertices of class ColoredCDBG<Unitig\_data\_t> must "{}}}
+\DoxyCodeLine{155                   \textcolor{stringliteral}{"{} be void (no data) or a class extending class CCDBG\_Data\_t"{}});}
+\DoxyCodeLine{156 }
+\DoxyCodeLine{157     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{158 }
+\DoxyCodeLine{159     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classDataAccessor}{DataAccessor}};}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161     \textcolor{keyword}{public}:}
+\DoxyCodeLine{162 }
+\DoxyCodeLine{167         \mbox{\hyperlink{classColoredCDBG_a0d3e6261c3f8fc038b8a301ebb469882}{ColoredCDBG}}(\textcolor{keywordtype}{int} kmer\_length = DEFAULT\_K, \textcolor{keywordtype}{int} minimizer\_length = -\/1);}
+\DoxyCodeLine{168 }
+\DoxyCodeLine{174         \mbox{\hyperlink{classColoredCDBG_a8d2b4c5690efe813b6229a6e22343335}{ColoredCDBG}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o);}
+\DoxyCodeLine{175 }
+\DoxyCodeLine{181         \mbox{\hyperlink{classColoredCDBG_a757b4744f396052946171021db1a1fb6}{ColoredCDBG}}(\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\&\& o);}
+\DoxyCodeLine{182 }
+\DoxyCodeLine{189         \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& \mbox{\hyperlink{classColoredCDBG_ae2f84a8c43f9ee8505c2dd72e328a12c}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o);}
+\DoxyCodeLine{190 }
+\DoxyCodeLine{197         \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& \mbox{\hyperlink{classColoredCDBG_a4eeac01e50361dc6ff675890dca38d47}{operator=}}(\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\&\& o);}
+\DoxyCodeLine{198 }
+\DoxyCodeLine{203         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a31d90c82590481d98b759f7302de90e6}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{204 }
+\DoxyCodeLine{209         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a35c67941c16969d13c838e0208b38ede}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{210 }
+\DoxyCodeLine{223         \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& \mbox{\hyperlink{classColoredCDBG_a658ea20932a743912a582be60651eb0e}{operator+=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o);}
+\DoxyCodeLine{224 }
+\DoxyCodeLine{227         \textcolor{keywordtype}{void} \mbox{\hyperlink{classColoredCDBG_aa366d5e47c978119a20ec9494d3f2ad2}{clear}}();}
+\DoxyCodeLine{228 }
+\DoxyCodeLine{234         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a7213d0d20b4ee933af43993abf776d43}{buildGraph}}(\textcolor{keyword}{const} \mbox{\hyperlink{structCCDBG__Build__opt}{CCDBG\_Build\_opt}}\& opt);}
+\DoxyCodeLine{235 }
+\DoxyCodeLine{241         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_af9d50df31f6f82199eb815c43de73a52}{buildColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{structCCDBG__Build__opt}{CCDBG\_Build\_opt}}\& opt);}
+\DoxyCodeLine{242 }
+\DoxyCodeLine{251         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_ae9a3cd0bfa8c72ec2a2e71e6b9f7a0bb}{write}}(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& prefix\_output\_filename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{252 }
+\DoxyCodeLine{262         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a513ae8190f56a26b088a99e1e33689d8}{read}}(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& input\_graph\_filename, \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& input\_colors\_filename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{263 }
+\DoxyCodeLine{276         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{merge}}(\textcolor{keyword}{const} \mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{277 }
+\DoxyCodeLine{292         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_af15dc622a1c16cb8ec0f7b1a1dc2dcd8}{merge}}(\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}}\&\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{293 }
+\DoxyCodeLine{304         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a2b62245a0edcf177fd33680bfa3a3178}{merge}}(\textcolor{keyword}{const} vector<ColoredCDBG>\& v, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{305 }
+\DoxyCodeLine{318         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classColoredCDBG_a6820d9b88fcb3d1c0ce970bbe8478bab}{merge}}(vector<ColoredCDBG>\&\& v, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{319 }
+\DoxyCodeLine{324         \textcolor{keywordtype}{string} \mbox{\hyperlink{classColoredCDBG_addda923f3d4f213ffd3a572163c410f8}{getColorName}} (\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id) \textcolor{keyword}{const};}
+\DoxyCodeLine{325 }
+\DoxyCodeLine{330         vector<string> \mbox{\hyperlink{classColoredCDBG_af8356069d8531128ebca5033127f766b}{getColorNames}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{331 }
+\DoxyCodeLine{335         \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classColoredCDBG_a53c723997265f89ab284433670ab54f9}{getNbColors}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} this-\/>\mbox{\hyperlink{classCompactedDBG_a205c6f712912d45a072efafb21104fc6}{getData}}()-\/>getNbColors(); \}}
+\DoxyCodeLine{336 }
+\DoxyCodeLine{337         \textcolor{keywordtype}{bool} search(\textcolor{keyword}{const} vector<string>\& query\_filenames, \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& out\_filename\_prefix,}
+\DoxyCodeLine{338                     \textcolor{keyword}{const} \textcolor{keywordtype}{double} ratio\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} inexact\_search, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads,}
+\DoxyCodeLine{339                     \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{340 }
+\DoxyCodeLine{341     \textcolor{keyword}{private}:}
+\DoxyCodeLine{342 }
+\DoxyCodeLine{343         \textcolor{keywordtype}{void} checkColors(\textcolor{keyword}{const} vector<string>\& filename\_seq\_in) \textcolor{keyword}{const};}
+\DoxyCodeLine{344 }
+\DoxyCodeLine{345         \textcolor{keywordtype}{void} initUnitigColors(\textcolor{keyword}{const} \mbox{\hyperlink{structCCDBG__Build__opt}{CCDBG\_Build\_opt}}\& opt, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} max\_nb\_hash = 31);}
+\DoxyCodeLine{346         \textcolor{keywordtype}{void} buildUnitigColors(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads);}
+\DoxyCodeLine{347         \textcolor{comment}{//void buildUnitigColors2(const size\_t nb\_threads);}}
+\DoxyCodeLine{348 }
+\DoxyCodeLine{349         \textcolor{keywordtype}{void} resizeDataUC(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} sz, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} max\_nb\_hash = 31);}
+\DoxyCodeLine{350 }
+\DoxyCodeLine{351         \textcolor{keywordtype}{bool} invalid;}
+\DoxyCodeLine{352 \};}
+\DoxyCodeLine{353 }
+\DoxyCodeLine{354 \textcolor{preprocessor}{\#include "{}ColoredCDBG.tcc"{}}}
+\DoxyCodeLine{355 }
+\DoxyCodeLine{356 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

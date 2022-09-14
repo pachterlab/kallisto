@@ -312,9 +312,11 @@ class Minimizer {
 
 struct MinimizerHash {
 
-    inline size_t operator()(const Minimizer& minz) const {
+    inline uint64_t operator()(const Minimizer& minz, uint64_t seed=0) const {
 
-        return minz.hash();
+        uint64_t h = minz.hash();
+        h ^= seed;
+        return h;
     }
 };
 ///@endcond

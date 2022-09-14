@@ -2,6 +2,14 @@
 
 API only.
 
+* **15-06-2022**
+	* Function `CompactedDBG()::write()` takes additional arguments with default values:
+		* `compress_output` indicates whether the output should be compressed
+		* `write_index_file` indicates whether an index file should be generated to enable faster graph loading
+		* `GFA_output`, `FASTA_output` and `BFG_output` to select the output file format (previously, setting `outputGFA` set to false would automatically make `write()` output the graph in FASTA format).
+		
+		Beware that the new arguments come with default values which could override the default values of the previous versions of `write()`, e.g, the default value of parameter `FASTA_output` (`write()` with 8 parameters) could be used as the default value of parameter `verbose` if your code is not updated (`write()` with 5 parameters).
+	* There exists two versions of `CompactedDBG::read()` and `ColoredCDBG::read()`, the "usual" (slower) graph reading function and the same function with an additional index graph file as input. Using the index graph file as input considerably speeds-up the graph loading in memory. The "usual" graph reading function will automatically use the graph index file if available.
 * **04-28-2022**
 	* Color files generated prior to version 1.0.6.2 are **not** compatible with version 1.0.6.2 and onward.
 	* `CompactedDBG::simplify()` and `ColoredCDBG::simplify()` now return true even if no simplification was performed ("null-simplification" in case all input parameters are set to false). The goal is to only return false if the graph is invalid or in case of unexpected behavior. 

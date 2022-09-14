@@ -68,6 +68,18 @@ std::string revcomp(const std::string s) {
   return r;
 }
 
+std::string generate_tmp_file(std::string seed) {
+  std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  std::string tmp_file = ".kallisto.";
+  srand((unsigned int)std::hash<std::string>{}(seed));
+  int pos;
+  while(tmp_file.length() < 32) {
+    pos = ((rand() % (base.size() - 1)));
+    tmp_file += base.substr(pos, 1);
+  }
+  return tmp_file;
+}
+
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   // read input
   std::unordered_set<std::string> unique_names;
@@ -79,14 +91,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
   // Generate random file name
-  std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  std::string tmp_file = ".kallisto.";
-  srand((unsigned int)std::hash<std::string>{}(opt.index));
-  int pos;
-  while(tmp_file.length() < 32) {
-    pos = ((rand() % (base.size() - 1)));
-    tmp_file += base.substr(pos, 1);
-  }
+  std::string tmp_file = generate_tmp_file(opt.index);
   std::ofstream of(tmp_file);
   num_trans = 0;
 
@@ -207,6 +212,13 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg.build(c_opt);
 
   Offlist(opt.offlist);
+
+  // Write graph to a temporary binary file and read it back into a static graph
+  std::string tmp_bin = generate_tmp_file(tmp_file);
+  dbg.writeBinary(tmp_bin, opt.threads);
+  dbg = CompactedDBG<Node>(k, c_opt.g);
+  dbg.readBinary(tmp_bin, true);
+  std::remove(tmp_bin.c_str());
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -521,7 +533,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
   if (tmp_size > 0) {
 
-    dbg.readBinary(in_dbg);
+    dbg.readBinary(in_dbg, true);
     k = dbg.getK();
   }
 

@@ -33,7 +33,7 @@
 To install Bifrost using Bioconda or Brew, go directly to Section [Installation](#installation). To install from source, you will need:
 
 * C++11 compiler:
-    * [GCC](https://gcc.gnu.org/) >= 4.8.5
+    * [GCC](https://gcc.gnu.org/) >= 5.1.0
     * [Clang](http://clang.llvm.org/) >= 3.5
 * [Cmake](https://cmake.org/) >= 2.8.12
 * [Zlib](https://zlib.net/)
@@ -405,10 +405,11 @@ For any question, feedback or problem, please feel free to file an issue on this
 
 ## License
 
+* Bifrost is BSD2 licensed (https://github.com/pmelsted/bifrost/blob/master/LICENSE)
 * The wyhash library is Unlicense licensed (https://github.com/wangyi-fudan/wyhash)
 * The popcount library is BSD licensed (https://github.com/kimwalisch/libpopcnt)
 * The libdivide library is zlib licensed (https://github.com/ridiculousfish/libdivide)
 * The kseq library is copyrighted by Heng Li and released under the MIT license (http://lh3lh3.users.sourceforge.net/kseq.shtml)
 * The CRoaring library is Apache 2.0 licensed (https://github.com/RoaringBitmap/CRoaring)
+* The zstr library is MIT licensed (https://github.com/mateidavid/zstr)
 * The GetRSS library is Creative Commons Attribution 3.0 licensed
-* Bifrost is BSD-2 licensed [LICENSE](https://github.com/pmelsted/bifrost/blob/master/LICENSE)

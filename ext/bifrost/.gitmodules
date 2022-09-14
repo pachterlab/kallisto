@@ -1,0 +1,3 @@
+[submodule "ext/bbhash"]
+	path = ext/bbhash
+	url = https://github.com/rizkg/BBHash.git
