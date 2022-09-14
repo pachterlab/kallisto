@@ -265,13 +265,13 @@ fi
 
 cmdexec "$kallisto bus -o $test_dir/buslarge -t 12 -i $test_dir/basic7.idx -x 0,0,2:0,2,6:1,0,0 $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/buslarge/output.s.bus -t 12 $test_dir/buslarge/output.bus"
-checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus" f3db94e1c983a1d51b8f8525bb1a5beb
+checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus|cut -f1,2,4" 2b4e7120a9ee3d419c1de5e1689d1634
 
 # Try a simple 10XV3 (with unstranded pseudoalignment)
 
 cmdexec "$kallisto bus -o $test_dir/bus10xv3 -t 1 -i $test_dir/basic7.idx -x 10XV3 --unstranded $test_dir/10xv3.fastq.gz $test_dir/small.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/bus10xv3/output.s.bus -t 12 $test_dir/bus10xv3/output.bus"
-checkcmdoutput "$bustools text -p $test_dir/bus10xv3/output.s.bus" f8f76f64d3ef351057f3bae016e2fa8a
+checkcmdoutput "$bustools text -p $test_dir/bus10xv3/output.s.bus|cut -f1,2,4" 3991a31f0078b30e7f755b2df7a77106
 
 
 # Try processing demultiplexed bulk RNA-seq with strand-specificity with EM and kallisto quant-tcc (and compare with quant) 

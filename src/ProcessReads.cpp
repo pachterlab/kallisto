@@ -378,14 +378,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    for (int i = 0; i < bus_ecmap.size(); i++) {
-      auto &u = bus_ecmap[i];
-      int ec = index.ecmapinv.size();
-      auto it = bus_ecmapinv.find(u);
-      if (it->second != ec) {
-        std::cout << "Error" << std::endl;
-        exit(1);
-      }
+    tc.counts.resize(bus_ecmapinv.size(), 0);
+    for (auto &x : bus_ecmapinv) {
+      auto &u = x.first;
+      int ec = x.second.first;
+      int ec_count = x.second.second;
+      tc.counts[ec] += ec_count;
       index.ecmapinv.insert({u,ec});
     }
 
@@ -418,14 +416,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    for (int i = 0; i < bus_ecmap.size(); i++) {
-      Roaring& u = bus_ecmap[i];
-      int ec = index.ecmapinv.size();
-      auto it = bus_ecmapinv.find(u);
-      if (it->second != ec) {
-        std::cout << "Error" << std::endl;
-        exit(1);
-      }
+    tc.counts.resize(bus_ecmapinv.size(), 0);
+    for (auto &x : bus_ecmapinv) {
+      auto &u = x.first;
+      int ec = x.second.first;
+      int ec_count = x.second.second;
+      tc.counts[ec] += ec_count;
       index.ecmapinv.insert({u,ec});
     }
   } else if (opt.batch_mode) {
@@ -920,11 +916,11 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       int32_t ec = -1;
       auto it = bus_ecmapinv.find(u);
       if (it != bus_ecmapinv.end()) {
-        ec = it->second;
+        ec = it->second.first;
+        it->second.second++; // Increment EC count
       } else {
         ec = offset + bus_ecmapinv.size();
-        bus_ecmapinv.insert({u,ec});
-        bus_ecmap.push_back(u);
+        bus_ecmapinv.insert({u,std::make_pair(ec,1)});
       }
       auto &b = bp.first;
       b.ec = ec;
@@ -1144,7 +1140,6 @@ void ReadProcessor::processBuffer() {
     }
 
     // collect the target information
-    int ec = -1;
     int r = tc.intersectKmers(v1, v2, !paired, u);
     if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
@@ -1184,7 +1179,7 @@ void ReadProcessor::processBuffer() {
 
         auto x = index.findPosition(tr, km, um, p);
         // if the fragment is within bounds for this transcript, keep it
-        if (x.second && x.first + fl <= index.target_lens_[tr]) {
+        if (x.second && x.first + fl <= (int)index.target_lens_[tr]) {
           vtmp.add(tr);
         } else {
           //pass
@@ -1204,7 +1199,6 @@ void ReadProcessor::processBuffer() {
     if (mp.opt.strand_specific && !u.isEmpty()) {
 
       int p = -1;
-      Kmer km;
       const_UnitigMap<Node> um;
       if (!v1.empty()) {
         vtmp = Roaring();
@@ -1226,7 +1220,7 @@ void ReadProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1262,8 +1256,8 @@ void ReadProcessor::processBuffer() {
           uint32_t* trs = new uint32_t[ec.cardinality()];
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[i]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+            if (tr == trs[j]) {
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1313,7 +1307,7 @@ void ReadProcessor::processBuffer() {
       }
 
       // collect fragment length info
-      if (findFragmentLength && flengoal > 0 && paired && 0 <= ec &&  ec < index.num_trans && !v1.empty() && !v2.empty()) {
+      if (findFragmentLength && flengoal > 0 && paired && u.cardinality() == 1 && !v1.empty() && !v2.empty()) {
         // try to map the reads
         int tl = index.mapPair(s1, l1, s2, l2);
         if (0 < tl && tl < flens.size()) {
@@ -1714,7 +1708,7 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1749,7 +1743,7 @@ void BUSProcessor::processBuffer() {
           ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) != n->pos[offset + j];
+              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1782,7 +1776,7 @@ void BUSProcessor::processBuffer() {
       }
 
       if (busopt.paired && ignore_umi) {
-        if (findFragmentLength && flengoal > 0 && /*0 <= ec && ec < index.num_trans &&*/ !v.empty() && !v2.empty()) {
+        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
           // try to map the reads
           int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
           if (0 < tl && tl < flens.size()) {
@@ -1794,7 +1788,7 @@ void BUSProcessor::processBuffer() {
 
       // count the pseudoalignment
       auto elem = index.ecmapinv.find(u);
-      if (elem != index.ecmapinv.end()) {
+      if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
         newEcs.push_back(u);
         newB.push_back({b, u});

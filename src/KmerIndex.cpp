@@ -300,9 +300,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
         continue;
       }
 
-      Kmer head(seq.substr(proc, k).c_str());
-      bool fwd = (head == head.rep());
-
       proc += um.len;
       const Node* n = um.getData();
       if (trinfos[n->id].size() > EC_THRESHOLD) {
@@ -324,7 +321,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       TRInfo tr;
 
       tr.trid = j;
-      tr.pos = proc | (um.strand == fwd ? sense : missense);
+      tr.pos = proc | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
@@ -406,17 +403,19 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
           u.add(tr.trid);
+          pos.reserve(pos.size()+1);
           pos.push_back(tr.pos);
         }
       }
 
       assert(!u.isEmpty());
+      u.runOptimize();
 
       // Assign mosaic EC to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
     }
     // Assign position and sense for all transcripts belonging to unitig
-    n->pos = pos;
+    n->pos = std::move(pos);
     std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
   }
 }
@@ -463,14 +462,19 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   }
 
   // 3. serialize nodes
-  tmp_size = dbg.size();
-  out.write((char *)&tmp_size, sizeof(tmp_size));
-  for (const auto& um : dbg) {
-    // 3.1 write head kmer to associate unitig with node
-    std::string kmer = um.getUnitigHead().toString();
-    out.write(kmer.c_str(), strlen(kmer.c_str()));
-    // 3.2 serialize node
-    um.getData()->serialize(out);
+  if (writeKmerTable) {
+    tmp_size = dbg.size();
+    out.write((char *)&tmp_size, sizeof(tmp_size));
+    for (const auto& um : dbg) {
+      // 3.1 write head kmer to associate unitig with node
+      std::string kmer = um.getUnitigHead().toString();
+      out.write(kmer.c_str(), strlen(kmer.c_str()));
+      // 3.2 serialize node
+      um.getData()->serialize(out);
+    }
+  } else {
+    tmp_size = 0;
+    out.write((char *)&tmp_size, sizeof(tmp_size));
   }
 
   // 4. write number of targets
@@ -967,16 +971,16 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
   // If something doesn't work, it's most likely this!
   if (trsense) {
     if (csense) {
-      return {trpos + um.dist - p + 1, csense}; // 1-based, case I
+      return {(trpos - p - (um.size - um.dist - k)), csense}; // 1-based, case I
     } else {
-      return {trpos + um.dist + k + p, csense}; // 1-based, case III
+      return {(trpos + p + k - (um.size - k + 1 - um.dist)), csense}; // 1-based, case III
     }
   } else {
     if (csense) {
       // UnitigMapBase.size is the length in base pairs
-      return {trpos + (um.size - um.dist - 1) + k + p, !csense};  // 1-based, case IV
+      return {trpos + (-um.dist - 1) + k + p, !csense};  // 1-based, case IV
     } else {
-      return {trpos + (um.size - um.dist) - p, !csense}; // 1-based, case II
+      return {trpos + (-um.dist) - p, !csense}; // 1-based, case II
     }
   }
 }

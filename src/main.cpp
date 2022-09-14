@@ -986,6 +986,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
+    opt.single_overhang = true;
     if (!opt.num) {
       opt.batch_bus_write = true;
     } else {
@@ -1036,7 +1037,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
       }
     } else if (ret) {
-      cerr << "[bus] no technology specified; will try running read files supplied in batch file" << endl;
+      cerr << "[bus] will try running read files supplied in batch file" << endl;
       if (!opt.single_end) {
         cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
       }

@@ -236,11 +236,15 @@ void writeECList(
     }
 
     // output equivalence classes in the form "EC TXLIST";
+    std::vector<Roaring> ecmap(index.ecmapinv.size());
     for (const auto& it : index.ecmapinv) {
-      ecof << it.second << "\t";
+      ecmap[it.second] = it.first;
+    }
+    for (int i = 0 ; i < ecmap.size(); i++) {
+      ecof << i << "\t";
       // output the rest of the class
       bool first = true;
-      for (auto x : it.first) {
+      for (auto x : ecmap[i]) {
         if (!first) {
           ecof << ",";
         } else {
