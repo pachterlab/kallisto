@@ -9,8 +9,7 @@
 #include "Kmer.hpp"
 #include "Lock.hpp"
 #include "TinyVector.hpp"
-
-#include "../ext/bbhash/BooPHF.h"
+#include "BooPHF.h"
 
 typedef boomphf::mphf<Minimizer, MinimizerHash> boophf_t;
 
