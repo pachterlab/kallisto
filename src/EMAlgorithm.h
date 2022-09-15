@@ -118,7 +118,7 @@ struct EMAlgorithm {
         for (auto t_it = 0; t_it < numEC; ++t_it) {
           next_alpha[trs[t_it]] += (wv[t_it] * alpha_[trs[t_it]]) * countNorm;
         }
-        
+
         delete[] trs;
         trs = nullptr;
 

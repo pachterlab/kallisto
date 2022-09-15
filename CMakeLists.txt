@@ -47,7 +47,7 @@ ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure 
+    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
         --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
     BUILD_COMMAND make lib-static
     INSTALL_COMMAND ""
@@ -63,6 +63,7 @@ ExternalProject_Add(bifrost
 )
 
 include_directories(${htslib_PREFIX}/src/htslib)
+include_directories(${EXT_PROJECTS_DIR}/bifrost/build/src)
 
 ExternalProject_Get_Property(bifrost install_dir)
 include_directories(${install_dir}/src)
@@ -72,6 +73,7 @@ include_directories(${install_dir}/src)
 # add_compile_options(-Wdeprecated-register)
 
 add_subdirectory(src)
+add_subdirectory(ext/bifrost)
 include_directories(${EXT_PROJECTS_DIR})
 
 option(BUILD_TESTING "Build unit tests." OFF)
