@@ -634,6 +634,8 @@ class CompactedDBG {
         bool readBinary(const string& fn, bool static_m=false, uint32_t threads=1);
         bool readBinary(istream& in, bool static_m=false, uint32_t threads=1);
 
+        void to_static(uint32_t threads=1, float gamma=2.0);
+
     protected:
 
         bool annotateSplitUnitigs(const CompactedDBG<U, G>& o, const size_t nb_threads = 1, const bool verbose = false);

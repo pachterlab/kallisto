@@ -145,7 +145,19 @@ void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uin
     mphf = boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
     is_static = true;
 
-    init_tables(minimizers.size());
+    size_ = minimizers.size();
+
+    clear_tables();
+
+    Minimizer empty_key;
+
+    table_keys = new Minimizer[size_];
+    table_tinyv = new packed_tiny_vector[size_];
+    table_tinyv_sz = new uint8_t[size_];
+
+    empty_key.set_empty();
+
+    memset(table_tinyv_sz, packed_tiny_vector::FLAG_EMPTY, size_ * sizeof(uint8_t));
 
     for (const auto& minz : minimizers) {
 
@@ -157,6 +169,50 @@ void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uin
 
     pop = size_;
     num_empty = 0;
+}
+
+void MinimizerIndex::to_static(uint32_t threads, float gamma) {
+
+    std::cout << "MinimizerIndex::to_static" << std::endl;
+    std::vector<Minimizer> minz;
+    for (size_t i = 0; i < size_; ++i) {
+        if (!table_keys[i].isEmpty()) minz.push_back(table_keys[i]);
+    }
+
+    std::cout << "Size of arrays before shrinking to size: " << size_ << std::endl;
+    assert(minz.size() == pop);
+
+    mphf = boophf_t(pop, minz, threads, gamma, true, false);
+    minz.clear();
+
+    Minimizer* tmp_min = new Minimizer[pop];
+    packed_tiny_vector* tmp_ptv = new packed_tiny_vector[pop];
+    uint8_t* tmp_sz = new uint8_t[pop];
+
+    for (size_t i = 0; i < size_; ++i) {
+
+        if (table_keys[i].isEmpty()) {
+            continue;
+        }
+        uint64_t h = mphf.lookup(table_keys[i]);
+        tmp_min[h] = table_keys[i];
+        tmp_ptv[h] = table_tinyv[i];
+        tmp_sz[h] = table_tinyv_sz[i];
+
+    }
+
+    delete[] table_keys;
+    delete[] table_tinyv;
+    delete[] table_tinyv_sz;
+
+    table_keys = tmp_min;
+    table_tinyv = tmp_ptv;
+    table_tinyv_sz = tmp_sz;
+
+    size_ = pop;
+    num_empty = 0;
+    is_static = true;
+    std::cout << "Size of arrays after shrinking to size: " << size_ << std::endl;
 }
 
 void MinimizerIndex::clear() {

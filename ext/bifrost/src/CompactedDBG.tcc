@@ -7560,4 +7560,9 @@ void CompactedDBG<U, G>::print() const {
     cout << "CompactedDBG::print(): hmap_min_unitigs.size() = " << hmap_min_unitigs.size() << endl;
 }
 
+template<typename U, typename G>
+void CompactedDBG<U, G>::to_static(uint32_t threads, float gamma) {
+    hmap_min_unitigs.to_static();
+}
+
 #endif
