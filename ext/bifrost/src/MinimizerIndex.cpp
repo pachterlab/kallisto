@@ -1,13 +1,13 @@
 #include "MinimizerIndex.hpp"
 
 MinimizerIndex::MinimizerIndex() :  table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
-                                    mphf(nullptr), size_(0), pop(0), num_empty(0)  {
+                                    is_static(false), size_(0), pop(0), num_empty(0)  {
 
     init_tables(max(static_cast<size_t>(1024), lck_block_sz));
 }
 
 MinimizerIndex::MinimizerIndex(const size_t sz) :   table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
-                                                    mphf(nullptr), size_(0), pop(0), num_empty(0) {
+                                                    is_static(false), size_(0), pop(0), num_empty(0) {
 
     if (sz == 0) init_tables(lck_block_sz);
     else {
@@ -30,8 +30,8 @@ MinimizerIndex::MinimizerIndex(const MinimizerIndex& o) :   size_(o.size_), pop(
 
     lck_min = vector<SpinLock>(o.lck_min.size());
 
-    // Shallow copy should be sufficient
-    std::copy(o.mphf, o.mphf + sizeof(o.mphf), mphf);
+    mphf = o.mphf;
+    is_static = o.is_static;
 
     std::copy(o.table_keys, o.table_keys + size_, table_keys);
 
@@ -55,11 +55,13 @@ MinimizerIndex::MinimizerIndex(MinimizerIndex&& o){
     lck_min = vector<SpinLock>(o.lck_min.size());
 
     mphf = o.mphf;
+    is_static = o.is_static;
+    o.mphf = boophf_t();
+    o.is_static = false;
 
     o.table_keys = nullptr;
     o.table_tinyv = nullptr;
     o.table_tinyv_sz = nullptr;
-    o.mphf = nullptr;
 
     o.clear();
 }
@@ -80,8 +82,8 @@ MinimizerIndex& MinimizerIndex::operator=(const MinimizerIndex& o) {
 
         lck_min = vector<SpinLock>(o.lck_min.size());
 
-        // Shallow copy should be sufficient
-        std::copy(o.mphf, o.mphf + sizeof(o.mphf), mphf);
+        mphf = o.mphf;
+        is_static = o.is_static;
 
         std::copy(o.table_keys, o.table_keys + size_, table_keys);
 
@@ -112,11 +114,13 @@ MinimizerIndex& MinimizerIndex::operator=(MinimizerIndex&& o){
         lck_min = vector<SpinLock>(o.lck_min.size());
 
         mphf = o.mphf;
+        is_static = o.is_static;
+        o.mphf = boophf_t();
+        o.is_static = false;
 
         o.table_keys = nullptr;
         o.table_tinyv = nullptr;
         o.table_tinyv_sz = nullptr;
-        o.mphf = nullptr;
 
         o.clear();
     }
@@ -131,20 +135,21 @@ MinimizerIndex::~MinimizerIndex() {
 
 void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads, float gamma) {
 
-    if (pop > 0) {
+    if (pop > 0 || is_static) {
         std::cerr << "Attempting to create a static minimizer index from a non-empty index." << std::endl;
         exit(1);
     }
 
     clear();
 
-    mphf = new boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
+    mphf = boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
+    is_static = true;
 
     init_tables(minimizers.size());
 
     for (const auto& minz : minimizers) {
 
-        uint64_t h = mphf->lookup(minz);
+        uint64_t h = mphf.lookup(minz);
 
         table_keys[h] = minz;
         table_tinyv[h].copy(table_tinyv_sz[h], packed_tiny_vector(), 0);
@@ -161,10 +166,7 @@ void MinimizerIndex::clear() {
         for (size_t i = 0; i < size_; ++i) table_tinyv[i].destruct(table_tinyv_sz[i]);
     }
 
-    if (mphf != nullptr) {
-        delete mphf;
-        mphf = nullptr;
-    }
+    mphf = boophf_t();
 
     clear_tables();
 
@@ -174,7 +176,7 @@ void MinimizerIndex::clear() {
 
 MinimizerIndex::iterator MinimizerIndex::find(const Minimizer& key) {
 
-    if (mphf == nullptr) {
+    if (!is_static) {
         // Dynamic MinimizerIndex
         const size_t end_table = size_-1;
 
@@ -193,7 +195,7 @@ MinimizerIndex::iterator MinimizerIndex::find(const Minimizer& key) {
 
     } else {
         // Static MinimizerIndex
-        uint64_t h = mphf->lookup(key);
+        uint64_t h = mphf.lookup(key);
         if ((h < size_) && (table_keys[h] == key)) return iterator(this, h);
     }
     return iterator(this);
@@ -201,7 +203,7 @@ MinimizerIndex::iterator MinimizerIndex::find(const Minimizer& key) {
 
 MinimizerIndex::const_iterator MinimizerIndex::find(const Minimizer& key) const {
 
-    if (mphf == nullptr) {
+    if (!is_static) {
         // Dynamic MinimizerIndex
         const size_t end_table = size_-1;
 
@@ -220,7 +222,7 @@ MinimizerIndex::const_iterator MinimizerIndex::find(const Minimizer& key) const 
 
     } else {
         // Static MinimizerIndex
-        uint64_t h = mphf->lookup(key);
+        uint64_t h = mphf.lookup(key);
         if ((h < size_) && (table_keys[h] == key)) return const_iterator(this, h);
     }
     return const_iterator(this);
@@ -242,7 +244,7 @@ MinimizerIndex::const_iterator MinimizerIndex::find(const size_t h) const {
 
 MinimizerIndex::iterator MinimizerIndex::erase(const_iterator it) {
 
-    if (mphf != nullptr) {
+    if (is_static) {
         std::cerr << "Illegal operation on Static MinimizerIndex: MinimizerIndex::erase" << std::endl;
         exit(1);
     }
@@ -260,7 +262,7 @@ MinimizerIndex::iterator MinimizerIndex::erase(const_iterator it) {
 
 size_t MinimizerIndex::erase(const Minimizer& minz) {
 
-    if (mphf != nullptr) {
+    if (is_static) {
         std::cerr << "Illegal operation on Static MinimizerIndex: MinimizerIndex::erase" << std::endl;
         exit(1);
     }
@@ -383,7 +385,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key
 
 pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key, const packed_tiny_vector& ptv, const uint8_t& flag) {
 
-    if (mphf == nullptr) {
+    if (!is_static) {
         // Dynamic MinimizerIndex
         if ((5 * num_empty) < size_) reserve(2 * size_); // if more than 80% full, resize
 
@@ -420,7 +422,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key
         }
     } else {
         // Static MinimizerIndex
-        uint64_t h = mphf->lookup(key);
+        uint64_t h = mphf.lookup(key);
         return {iterator(this, h), false};
     }
 }
@@ -450,10 +452,10 @@ MinimizerIndex::iterator MinimizerIndex::find_p(const Minimizer& key) {
 
     size_t i = 0;
     size_t h;
-    if (mphf == nullptr) {
+    if (!is_static) {
         h = key.hash() & end_table;
     } else {
-        h = mphf->lookup(key);
+        h = mphf.lookup(key);
     }
 
     size_t id_block = h >> lck_block_div_shift;
@@ -496,10 +498,10 @@ MinimizerIndex::const_iterator MinimizerIndex::find_p(const Minimizer& key) cons
 
     size_t i = 0;
     size_t h;
-    if (mphf == nullptr) {
+    if (!is_static) {
         h = key.hash() & end_table;
     } else {
-        h = mphf->lookup(key);
+        h = mphf.lookup(key);
     }
     size_t id_block = h >> lck_block_div_shift;
 
@@ -593,7 +595,7 @@ void MinimizerIndex::release_p(iterator it) {
 
 size_t MinimizerIndex::erase_p(const Minimizer& minz) {
 
-    if (mphf != nullptr) {
+    if (is_static) {
         std::cerr << "Illegal operation on Static MinimizerIndex: MinimizerIndex::erase_p" << std::endl;
         exit(1);
     }
@@ -657,7 +659,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& k
 
     const size_t end_table = size_-1;
     size_t h = key.hash() & end_table;
-    if (mphf == nullptr) {
+    if (!is_static) {
         if ((5 * num_empty_p) < size_){
 
             lck_edit_table.release_reader();
@@ -671,7 +673,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& k
             lck_edit_table.release_writer_acquire_reader();
         }
     } else {
-        h = mphf->lookup(key);
+        h = mphf.lookup(key);
     }
 
     size_t id_block = h >> lck_block_div_shift;

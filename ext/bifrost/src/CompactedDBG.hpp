@@ -660,6 +660,8 @@ class CompactedDBG {
         pair<uint64_t, bool> readBinaryGraph(istream& in);
         pair<uint64_t, bool> readBinaryGraph(const string& fn);
 
+        bool readBinaryMinimizers(istream& in, const uint64_t checksum, uint32_t threads=1);
+
         bool readBinaryIndex(istream& in, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
         bool readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
 

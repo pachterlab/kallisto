@@ -214,6 +214,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   Offlist(opt.offlist);
 
   // Write graph to a temporary binary file and read it back into a static graph
+  // TODO:
+  // Only do this if graph exceeds certain size
   std::string tmp_bin = generate_tmp_file(tmp_file);
   dbg.writeBinary(tmp_bin, opt.threads);
   dbg = CompactedDBG<Node>(k, c_opt.g);

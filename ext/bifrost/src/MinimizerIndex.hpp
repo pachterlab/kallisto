@@ -181,7 +181,8 @@ class MinimizerIndex {
         packed_tiny_vector* table_tinyv;
         uint8_t* table_tinyv_sz;
 
-        boophf_t* mphf;
+        boophf_t mphf;
+        bool is_static;
 
         mutable vector<SpinLock> lck_min;
         mutable SpinLockRW lck_edit_table;
