@@ -231,20 +231,15 @@ WeightMap calc_weights(
 
   for (const auto& it : ecmapinv) {
     auto& v = it.first;
-    uint32_t* trs = new uint32_t[v.cardinality()];
-    v.toUint32Array(trs);
 
     std::vector<double> trans_weights;
     trans_weights.reserve(v.cardinality());
 
-    for (size_t i = 0; i < v.cardinality(); ++i) {
-      trans_weights.push_back( static_cast<double>(counts[it.second]) /
-                               eff_lens[trs[i]] );
+    for (uint32_t tr : v) {
+      trans_weights.push_back(static_cast<double>(counts[it.second]) / eff_lens[tr]);
     }
 
     weights[it.second] = trans_weights;
-    delete[] trs;
-    trs = nullptr;
   }
 
   return weights;

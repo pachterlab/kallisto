@@ -225,21 +225,17 @@ void MinCollector::write(const std::string& pseudoprefix) const {
     ecof << i << "\t";
     // output the rest of the class
     const Roaring& r = index.ecmap[i];
-    uint32_t* trs = new uint32_t[r.cardinality()];
-    r.toUint32Array(trs);
 
     bool first = true;
-    for (size_t i = 0; i < r.cardinality(); ++i) {
+    for (uint32_t tr : r) {
       if (!first) {
         ecof << ",";
       } else {
         first = false;
       }
-      ecof << trs[i];
+      ecof << tr;
     }
     ecof << "\n";
-    delete[] trs;
-    trs = nullptr;
   }
   ecof.close();
 
