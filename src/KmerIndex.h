@@ -48,21 +48,17 @@ struct SortedVectorHasher {
 };
 
 struct RoaringHasher {
-  size_t operator()(const Roaring& r) const {
-    uint32_t* trs = new uint32_t[r.cardinality()];
-    r.toUint32Array(trs);
-    uint64_t h = 0;
+  size_t operator()(const Roaring& rr) const {
+    uint64_t r = 0;
     int i=0;
-    for (size_t j = 0; j < r.cardinality(); ++j) {
+    for (auto x : rr) {
       uint64_t t;
-      MurmurHash3_x64_64(&trs[j], sizeof(trs[j]), 0, &t);
-      t = (trs[j]>>i) | (trs[j]<<(64-i));
-      h = h ^ t;
+      MurmurHash3_x64_64(&x, sizeof(x), 0, &t);
+      t = (x>>i) | (x<<(64-i));
+      r = r ^ t;
       i = (i+1)%64;
     }
-    delete[] trs;
-    trs = nullptr;
-    return h;
+    return r;
   }
 };
 typedef std::unordered_map<Roaring, int32_t, RoaringHasher> EcMapInv;
