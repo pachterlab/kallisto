@@ -3,6 +3,7 @@
 
 #include <zlib.h>
 #include "kseq.h"
+#include "robin_hood.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -262,9 +263,9 @@ public:
   std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
-  std::unordered_map<Roaring, uint32_t, RoaringHasher> newECcount;
+  robin_hood::unordered_flat_map<Roaring, uint32_t, RoaringHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
-  std::unordered_map<Roaring, std::pair<int32_t,uint32_t>, RoaringHasher> bus_ecmapinv;
+  robin_hood::unordered_flat_map<Roaring, std::pair<int32_t,uint32_t>, RoaringHasher> bus_ecmapinv;
 
 
   std::ofstream ofusion;
@@ -274,7 +275,7 @@ public:
   std::vector<PseudoAlignmentBatch> pseudobatch_stragglers;
   int last_pseudobatch_id;
   void outputFusion(const std::stringstream &o);
-  std::vector<std::unordered_map<Roaring, int, RoaringHasher>> newBatchECcount;
+  std::vector<robin_hood::unordered_flat_map<Roaring, int, RoaringHasher>> newBatchECcount;
   std::vector<std::vector<std::pair<Roaring, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<Roaring, std::string>>> newBatchECumis;
   void processReads();

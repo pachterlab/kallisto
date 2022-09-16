@@ -15,6 +15,7 @@
 #include "hash.hpp"
 #include "CompactedDBG.hpp"
 #include "Node.hpp"
+#include "robin_hood.h"
 
 std::string revcomp(const std::string s);
 
@@ -61,7 +62,7 @@ struct RoaringHasher {
     return r;
   }
 };
-typedef std::unordered_map<Roaring, int32_t, RoaringHasher> EcMapInv;
+typedef robin_hood::unordered_flat_map<Roaring, int32_t, RoaringHasher> EcMapInv;
 
 struct KmerEntry {
   int32_t contig; // id of contig
