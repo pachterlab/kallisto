@@ -1007,7 +1007,6 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
         if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
         if (!read_success || (read_checksum != checksum)) return false;
 
-        hmap_min_unitigs = MinimizerIndex(hmap_min_unitigs_sz);
     }
 
     if (read_success) {
@@ -1167,7 +1166,7 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
         if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
         if (!read_success || (read_checksum != checksum)) return false;
 
-        hmap_min_unitigs = MinimizerIndex(hmap_min_unitigs_sz);
+        hmap_min_unitigs = MinimizerIndex(static_m ? 2 : hmap_min_unitigs_sz);
     }
 
     if (read_success) {
