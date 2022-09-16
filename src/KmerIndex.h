@@ -15,6 +15,7 @@
 #include "hash.hpp"
 #include "CompactedDBG.hpp"
 #include "Node.hpp"
+#include "robin_hood.h"
 
 std::string revcomp(const std::string s);
 
