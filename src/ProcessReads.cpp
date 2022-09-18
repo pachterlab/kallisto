@@ -803,6 +803,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
                             int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
+  size_t num_new_ecs = 0;
 
   if (!opt.batch_mode || opt.batch_bus) {
     for (int i = 0; i < c.size(); i++) {
@@ -822,6 +823,40 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       }
     }
   }
+  
+  auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
+    if (num_new_ecs_ >= transfer_threshold) {
+      std::lock_guard<std::mutex> lock(this->transfer_lock);
+      size_t num_new_ecs_actual = 0;
+      int curr_max_ec = index.ecmapinv.size()-1;
+      if (opt.bus_mode || opt.batch_bus) {
+        // todo
+      } else if (!opt.batch_mode) {
+        for (auto &t : newECcount) {
+          if (t.second <= 0) {
+            continue;
+          }
+          int ec = tc.increaseCount(t.first); // modifies the ecmap
+          if (ec != -1 && t.second > 1) {
+            tc.counts[ec] += (t.second-1);
+          }
+          if (ec > curr_max_ec) {
+            num_new_ecs_actual++;
+          }
+        }
+        newECcount.clear();
+      } else {
+        // todo
+      }
+      if (num_new_ecs_actual >= transfer_threshold) {
+        if (transfer_threshold <= 4) {
+          transfer_threshold++;
+        } else {
+          transfer_threshold *= 1.25;
+        }
+      }
+    }
+  };
 
   if (!opt.batch_mode || opt.batch_bus) {
     for(auto &u : newEcs) {
@@ -933,6 +968,8 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       newB.push_back(std::move(bp));
     } */
   }
+  
+  attempt_transfer_ecs(num_new_ecs);
 
   numreads += n;
   // releases the lock
@@ -1276,12 +1313,15 @@ void ReadProcessor::processBuffer() {
 
     // find the ec
     if (!u.isEmpty()) {
+      std::lock_guard<std::mutex> lock(mp.transfer_lock);
 
       if (!mp.opt.umi) {
         // count the pseudoalignment
         auto elem = index.ecmapinv.find(u);
         if (elem == index.ecmapinv.end()) {
           // something we haven't seen before
+          newEcs.push_back(u);
+        } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
           newEcs.push_back(u);
         } else {
           // add to count vector
@@ -1787,11 +1827,15 @@ void BUSProcessor::processBuffer() {
       }
 
       // count the pseudoalignment
+      std::lock_guard<std::mutex> lock(mp.transfer_lock);
       auto elem = index.ecmapinv.find(u);
       if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
         newEcs.push_back(u);
         newB.push_back({b, u});
+      } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
+          newEcs.push_back(u);
+          newB.push_back({b, u});
       } else {
         // add to count vector
         ++counts[elem->second];
