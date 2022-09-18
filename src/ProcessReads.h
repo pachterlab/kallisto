@@ -171,7 +171,7 @@ private:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0)
+    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0), transfer_threshold(1)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
       if (opt.bam) {
         SR = new BamSequenceReader(opt);
@@ -235,6 +235,8 @@ public:
   std::vector<std::mutex> parallel_bus_reader_locks;
   bool parallel_bus_read;
   std::mutex writer_lock;
+  std::mutex transfer_lock;
+  size_t transfer_threshold;
 
 
   SequenceReader *SR;
