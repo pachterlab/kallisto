@@ -830,7 +830,11 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       size_t num_new_ecs_actual = 0;
       int curr_max_ec = index.ecmapinv.size()-1;
       if (opt.bus_mode || opt.batch_bus) {
-        // todo
+        num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
+        if (num_new_ecs_actual < transfer_threshold) return;
+        for (auto &x : bus_ecmapinv) {
+          index.ecmapinv.insert({x.first,x.second.first});
+        }
       } else if (!opt.batch_mode) {
         for (auto &t : newECcount) {
           if (t.second <= 0) {
@@ -945,7 +949,8 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
 
     // add new equiv classes to extra format
-    int offset = index.ecmapinv.size();
+    int offset = 0; // index.ecmapinv.size();
+    num_new_ecs = 0;
     for (auto &bp : newBP) {
       auto& u = bp.second;
       int32_t ec = -1;
@@ -956,6 +961,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       } else {
         ec = offset + bus_ecmapinv.size();
         bus_ecmapinv.insert({u,std::make_pair(ec,1)});
+        num_new_ecs++;
       }
       auto &b = bp.first;
       b.ec = ec;
