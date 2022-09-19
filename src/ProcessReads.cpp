@@ -969,7 +969,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
 
     //copy bus mode information, write to disk or queue up
-    writeBUSData(busf_out, bv);
+    nummapped += writeBUSData(busf_out, bv);
     /*for (auto &bp : newBP) {
       newB.push_back(std::move(bp));
     } */
@@ -1837,14 +1837,14 @@ void BUSProcessor::processBuffer() {
       auto elem = index.ecmapinv.find(u);
       if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
-        newEcs.push_back(u);
+        //newEcs.push_back(u); // don't store newEcs (it's redundant)
         newB.push_back({b, u});
-      } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
+      } /*else if (elem->second >= counts.size()) {
           newEcs.push_back(u);
           newB.push_back({b, u});
-      } else {
+      } */ else {
         // add to count vector
-        ++counts[elem->second];
+        //++counts[elem->second]; // don't store counts; we have BUS records that we can count up
         // push back BUS record
         b.ec = elem->second;
         bv.push_back(b);
