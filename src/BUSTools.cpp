@@ -13,12 +13,13 @@ void writeBUSHeader(std::ofstream &out, int bclen, int umilen) {
   out.write(header_text.c_str(), len);
 }
 
-size_t writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv) {
+size_t writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv, MinCollector* tc) {
   size_t total = 0;
   for (const auto &b : bv) {
     if (b.ec != -1) { // maybe keep non-mapping reads ?!?
       out.write((char*)(&b), sizeof(b));
       ++total;
+      if (tc != nullptr) ++((*tc).counts[b.ec]);
     }
   }
   return total;
