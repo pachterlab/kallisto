@@ -131,7 +131,7 @@ struct KmerIndex {
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
 
   // output methods
-  void write(const std::string& index_out, bool writeKmerTable = true, int threads = 1);
+  void write(const std::string& index_out, bool writeKmerTable = true, bool append=true, int threads = 1);
   void writePseudoBamHeader(std::ostream &o) const;
 
   // note opt is not const

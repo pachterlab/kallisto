@@ -180,7 +180,9 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt) {
   }
 
   BuildDeBruijnGraph(opt, tmp_file);
+  std::cout << "before build ecs" << std::endl;
   BuildEquivalenceClasses(opt, tmp_file);
+  std::cout << "after build ecs" << std::endl;
   std::remove(tmp_file.c_str());
 }
 
@@ -217,11 +219,61 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // TODO:
   // Only do this if graph exceeds certain size
   //dbg.to_static();
-  std::string tmp_bin = generate_tmp_file(tmp_file);
-  dbg.writeBinary(tmp_bin, opt.threads);
+  //std::string tmp_bin = generate_tmp_file(tmp_file);
+  //dbg.writeBinary(tmp_bin, opt.threads);
+  //dbg = CompactedDBG<Node>(k, c_opt.g);
+  //dbg.readBinary(tmp_bin, true, opt.threads);
+  //std::remove(tmp_bin.c_str());
+
+
+  std::ofstream out;
+  out.open(opt.index, std::ios::out | std::ios::binary);
+
+  // 1. write version
+  out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
+
+  // 2. serialize dBG
+  auto pos1 = out.tellp();
+  // Write dummy size of graph
+  size_t tmp_size = 1337;
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  bool res = dbg.writeBinary(out, opt.threads);
+  dbg.clear();
+  exit(0);
+
+  if (res == 0) {
+    std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
+    exit(1);
+  }
+
+  auto pos2 = out.tellp();
+  out.seekp(pos1);
+
+  // Write real size of graph
+  tmp_size = pos2 - pos1 - sizeof(tmp_size);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  //out.seekp(pos2);
+  out.close();
+
+  std::ifstream infile;
+  infile.open(opt.index, std::ios::in | std::ios::binary);
+  std::istream in(0);
+  in.rdbuf(infile.rdbuf());
+
+  std::vector<Minimizer> minz;
+  in.ignore(sizeof(INDEX_VERSION));
+  in.ignore(sizeof(tmp_size));
+  dbg.readMinimizers(in, minz, opt.threads);
+  infile.close();
+
+  infile = std::ifstream();
+  infile.open(opt.index, std::ios::in | std::ios::binary);
+  in.rdbuf(infile.rdbuf());
+
   dbg = CompactedDBG<Node>(k, c_opt.g);
-  dbg.readBinary(tmp_bin, true, opt.threads);
-  std::remove(tmp_bin.c_str());
+  dbg.readBinary(in, minz, opt.threads);
+  minz.clear();
+  infile.close();
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -423,10 +475,15 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
   }
 }
 
-void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
+void KmerIndex::write(const std::string& index_out, bool writeKmerTable, bool append, int threads) {
 
+std::cout << "KmerIndex::write" << std::endl;
   std::ofstream out;
-  out.open(index_out, std::ios::out | std::ios::binary);
+  if (!append) {
+    out.open(index_out, std::ios::out | std::ios::binary);
+  } else {
+    out.open(index_out, std::ios::app | std::ios::binary);
+  }
 
   if (!out.is_open()) {
     // TODO: better handling
@@ -436,33 +493,38 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
 
   size_t tmp_size;
 
-  // 1. write version
-  out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
+  // append is true if we have already written the INDEX_VERSION and the dBG
+  // when constructing the dBG
+  if (!append) {
+    // 1. write version
+    out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
 
-  // 2. serialize dBG
-  if (writeKmerTable) {
-    auto pos1 = out.tellp();
-    // Write dummy size of graph
-    tmp_size = 1337;
-    out.write((char *)&tmp_size, sizeof(tmp_size));
-    bool res = dbg.writeBinary(out, threads);
+    // 2. serialize dBG
+    if (writeKmerTable) {
+      auto pos1 = out.tellp();
+      // Write dummy size of graph
+      tmp_size = 1337;
+      out.write((char *)&tmp_size, sizeof(tmp_size));
+      bool res = dbg.writeBinary(out, threads);
 
-    if (res == 0) {
-      std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
-      exit(1);
+      if (res == 0) {
+        std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
+        exit(1);
+      }
+
+      auto pos2 = out.tellp();
+      out.seekp(pos1);
+
+      // Write real size of graph
+      tmp_size = pos2 - pos1 - sizeof(tmp_size);
+      out.write((char *)&tmp_size, sizeof(tmp_size));
+      out.seekp(pos2);
+    } else {
+      tmp_size = 0;
+      out.write((char *)&tmp_size, sizeof(tmp_size));
     }
-
-    auto pos2 = out.tellp();
-    out.seekp(pos1);
-
-    // Write real size of graph
-    tmp_size = pos2 - pos1 - sizeof(tmp_size);
-    out.write((char *)&tmp_size, sizeof(tmp_size));
-    out.seekp(pos2);
-  } else {
-    tmp_size = 0;
-    out.write((char *)&tmp_size, sizeof(tmp_size));
   }
+
 
   // 3. serialize nodes
   if (writeKmerTable) {
@@ -515,9 +577,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in_dbg, in;
+  std::ifstream in_dbg, in_minz, in;
 
   in_dbg.open(index_in, std::ios::in | std::ios::binary);
+  in_minz.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in_dbg.is_open()) {
     // TODO: better handling
@@ -528,6 +591,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 1. read version
   size_t header_version = 0;
   in_dbg.read((char *)&header_version, sizeof(header_version));
+  in_minz.ignore(sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -538,9 +602,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 2. deserialize dBG
   size_t tmp_size;
   in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
+  in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
 
-    dbg.readBinary(in_dbg, true, opt.threads);
+    std::vector<Minimizer> minz;
+    dbg.readMinimizers(in_minz, minz, opt.threads);
+    dbg.readBinary(in_dbg, minz, opt.threads);
     k = dbg.getK();
   }
 

@@ -113,7 +113,7 @@ MinimizerIndex& MinimizerIndex::operator=(MinimizerIndex&& o){
 
         lck_min = vector<SpinLock>(o.lck_min.size());
 
-        mphf = o.mphf;
+        mphf = std::move(o.mphf);
         is_static = o.is_static;
         o.mphf = boophf_t();
         o.is_static = false;
@@ -135,19 +135,20 @@ MinimizerIndex::~MinimizerIndex() {
 
 void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads, float gamma) {
 
+    std::cout << "generating mphf" <<std::endl;
     if (pop > 0 || is_static) {
         std::cerr << "Attempting to create a static minimizer index from a non-empty index." << std::endl;
         exit(1);
     }
 
+    std::cout << "size before: " << size_ << std::endl;
     clear();
 
     mphf = boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
     is_static = true;
 
-    size_ = minimizers.size();
-
     clear_tables();
+    size_ = minimizers.size();
 
     Minimizer empty_key;
 
@@ -163,18 +164,18 @@ void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uin
         table_tinyv[i].copy(table_tinyv_sz[i], packed_tiny_vector(), 0);
     }
 
-    /*
-    for (const auto& minz : minimizers) {
+    //for (const auto& minz : minimizers) {
 
-        uint64_t h = mphf.lookup(minz);
+        //uint64_t h = mphf.lookup(minz);
 
-        table_keys[h] = minz;
-        table_tinyv[h].copy(table_tinyv_sz[h], packed_tiny_vector(), 0);
-    }
-    */
+        //table_keys[h] = minz;
+        //table_tinyv[h].copy(table_tinyv_sz[h], packed_tiny_vector(), 0);
+    //}
 
     pop = size_;
     num_empty = 0;
+    is_static = true;
+    std::cout << "size after: " << size_ << std::endl;
 }
 
 void MinimizerIndex::to_static(uint32_t threads, float gamma) {
@@ -184,7 +185,7 @@ void MinimizerIndex::to_static(uint32_t threads, float gamma) {
     size_t n_elems = size_ - num_empty;
     minz.reserve(n_elems);
     for (size_t i = 0; i < size_; ++i) {
-        if (!table_keys[i].isEmpty()) minz.push_back(table_keys[i]);
+        if (!table_keys[i].isEmpty()) minz.push_back(table_keys[i].rep());
     }
 
     std::cout << "Size of arrays before shrinking to size: " << size_ << std::endl;
@@ -206,8 +207,9 @@ void MinimizerIndex::to_static(uint32_t threads, float gamma) {
 
         uint64_t h = mphf.lookup(table_keys[i]);
 
-        while (i != h) {
-            std::cout << "i: " << i << ", h: " << h << std::endl;
+        while (i != h && table_keys[i] != table_keys[h]) {
+            std::cout << "--- i: " << table_keys[i].toString() << ", h: " << table_keys[h].toString() << std::endl;
+            bool flag = table_keys[h].isEmpty();
             tmp_min = table_keys[h];
             tmp_ptv = table_tinyv[h];
             tmp_sz  = table_tinyv_sz[h];
@@ -216,13 +218,13 @@ void MinimizerIndex::to_static(uint32_t threads, float gamma) {
             table_tinyv[h] = table_tinyv[i];
             table_tinyv_sz[h] = table_tinyv_sz[i];
 
+            if (flag) {
+                break;
+            }
+
             table_keys[i] = tmp_min;
             table_tinyv[i] = tmp_ptv;
             table_tinyv_sz[i] = tmp_sz;
-
-            if (table_keys[i].isEmpty()) {
-                break;
-            }
 
             h = mphf.lookup(table_keys[i]);
         }

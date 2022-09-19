@@ -910,26 +910,61 @@ bool CompactedDBG<U, G>::readBinary(const string& fn, bool static_m, uint32_t th
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
+    std::vector<Minimizer> minz;
+    if (static_m) {
+        ifstream infile;
+        istream in(0);
+
+        infile.open(fn.c_str());
+        in.rdbuf(infile.rdbuf());
+        if (!in.fail()) {
+            const pair<uint64_t, bool> p_readSuccess_checksum = readBinaryGraph(in);
+            readBinaryMinimizers(in, p_readSuccess_checksum.first, minz, threads);
+        }
+        infile.close();
+
+    }
+
     ifstream infile;
     istream in(0);
 
     infile.open(fn.c_str());
     in.rdbuf(infile.rdbuf());
 
-    return readBinary(in, static_m);
+    return readBinary(in, minz, threads);
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(istream& in, bool static_m, uint32_t threads) {
+bool CompactedDBG<U, G>::readBinary(istream& in, std::vector<Minimizer>& minz, uint32_t threads) {
 
     if (!in.fail()) {
 
         const pair<uint64_t, bool> p_readSuccess_checksum = readBinaryGraph(in);
 
-        if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first, static_m);
+        if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first, minz, threads);
     }
 
     return false;
+}
+
+template<typename U, typename G>
+bool CompactedDBG<U, G>::readMinimizers(istream& in, std::vector<Minimizer>& minz, uint32_t threads) {
+
+    if (!in.fail()) {
+        const pair<uint64_t, bool> p_readSuccess_checksum = readBinaryGraph(in);
+        return readBinaryMinimizers(in, p_readSuccess_checksum.first, minz, threads);
+    }
+    return false;
+}
+
+template<typename U, typename G>
+void CompactedDBG<U, G>::getMinimizers(std::vector<Minimizer>& minz) {
+
+    auto it = hmap_min_unitigs.begin();
+    auto end = hmap_min_unitigs.end();
+    for (; it != end; ++it) {
+        minz.push_back(it.getKey());
+    }
 }
 
 template<typename U, typename G>
@@ -937,23 +972,14 @@ bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checks
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;
 
-    if (static_m) {
-        ifstream min_infile;
-        istream min_in(0);
-        min_infile.open(fn.c_str());
-        min_in.rdbuf(min_infile.rdbuf());
-
-        readBinaryMinimizers(min_in, checksum, threads);
-        min_infile.close();
-    }
-
     ifstream infile;
     istream in(0);
 
     infile.open(fn.c_str());
     in.rdbuf(infile.rdbuf());
 
-    return readBinaryIndex(in, checksum, static_m);
+    std::vector<Minimizer> minz;
+    return readBinaryIndex(in, checksum, minz, threads);
 }
 
 template<typename U, typename G>
@@ -989,11 +1015,11 @@ bool CompactedDBG<U, G>::readBinaryIndexHead(istream& in, size_t& file_format_ve
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checksum, uint32_t threads) {
+bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checksum,
+                                              std::vector<Minimizer>& minz, uint32_t threads) {
+
 
     // Build a static MPHF preemptively
-    std::vector<Minimizer> minimizers;
-
     bool read_success = !in.fail();
 
     // 0 - Write file format version, checksum and number of minimizers
@@ -1004,8 +1030,8 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
         read_success = readBinaryIndexHead(in, file_format_version, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
 
+        std::cout << read_success << ", " << (file_format_version>>32) << ", " << BFG_METABIN_FORMAT_HEADER << std::endl;
         if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
-        if (!read_success || (read_checksum != checksum)) return false;
 
     }
 
@@ -1043,7 +1069,7 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
                     const size_t relative_pos = pos - tot_unitig_len;
 
-                    minimizers.push_back(v_unitigs[unitig_id]->getSeq().getMinimizer(relative_pos).rep());
+                    minz.push_back(v_unitigs[unitig_id]->getSeq().getMinimizer(relative_pos).rep());
                 }
                 v_bmp_unitigs[i].clear();
             }
@@ -1077,7 +1103,7 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
                     const size_t pos_id_unitig = (km_id << 32) | MASK_CONTIG_TYPE | km_pos;
 
-                    minimizers.push_back(km_unitigs.getMinimizer(km_id, km_pos).rep());
+                    minz.push_back(km_unitigs.getMinimizer(km_id, km_pos).rep());
                 }
 
                 v_bmp_km[i].clear();
@@ -1128,7 +1154,7 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
                     if (read_success) {
 
-                        minimizers.push_back(minz_rep);
+                        minz.push_back(minz_rep);
                     }
                 }
                 else {
@@ -1139,19 +1165,19 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
                     if (read_success) {
 
-                        minimizers.push_back(minz_rep);
+                        minz.push_back(minz_rep);
                     }
                 }
             }
         }
     }
 
-    hmap_min_unitigs.generate_mphf(minimizers);
     return read_success;
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, bool static_m, uint32_t threads) {
+bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
+                                         std::vector<Minimizer>& minz, uint32_t threads) {
 
     bool read_success = !in.fail();
 
@@ -1166,7 +1192,13 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
         if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
         if (!read_success || (read_checksum != checksum)) return false;
 
-        hmap_min_unitigs = MinimizerIndex(static_m ? 2 : hmap_min_unitigs_sz);
+        if (minz.empty()) {
+            hmap_min_unitigs = MinimizerIndex(hmap_min_unitigs_sz);
+        } else {
+            hmap_min_unitigs = MinimizerIndex(2);
+            hmap_min_unitigs.generate_mphf(minz);
+            minz.clear();
+        }
     }
 
     if (read_success) {
@@ -1572,6 +1604,7 @@ bool CompactedDBG<U, G>::writeBinaryIndex(ostream& out, const uint64_t checksum,
 
     nb_special_minz = 0;
 
+    std::cout << 1 << std::endl;
     // 0 - Write file format version, checksum and number of minimizers
     if (write_success) {
 
@@ -1593,6 +1626,7 @@ bool CompactedDBG<U, G>::writeBinaryIndex(ostream& out, const uint64_t checksum,
 
         write_success = (write_success && !out.fail());
     }
+    std::cout << 2 << std::endl;
 
     if (write_success) {
 
