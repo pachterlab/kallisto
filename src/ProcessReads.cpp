@@ -378,14 +378,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    tc.counts.resize(bus_ecmapinv.size(), 0);
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
-      int ec = x.second.first;
-      int ec_count = x.second.second;
-      tc.counts[ec] += ec_count;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
+    tc.counts.resize(index.ecmapinv.size(), 0);
 
   } else if (opt.batch_mode && opt.batch_bus) {
     std::vector<std::thread> workers;
@@ -416,14 +414,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    tc.counts.resize(bus_ecmapinv.size(), 0);
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
-      int ec = x.second.first;
-      int ec_count = x.second.second;
-      tc.counts[ec] += ec_count;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
+    tc.counts.resize(index.ecmapinv.size(), 0);
   } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
@@ -803,6 +799,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
                             int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
   // acquire the writer lock
   std::lock_guard<std::mutex> lock(this->writer_lock);
+  size_t num_new_ecs = 0;
 
   if (!opt.batch_mode || opt.batch_bus) {
     for (int i = 0; i < c.size(); i++) {
@@ -822,6 +819,44 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       }
     }
   }
+  
+  auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
+    if (num_new_ecs_ >= transfer_threshold) {
+      std::lock_guard<std::mutex> lock(this->transfer_lock);
+      size_t num_new_ecs_actual = 0;
+      int curr_max_ec = index.ecmapinv.size()-1;
+      if (opt.bus_mode || opt.batch_bus) {
+        num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
+        if (num_new_ecs_actual < transfer_threshold) return;
+        for (auto &x : bus_ecmapinv) {
+          index.ecmapinv.insert({x.first,x.second});
+        }
+      } else if (!opt.batch_mode) {
+        for (auto &t : newECcount) {
+          if (t.second <= 0) {
+            continue;
+          }
+          int ec = tc.increaseCount(t.first); // modifies the ecmap
+          if (ec != -1 && t.second > 1) {
+            tc.counts[ec] += (t.second-1);
+          }
+          if (ec > curr_max_ec) {
+            num_new_ecs_actual++;
+          }
+        }
+        newECcount.clear();
+      } else {
+        // todo
+      }
+      if (num_new_ecs_actual >= transfer_threshold) {
+        if (transfer_threshold <= 4) {
+          transfer_threshold++;
+        } else {
+          transfer_threshold *= 1.25;
+        }
+      }
+    }
+  };
 
   if (!opt.batch_mode || opt.batch_bus) {
     for(auto &u : newEcs) {
@@ -840,6 +875,11 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
   }
   if (!opt.umi) {
     nummapped += newEcs.size();
+    if (opt.batch_mode) {
+      num_new_ecs = newBatchECcount[id].size();
+    } else {
+      num_new_ecs = newECcount.size();
+    }
   } else {
     nummapped += new_ec_umi.size();
   }
@@ -910,17 +950,19 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
 
     // add new equiv classes to extra format
-    int offset = index.ecmapinv.size();
+    int offset = 0; // index.ecmapinv.size();
+    num_new_ecs = 0;
     for (auto &bp : newBP) {
       auto& u = bp.second;
       int32_t ec = -1;
       auto it = bus_ecmapinv.find(u);
       if (it != bus_ecmapinv.end()) {
-        ec = it->second.first;
-        it->second.second++; // Increment EC count
+        ec = it->second;
       } else {
         ec = offset + bus_ecmapinv.size();
-        bus_ecmapinv.insert({u,std::make_pair(ec,1)});
+        bus_ecmapinv.insert({u,ec});
+        tc.counts.push_back(0); // Push back zero count (so we can update the EC's actual count later)
+        num_new_ecs++;
       }
       auto &b = bp.first;
       b.ec = ec;
@@ -928,11 +970,13 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
 
     //copy bus mode information, write to disk or queue up
-    writeBUSData(busf_out, bv);
+    nummapped += writeBUSData(busf_out, bv, &tc);
     /*for (auto &bp : newBP) {
       newB.push_back(std::move(bp));
     } */
   }
+  
+  attempt_transfer_ecs(num_new_ecs);
 
   numreads += n;
   // releases the lock
@@ -1276,12 +1320,15 @@ void ReadProcessor::processBuffer() {
 
     // find the ec
     if (!u.isEmpty()) {
+      std::lock_guard<std::mutex> lock(mp.transfer_lock);
 
       if (!mp.opt.umi) {
         // count the pseudoalignment
         auto elem = index.ecmapinv.find(u);
         if (elem == index.ecmapinv.end()) {
           // something we haven't seen before
+          newEcs.push_back(u);
+        } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
           newEcs.push_back(u);
         } else {
           // add to count vector
@@ -1787,14 +1834,18 @@ void BUSProcessor::processBuffer() {
       }
 
       // count the pseudoalignment
+      std::lock_guard<std::mutex> lock(mp.transfer_lock);
       auto elem = index.ecmapinv.find(u);
       if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
-        newEcs.push_back(u);
+        //newEcs.push_back(u); // don't store newEcs (it's redundant)
         newB.push_back({b, u});
-      } else {
+      } /*else if (elem->second >= counts.size()) {
+          newEcs.push_back(u);
+          newB.push_back({b, u});
+      } */ else {
         // add to count vector
-        ++counts[elem->second];
+        //++counts[elem->second]; // don't store counts; we have BUS records that we can count up
         // push back BUS record
         b.ec = elem->second;
         bv.push_back(b);
