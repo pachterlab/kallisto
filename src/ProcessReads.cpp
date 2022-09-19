@@ -875,6 +875,11 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
   }
   if (!opt.umi) {
     nummapped += newEcs.size();
+    if (opt.batch_mode) {
+      num_new_ecs = newBatchECcount[id].size();
+    } else {
+      num_new_ecs = newECcount.size();
+    }
   } else {
     nummapped += new_ec_umi.size();
   }
