@@ -135,13 +135,11 @@ MinimizerIndex::~MinimizerIndex() {
 
 void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads, float gamma) {
 
-    std::cout << "generating mphf" <<std::endl;
     if (pop > 0 || is_static) {
         std::cerr << "Attempting to create a static minimizer index from a non-empty index." << std::endl;
         exit(1);
     }
 
-    std::cout << "size before: " << size_ << std::endl;
     clear();
 
     mphf = boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
@@ -175,7 +173,6 @@ void MinimizerIndex::generate_mphf(const std::vector<Minimizer>& minimizers, uin
     pop = size_;
     num_empty = 0;
     is_static = true;
-    std::cout << "size after: " << size_ << std::endl;
 }
 
 void MinimizerIndex::to_static(uint32_t threads, float gamma) {

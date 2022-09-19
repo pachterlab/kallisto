@@ -1604,7 +1604,6 @@ bool CompactedDBG<U, G>::writeBinaryIndex(ostream& out, const uint64_t checksum,
 
     nb_special_minz = 0;
 
-    std::cout << 1 << std::endl;
     // 0 - Write file format version, checksum and number of minimizers
     if (write_success) {
 
@@ -1626,7 +1625,6 @@ bool CompactedDBG<U, G>::writeBinaryIndex(ostream& out, const uint64_t checksum,
 
         write_success = (write_success && !out.fail());
     }
-    std::cout << 2 << std::endl;
 
     if (write_success) {
 
