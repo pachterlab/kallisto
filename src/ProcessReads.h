@@ -267,7 +267,7 @@ public:
   const int maxBiasCount;
   robin_hood::unordered_flat_map<Roaring, uint32_t, RoaringHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
-  robin_hood::unordered_flat_map<Roaring, std::pair<int32_t,uint32_t>, RoaringHasher> bus_ecmapinv;
+  robin_hood::unordered_flat_map<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
 
 
   std::ofstream ofusion;
