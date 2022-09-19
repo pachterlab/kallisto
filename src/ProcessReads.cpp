@@ -378,14 +378,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    tc.counts.resize(bus_ecmapinv.size(), 0);
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
       int ec = x.second.first;
-      int ec_count = x.second.second;
-      tc.counts[ec] += ec_count;
       index.ecmapinv.insert({u,ec});
     }
+    tc.counts.resize(index.ecmapinv.size(), 0);
 
   } else if (opt.batch_mode && opt.batch_bus) {
     std::vector<std::thread> workers;
@@ -961,6 +959,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       } else {
         ec = offset + bus_ecmapinv.size();
         bus_ecmapinv.insert({u,std::make_pair(ec,1)});
+        tc.counts.push_back(0); // Push back zero count (so we can update the EC's actual count later)
         num_new_ecs++;
       }
       auto &b = bp.first;
@@ -969,7 +968,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
 
     //copy bus mode information, write to disk or queue up
-    nummapped += writeBUSData(busf_out, bv);
+    nummapped += writeBUSData(busf_out, bv, &tc);
     /*for (auto &bp : newBP) {
       newB.push_back(std::move(bp));
     } */
