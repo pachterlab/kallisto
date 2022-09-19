@@ -414,14 +414,12 @@ void MasterProcessor::processReads() {
     }
 
     // now handle the modification of the mincollector
-    tc.counts.resize(bus_ecmapinv.size(), 0);
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
       int ec = x.second.first;
-      int ec_count = x.second.second;
-      tc.counts[ec] += ec_count;
       index.ecmapinv.insert({u,ec});
     }
+    tc.counts.resize(index.ecmapinv.size(), 0);
   } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
