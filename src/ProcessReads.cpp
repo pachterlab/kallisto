@@ -380,7 +380,7 @@ void MasterProcessor::processReads() {
     // now handle the modification of the mincollector
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
-      int ec = x.second.first;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
     tc.counts.resize(index.ecmapinv.size(), 0);
@@ -416,7 +416,7 @@ void MasterProcessor::processReads() {
     // now handle the modification of the mincollector
     for (auto &x : bus_ecmapinv) {
       auto &u = x.first;
-      int ec = x.second.first;
+      int ec = x.second;
       index.ecmapinv.insert({u,ec});
     }
     tc.counts.resize(index.ecmapinv.size(), 0);
@@ -829,7 +829,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
         num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
         if (num_new_ecs_actual < transfer_threshold) return;
         for (auto &x : bus_ecmapinv) {
-          index.ecmapinv.insert({x.first,x.second.first});
+          index.ecmapinv.insert({x.first,x.second});
         }
       } else if (!opt.batch_mode) {
         for (auto &t : newECcount) {
@@ -952,11 +952,10 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       int32_t ec = -1;
       auto it = bus_ecmapinv.find(u);
       if (it != bus_ecmapinv.end()) {
-        ec = it->second.first;
-        it->second.second++; // Increment EC count
+        ec = it->second;
       } else {
         ec = offset + bus_ecmapinv.size();
-        bus_ecmapinv.insert({u,std::make_pair(ec,1)});
+        bus_ecmapinv.insert({u,ec});
         tc.counts.push_back(0); // Push back zero count (so we can update the EC's actual count later)
         num_new_ecs++;
       }
