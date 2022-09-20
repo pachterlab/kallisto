@@ -634,8 +634,6 @@ class CompactedDBG {
         bool readBinary(const string& fn, bool static_m=false, uint32_t threads=1);
         bool readBinary(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
         bool readMinimizers(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
-        void to_read_only();
-
 
         void to_static(uint32_t threads=1, float gamma=2.0);
 

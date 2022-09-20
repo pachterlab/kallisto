@@ -234,7 +234,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   size_t tmp_size = 1337;
   out.write((char *)&tmp_size, sizeof(tmp_size));
   bool res = dbg.writeBinary(out, opt.threads);
-  dbg.clear();
+  //dbg.clear();
 
   if (res == 0) {
     std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
@@ -248,8 +248,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   tmp_size = pos2 - pos1 - sizeof(tmp_size);
   out.write((char *)&tmp_size, sizeof(tmp_size));
   out.seekp(pos2);
-  dbg.to_read_only();
-
 
   //std::ifstream infile;
   //infile.open(opt.index, std::ios::in | std::ios::binary);
@@ -611,10 +609,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in_dbg, in; //, in_minz;
+  std::ifstream in_dbg, in, in_minz;
 
   in_dbg.open(index_in, std::ios::in | std::ios::binary);
-  //in_minz.open(index_in, std::ios::in | std::ios::binary);
+  in_minz.open(index_in, std::ios::in | std::ios::binary);
 
   if (!in_dbg.is_open()) {
     // TODO: better handling
@@ -625,7 +623,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 1. read version
   size_t header_version = 0;
   in_dbg.read((char *)&header_version, sizeof(header_version));
-  //in_minz.ignore(sizeof(header_version));
+  in_minz.ignore(sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -636,13 +634,15 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 2. deserialize dBG
   size_t tmp_size;
   in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
-  //in_minz.ignore(sizeof(tmp_size));
+  in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
 
     std::vector<Minimizer> minz;
-    //dbg.readMinimizers(in_minz, minz, opt.threads);
+    dbg.readMinimizers(in_minz, minz, opt.threads);
+    boophf_t mphf(minz.size(), minz, opt.threads, 2.0, true, false);
+    exit(0);
+
     dbg.readBinary(in_dbg, minz, opt.threads);
-    dbg.to_read_only();
     k = dbg.getK();
   }
 

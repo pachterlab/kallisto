@@ -958,12 +958,6 @@ bool CompactedDBG<U, G>::readMinimizers(istream& in, std::vector<Minimizer>& min
 }
 
 template<typename U, typename G>
-void CompactedDBG<U, G>::to_read_only() {
-
-    hmap_min_unitigs.drop_table_keys();
-}
-
-template<typename U, typename G>
 bool CompactedDBG<U, G>::readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m, uint32_t threads) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return false;

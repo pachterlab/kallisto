@@ -34,6 +34,7 @@ class MinimizerIndex {
 
             BFG_INLINE Minimizer getKey() const {
 
+                std::cout << "accessing getKey" << std::endl;
                 return ht->table_keys[h];
             }
 
