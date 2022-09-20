@@ -855,10 +855,10 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
             auto &bc = batchCounts[i];
             int ec = tc.increaseCount(t.first); // modifies the ecmap
             if (ec >= tmp_bc[i].size()) {
-                    tmp_bc[i].push_back(1);
+                    tmp_bc[i].push_back(0);
             }
-            if (ec != -1 && t.second > 1) {
-              tmp_bc[i][ec] += (t.second-1);
+            if (ec != -1 && t.second > 0) {
+              tmp_bc[i][ec] += (t.second);
             }
             if (ec > curr_max_ec && i == id) {
               num_new_ecs_actual++;
