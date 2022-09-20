@@ -120,8 +120,8 @@ struct KmerIndex {
   int mapPair(const char *s1, int l1, const char *s2, int l2) const;
   Roaring intersect(const Roaring& ec, const Roaring& v) const;
 
-  void BuildTranscripts(const ProgramOptions& opt);
-  void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file);
+  void BuildTranscripts(const ProgramOptions& opt, std::ofstream& out);
+  void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out);
 
   // Removes all kmers occurring in opt.blacklist from the dBG.
   void Offlist(const std::string& path);
@@ -131,7 +131,8 @@ struct KmerIndex {
   void PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos);
 
   // output methods
-  void write(const std::string& index_out, bool writeKmerTable = true, bool append=true, int threads = 1);
+  void write(const std::string& index_out, bool writeKmerTable = true, int threads = 1);
+  void write(std::ofstream& out, int threads=1);
   void writePseudoBamHeader(std::ostream &o) const;
 
   // note opt is not const
