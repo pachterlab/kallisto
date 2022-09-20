@@ -845,8 +845,27 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
           }
         }
         newECcount.clear();
-      } else {
-        // todo
+      } else if (opt.batch_mode && !opt.umi) {
+        auto &b = newBatchECcount;
+        for (int i = 0; i < b.size(); i++) {
+          for (auto &t : b[i]) {
+            if (t.second <= 0) {
+              continue;
+            }
+            auto &bc = batchCounts[i];
+            int ec = tc.increaseCount(t.first); // modifies the ecmap
+            if (ec >= tmp_bc[i].size()) {
+                    tmp_bc[i].push_back(1);
+            }
+            if (ec != -1 && t.second > 1) {
+              tmp_bc[i][ec] += (t.second-1);
+            }
+            if (ec > curr_max_ec && i == id) {
+              num_new_ecs_actual++;
+            }
+          }
+          b[i].clear();
+        }
       }
       if (num_new_ecs_actual >= transfer_threshold) {
         if (transfer_threshold <= 4) {
