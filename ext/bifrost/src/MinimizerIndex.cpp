@@ -250,6 +250,12 @@ void MinimizerIndex::to_static(uint32_t threads, float gamma) {
     std::cout << "Size of arrays after shrinking to size: " << size_ << std::endl;
 }
 
+void MinimizerIndex::drop_table_keys() {
+
+    delete[] table_keys;
+    table_keys = nullptr;
+}
+
 void MinimizerIndex::clear() {
 
     if (table_tinyv != nullptr){

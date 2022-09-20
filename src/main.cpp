@@ -2202,7 +2202,6 @@ int main(int argc, char *argv[]) {
         std::ofstream out;
         out.open(opt.index, std::ios::out | std::ios::binary);
         index.BuildTranscripts(opt, out);
-        std::cout << "after buildtranscripts" << std::endl;
         index.write(out, opt.threads);
         out.close();
 

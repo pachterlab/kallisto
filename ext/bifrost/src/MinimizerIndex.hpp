@@ -135,6 +135,7 @@ class MinimizerIndex {
         void generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads=1, float gamma=2.0);
 
         void to_static(uint32_t threads=1, float gamma=2.0);
+        void drop_table_keys();
 
         void clear();
 

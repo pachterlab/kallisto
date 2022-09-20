@@ -958,13 +958,9 @@ bool CompactedDBG<U, G>::readMinimizers(istream& in, std::vector<Minimizer>& min
 }
 
 template<typename U, typename G>
-void CompactedDBG<U, G>::getMinimizers(std::vector<Minimizer>& minz) {
+void CompactedDBG<U, G>::to_read_only() {
 
-    auto it = hmap_min_unitigs.begin();
-    auto end = hmap_min_unitigs.end();
-    for (; it != end; ++it) {
-        minz.push_back(it.getKey());
-    }
+    hmap_min_unitigs.drop_table_keys();
 }
 
 template<typename U, typename G>
