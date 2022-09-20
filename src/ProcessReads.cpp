@@ -852,7 +852,6 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
             if (t.second <= 0) {
               continue;
             }
-            auto &bc = batchCounts[i];
             int ec = tc.increaseCount(t.first); // modifies the ecmap
             if (ec >= tmp_bc[i].size()) {
                     tmp_bc[i].push_back(0);
