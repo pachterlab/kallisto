@@ -180,9 +180,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   }
 
   BuildDeBruijnGraph(opt, tmp_file, out);
-  std::cout << "before build ecs" << std::endl;
   BuildEquivalenceClasses(opt, tmp_file);
-  std::cout << "after build ecs" << std::endl;
   std::remove(tmp_file.c_str());
 }
 
@@ -519,7 +517,6 @@ void KmerIndex::write(std::ofstream& out, int threads) {
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
 
-std::cout << "KmerIndex::write" << std::endl;
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
 
@@ -627,7 +624,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t header_version = 0;
   in_dbg.read((char *)&header_version, sizeof(header_version));
   in_minz.ignore(sizeof(header_version));
-  std::cout << header_version << std::endl;
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -638,7 +634,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 2. deserialize dBG
   size_t tmp_size;
   in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
-  std::cout << tmp_size << std::endl;
   in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
 
