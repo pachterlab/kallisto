@@ -1030,7 +1030,6 @@ bool CompactedDBG<U, G>::readBinaryMinimizers(istream& in, const uint64_t checks
 
         read_success = readBinaryIndexHead(in, file_format_version, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
 
-        std::cout << read_success << ", " << (file_format_version>>32) << ", " << BFG_METABIN_FORMAT_HEADER << std::endl;
         if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
 
     }
