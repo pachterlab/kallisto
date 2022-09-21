@@ -638,9 +638,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   if (tmp_size > 0) {
 
     std::vector<Minimizer> minz;
-    dbg.readMinimizers(in_minz, minz, opt.threads);
-    boophf_t mphf(minz.size(), minz, opt.threads, 2.0, true, false);
-    exit(0);
+    //dbg.readMinimizers(in_minz, minz, opt.threads);
 
     dbg.readBinary(in_dbg, minz, opt.threads);
     k = dbg.getK();
