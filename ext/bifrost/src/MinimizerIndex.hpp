@@ -34,7 +34,6 @@ class MinimizerIndex {
 
             BFG_INLINE Minimizer getKey() const {
 
-                std::cout << "accessing getKey" << std::endl;
                 return ht->table_keys[h];
             }
 
@@ -133,12 +132,14 @@ class MinimizerIndex {
         // Generates an MPHF for all the minimizers
         // gamma=1. yields lowest bit/elem ratio. Higher values yield faster
         // construction and query times. gamma=2. is a good trade-off
-        void generate_mphf(const std::vector<Minimizer>& minimizers, uint32_t threads=1, float gamma=2.0);
+        void generate_mphf(std::vector<Minimizer>& minimizers, uint32_t threads=1, float gamma=2.0);
+        void register_mphf(boophf_t* mphf_);
 
-        void to_static(uint32_t threads=1, float gamma=2.0);
+        void to_static(uint32_t threads=1, float gamma=1.0);
         void drop_table_keys();
 
         void clear();
+        void clearPTV();
 
         iterator find(const Minimizer& key);
         const_iterator find(const Minimizer& key) const;
@@ -187,7 +188,7 @@ class MinimizerIndex {
         packed_tiny_vector* table_tinyv;
         uint8_t* table_tinyv_sz;
 
-        boophf_t mphf;
+        boophf_t* mphf;
 
         mutable vector<SpinLock> lck_min;
         mutable SpinLockRW lck_edit_table;
