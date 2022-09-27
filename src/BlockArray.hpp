@@ -97,7 +97,7 @@ class BlockArray {
                 return;
             } else if (flags == 1) {
                 block<T> b = mono.b;
-                poly.push_back(std::move(b));
+                poly.blocks.push_back(std::move(b));
                 ++flags;
             }
 
