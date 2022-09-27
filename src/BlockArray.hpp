@@ -35,6 +35,58 @@ class BlockArray {
 
     public:
         BlockArray() : flags(0) {}
+        ~BlockArray() {
+            clear();
+        }
+
+        BlockArray(const BlockArray& o) {
+            flags = o.flags;
+            if (flags == 1) {
+                mono.b = o.mono.b;
+            } else if (flags == 2) {
+                poly.blocks = o.poly.blocks;
+            }
+        }
+
+        BlockArray(BlockArray&& o) {
+            flags = o.flags;
+            o.flags = 0;
+            if (flags == 1) {
+                mono.b = std::move(o.mono.b);
+            } else if (flags == 2) {
+                poly.blocks = std::move(o.poly.blocks);
+            }
+        }
+
+        BlockArray& operator=(const BlockArray& o) {
+
+            clear();
+            flags = o.flags;
+            if (flags == 1) {
+                mono.b = o.mono.b;
+            } else if (flags == 2) {
+                poly.blocks = o.poly.blocks;
+            }
+            return *this;
+        }
+
+        tiny_vector& operator=(tiny_vector&& o){
+
+            if (this != &o) {
+
+                clear();
+                flags = o.flags;
+                o.flags = 0;
+
+                if (flags == 1) {
+                    mono.b = std::move(o.mono.b);
+                } else if (flags == 2){
+                    poly.blocks = std::move(o.poly.blocks);
+                }
+            }
+
+            return *this;
+        }
 
         void insert(uint32_t lb, uint32_t ub, T val) {
 
