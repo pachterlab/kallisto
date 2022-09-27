@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <TinyVector.hpp>
 
 template<typename T = int>
 struct block {
@@ -20,7 +21,8 @@ struct block {
 template<typename T = int>
 class BlockArray {
     private:
-        std::vector<block<T> > blocks;
+        // std::vector<block<T> > blocks;
+        TinyVector<block<T> > blocks;
 
     public:
         BlockArray() {}
@@ -98,9 +100,9 @@ class BlockArray {
             return blocks[blocks.size()-1].ub;
         }
 
-        void shrink_to_fit() {
-            blocks.shrink_to_fit();
-        }
+        // void shrink_to_fit() {
+        //     blocks.shrink_to_fit();
+        // }
 
         void get_vals(std::vector<T>& vals) const {
             vals.clear();

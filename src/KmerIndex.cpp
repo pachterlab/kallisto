@@ -181,6 +181,15 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
 
   BuildDeBruijnGraph(opt, tmp_file, out);
   BuildEquivalenceClasses(opt, tmp_file);
+
+  /*
+  for (auto& um : dbg) {
+    auto* node = um.getData();
+    node->ec.shrink_to_size();
+    node->pos.shrink_to_size();
+  }
+  */
+
   std::remove(tmp_file.c_str());
 }
 
@@ -213,16 +222,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   Offlist(opt.offlist);
 
-  //std::ofstream test("minimizers2.txt");
-  //auto _pos1 = test.tellp();
-  //size_t _tmp_size = 1337;
-  //test.write((char *)&_tmp_size, sizeof(_tmp_size));
-  //_tmp_size = dbg.writeMinimizers(test);
-  //auto _pos2 = test.tellp();
-  //test.seekp(_pos1);
-  //test.write((char *)&_tmp_size, sizeof(_tmp_size));
-  //test.close();
-
   // Write graph to a temporary binary file and read it back into a static graph
   // TODO:
   // Only do this if graph exceeds certain size
@@ -232,8 +231,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   //dbg = CompactedDBG<Node>(k, c_opt.g);
   //dbg.readBinary(tmp_bin, true, opt.threads);
   //std::remove(tmp_bin.c_str());
-
-
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
