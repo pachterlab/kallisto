@@ -70,7 +70,7 @@ class BlockArray {
             return *this;
         }
 
-        tiny_vector& operator=(tiny_vector&& o){
+        BlockArray& operator=(BlockArray&& o){
 
             if (this != &o) {
 
