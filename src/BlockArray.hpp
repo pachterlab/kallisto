@@ -30,7 +30,9 @@ class BlockArray {
         void insert(uint32_t lb, uint32_t ub, T val) {
 
             // TODO: Make sure block does not overlap with existing block
-            blocks.emplace_back(lb, ub, val);
+            block<T> b(lb, ub, val);
+            blocks.push_back(std::move(b));
+            // blocks.emplace_back(lb, ub, val);
             std::sort(blocks.begin(), blocks.end());
         }
 
@@ -188,7 +190,9 @@ class BlockArray {
                 val = val.read(buffer);
                 delete[] buffer;
                 buffer = nullptr;
-                blocks.emplace_back(lb, ub, val);
+                block<T> b(lb, ub, val);
+                blocks.push_back(std::move(b));
+                // blocks.emplace_back(lb, ub, val);
             }
         }
 };
