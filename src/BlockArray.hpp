@@ -174,24 +174,29 @@ class BlockArray {
         BlockArray<T> get_slice(uint32_t lb, uint32_t ub) const {
             BlockArray<T> slice;
 
-            block<T> tmp(lb);
-            auto upper = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+            if (flags == 1) {
+                slice.insert(lb, ub, mono.b.val);
+            } else if (flags > 1) {
 
-            if (upper == blocks.begin()) {
-                // No elements with lower bound <= lb
-                // TODO: Handle this
+                block<T> tmp(lb);
+                auto upper = std::upper_bound(poly.blocks.begin(), poly.blocks.end(), tmp);
+
+                if (upper == poly.blocks.begin()) {
+                    // No elements with lower bound <= lb
+                    // TODO: Handle this
+                }
+
+                --upper;
+
+                do {
+                    slice.insert(
+                            std::max(lb, upper->lb)-lb,
+                            std::min(ub, upper->ub)-lb,
+                            upper->val
+                    );
+                    ++upper;
+                } while(upper != poly.blocks.end() && upper->lb < ub);
             }
-
-            --upper;
-
-            do {
-                slice.insert(
-                        std::max(lb, upper->lb)-lb,
-                        std::min(ub, upper->ub)-lb,
-                        upper->val
-                );
-                ++upper;
-            } while(upper != blocks.end() && upper->lb < ub);
 
             return slice;
         }
