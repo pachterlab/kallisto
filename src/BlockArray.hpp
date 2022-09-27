@@ -46,6 +46,7 @@ class BlockArray {
             } else if (flags == 1) {
                 block<T> b = mono.b;
                 poly.push_back(std::move(b));
+                ++flags;
             }
 
             poly.blocks.emplace_back(lb, ub, val);
@@ -217,9 +218,9 @@ class BlockArray {
                 delete[] buffer;
             } else {
 
-                size_t tmp_size = blocks.size();
+                size_t tmp_size = poly.blocks.size();
                 out.write((char *)&tmp_size, sizeof(tmp_size));
-                for (const auto b : blocks) {
+                for (const auto b : poly.blocks) {
                     out.write((char *)&b.lb, sizeof(b.lb));
                     out.write((char *)&b.ub, sizeof(b.ub));
                     char* buffer = new char[b.val.getSizeInBytes()];
@@ -254,7 +255,7 @@ class BlockArray {
                 size_t tmp_size, lb, ub;
                 T val;
                 in.read((char *)&tmp_size, sizeof(tmp_size));
-                blocks.reserve(tmp_size);
+                poly.blocks.reserve(tmp_size);
 
                 for (size_t i = 0; i < tmp_size; ++i) {
                     in.read((char *)&lb, sizeof(lb));
