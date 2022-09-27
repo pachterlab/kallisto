@@ -281,7 +281,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.readBinary(in, mphf);
-  //dbg.readBinary(in, minz, opt.threads);
   infile.close();
 
   uint32_t running_id = 0;
@@ -646,44 +645,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // 2. deserialize dBG
   size_t tmp_size;
   in.read((char *)&tmp_size, sizeof(tmp_size));
-  //in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
-
-    //std::ifstream test("minimizers2.txt");
-    //size_t minz_size;
-    //test.read((char*)&minz_size, sizeof(minz_size));
-    //std::vector<Minimizer> minz;
-    //for (size_t i = 0; i < minz_size; ++i) {
-        //Minimizer m;
-        //m.read(test);
-        //if (m.toString() == "AGCCATCTCGGCTCACTGCAAGC") {
-            //std::cout << "problem minimizer present in file" << std::endl;
-        //}
-        //minz.push_back(std::move(m));
-    //}
-
-    //std::vector<Minimizer> minz_dummy;
-    //dbg.readMinimizers(in_minz, minz_dummy, opt.threads);
-    //std::cout << "minz size: " << minz.size() << std::endl;
-    //std::cout << "minz_dummy size: " << minz_dummy.size() << std::endl;
-    //for (size_t i = 0; i < minz.size(); ++i) {
-        //if (minz[i].toString() != minz_dummy[i].toString()) {
-            //std::cout << minz[i].toString() << " != " << minz_dummy[i].toString() << std::endl;
-        //}
-    //}
-    //size_t minz_size = minz.size();
-    //test.write((char*)&minz_size, sizeof(minz_size));
-    //for (const auto& min : minz) {
-        //min.write(test);
-    //}
-    //
-    //exit(0);
-    //in_minz.close();
-    //auto _k = dbg.getK();
-    //auto _g = dbg.getG();
-    //dbg.clear();
-    //dbg = CompactedDBG<Node>(_k, _g);
-    //dbg.clear();
 
     auto pos1 = in.tellg();
     in.ignore(tmp_size);
@@ -693,7 +655,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     auto pos2 = in.tellg();
     in.seekg(pos1);
 
-    //dbg.readBinary(in_dbg, minz, opt.threads);
     dbg.readBinary(in, mphf);
     in.seekg(pos2);
 

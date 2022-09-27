@@ -6,11 +6,11 @@
 
 template<typename T = int>
 struct block {
-    size_t lb, ub;
+    uint32_t lb, ub;
     T val;
 
-    block(size_t idx) : lb(idx) {}
-    block(size_t lb, size_t ub, T val) : lb(lb), ub(ub), val(val) {}
+    block(uint32_t idx) : lb(idx) {}
+    block(uint32_t lb, uint32_t ub, T val) : lb(lb), ub(ub), val(val) {}
 
     bool operator<(const block<T>& rhs) const {
         return (this->lb < rhs.lb);
@@ -25,7 +25,7 @@ class BlockArray {
     public:
         BlockArray() {}
 
-        void insert(size_t lb, size_t ub, T val) {
+        void insert(uint32_t lb, uint32_t ub, T val) {
 
             // TODO: Make sure block does not overlap with existing block
             blocks.emplace_back(lb, ub, val);
@@ -49,7 +49,7 @@ class BlockArray {
             return (--ub)->val;
         }
 
-        std::pair<size_t, T> block_index(size_t idx) const {
+        std::pair<uint32_t, T> block_index(uint32_t idx) const {
             block<T> tmp(idx);
             auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
             --ub;
@@ -68,7 +68,7 @@ class BlockArray {
             return vals;
         }
 
-        std::pair<size_t, size_t> get_block_at(size_t idx) const {
+        std::pair<uint32_t, uint32_t> get_block_at(size_t idx) const {
             block<T> tmp(idx);
             auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
 
@@ -82,7 +82,7 @@ class BlockArray {
             return std::make_pair(ub->lb, ub->ub);
         }
 
-        void reserve(size_t sz) {
+        void reserve(uint32_t sz) {
             blocks.reserve(sz);
         }
 
@@ -96,6 +96,10 @@ class BlockArray {
 
         size_t length() const {
             return blocks[blocks.size()-1].ub;
+        }
+
+        void shrink_to_fit() {
+            blocks.shrink_to_fit();
         }
 
         void get_vals(std::vector<T>& vals) const {
