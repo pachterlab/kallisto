@@ -243,7 +243,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // Write dummy size of graph
   size_t tmp_size = 1337;
   out.write((char *)&tmp_size, sizeof(tmp_size));
-  std::cout << "location of dbg: " << out.tellp() << std::endl;
   bool res = dbg.writeBinary(out, opt.threads);
 
   if (res == 0) {
@@ -258,29 +257,17 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   tmp_size = pos2 - pos1 - sizeof(tmp_size);
   out.write((char *)&tmp_size, sizeof(tmp_size));
   out.seekp(pos2);
-  std::cout << "real size of graph: " << tmp_size << std::endl;
 
   std::vector<Minimizer> minz;
   dbg.clearAndGetMinimizers(minz);
   boophf_t* mphf = new boophf_t(minz.size(), minz, opt.threads, 1.0, true, true);
-  std::cout << "number of keys: " << mphf->nbKeys();
-  std::cout << "minimizers size: " << minz.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
-  std::cout << "location of mphf: " << out.tellp() << std::endl;
   mphf->save(out);
   pos1 = out.tellp();
   out.seekp(pos2);
   tmp_size = pos1 - pos2 - sizeof(tmp_size);
   out.write((char *)&tmp_size, sizeof(tmp_size));
   out.seekp(pos1);
-  std::cout << "location after mphf: " << out.tellp() << std::endl;
-  std::cout << "real size of mphf: " << tmp_size << std::endl;
-
-  // DEBUG
-  tmp_size = 69; //hehehee
-  out.write((char *)&tmp_size, sizeof(tmp_size));
-  // END DEBUG
-
 
   minz.clear();
   dbg.clear();
@@ -296,7 +283,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg.readBinary(in, mphf);
   //dbg.readBinary(in, minz, opt.threads);
   infile.close();
-  std::cout << "fail? " << out.fail() << std::endl;
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -635,12 +621,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in_dbg, in;//, in_minz;
+  std::ifstream in;//, in_minz;
 
-  in_dbg.open(index_in, std::ios::in | std::ios::binary);
+  in.open(index_in, std::ios::in | std::ios::binary);
   //in_minz.open(index_in, std::ios::in | std::ios::binary);
 
-  if (!in_dbg.is_open()) {
+  if (!in.is_open()) {
     // TODO: better handling
     std::cerr << "Error: index input file could not be opened!";
     exit(1);
@@ -648,7 +634,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 1. read version
   size_t header_version = 0;
-  in_dbg.read((char *)&header_version, sizeof(header_version));
+  in.read((char *)&header_version, sizeof(header_version));
   //in_minz.ignore(sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
@@ -659,7 +645,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 2. deserialize dBG
   size_t tmp_size;
-  in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
+  in.read((char *)&tmp_size, sizeof(tmp_size));
   //in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
 
@@ -699,43 +685,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     //dbg = CompactedDBG<Node>(_k, _g);
     //dbg.clear();
 
-    std::cout << "wat the hek" << std::endl;
-    auto pos1 = in_dbg.tellg();
-    std::cout << "location of dbg: " << pos1 << std::endl;;
-    std::cout << tmp_size << std::endl;
-    in_dbg.ignore(tmp_size);
-    std::cout << "location of here?: " << in_dbg.tellg() << std::endl;;
+    auto pos1 = in.tellg();
+    in.ignore(tmp_size);
     boophf_t* mphf = new boophf_t();
-    in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
-    std::cout << "location of mphf: " << in_dbg.tellg() << std::endl;;
-    mphf->load(in_dbg);
-    auto pos2 = in_dbg.tellg();
-    std::cout << "location after mphf: " << pos2 << std::endl;;
-    in_dbg.seekg(pos1);
-    std::cout << "location of dbg: " << in_dbg.tellg() << std::endl;;
-    std::cout << "size of mphf read from index: " << mphf->nbKeys() << std::endl;
+    in.read((char *)&tmp_size, sizeof(tmp_size));
+    mphf->load(in);
+    auto pos2 = in.tellg();
+    in.seekg(pos1);
 
     //dbg.readBinary(in_dbg, minz, opt.threads);
-    dbg.readBinary(in_dbg, mphf);
-    std::cout << "read binary graph" << std::endl;
-    std::cout << "size of dbg: " << dbg.size() << std::endl;
-    in_dbg.seekg(pos2);
+    dbg.readBinary(in, mphf);
+    in.seekg(pos2);
 
-    // DEBUG
-    size_t sixtynine;
-    in_dbg.read((char *)&sixtynine, sizeof(sixtynine));
-    std::cout << "----------------> " << sixtynine << std::endl;
-    // END DEBUG
-    //
     //dbg.to_static();
     k = dbg.getK();
   }
 
-  in_dbg.close();
   // CompactedDBG::readBinary bug, need separate stream to read past the dbg
-  in.open(index_in, std::ios::in | std::ios::binary);
+  //in.open(index_in, std::ios::in | std::ios::binary);
   // Spool stream to the location just following the dbg
-  in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
+  //in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
 
   // 3. deserialize nodes
   in.read((char *)&tmp_size, sizeof(tmp_size));
@@ -747,9 +716,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
     in.read(buffer, kmer_size);
-    std::cout << std::string(buffer) << std::endl;
     kmer = Kmer(buffer);
-    std::cout << kmer.toString() << std::endl;
     um = dbg.find(kmer);
 
     if (um.isEmpty) {
@@ -804,6 +771,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
 
   in.close();
+  exit(0);
 
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);

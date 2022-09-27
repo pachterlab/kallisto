@@ -1232,15 +1232,12 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
         if (minz.empty()) {
             hmap_min_unitigs = MinimizerIndex(hmap_min_unitigs_sz);
         } else {
-            std::cout << 1 << std::endl;
             hmap_min_unitigs = MinimizerIndex(2);
             hmap_min_unitigs.generate_mphf(minz);
-            std::cout << 2 << std::endl;
             minz.clear();
         }
     }
 
-            std::cout << 3 << std::endl;
     if (read_success) {
 
         size_t nb_bmp_unitigs = 0;
@@ -1290,7 +1287,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
             }
         }
     }
-            std::cout << 4 << std::endl;
 
     if (read_success) {
 
@@ -1333,7 +1329,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
             }
         }
     }
-            std::cout << 5 << std::endl;
 
     if (read_success) {
 
@@ -1407,7 +1402,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
             }
         }
     }
-            std::cout << 6 << std::endl;
 
     return read_success;
 }
@@ -1435,7 +1429,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
         hmap_min_unitigs.register_mphf(mphf);
     }
 
-            std::cout << 3 << std::endl;
     if (read_success) {
 
         size_t nb_bmp_unitigs = 0;
@@ -1485,7 +1478,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
             }
         }
     }
-            std::cout << 4 << std::endl;
 
     if (read_success) {
 
@@ -1528,7 +1520,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
             }
         }
     }
-            std::cout << 5 << std::endl;
 
     if (read_success) {
 
@@ -1602,7 +1593,6 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
             }
         }
     }
-            std::cout << 6 << std::endl;
 
     return read_success;
 }

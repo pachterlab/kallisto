@@ -1,13 +1,13 @@
 #include "MinimizerIndex.hpp"
 
 MinimizerIndex::MinimizerIndex() :  table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
-                                    is_static(false), size_(0), pop(0), num_empty(0)  {
+                                    mphf(nullptr), is_static(false), size_(0), pop(0), num_empty(0)  {
 
     init_tables(max(static_cast<size_t>(1024), lck_block_sz));
 }
 
 MinimizerIndex::MinimizerIndex(const size_t sz) :   table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
-                                                    is_static(false), size_(0), pop(0), num_empty(0) {
+                                                    mphf(nullptr), is_static(false), size_(0), pop(0), num_empty(0) {
 
     if (sz == 0) init_tables(lck_block_sz);
     else {
@@ -25,7 +25,6 @@ MinimizerIndex::MinimizerIndex(const size_t sz) :   table_keys(nullptr), table_t
 MinimizerIndex::MinimizerIndex(const MinimizerIndex& o) :   size_(o.size_), pop(o.pop), num_empty(o.num_empty) {
 
     table_keys = new Minimizer[size_];
-    std::cout << "table_keys size: " << size_ << std::endl;
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 
@@ -50,7 +49,6 @@ MinimizerIndex::MinimizerIndex(MinimizerIndex&& o){
     num_empty = o.num_empty;
 
     table_keys = o.table_keys;
-    std::cout << "table_keys size: " << size_ << std::endl;
     table_tinyv = o.table_tinyv;
     table_tinyv_sz = o.table_tinyv_sz;
 
@@ -79,7 +77,6 @@ MinimizerIndex& MinimizerIndex::operator=(const MinimizerIndex& o) {
         num_empty = o.num_empty;
 
         table_keys = new Minimizer[size_];
-    std::cout << "table_keys size: " << size_ << std::endl;
         table_tinyv = new packed_tiny_vector[size_];
         table_tinyv_sz = new uint8_t[size_];
 
@@ -111,7 +108,6 @@ MinimizerIndex& MinimizerIndex::operator=(MinimizerIndex&& o){
         num_empty = o.num_empty;
 
         table_keys = o.table_keys;
-    std::cout << "table_keys size: " << size_ << std::endl;
         table_tinyv = o.table_tinyv;
         table_tinyv_sz = o.table_tinyv_sz;
 
@@ -144,7 +140,6 @@ void MinimizerIndex::generate_mphf(std::vector<Minimizer>& minimizers, uint32_t 
         exit(1);
     }
 
-    std::cout << "calling clear" << std::endl;
 
     mphf = new boophf_t(minimizers.size(), minimizers, threads, gamma, true, false);
     is_static = true;
@@ -152,8 +147,8 @@ void MinimizerIndex::generate_mphf(std::vector<Minimizer>& minimizers, uint32_t 
 
     clear_tables();
     size_ = minimizers.size();
-    std::cout << "=============> size_: " << size_ << std::endl;
     minimizers.clear();
+
 
     Minimizer empty_key;
 
@@ -161,18 +156,14 @@ void MinimizerIndex::generate_mphf(std::vector<Minimizer>& minimizers, uint32_t 
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 
-    std::cout << "data: " << (sizeof(packed_tiny_vector) + sizeof(uint8_t)) * size_ << std::endl;
-    std::cout << "table_keys data: " << (sizeof(Minimizer)) * size_ << std::endl;
 
     empty_key.set_empty();
 
     memset(table_tinyv_sz, packed_tiny_vector::FLAG_EMPTY, size_ * sizeof(uint8_t));
-    std::cout << 1.1 << std::endl;
 
     for (size_t i = 0; i < size_; ++i) {
         table_tinyv[i].copy(table_tinyv_sz[i], packed_tiny_vector(), 0);
     }
-    std::cout << 1.2 << std::endl;
 
     for (const auto& minz : minimizers) {
 
@@ -189,13 +180,11 @@ void MinimizerIndex::generate_mphf(std::vector<Minimizer>& minimizers, uint32_t 
 
 void MinimizerIndex::register_mphf(boophf_t* mphf_) {
 
-    std::cout << "MinimizerIndex::register_mphf" << std::endl;
     if (pop > 0 || is_static) {
         std::cerr << "Attempting to create a static minimizer index from a non-empty index." << std::endl;
         exit(1);
     }
 
-    std::cout << "calling clear" << std::endl;
 
     mphf = mphf_;
     is_static = true;
@@ -203,16 +192,18 @@ void MinimizerIndex::register_mphf(boophf_t* mphf_) {
 
     clear_tables();
     size_ = mphf->nbKeys();
-    std::cout << "=============> size_: " << size_ << std::endl;
 
     Minimizer empty_key;
 
-    //table_keys = new Minimizer[size_];
-
+    table_keys = new Minimizer[size_];
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 
     empty_key.set_empty();
+
+    std::fill(table_keys, table_keys + size_, empty_key);
+
+    memset(table_tinyv_sz, packed_tiny_vector::FLAG_EMPTY, size_ * sizeof(uint8_t));
 
     // memset(table_tinyv_sz, packed_tiny_vector::FLAG_EMPTY, size_ * sizeof(uint8_t));
     //
@@ -337,14 +328,12 @@ void MinimizerIndex::clearPTV() {
     }
 
     if (table_tinyv != nullptr) {
-        std::cout << "clearing tinyv" << std::endl;
 
         delete[] table_tinyv;
         table_tinyv = nullptr;
     }
 
     if (table_tinyv_sz != nullptr) {
-        std::cout << "clearing tinyv_sz" << std::endl;
 
         delete[] table_tinyv_sz;
         table_tinyv_sz = nullptr;
@@ -373,7 +362,6 @@ MinimizerIndex::iterator MinimizerIndex::find(const Minimizer& key) {
     } else {
         // Static MinimizerIndex
         uint64_t h = mphf->lookup(key);
-        std::cout << "hash: " << h << std::endl;
         if ((h < size_) && (table_keys[h] == key)) return iterator(this, h);
     }
     return iterator(this);
@@ -601,7 +589,8 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key
     } else {
         // Static MinimizerIndex
         uint64_t h = mphf->lookup(key);
-
+        if (h >= size_) {
+        }
         if (table_keys[h].isEmpty()) {
 
             table_keys[h] = key;
@@ -610,8 +599,9 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key
             table_tinyv[h].copy(table_tinyv_sz[h], ptv, flag);
 
             return {iterator(this, h), true};
+        } else if (table_keys[h] == key) {
+            return {iterator(this, h), false};
         }
-        else if (table_keys[h] == key) return {iterator(this, h), false};
 
     }
 }
@@ -959,21 +949,18 @@ MinimizerIndex::const_iterator MinimizerIndex::end() const {
 void MinimizerIndex::clear_tables() {
 
     if (table_keys != nullptr) {
-        std::cout << "clearing keys" << std::endl;
 
         delete[] table_keys;
         table_keys = nullptr;
     }
 
     if (table_tinyv != nullptr) {
-        std::cout << "clearing tinyv" << std::endl;
 
         delete[] table_tinyv;
         table_tinyv = nullptr;
     }
 
     if (table_tinyv_sz != nullptr) {
-        std::cout << "clearing tinyv_sz" << std::endl;
 
         delete[] table_tinyv_sz;
         table_tinyv_sz = nullptr;
@@ -995,7 +982,6 @@ void MinimizerIndex::init_tables(const size_t sz) {
     num_empty = size_;
 
     table_keys = new Minimizer[size_];
-    std::cout << "table_keys size: " << size_ << std::endl;
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 
@@ -1023,7 +1009,6 @@ void MinimizerIndex::reserve(const size_t sz) {
     num_empty = size_;
 
     table_keys = new Minimizer[size_];
-    std::cout << "table_keys size: " << size_ << std::endl;
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 

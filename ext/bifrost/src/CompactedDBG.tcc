@@ -1028,7 +1028,6 @@ UnitigMap<U, G> CompactedDBG<U, G>::find(const char* s, const size_t pos_km, con
 template<typename U, typename G>
 const_UnitigMap<U, G> CompactedDBG<U, G>::find(const Kmer& km, const bool extremities_only) const {
 
-    std::cout << "trying to find kmer: " << km.toString() << std::endl;
     if (invalid){
 
         cerr << "CompactedDBG::find(): Graph is invalid and cannot be searched" << endl;
