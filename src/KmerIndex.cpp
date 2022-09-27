@@ -213,6 +213,16 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   Offlist(opt.offlist);
 
+  //std::ofstream test("minimizers2.txt");
+  //auto _pos1 = test.tellp();
+  //size_t _tmp_size = 1337;
+  //test.write((char *)&_tmp_size, sizeof(_tmp_size));
+  //_tmp_size = dbg.writeMinimizers(test);
+  //auto _pos2 = test.tellp();
+  //test.seekp(_pos1);
+  //test.write((char *)&_tmp_size, sizeof(_tmp_size));
+  //test.close();
+
   // Write graph to a temporary binary file and read it back into a static graph
   // TODO:
   // Only do this if graph exceeds certain size
@@ -234,7 +244,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   size_t tmp_size = 1337;
   out.write((char *)&tmp_size, sizeof(tmp_size));
   bool res = dbg.writeBinary(out, opt.threads);
-  //dbg.clear();
 
   if (res == 0) {
     std::cerr << "Error: could not write de Bruijn Graph to disk." << std::endl;
@@ -249,28 +258,31 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   out.write((char *)&tmp_size, sizeof(tmp_size));
   out.seekp(pos2);
 
-  //std::ifstream infile;
-  //infile.open(opt.index, std::ios::in | std::ios::binary);
-  //std::istream in(0);
-  //in.rdbuf(infile.rdbuf());
+  std::vector<Minimizer> minz;
+  dbg.clearAndGetMinimizers(minz);
+  boophf_t* mphf = new boophf_t(minz.size(), minz, opt.threads, 1.0, true, true);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  mphf->save(out);
+  pos1 = out.tellp();
+  out.seekp(pos2);
+  tmp_size = pos1 - pos2 - sizeof(tmp_size);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  out.seekp(pos1);
 
-  //in.ignore(sizeof(INDEX_VERSION));
-  //in.ignore(sizeof(tmp_size));
-  //std::vector<Minimizer> minz;
-  //dbg.readMinimizers(in, minz, opt.threads);
-  //infile.close();
+  minz.clear();
+  dbg.clear();
 
-  //infile = std::ifstream();
-  //infile.open(opt.index, std::ios::in | std::ios::binary);
-  //std::istream in2(0);
-  //in2.rdbuf(infile.rdbuf());
-  //in2.ignore(sizeof(INDEX_VERSION));
-  //in2.ignore(sizeof(tmp_size));
+  std::ifstream infile;
+  infile.open(opt.index, std::ios::in | std::ios::binary);
+  std::istream in(0);
+  in.rdbuf(infile.rdbuf());
+  in.ignore(sizeof(INDEX_VERSION));
+  in.ignore(sizeof(tmp_size));
 
-  //dbg = CompactedDBG<Node>(k, c_opt.g);
+  dbg = CompactedDBG<Node>(k, c_opt.g);
+  dbg.readBinary(in, mphf);
   //dbg.readBinary(in, minz, opt.threads);
-  //minz.clear();
-  //infile.close();
+  infile.close();
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -609,12 +621,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   }
 
   std::string& index_in = opt.index;
-  std::ifstream in_dbg, in, in_minz;
+  std::ifstream in;//, in_minz;
 
-  in_dbg.open(index_in, std::ios::in | std::ios::binary);
-  in_minz.open(index_in, std::ios::in | std::ios::binary);
+  in.open(index_in, std::ios::in | std::ios::binary);
+  //in_minz.open(index_in, std::ios::in | std::ios::binary);
 
-  if (!in_dbg.is_open()) {
+  if (!in.is_open()) {
     // TODO: better handling
     std::cerr << "Error: index input file could not be opened!";
     exit(1);
@@ -622,8 +634,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 1. read version
   size_t header_version = 0;
-  in_dbg.read((char *)&header_version, sizeof(header_version));
-  in_minz.ignore(sizeof(header_version));
+  in.read((char *)&header_version, sizeof(header_version));
+  //in_minz.ignore(sizeof(header_version));
 
   if (header_version != INDEX_VERSION) {
     std::cerr << "Error: incompatible indices. Found version " << header_version << ", expected version " << INDEX_VERSION << std::endl
@@ -633,22 +645,66 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 2. deserialize dBG
   size_t tmp_size;
-  in_dbg.read((char *)&tmp_size, sizeof(tmp_size));
-  in_minz.ignore(sizeof(tmp_size));
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  //in_minz.ignore(sizeof(tmp_size));
   if (tmp_size > 0) {
 
-    std::vector<Minimizer> minz;
-    //dbg.readMinimizers(in_minz, minz, opt.threads);
+    //std::ifstream test("minimizers2.txt");
+    //size_t minz_size;
+    //test.read((char*)&minz_size, sizeof(minz_size));
+    //std::vector<Minimizer> minz;
+    //for (size_t i = 0; i < minz_size; ++i) {
+        //Minimizer m;
+        //m.read(test);
+        //if (m.toString() == "AGCCATCTCGGCTCACTGCAAGC") {
+            //std::cout << "problem minimizer present in file" << std::endl;
+        //}
+        //minz.push_back(std::move(m));
+    //}
 
-    dbg.readBinary(in_dbg, minz, opt.threads);
+    //std::vector<Minimizer> minz_dummy;
+    //dbg.readMinimizers(in_minz, minz_dummy, opt.threads);
+    //std::cout << "minz size: " << minz.size() << std::endl;
+    //std::cout << "minz_dummy size: " << minz_dummy.size() << std::endl;
+    //for (size_t i = 0; i < minz.size(); ++i) {
+        //if (minz[i].toString() != minz_dummy[i].toString()) {
+            //std::cout << minz[i].toString() << " != " << minz_dummy[i].toString() << std::endl;
+        //}
+    //}
+    //size_t minz_size = minz.size();
+    //test.write((char*)&minz_size, sizeof(minz_size));
+    //for (const auto& min : minz) {
+        //min.write(test);
+    //}
+    //
+    //exit(0);
+    //in_minz.close();
+    //auto _k = dbg.getK();
+    //auto _g = dbg.getG();
+    //dbg.clear();
+    //dbg = CompactedDBG<Node>(_k, _g);
+    //dbg.clear();
+
+    auto pos1 = in.tellg();
+    in.ignore(tmp_size);
+    boophf_t* mphf = new boophf_t();
+    in.read((char *)&tmp_size, sizeof(tmp_size));
+    mphf->load(in);
+    auto pos2 = in.tellg();
+    in.seekg(pos1);
+
+    //dbg.readBinary(in_dbg, minz, opt.threads);
+    dbg.readBinary(in, mphf);
+    in.seekg(pos2);
+
+    //dbg.to_static();
     k = dbg.getK();
   }
 
-  in_dbg.close();
   // CompactedDBG::readBinary bug, need separate stream to read past the dbg
-  in.open(index_in, std::ios::in | std::ios::binary);
+  //in.open(index_in, std::ios::in | std::ios::binary);
   // Spool stream to the location just following the dbg
-  in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
+  //in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
 
   // 3. deserialize nodes
   in.read((char *)&tmp_size, sizeof(tmp_size));
@@ -715,6 +771,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
 
   in.close();
+  exit(0);
 
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);

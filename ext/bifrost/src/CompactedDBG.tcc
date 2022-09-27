@@ -7562,6 +7562,7 @@ void CompactedDBG<U, G>::print() const {
 
 template<typename U, typename G>
 void CompactedDBG<U, G>::to_static(uint32_t threads, float gamma) {
+
     hmap_min_unitigs.to_static();
 }
 

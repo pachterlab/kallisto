@@ -633,7 +633,12 @@ class CompactedDBG {
 
         bool readBinary(const string& fn, bool static_m=false, uint32_t threads=1);
         bool readBinary(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
+        bool readBinary(istream& in, boophf_t* mphf);
+
         bool readMinimizers(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
+        size_t writeMinimizers(ostream& out);
+        void clearAndGetMinimizers(std::vector<Minimizer>& minz);
+
 
         void to_static(uint32_t threads=1, float gamma=2.0);
 
@@ -666,6 +671,7 @@ class CompactedDBG {
         bool readBinaryMinimizers(istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
 
         bool readBinaryIndex(istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
+        bool readBinaryIndex(istream& in, const uint64_t checksum, boophf_t* mphf);
         bool readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
 
         bool readBinaryIndexHead(const string& fn, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
