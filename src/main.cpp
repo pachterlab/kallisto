@@ -1320,6 +1320,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.umi.push_back(BUSOptionSubstr(0,16,28));
         busopt.bc.push_back(BUSOptionSubstr(0,0,16));
         strand = ProgramOptions::StrandType::FR;
+      } else if (opt.technology == "SHARE-SEQ") {
+        busopt.nfiles = 3;
+        busopt.bc.push_back(BUSOptionSubstr(0,15,15+8));
+        busopt.bc.push_back(BUSOptionSubstr(0,15+8+30,15+8+30+8));  
+        busopt.bc.push_back(BUSOptionSubstr(0,15+8+30+8+30,15+8+30+8+30+8));
+        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
       } else if (opt.technology == "VISIUM") {
         busopt.nfiles = 2;
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
