@@ -659,6 +659,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv2        inDrops version 2 chemistry" << endl
   << "inDropsv3        inDrops version 3 chemistry" << endl
   << "SCRBSeq          SCRB-Seq" << endl
+  << "SHARE-seq        SHARE-seq RNA" << endl
   << "SmartSeq3        Smart-seq3" << endl
   << "SPLiT-seq        SPLiT-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
@@ -1233,6 +1234,13 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(1,10,18));
         busopt.bc.push_back(BUSOptionSubstr(1,48,56));
         busopt.bc.push_back(BUSOptionSubstr(1,78,86));
+      } else if (opt.technology == "SHARE-SEQ") {
+        busopt.nfiles = 3;
+        busopt.bc.push_back(BUSOptionSubstr(0,15,15+8));
+        busopt.bc.push_back(BUSOptionSubstr(0,15+8+30,15+8+30+8));  
+        busopt.bc.push_back(BUSOptionSubstr(0,15+8+30+8+30,15+8+30+8+30+8));
+        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
       } else if (opt.technology == "SCRBSEQ") {
         busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.umi.push_back(BUSOptionSubstr(0,6,16));
