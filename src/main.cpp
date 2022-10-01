@@ -2203,7 +2203,6 @@ int main(int argc, char *argv[]) {
         out.open(opt.index, std::ios::out | std::ios::binary);
         index.BuildTranscripts(opt, out);
         index.write(out, opt.threads);
-        out.close();
 
       }
       cerr << endl;

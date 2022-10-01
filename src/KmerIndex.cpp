@@ -264,6 +264,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   out.seekp(pos2);
   tmp_size = pos1 - pos2 - sizeof(tmp_size);
   out.write((char *)&tmp_size, sizeof(tmp_size));
+
   out.seekp(pos1);
 
   minz.clear();
@@ -278,7 +279,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.readBinary(in, mphf);
-  infile.close();
+  //infile.close();
 
   uint32_t running_id = 0;
   for (auto& um : dbg) {
@@ -490,6 +491,7 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     exit(1);
   }
 
+
   // 3. serialize nodes
   tmp_size = dbg.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
@@ -652,24 +654,20 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     auto pos2 = in.tellg();
     in.seekg(pos1);
 
-    dbg.readBinary(in, mphf);
+    auto success = dbg.readBinary(in, mphf);
+
     in.seekg(pos2);
 
     //dbg.to_static();
     k = dbg.getK();
   }
 
-  // CompactedDBG::readBinary bug, need separate stream to read past the dbg
-  //in.open(index_in, std::ios::in | std::ios::binary);
-  // Spool stream to the location just following the dbg
-  //in.ignore(sizeof(header_version) + sizeof(tmp_size) + tmp_size);
-
   // 3. deserialize nodes
-  in.read((char *)&tmp_size, sizeof(tmp_size));
   Kmer kmer;
   UnitigMap<Node> um;
   size_t kmer_size = k * sizeof(char);
   char* buffer = new char[kmer_size];
+  in.read((char *)&tmp_size, sizeof(tmp_size));
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);

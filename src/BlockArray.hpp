@@ -26,19 +26,19 @@ class BlockArray {
             block<T> mono;
             std::vector<block<T> > poly;
         };
-        // empty, mono, poly
-        enum {EMPTY, MONO, POLY} flag;
+        uint8_t flag;
 
     public:
-        BlockArray() : flag(EMPTY), mono(0) {
+        BlockArray() : flag(0), mono(0) {
         }
+
         ~BlockArray() {
             switch(flag) {
-                case EMPTY:
-                case MONO:
+                case 0:
+                case 1:
                     mono.~block();
                     break;
-                case POLY:
+                case 2:
                     poly.~vector();
             }
         }
@@ -47,11 +47,11 @@ class BlockArray {
 
             flag = o.flag;
             switch(flag) {
-                case EMPTY:
-                case MONO:
+                case 0:
+                case 1:
                     new (&mono) auto(o.mono);
                     break;
-                case POLY:
+                case 2:
                     new (&poly) auto(o.poly);
             }
         }
@@ -59,15 +59,15 @@ class BlockArray {
         BlockArray(BlockArray&& o) {
 
             flag = o.flag;
-            o.flag = EMPTY;
+            o.flag = 0;
 
             switch(flag) {
-                case EMPTY:
-                case MONO:
+                case 0:
+                case 1:
                     new (&mono) auto(o.mono);
                     o.mono = block<T>();
                     break;
-                case POLY:
+                case 2:
                     new (&poly) auto(o.poly);
                     o.poly.clear();
             }
@@ -78,11 +78,11 @@ class BlockArray {
             clear();
             flag = o.flag;
             switch(flag) {
-                case EMPTY:
-                case MONO:
+                case 0:
+                case 1:
                     new (&mono) auto(o.mono);
                     break;
-                case POLY:
+                case 2:
                     new (&poly) auto(o.poly);
             }
             return *this;
@@ -93,15 +93,15 @@ class BlockArray {
             if (this != &o) {
 
                 flag = o.flag;
-                o.flag = EMPTY;
+                o.flag = 0;
 
                 switch(flag) {
-                    case EMPTY:
-                    case MONO:
+                    case 0:
+                    case 1:
                         new (&mono) auto(o.mono);
                         o.mono = block<T>();
                         break;
-                    case POLY:
+                    case 2:
                         new (&poly) auto(o.poly);
                         o.poly.clear();
                 }
@@ -113,19 +113,19 @@ class BlockArray {
         void insert(uint32_t lb, uint32_t ub, T val) {
 
             // TODO: Make sure block does not overlap with existing block
-            if (flag == EMPTY) {
+            if (flag == 0) {
                 mono.lb = lb;
                 mono.ub = ub;
                 mono.val = val;
-                flag = MONO;
+                flag = 1;
 
                 return;
-            } else if (flag == MONO) {
+            } else if (flag == 1) {
                 block<T> b = mono;
                 mono.~block();
                 new (&poly) std::vector<block<T> >;
                 poly.push_back(b);
-                flag = POLY;
+                flag = 2;
             }
 
             poly.emplace_back(lb, ub, val);
@@ -134,7 +134,7 @@ class BlockArray {
 
         const T& operator[](size_t idx) const {
 
-            if (flag == MONO) {
+            if (flag < 2) {
                 return mono.val;
             }
 
@@ -154,7 +154,7 @@ class BlockArray {
         }
 
         std::pair<uint32_t, T> block_index(uint32_t idx) const {
-            if (flag == MONO) {
+            if (flag < 2) {
                 return std::make_pair(0, mono.val);
             }
 
@@ -167,9 +167,9 @@ class BlockArray {
         // Returns the ECs of the block up to and including the EC at idx
         std::vector<T> get_leading_vals(size_t idx) const {
             std::vector<T> vals;
-            if (flag == MONO) {
+            if (flag == 1) {
                 vals.push_back(mono.val);
-            } else {
+            } else if (flag == 2) {
                 vals.reserve(poly.size());
                 for (const auto& b : poly) {
                     if (b.lb <= idx) {
@@ -182,7 +182,7 @@ class BlockArray {
         }
 
         std::pair<uint32_t, uint32_t> get_block_at(size_t idx) const {
-            if (flag == MONO) {
+            if (flag == 1) {
                 return std::make_pair(mono.lb, mono.ub);
             }
 
@@ -201,38 +201,37 @@ class BlockArray {
 
         void reserve(uint32_t sz) {
             if (sz < 2) return;
-            flag = POLY;
+            flag = 2;
             poly.reserve(sz);
         }
 
         void clear() {
             switch(flag) {
-                case EMPTY:
-                case MONO:
+                case 0:
+                case 1:
                     mono.~block();
                     break;
-                case POLY:
+                case 2:
                     poly.~vector();
             }
-            flag = EMPTY;
+            flag = 0;
         }
 
         size_t size() const {
-            if (flag == EMPTY) return 0;
-            if (flag == MONO) return 1;
+            if (flag < 2) return flag;
             return poly.size();
         }
 
         size_t length() const {
-            if (flag == MONO) return mono.ub;
+            if (flag < 2) return mono.ub;
             return poly[poly.size()-1].ub;
         }
 
         void get_vals(std::vector<T>& vals) const {
             vals.clear();
-            if (flag == MONO) {
+            if (flag == 1) {
                 vals.push_back(mono.val);
-            } else {
+            } else if (flag == 2){
                 vals.reserve(poly.size());
                 for (const auto& b : poly) {
                     vals.push_back(b.val);
@@ -260,9 +259,9 @@ class BlockArray {
         BlockArray<T> get_slice(uint32_t lb, uint32_t ub) const {
             BlockArray<T> slice;
 
-            if (flag == MONO) {
+            if (flag == 1) {
                 slice.insert(lb, ub, mono.val);
-            } else if (flag == POLY) {
+            } else if (flag == 2) {
 
                 block<T> tmp(lb);
                 auto upper = std::upper_bound(poly.begin(), poly.end(), tmp);
@@ -291,8 +290,8 @@ class BlockArray {
         void serialize(std::ostream& out) const {
 
             out.write((char *)&flag, sizeof(flag));
-            if (flag == EMPTY) return;
-            else if (flag == MONO) {
+            if (flag == 0) return;
+            else if (flag == 1) {
 
                 out.write((char *)&mono.lb, sizeof(mono.lb));
                 out.write((char *)&mono.ub, sizeof(mono.ub));
@@ -301,6 +300,7 @@ class BlockArray {
                 out.write((char *)&tmp_size, sizeof(tmp_size));
                 out.write(buffer, tmp_size);
                 delete[] buffer;
+                buffer = nullptr;
             } else {
 
                 size_t tmp_size = poly.size();
@@ -324,34 +324,39 @@ class BlockArray {
 
             size_t roaring_size;
             in.read((char *)&flag, sizeof(flag));
-            if (flag == EMPTY) return;
-            else if (flag == MONO) {
+            if (flag == 0) {
+                return;
+            } else if (flag == 1) {
 
                 in.read((char *)&mono.lb, sizeof(mono.lb));
                 in.read((char *)&mono.ub, sizeof(mono.ub));
                 in.read((char *)&roaring_size, sizeof(roaring_size));
                 char* buffer = new char[roaring_size];
                 in.read(buffer, roaring_size);
-                mono.val.read(buffer);
+                mono.val = mono.val.read(buffer);
                 delete[] buffer;
                 buffer = nullptr;
             } else {
 
-                size_t tmp_size, lb, ub;
-                T val;
+                size_t tmp_size;
+                uint32_t lb, ub;
                 in.read((char *)&tmp_size, sizeof(tmp_size));
+                mono.~block();
+                new (&poly) std::vector<block<T> >;
                 poly.reserve(tmp_size);
 
                 for (size_t i = 0; i < tmp_size; ++i) {
                     in.read((char *)&lb, sizeof(lb));
                     in.read((char *)&ub, sizeof(ub));
+
                     in.read((char *)&roaring_size, sizeof(roaring_size));
                     char* buffer = new char[roaring_size];
                     in.read(buffer, roaring_size);
+                    T val;
                     val = val.read(buffer);
                     delete[] buffer;
                     buffer = nullptr;
-                    poly.emplace_back(lb, ub, val);
+                    insert(lb, ub, val);
                 }
             }
         }
