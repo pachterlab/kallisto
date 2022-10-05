@@ -1717,6 +1717,12 @@ void BUSProcessor::processBuffer() {
     int blen = 0;
     bool bad_bc = false;
     for (auto &bcc : busopt.bc) {
+      if (busopt.bc[0].fileno == -1) { // Don't care about barcodes
+        bad_bc = false;
+        blen = BUSFORMAT_FAKE_BARCODE_LEN;
+        memcpy(bc, binaryToString(0, blen).c_str(), blen); // Give each read a fake barcode
+        break;
+      }
       int bclen = (0 == bcc.stop) ? l[bcc.fileno] - bcc.start : bcc.stop - bcc.start;
       if (l[bcc.fileno] < bcc.start + bclen || bclen <= 0) {
         bad_bc = true;
