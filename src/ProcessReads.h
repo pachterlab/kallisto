@@ -178,6 +178,9 @@ public:
       } else {
         SR = new FastqSequenceReader(opt);
       }
+      
+      std::vector<std::mutex> mutexes(opt.threads);
+      transfer_locks.swap(mutexes);
 
       if (opt.batch_mode) {
         batchCounts.assign(opt.batch_ids.size(), {});
@@ -235,7 +238,7 @@ public:
   std::vector<std::mutex> parallel_bus_reader_locks;
   bool parallel_bus_read;
   std::mutex writer_lock;
-  std::mutex transfer_lock;
+  std::vector<std::mutex> transfer_locks; // one mutex per thread; for locking each thread's access to index.ecmapinv
   size_t transfer_threshold;
 
 
