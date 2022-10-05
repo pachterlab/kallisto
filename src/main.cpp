@@ -818,14 +818,17 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
         int f = vv[i];
         int a = vv[i+1];
         int b = vv[i+2];
-        if (f < 0) {
+        if (f < -1) {
           errorList.push_back("Error: invalid file number (" + to_string(f) + ")  " + s);
+          return false;
         }
-        if (a <  0) {
+        if (a <  0 && f != -1) {
           errorList.push_back("Error: invalid start (" + to_string(a) + ")  " + s);
+          return false;
         }
-        if (b != 0 && b <= a) {
+        if (b != 0 && b <= a && f != -1) {
           errorList.push_back("Error: invalid stop (" + to_string(b) + ") has to be after start (" + to_string(a) + ")  " + s);
+          return false;
         }
         v.push_back(BUSOptionSubstr(f,a,b));
         if (f > maxnf) {
