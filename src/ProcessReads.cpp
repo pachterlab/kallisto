@@ -328,7 +328,7 @@ void MasterProcessor::processReads() {
 
     std::vector<std::thread> workers;
     for (int i = 0; i < opt.threads; i++) {
-      workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this)));
+      workers.emplace_back(std::thread(ReadProcessor(index,opt,tc,*this,-1,i)));
     }
 
     // let the workers do their thing
@@ -369,7 +369,7 @@ void MasterProcessor::processReads() {
     }
 
     for (int i = 0; i < opt.threads; i++) {
-      workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this)));
+      workers.emplace_back(std::thread(BUSProcessor(index,opt,tc,*this,-1,i)));
     }
 
     // let the workers do their thing
@@ -395,7 +395,7 @@ void MasterProcessor::processReads() {
       int nt = std::min(opt.threads, (num_ids - id));
       if (opt.pseudo_read_files_supplied) { // pseudo_read_files_supplied: read using SR (no batch identifier) rather than batchSR
         for (int i = 0; i < opt.threads; i++) {
-          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,0)));
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
         }
         for (int i = 0; i < opt.threads; i++) {
           workers[i].join();
@@ -433,7 +433,7 @@ void MasterProcessor::processReads() {
       if (opt.pseudo_read_files_supplied) {
         for (int i = 0; i < opt.threads; i++) {
           tmp_bc[i].assign(tc.counts.size(), 0);
-          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, 0)));
+          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, i)));
         }
         for (int i = 0; i < opt.threads; i++) {
           workers[i].join();
@@ -808,7 +808,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
   } else {
     if (!opt.umi) {
-      auto& bc = tmp_bc[local_id];
+      auto& bc = tmp_bc[opt.pseudo_read_files_supplied ? 0 : local_id]; // local_id = batch (each batch gets its own thread) but pseudo_read_files_supplied means all read files belong to one and only one batch (batch 0)
       for (int i = 0; i < c.size(); i++) {
         bc[i] += c[i];
         nummapped += c[i];
@@ -822,14 +822,18 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
   
   auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
     if (num_new_ecs_ >= transfer_threshold) {
-      std::lock_guard<std::mutex> lock(this->transfer_lock);
+      std::vector<std::unique_lock<std::mutex>> locks;
+      for (int i = 0; i < this->transfer_locks.size(); i++) { // acquire one lock per thread
+        locks.push_back(std::unique_lock<std::mutex>(this->transfer_locks[i]));
+      }
       size_t num_new_ecs_actual = 0;
       int curr_max_ec = index.ecmapinv.size()-1;
       if (opt.bus_mode || opt.batch_bus) {
         num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
-        if (num_new_ecs_actual < transfer_threshold) return;
-        for (auto &x : bus_ecmapinv) {
-          index.ecmapinv.insert({x.first,x.second});
+        if (num_new_ecs_actual >= transfer_threshold) {
+          for (auto &x : bus_ecmapinv) {
+            index.ecmapinv.insert({x.first,x.second});
+          }
         }
       } else if (!opt.batch_mode) {
         for (auto &t : newECcount) {
@@ -872,6 +876,9 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
         } else {
           transfer_threshold *= 1.25;
         }
+      }
+      for (int i = 0; i < this->transfer_locks.size(); i++) { // release each lock
+        locks[i].unlock();
       }
     }
   };
@@ -1338,7 +1345,7 @@ void ReadProcessor::processBuffer() {
 
     // find the ec
     if (!u.isEmpty()) {
-      std::lock_guard<std::mutex> lock(mp.transfer_lock);
+      std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
 
       if (!mp.opt.umi) {
         // count the pseudoalignment
@@ -1852,7 +1859,7 @@ void BUSProcessor::processBuffer() {
       }
 
       // count the pseudoalignment
-      std::lock_guard<std::mutex> lock(mp.transfer_lock);
+      std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
       auto elem = index.ecmapinv.find(u);
       if (elem == index.ecmapinv.end()) {
         // something we haven't seen before
