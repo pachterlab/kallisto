@@ -727,7 +727,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
 
   in.close();
-  exit(0);
 
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
