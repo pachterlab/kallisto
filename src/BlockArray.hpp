@@ -6,11 +6,13 @@
 
 template<typename T = int>
 struct block {
-    size_t lb, ub;
+    uint32_t lb, ub;
     T val;
 
-    block(size_t idx) : lb(idx) {}
-    block(size_t lb, size_t ub, T val) : lb(lb), ub(ub), val(val) {}
+    block() : lb(0), ub(0) {}
+    block(uint32_t idx) : lb(idx) {}
+    block(uint32_t lb, uint32_t ub, T val) : lb(lb), ub(ub), val(val) {}
+    ~block() {}
 
     bool operator<(const block<T>& rhs) const {
         return (this->lb < rhs.lb);
@@ -20,28 +22,130 @@ struct block {
 template<typename T = int>
 class BlockArray {
     private:
-        std::vector<block<T> > blocks;
+        union {
+            block<T> mono;
+            std::vector<block<T> > poly;
+        };
+        uint8_t flag;
 
     public:
-        BlockArray() {}
+        BlockArray() : flag(0), mono(0) {
+        }
 
-        void insert(size_t lb, size_t ub, T val) {
+        ~BlockArray() {
+            switch(flag) {
+                case 0:
+                case 1:
+                    mono.~block();
+                    break;
+                case 2:
+                    poly.~vector();
+            }
+        }
+
+        BlockArray(const BlockArray& o) {
+
+            flag = o.flag;
+            switch(flag) {
+                case 0:
+                case 1:
+                    new (&mono) auto(o.mono);
+                    break;
+                case 2:
+                    new (&poly) auto(o.poly);
+            }
+        }
+
+        BlockArray(BlockArray&& o) {
+
+            flag = o.flag;
+            o.flag = 0;
+
+            switch(flag) {
+                case 0:
+                case 1:
+                    new (&mono) auto(o.mono);
+                    o.mono = block<T>();
+                    break;
+                case 2:
+                    new (&poly) auto(o.poly);
+                    o.poly.clear();
+            }
+        }
+
+        BlockArray& operator=(const BlockArray& o) {
+
+            clear();
+            flag = o.flag;
+            switch(flag) {
+                case 0:
+                case 1:
+                    new (&mono) auto(o.mono);
+                    break;
+                case 2:
+                    new (&poly) auto(o.poly);
+            }
+            return *this;
+        }
+
+        BlockArray& operator=(BlockArray&& o){
+
+            if (this != &o) {
+
+                flag = o.flag;
+                o.flag = 0;
+
+                switch(flag) {
+                    case 0:
+                    case 1:
+                        new (&mono) auto(o.mono);
+                        o.mono = block<T>();
+                        break;
+                    case 2:
+                        new (&poly) auto(o.poly);
+                        o.poly.clear();
+                }
+            }
+
+            return *this;
+        }
+
+        void insert(uint32_t lb, uint32_t ub, T val) {
 
             // TODO: Make sure block does not overlap with existing block
-            blocks.emplace_back(lb, ub, val);
-            std::sort(blocks.begin(), blocks.end());
+            if (flag == 0) {
+                mono.lb = lb;
+                mono.ub = ub;
+                mono.val = val;
+                flag = 1;
+
+                return;
+            } else if (flag == 1) {
+                block<T> b = mono;
+                mono.~block();
+                new (&poly) std::vector<block<T> >;
+                poly.push_back(b);
+                flag = 2;
+            }
+
+            poly.emplace_back(lb, ub, val);
+            std::sort(poly.begin(), poly.end());
         }
 
         const T& operator[](size_t idx) const {
 
-            // TODO: Find upper bound without having to create temp struct
-            block<T> tmp(idx);
-            auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
-            if (blocks.size() > 0) {
-                block<T> bb = blocks[blocks.size() - 1];
+            if (flag < 2) {
+                return mono.val;
             }
 
-            if (ub == blocks.begin()) {
+            // TODO: Find upper bound without having to create temp struct
+            block<T> tmp(idx);
+            auto ub = std::upper_bound(poly.begin(), poly.end(), tmp);
+            // if (poly.blocks.size() > 0) {
+            //     block<T> bb = poly.blocks[poly.blocks.size() - 1];
+            // }
+
+            if (ub == poly.begin()) {
                 // No elements with lb <= idx
                 // TODO: Handle this gracefully
                 std::cout << "not found????" << std::endl;
@@ -49,30 +153,43 @@ class BlockArray {
             return (--ub)->val;
         }
 
-        std::pair<size_t, T> block_index(size_t idx) const {
+        std::pair<uint32_t, T> block_index(uint32_t idx) const {
+            if (flag < 2) {
+                return std::make_pair(0, mono.val);
+            }
+
             block<T> tmp(idx);
-            auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+            auto ub = std::upper_bound(poly.begin(), poly.end(), tmp);
             --ub;
-            return make_pair(ub - blocks.begin(), (ub)->val);
+            return std::make_pair(ub - poly.begin(), (ub)->val);
         }
 
         // Returns the ECs of the block up to and including the EC at idx
         std::vector<T> get_leading_vals(size_t idx) const {
             std::vector<T> vals;
-            vals.reserve(blocks.size());
-            for (const auto& b : blocks) {
-                if (b.lb <= idx) {
-                    vals.push_back(b.val);
+            if (flag == 1) {
+                vals.push_back(mono.val);
+            } else if (flag == 2) {
+                vals.reserve(poly.size());
+                for (const auto& b : poly) {
+                    if (b.lb <= idx) {
+                        vals.push_back(b.val);
+                    }
                 }
             }
+
             return vals;
         }
 
-        std::pair<size_t, size_t> get_block_at(size_t idx) const {
-            block<T> tmp(idx);
-            auto ub = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+        std::pair<uint32_t, uint32_t> get_block_at(size_t idx) const {
+            if (flag == 1) {
+                return std::make_pair(mono.lb, mono.ub);
+            }
 
-            if (ub == blocks.begin()) {
+            block<T> tmp(idx);
+            auto ub = std::upper_bound(poly.begin(), poly.end(), tmp);
+
+            if (ub == poly.begin()) {
                 // No elements with lb <= idx
                 return std::make_pair(-1, -1);
             }
@@ -82,40 +199,56 @@ class BlockArray {
             return std::make_pair(ub->lb, ub->ub);
         }
 
-        void reserve(size_t sz) {
-            blocks.reserve(sz);
+        void reserve(uint32_t sz) {
+            if (sz < 2) return;
+            flag = 2;
+            poly.reserve(sz);
         }
 
         void clear() {
-            blocks.clear();
+            switch(flag) {
+                case 0:
+                case 1:
+                    mono.~block();
+                    break;
+                case 2:
+                    poly.~vector();
+            }
+            flag = 0;
         }
 
         size_t size() const {
-            return blocks.size();
+            if (flag < 2) return flag;
+            return poly.size();
         }
 
         size_t length() const {
-            return blocks[blocks.size()-1].ub;
+            if (flag < 2) return mono.ub;
+            return poly[poly.size()-1].ub;
         }
 
         void get_vals(std::vector<T>& vals) const {
             vals.clear();
-            vals.reserve(blocks.size());
-            for (const auto& b : blocks) {
-                vals.push_back(b.val);
+            if (flag == 1) {
+                vals.push_back(mono.val);
+            } else if (flag == 2){
+                vals.reserve(poly.size());
+                for (const auto& b : poly) {
+                    vals.push_back(b.val);
+                }
             }
         }
 
         typename std::vector<block<T> >::iterator begin() {
-            return blocks.begin();
+            return poly.begin();
         }
 
         typename std::vector<block<T> >::iterator end() {
-            return blocks.end();
+            return poly.end();
         }
 
         void print() const {
-            for (const auto& b : blocks) {
+            for (const auto& b : poly) {
                 std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << ", ";
             }
             std::cout << std::endl;
@@ -123,27 +256,32 @@ class BlockArray {
 
         // Extracts the slice [lb, ub) from *this and shifts it such that it
         // occupies the range [0, ub-lb).
-        BlockArray<T> get_slice(size_t lb, size_t ub) const {
+        BlockArray<T> get_slice(uint32_t lb, uint32_t ub) const {
             BlockArray<T> slice;
 
-            block<T> tmp(lb);
-            auto upper = std::upper_bound(blocks.begin(), blocks.end(), tmp);
+            if (flag == 1) {
+                slice.insert(lb, ub, mono.val);
+            } else if (flag == 2) {
 
-            if (upper == blocks.begin()) {
-                // No elements with lower bound <= lb
-                // TODO: Handle this
+                block<T> tmp(lb);
+                auto upper = std::upper_bound(poly.begin(), poly.end(), tmp);
+
+                if (upper == poly.begin()) {
+                    // No elements with lower bound <= lb
+                    // TODO: Handle this
+                }
+
+                --upper;
+
+                do {
+                    slice.insert(
+                            std::max(lb, upper->lb)-lb,
+                            std::min(ub, upper->ub)-lb,
+                            upper->val
+                    );
+                    ++upper;
+                } while(upper != poly.end() && upper->lb < ub);
             }
-
-            --upper;
-
-            do {
-                slice.insert(
-                        std::max(lb, upper->lb)-lb,
-                        std::min(ub, upper->ub)-lb,
-                        upper->val
-                );
-                ++upper;
-            } while(upper != blocks.end() && upper->lb < ub);
 
             return slice;
         }
@@ -151,38 +289,75 @@ class BlockArray {
 
         void serialize(std::ostream& out) const {
 
-            size_t tmp_size = blocks.size();
-            out.write((char *)&tmp_size, sizeof(tmp_size));
-            for (const auto b : blocks) {
-                out.write((char *)&b.lb, sizeof(b.lb));
-                out.write((char *)&b.ub, sizeof(b.ub));
-                char* buffer = new char[b.val.getSizeInBytes()];
-                tmp_size = b.val.write(buffer);
+            out.write((char *)&flag, sizeof(flag));
+            if (flag == 0) return;
+            else if (flag == 1) {
+
+                out.write((char *)&mono.lb, sizeof(mono.lb));
+                out.write((char *)&mono.ub, sizeof(mono.ub));
+                char* buffer = new char[mono.val.getSizeInBytes()];
+                size_t tmp_size = mono.val.write(buffer);
                 out.write((char *)&tmp_size, sizeof(tmp_size));
                 out.write(buffer, tmp_size);
                 delete[] buffer;
                 buffer = nullptr;
+            } else {
+
+                size_t tmp_size = poly.size();
+                out.write((char *)&tmp_size, sizeof(tmp_size));
+                for (const auto b : poly) {
+                    out.write((char *)&b.lb, sizeof(b.lb));
+                    out.write((char *)&b.ub, sizeof(b.ub));
+                    char* buffer = new char[b.val.getSizeInBytes()];
+                    tmp_size = b.val.write(buffer);
+                    out.write((char *)&tmp_size, sizeof(tmp_size));
+                    out.write(buffer, tmp_size);
+                    delete[] buffer;
+                    buffer = nullptr;
+                }
             }
         }
 
         void deserialize(std::istream& in) {
 
-            blocks.clear();
-            size_t tmp_size, roaring_size, lb, ub;
-            T val;
-            in.read((char *)&tmp_size, sizeof(tmp_size));
-            blocks.reserve(tmp_size);
+            clear();
 
-            for (size_t i = 0; i < tmp_size; ++i) {
-                in.read((char *)&lb, sizeof(lb));
-                in.read((char *)&ub, sizeof(ub));
+            size_t roaring_size;
+            in.read((char *)&flag, sizeof(flag));
+            if (flag == 0) {
+                return;
+            } else if (flag == 1) {
+
+                in.read((char *)&mono.lb, sizeof(mono.lb));
+                in.read((char *)&mono.ub, sizeof(mono.ub));
                 in.read((char *)&roaring_size, sizeof(roaring_size));
                 char* buffer = new char[roaring_size];
                 in.read(buffer, roaring_size);
-                val = val.read(buffer);
+                mono.val = mono.val.read(buffer);
                 delete[] buffer;
                 buffer = nullptr;
-                blocks.emplace_back(lb, ub, val);
+            } else {
+
+                size_t tmp_size;
+                uint32_t lb, ub;
+                in.read((char *)&tmp_size, sizeof(tmp_size));
+                mono.~block();
+                new (&poly) std::vector<block<T> >;
+                poly.reserve(tmp_size);
+
+                for (size_t i = 0; i < tmp_size; ++i) {
+                    in.read((char *)&lb, sizeof(lb));
+                    in.read((char *)&ub, sizeof(ub));
+
+                    in.read((char *)&roaring_size, sizeof(roaring_size));
+                    char* buffer = new char[roaring_size];
+                    in.read(buffer, roaring_size);
+                    T val;
+                    val = val.read(buffer);
+                    delete[] buffer;
+                    buffer = nullptr;
+                    insert(lb, ub, val);
+                }
             }
         }
 };
