@@ -73,7 +73,6 @@ include_directories(${install_dir}/src)
 # add_compile_options(-Wdeprecated-register)
 
 add_subdirectory(src)
-add_subdirectory(ext/bifrost)
 include_directories(${EXT_PROJECTS_DIR})
 
 option(BUILD_TESTING "Build unit tests." OFF)
