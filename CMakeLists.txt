@@ -59,7 +59,7 @@ ExternalProject_Add(bifrost
     BUILD_IN_SOURCE 1
     CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX}
     BUILD_COMMAND cd build && make
-    INSTALL_COMMAND ""
+    INSTALL_COMMAND cmake -E echo "Skipping install step for bifrost."
 )
 
 include_directories(${htslib_PREFIX}/src/htslib)
