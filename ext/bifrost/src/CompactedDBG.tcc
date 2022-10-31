@@ -654,6 +654,9 @@ bool CompactedDBG<U, G>::build(CDBG_Build_opt& opt){
             size_t nb_unique_kmers, nb_unique_minimizers;
             size_t nb_non_unique_kmers, nb_non_unique_minimizers;
 
+            BlockedBloomFilter bf;
+            Roaring r;
+
             {
                 const vector<string>& v_files = reference_mode ? opt.filename_ref_in : opt.filename_seq_in;
 
@@ -687,56 +690,23 @@ bool CompactedDBG<U, G>::build(CDBG_Build_opt& opt){
                 }
             }
 
-            BlockedBloomFilter bf;
-
             setFullCoverage(reference_mode ? 1 : 2);
 
-            if (opt.inFilenameBBF.length() != 0){
+            {
+                pair<bool, pair<BlockedBloomFilter, Roaring>> filter_out = filter(opt, nb_unique_kmers, nb_non_unique_kmers);
 
-                FILE* fp = fopen(opt.inFilenameBBF.c_str(), "rb");
+                construct_finished = filter_out.first;
 
-                if (fp == NULL) {
-
-                    cerr << "CompactedDBG::build(): Could not open input Blocked Bloom filter file " << opt.inFilenameBBF << "." << endl;
-                    construct_finished = false;
-                }
-                else {
-
-                    construct_finished = bf.ReadBloomFilter(fp);
-
-                    fclose(fp);
-                }
-            }
-            else {
-
-                pair<bool, BlockedBloomFilter> bf_filter = filter(opt, nb_unique_kmers, nb_non_unique_kmers);
-
-                construct_finished = bf_filter.first;
-                bf = move(bf_filter.second);
+                bf = move(filter_out.second.first);
+                r = move(filter_out.second.second);
             }
 
             if (construct_finished){
 
-                if (opt.outFilenameBBF.length() != 0){
-
-                    FILE* fp = fopen(opt.outFilenameBBF.c_str(), "wb");
-
-                    if (fp == NULL) {
-
-                        cerr << "CompactedDBG::build(): Could not open Blocked Bloom filter file " << opt.outFilenameBBF << " for writing." << endl;
-                        construct_finished = false;
-                    }
-                    else {
-
-                        bf.WriteBloomFilter(fp);
-
-                        fclose(fp);
-                    }
-                }
-
-                if (construct_finished) construct_finished = construct(opt, bf, nb_unique_minimizers, nb_non_unique_minimizers); // Construction step
+                construct_finished = construct(opt, bf, r, nb_unique_minimizers, nb_non_unique_minimizers); // Construction step
 
                 bf.clear();
+                r.clear();
             }
         }
     }
@@ -2595,40 +2565,42 @@ size_t CompactedDBG<U, G>::nbKmers() const {
 }
 
 template<typename U, typename G>
-pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers) {
+pair<bool, pair<BlockedBloomFilter, Roaring>> CompactedDBG<U, G>::filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers) {
 
     if (invalid){
 
         cerr << "CompactedDBG::filter(): Graph is invalid and it cannot be built" << endl;
-        return {false, BlockedBloomFilter()};
+        return {false, {BlockedBloomFilter(), Roaring()}};
     }
 
     const bool reference_mode = (opt.filename_ref_in.size() != 0);
+    const bool multi_threaded = (opt.nb_threads != 1);
+
+    const size_t thread_seq_buf_sz = BUFFER_SIZE;
+
+    const vector<string>& filename_in = reference_mode ? opt.filename_ref_in : opt.filename_seq_in;
+
+    size_t len_read = 0;
+    size_t pos_read = 0;
+    size_t read_id = 0;
+
+    atomic<uint64_t> num_kmers(0), num_ins(0), num_seq_tot(0);
+
+    string s;
+    Roaring r;
+
+    FileParser fp(filename_in);
 
     BlockedBloomFilter bf1(nb_unique_kmers, opt.nb_bits_kmers_bf), bf2;
 
     if (!reference_mode) bf2 = BlockedBloomFilter(nb_non_unique_kmers, opt.nb_bits_kmers_bf);
 
-    string s;
-
-    size_t len_read = 0;
-    size_t pos_read = 0;
-    size_t nb_seq = 0;
-
-    const size_t thread_seq_buf_sz = BUFFER_SIZE;
-
-    const bool multi_threaded = (opt.nb_threads != 1);
-
-    atomic<uint64_t> num_kmers(0), num_ins(0);
-
-    const vector<string>& filename_in = reference_mode ? opt.filename_ref_in : opt.filename_seq_in;
-
-    FileParser fp(filename_in);
-
     // Main worker thread
-    auto worker_function = [&](char* seq_buf, const size_t seq_buf_sz) {
+    auto worker_function = [&](char* seq_buf, const size_t seq_buf_sz, size_t prev_read_id) {
 
-        uint64_t l_num_kmers = 0, l_num_ins = 0;
+        Roaring lr;
+
+        uint64_t l_num_kmers = 0, l_num_ins = 0, l_num_seq_tot = 0;
 
         char* str = seq_buf;
         const char* str_end = seq_buf + seq_buf_sz;
@@ -2642,17 +2614,25 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
             KmerHashIterator<RepHash> it_kmer_h(str, len, k_), it_kmer_h_end;
             minHashIterator<RepHash> it_min(str, len, k_, g_, RepHash(), true);
 
-            if (reference_mode /*|| (opt.min_count_km == 1)*/) {
+            uint64_t count_new_km = 0;
+
+            if (reference_mode) {
 
                 for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h, ++l_num_kmers) {
 
                     const pair<uint64_t, int> p_ = *it_kmer_h; // <k-mer hash, k-mer position in sequence>
 
                     it_min += (p_.second - it_min.getKmerPosition()); //If one or more k-mer were jumped because contained non-ACGT char.
-                    l_num_ins += bf1.insert(p_.first, it_min.getHash(), multi_threaded);
+
+                    const bool inserted = bf1.insert(p_.first, it_min.getHash(), multi_threaded);
+
+                    l_num_ins += static_cast<uint64_t>(inserted);
+                    count_new_km += static_cast<uint64_t>(inserted);
                 }
+
+                if (count_new_km > 0) lr.add(prev_read_id);
             }
-            else /*if (opt.min_count_km == 2)*/ {
+            else {
 
                 for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h, ++l_num_kmers) {
 
@@ -2663,20 +2643,25 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
                     const uint64_t min_hr = it_min.getHash();
 
                     if (bf1.insert(p_.first, min_hr, multi_threaded)) ++l_num_ins;
-                    else bf2.insert(p_.first, min_hr, multi_threaded);
+                    else count_new_km += static_cast<uint64_t>(bf2.insert(p_.first, min_hr, multi_threaded));
                 }
+
+                if (count_new_km > 1) lr.add(prev_read_id);
             }
-            /*else {
 
-
-            }*/
+            //if (has_new_km) lr.add(prev_read_id);
 
             str += len + 1;
+            prev_read_id += 1;
+            l_num_seq_tot += 1;
         }
 
         // atomic adds
+        num_seq_tot += l_num_seq_tot;
         num_kmers += l_num_kmers;
         num_ins += l_num_ins;
+
+        return lr;
     };
 
     auto reading_function = [&](char* seq_buf, size_t& seq_buf_sz) {
@@ -2695,7 +2680,7 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
 
             if (!new_reading || fp.read(s, file_id)) {
 
-                nb_seq += new_reading;
+                read_id += static_cast<size_t>(new_reading);
                 pos_read &= static_cast<size_t>(new_reading) - 1;
 
                 len_read = s.length();
@@ -2736,16 +2721,18 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
         vector<thread> workers; // need to keep track of threads so we can join them
 
         mutex mutex_file;
+        mutex mutex_bitmap;
 
         for (size_t t = 0; t < opt.nb_threads; ++t){
 
             workers.emplace_back(
 
-                [&]{
+                [&, t]{
 
                     char* buffer_seq = new char[thread_seq_buf_sz]();
 
                     size_t buffer_seq_sz = 0;
+                    size_t prev_read_id = 0;
 
                     while (true) {
 
@@ -2758,10 +2745,229 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
                                 return;
                             }
 
+                            prev_read_id = read_id;
                             stop = reading_function(buffer_seq, buffer_seq_sz);
                         }
 
-                        worker_function(buffer_seq, buffer_seq_sz);
+                        const Roaring lr = worker_function(buffer_seq, buffer_seq_sz, prev_read_id);
+
+                        {
+                            unique_lock<mutex> lock(mutex_bitmap);
+
+                            r |= lr;
+                        }
+                    }
+
+                    delete[] buffer_seq;
+                }
+            );
+        }
+
+        for (auto& t : workers) t.join();
+    }
+
+    fp.close();
+
+    if (reference_mode) bf2 = move(bf1);
+
+    r.runOptimize();
+
+    if (opt.verbose) {
+
+        cout << "CompactedDBG::filter(): Processed " << num_kmers << " k-mers in " << read_id  << " reads" << endl;
+        cout << "CompactedDBG::filter(): Found " << num_ins << " unique k-mers" << endl;
+        cout << "CompactedDBG::filter(): Number of blocks in Bloom filter is " << bf2.getNbBlocks() << endl;
+    }
+
+    if (opt.useMercyKmers && !reference_mode){
+
+        const string mbbf_uniq_filename(opt.prefixFilenameOut + "_uniq");
+
+        FILE* f_mbbf = fopen(mbbf_uniq_filename.c_str(), "wb");
+
+        if (f_mbbf == NULL){
+
+            cerr << "CompactedDBG::filter(): Minimizer Blocked Bloom filter of unique k-mers cannot be written to disk" << endl;
+            return {false, {BlockedBloomFilter(), Roaring()}};
+        }
+
+        bf1.WriteBloomFilter(f_mbbf);
+
+        fclose(f_mbbf);
+    }
+
+    return {true, {bf2, r}};
+}
+
+/*template<typename U, typename G>
+vector<pair<size_t, bool>> CompactedDBG<U, G>::getPath(const CDBG_Build_opt& opt) {
+
+    if (invalid){
+
+        cerr << "CompactedDBG::getPath(): Graph is invalid" << endl;
+        return vector<pair<size_t, bool>>();
+    }
+
+    string seq, name;
+
+    size_t len_read = 0;
+    size_t pos_read = 0;
+    size_t nb_seq = 0;
+
+    const size_t thread_seq_buf_sz = BUFFER_SIZE;
+
+    const bool multi_threaded = (opt.nb_threads != 1);
+
+    FileParser fp(opt.filename_ref_in);
+
+    // Main worker thread
+    auto worker_function = [&](char* seq_buf, const size_t seq_buf_sz) {
+
+        uint64_t l_num_kmers = 0, l_num_ins = 0;
+
+        char* str = seq_buf;
+        const char* str_end = seq_buf + seq_buf_sz;
+
+        while (str < str_end) { // for each input
+
+            const int len = strlen(str);
+
+            for (char* s = str; s != str + len; ++s) *s &= 0xDF; // Put characters in upper case
+
+            KmerHashIterator<RepHash> it_kmer_h(str, len, k_), it_kmer_h_end;
+            minHashIterator<RepHash> it_min(str, len, k_, g_, RepHash(), true);
+
+            if (reference_mode) {
+
+                for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h, ++l_num_kmers) {
+
+                    const pair<uint64_t, int> p_ = *it_kmer_h; // <k-mer hash, k-mer position in sequence>
+
+                    it_min += (p_.second - it_min.getKmerPosition()); //If one or more k-mer were jumped because contained non-ACGT char.
+                    l_num_ins += bf1.insert(p_.first, it_min.getHash(), multi_threaded);
+                }
+            }
+            else {
+
+                for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h, ++l_num_kmers) {
+
+                    const pair<uint64_t, int> p_ = *it_kmer_h; // <k-mer hash, k-mer position in sequence>
+
+                    it_min += (p_.second - it_min.getKmerPosition()); //If one or more k-mer were jumped because contained non-ACGT char.
+
+                    const uint64_t min_hr = it_min.getHash();
+
+                    if (bf1.insert(p_.first, min_hr, multi_threaded)) ++l_num_ins;
+                    else bf2.insert(p_.first, min_hr, multi_threaded);
+                }
+            }
+
+            str += len + 1;
+        }
+
+        // atomic adds
+        num_kmers += l_num_kmers;
+        num_ins += l_num_ins;
+    };
+
+    auto reading_function = [&](char* seq_buf, size_t& seq_buf_sz) {
+
+        size_t file_id = 0;
+
+        const size_t sz_buf = thread_seq_buf_sz - k_;
+
+        const char* s_str = seq.c_str();
+
+        seq_buf_sz = 0;
+
+        while (seq_buf_sz < sz_buf) {
+
+            const bool new_reading = (pos_read >= len_read);
+
+            if (!new_reading || fp.read(seq, file_id)) {
+
+                nb_seq += new_reading;
+                pos_read &= static_cast<size_t>(new_reading) - 1;
+
+                len_read = seq.length();
+                s_str = seq.c_str();
+
+                if (len_read >= k_){
+
+                    if ((thread_seq_buf_sz - seq_buf_sz - 1) < (len_read - pos_read)){
+
+                        strncpy(seq_buf + seq_buf_sz, s_str + pos_read, thread_seq_buf_sz - seq_buf_sz - 1);
+
+                        seq_buf[thread_seq_buf_sz - 1] = '\0';
+
+                        pos_read += sz_buf - seq_buf_sz;
+                        seq_buf_sz = thread_seq_buf_sz;
+
+                        break;
+                    }
+                    else {
+
+                        strcpy(seq_buf + seq_buf_sz, s_str + pos_read);
+
+                        seq_buf_sz += (len_read - pos_read) + 1;
+                        pos_read = len_read;
+                    }
+                }
+                else pos_read = len_read;
+            }
+            else return true;
+        }
+
+        return false;
+    };
+
+    {
+        bool stop = false;
+
+        size_t ticket_id = 0;
+
+        vector<thread> workers; // need to keep track of threads so we can join them
+        vector<pair<size_t, vector<pair<size_t, bool>>>> v_path;
+
+        mutex mutex_file;
+        SpinLock splk_v_path; 
+
+        for (size_t t = 0; t < opt.nb_threads; ++t){
+
+            workers.emplace_back(
+
+                [&]{
+
+                    char* buffer_seq = new char[thread_seq_buf_sz]();
+
+                    vector<string> v_names;
+
+                    size_t buffer_seq_sz = 0;
+                    size_t l_ticket_id = 0;
+
+                    while (true) {
+
+                        {
+                            unique_lock<mutex> lock(mutex_file);
+
+                            if (stop) {
+
+                                delete[] buffer_seq;
+                                return;
+                            }
+
+                            l_ticket_id = ticket_id++;
+
+                            stop = reading_function(buffer_seq, buffer_seq_sz);
+                        }
+
+                        vector<pair<size_t, bool>> lv_path = worker_function(buffer_seq, buffer_seq_sz);
+
+                        splk_v_path.acquire();
+
+                        v_path.push_back({l_ticket_id, move(lv_path)});
+
+                        splk_v_path.release();
                     }
 
                     delete[] buffer_seq;
@@ -2802,9 +3008,9 @@ pair<bool, BlockedBloomFilter> CompactedDBG<U, G>::filter(const CDBG_Build_opt& 
     }
 
     return {true, bf2};
-}
+}*/
 
-template<typename U, typename G>
+/*template<typename U, typename G>
 bool CompactedDBG<U, G>::construct(const CDBG_Build_opt& opt, BlockedBloomFilter& bf, const size_t nb_unique_minimizers, const size_t nb_non_unique_minimizers){
 
     if (invalid){
@@ -2943,7 +3149,7 @@ bool CompactedDBG<U, G>::construct(const CDBG_Build_opt& opt, BlockedBloomFilter
                             }
                             else {
 
-                                const size_t len_match_km = 1 + cstrMatch(&str_tmp[p_.second + k_], &(newseq.c_str()[pos_match + k_]));
+                                const size_t len_match_km = 1 + cstrMatch(str_tmp + p_.second + k_, newseq.c_str() + pos_match + k_);
 
                                 addUnitigSequence(km, newseq, pos_match, len_match_km, lck_g);
 
@@ -3129,10 +3335,534 @@ bool CompactedDBG<U, G>::construct(const CDBG_Build_opt& opt, BlockedBloomFilter
     }
 
     return true;
+}*/
+
+template<typename U, typename G>
+bool CompactedDBG<U, G>::construct(const CDBG_Build_opt& opt, BlockedBloomFilter& bf, Roaring& r, const size_t nb_unique_minimizers, const size_t nb_non_unique_minimizers){
+
+    if (invalid){
+
+        cerr << "CompactedDBG::construct(): Graph is invalid and cannot be built" << endl;
+        return false;
+    }
+
+    const bool reference_mode = (opt.filename_ref_in.size() != 0);
+
+    const size_t max_len_seq = rndup(static_cast<size_t>(1024 + k_ - 1));
+    const size_t thread_seq_buf_sz = BUFFER_SIZE;
+    const size_t nb_locks = opt.nb_threads * 1024;
+
+    const vector<string>& filename_in = reference_mode ? opt.filename_ref_in : opt.filename_seq_in;
+
+    size_t len_read = 0;
+    size_t pos_read = 0;
+    size_t read_id = 0;
+
+    Roaring::const_iterator its = r.begin(), ite = r.end();
+
+    std::atomic_flag lock_ignored_km_tips = ATOMIC_FLAG_INIT;
+
+    tiny_vector<Kmer, 1>* fp_candidate = nullptr;
+
+    LockGraph lck_g(nb_locks);
+
+    KmerHashTable<bool> ignored_km_tips;
+
+    vector<SpinLock> locks_fp;
+
+    string s;
+
+    hmap_min_unitigs = MinimizerIndex((reference_mode ? nb_unique_minimizers : nb_non_unique_minimizers) * 1.05);
+
+    auto worker_build_function = [&](FileParser& fp, char* seq_buf, const size_t seq_buf_sz) {
+
+        vector<Kmer> l_ignored_km_tips;
+
+        Kmer km;
+        RepHash rep;
+
+        char* str = seq_buf;
+        const char* str_end = seq_buf + seq_buf_sz;
+
+        while (str < str_end) { // for each input
+
+            const int len = strlen(str);
+
+            for (char* s = str; s != (str + len); ++s) *s &= 0xDF;
+
+            for (size_t i = 0; i < len - k_ + 1; i += max_len_seq - k_ + 1){
+
+                const int curr_len = min(len - i, max_len_seq);
+                const char saved_char = str[i + curr_len];
+                const char* str_tmp = str + i;
+
+                str[i + curr_len] = '\0';
+
+                KmerHashIterator<RepHash> it_kmer_h(str_tmp, curr_len, k_), it_kmer_h_end;
+                minHashIterator<RepHash> it_min(str_tmp, curr_len, k_, g_, rep, true);
+
+                for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h) {
+
+                    const std::pair<uint64_t, int> p_ = *it_kmer_h; // <k-mer hash, k-mer position in sequence>
+
+                    it_min += (p_.second - it_min.getKmerPosition());
+
+                    const uint64_t it_min_h = it_min.getHash();
+                    const int64_t bid = bf.contains_bids(p_.first, it_min_h);
+
+                    if (bid != -1){
+
+                        km = Kmer(str_tmp + p_.second);
+
+                        lck_g.acquire_reader();
+
+                        const UnitigMap<U, G> um = findUnitig(km, str_tmp, p_.second);
+
+                        lck_g.release_reader();
+
+                        if (um.isEmpty) { // kmer did not map, push into queue for next unitig generation round
+
+                            string approx_unitig;
+
+                            bool isIsolated = false;
+
+                            const size_t pos_match = findUnitigSequenceBBF(bf, km, approx_unitig, isIsolated, l_ignored_km_tips, lck_g); //Build unitig from Bloom filter
+
+                            if ((approx_unitig.length() != 0) && (reference_mode || !isIsolated)) { // If the extracted unitig is of length 0, it means it was already extracted by another thread
+
+                                const size_t len_match_km = 1 + cstrMatch(str_tmp + p_.second + k_, approx_unitig.c_str() + pos_match + k_);
+
+                                addUnitigSequence(km, approx_unitig, pos_match, len_match_km, lck_g, false);
+
+                                it_kmer_h += len_match_km - 1;
+                            }
+                        }
+                        else it_kmer_h += um.len - 1;
+                    }
+                }
+
+                str[i + curr_len] = saved_char;
+            }
+
+            str += len + 1;
+        }
+
+        if (!l_ignored_km_tips.empty()) {
+
+            while (lock_ignored_km_tips.test_and_set(std::memory_order_acquire));
+
+            for (const auto& km_tip : l_ignored_km_tips) ignored_km_tips.insert(km_tip, false);
+
+            lock_ignored_km_tips.clear(std::memory_order_release);
+        }
+    };
+
+    auto worker_map_function = [&](FileParser& fp, char* seq_buf, const size_t seq_buf_sz) {
+
+        vector<Kmer> l_ignored_km_tips;
+
+        Kmer km;
+        RepHash rep;
+
+        char* str = seq_buf;
+        const char* str_end = seq_buf + seq_buf_sz;
+
+        while (str < str_end) { // for each input
+
+            const int len = strlen(str);
+
+            for (char* s = str; s != (str + len); ++s) *s &= 0xDF;
+
+            for (size_t i = 0; i < len - k_ + 1; i += max_len_seq - k_ + 1){
+
+                const int curr_len = min(len - i, max_len_seq);
+                const char saved_char = str[i + curr_len];
+                const char* str_tmp = str + i;
+
+                str[i + curr_len] = '\0';
+
+                KmerHashIterator<RepHash> it_kmer_h(str_tmp, curr_len, k_), it_kmer_h_end;
+                minHashIterator<RepHash> it_min(str_tmp, curr_len, k_, g_, rep, true);
+
+                for (; it_kmer_h != it_kmer_h_end; ++it_kmer_h) {
+
+                    const std::pair<uint64_t, int> p_ = *it_kmer_h; // <k-mer hash, k-mer position in sequence>
+
+                    km = Kmer(str_tmp + p_.second);
+
+                    it_min += (p_.second - it_min.getKmerPosition());
+
+                    const uint64_t it_min_h = it_min.getHash();
+                    const int64_t bid = bf.contains_bids(p_.first, it_min_h);
+
+                    if (bid != -1){
+
+                        lck_g.acquire_reader();
+
+                        const UnitigMap<U, G> um = findUnitig(km, str_tmp, p_.second);
+
+                        if (um.isEmpty) { // kmer did not map, push into queue for next unitig generation round
+
+                            lck_g.release_reader();
+
+                            string approx_unitig;
+
+                            bool isIsolated = false;
+
+                            const size_t pos_match = findUnitigSequenceBBF(bf, km, approx_unitig, isIsolated, l_ignored_km_tips); //Build unitig from Bloom filter
+
+                            if (!reference_mode && isIsolated){ // According to the BF, k-mer is isolated in the graph and is a potential false positive
+
+                                const uint64_t id_lock = bid % nb_locks;
+                                const Kmer km_rep(km.rep());
+
+                                tiny_vector<Kmer, 1>& v = fp_candidate[bid];
+
+                                size_t i = 0;
+
+                                locks_fp[id_lock].acquire();
+
+                                for (; i < v.size(); ++i){ // Search list of fp candidate for k-mer
+
+                                    if (v[i] == km_rep) break;
+                                }
+
+                                if (i >= v.size()){
+
+                                    v.push_back(km_rep);
+
+                                    locks_fp[id_lock].release();
+                                }
+                                else {
+
+                                    v.remove(i);
+
+                                    locks_fp[id_lock].release();
+
+                                    addUnitigSequence(km, approx_unitig, pos_match, 1, lck_g, true);
+                                    addUnitigSequence(km, approx_unitig, pos_match, 1, lck_g, true);
+                                }
+                            }
+                            else {
+
+                                const size_t len_match_km = 1 + cstrMatch(str_tmp + p_.second + k_, approx_unitig.c_str() + pos_match + k_);
+
+                                addUnitigSequence(km, approx_unitig, pos_match, len_match_km, lck_g, true);
+
+                                it_kmer_h += len_match_km - 1;
+                            }
+                        }
+                        else { // kmer did not map, push into queue for next unitig generation round
+
+                            mapRead(um, lck_g);
+
+                            lck_g.release_reader();
+
+                            it_kmer_h += um.len - 1;
+                        }
+                    }
+                }
+
+                str[i + curr_len] = saved_char;
+            }
+
+            str += len + 1;
+        }
+
+        if (!l_ignored_km_tips.empty()) {
+
+            while (lock_ignored_km_tips.test_and_set(std::memory_order_acquire));
+
+            for (const auto& km_tip : l_ignored_km_tips) ignored_km_tips.insert(km_tip, false);
+
+            lock_ignored_km_tips.clear(std::memory_order_release);
+        }
+    };
+
+    auto reading_build_function = [&](FileParser& fp, char* seq_buf, size_t& seq_buf_sz) {
+
+        size_t file_id = 0;
+
+        const size_t sz_buf = thread_seq_buf_sz - k_;
+
+        const char* s_str = s.c_str();
+
+        seq_buf_sz = 0;
+
+        while (seq_buf_sz < sz_buf) {
+
+            const bool new_reading = (pos_read >= len_read);
+
+            if (!new_reading || fp.read(s, file_id)) {
+
+                read_id += static_cast<size_t>(new_reading);
+                pos_read &= static_cast<size_t>(new_reading) - 1;
+
+                len_read = s.length();
+                s_str = s.c_str();
+
+                if (len_read >= k_){
+
+                    while ((its != ite) && (read_id > *its)) ++its;
+
+                    if ((its != ite) && (read_id == *its)) {
+
+                        if ((thread_seq_buf_sz - seq_buf_sz - 1) < (len_read - pos_read)){
+
+                            strncpy(seq_buf + seq_buf_sz, s_str + pos_read, thread_seq_buf_sz - seq_buf_sz - 1);
+
+                            seq_buf[thread_seq_buf_sz - 1] = '\0';
+
+                            pos_read += sz_buf - seq_buf_sz;
+                            seq_buf_sz = thread_seq_buf_sz;
+
+                            break;
+                        }
+                        else {
+
+                            strcpy(seq_buf + seq_buf_sz, s_str + pos_read);
+
+                            seq_buf_sz += (len_read - pos_read) + 1;
+                            pos_read = len_read;
+                        }
+                    }
+                    else pos_read = len_read;
+                }
+                else pos_read = len_read;
+            }
+            else return true;
+        }
+
+        return false;
+    };
+
+    auto reading_map_function = [&](FileParser& fp, char* seq_buf, size_t& seq_buf_sz) {
+
+        size_t file_id = 0;
+
+        const size_t sz_buf = thread_seq_buf_sz - k_;
+
+        const char* s_str = s.c_str();
+
+        seq_buf_sz = 0;
+
+        while (seq_buf_sz < sz_buf) {
+
+            const bool new_reading = (pos_read >= len_read);
+
+            if (!new_reading || fp.read(s, file_id)) {
+
+                pos_read &= static_cast<size_t>(new_reading) - 1;
+
+                len_read = s.length();
+                s_str = s.c_str();
+
+                if (len_read >= k_){
+
+                    if ((thread_seq_buf_sz - seq_buf_sz - 1) < (len_read - pos_read)){
+
+                        strncpy(seq_buf + seq_buf_sz, s_str + pos_read, thread_seq_buf_sz - seq_buf_sz - 1);
+
+                        seq_buf[thread_seq_buf_sz - 1] = '\0';
+
+                        pos_read += sz_buf - seq_buf_sz;
+                        seq_buf_sz = thread_seq_buf_sz;
+
+                        break;
+                    }
+                    else {
+
+                        strcpy(seq_buf + seq_buf_sz, s_str + pos_read);
+
+                        seq_buf_sz += (len_read - pos_read) + 1;
+                        pos_read = len_read;
+                    }
+                }
+                else pos_read = len_read;
+            }
+            else return true;
+        }
+
+        return false;
+    };
+
+    // Build
+    {
+        bool stop = false;
+
+        FileParser fp(filename_in);
+
+        vector<thread> workers; // need to keep track of threads so we can join them
+
+        mutex mutex_file;
+
+        if (opt.verbose) cout << "CompactedDBG::construct(): Extract approximate unitigs (1/2)" << endl;
+
+        for (size_t t = 0; t < opt.nb_threads; ++t){
+
+            workers.emplace_back(
+
+                [&]{
+
+                    char* buffer_seq = new char[thread_seq_buf_sz];
+
+                    size_t buffer_seq_sz = 0;
+
+                    while (true) {
+
+                        {
+                            unique_lock<mutex> lock(mutex_file);
+
+                            stop = stop || (its == ite);
+
+                            if (stop) {
+
+                                delete[] buffer_seq;
+                                return;
+                            }
+
+                            stop = reading_build_function(fp, buffer_seq, buffer_seq_sz);
+                        }
+
+                        worker_build_function(fp, buffer_seq, buffer_seq_sz);
+                    }
+
+                    delete[] buffer_seq;
+                }
+            );
+        }
+
+        for (auto& t : workers) t.join();
+
+        fp.close();
+    }
+
+    r.clear();
+    s.clear();
+
+    // Build
+    {
+        bool stop = false;
+
+        FileParser fp(filename_in);
+
+        vector<thread> workers; // need to keep track of threads so we can join them
+
+        mutex mutex_file;
+
+        len_read = 0;
+        pos_read = 0;
+        read_id = 0;
+
+        if (!reference_mode) {
+
+            fp_candidate = new tiny_vector<Kmer, 1>[bf.getNbBlocks()];
+            locks_fp = vector<SpinLock>(nb_locks);
+        }
+
+        if (opt.verbose) cout << "CompactedDBG::construct(): Extract approximate unitigs (2/2)" << endl;
+
+        for (size_t t = 0; t < opt.nb_threads; ++t){
+
+            workers.emplace_back(
+
+                [&]{
+
+                    char* buffer_seq = new char[thread_seq_buf_sz];
+
+                    size_t buffer_seq_sz = 0;
+
+                    while (true) {
+
+                        {
+                            unique_lock<mutex> lock(mutex_file);
+
+                            if (stop) {
+
+                                delete[] buffer_seq;
+                                return;
+                            }
+
+                            stop = reading_map_function(fp, buffer_seq, buffer_seq_sz);
+                        }
+
+                        worker_map_function(fp, buffer_seq, buffer_seq_sz);
+                    }
+
+                    delete[] buffer_seq;
+                }
+            );
+        }
+
+        for (auto& t : workers) t.join();
+
+        fp.close();
+
+        locks_fp.clear();
+
+        if (fp_candidate != nullptr) delete[] fp_candidate;
+    }
+
+    bf.clear();
+    lck_g.clear();
+
+    if (opt.verbose) cout << "CompactedDBG::construct(): Closed all input files" << endl;
+
+    const size_t unitigsBefore = size();
+
+    if (opt.verbose) cout << endl << "CompactedDBG::construct(): Splitting unitigs (1/2)" << endl;
+
+    pair<size_t, size_t> unitigSplit = extractAllUnitigs();
+
+    const int unitigsAfter1 = size();
+
+    if (opt.verbose) cout << endl << "CompactedDBG::construct(): Splitting unitigs (2/2)" << endl;
+
+    check_fp_tips(ignored_km_tips);
+    ignored_km_tips.clear_tables();
+
+    const int unitigsAfter2 = size();
+
+    if (opt.verbose) {
+
+        cout << "CompactedDBG::construct(): Before split: " << unitigsBefore << " unitigs" << endl;
+        cout << "CompactedDBG::construct(): After split (1/" << (reference_mode ? "1" : "2" ) << "): " << unitigsAfter1 << " unitigs" <<  endl;
+        if (!reference_mode) cout << "CompactedDBG::construct(): After split (2/2): " << unitigsAfter2 << " unitigs" <<  endl;
+        cout << "CompactedDBG::construct(): Unitigs split: " << unitigSplit.first << endl;
+        cout << "CompactedDBG::construct(): Unitigs deleted: " << unitigSplit.second << endl;
+
+        cout << endl << "CompactedDBG::construct(): Joining unitigs" << endl;
+    }
+
+    const size_t joined = joinUnitigs_<is_void<U>::value>(nullptr, opt.nb_threads);
+
+    const int unitigsAfter3 = size();
+
+    if (opt.verbose) {
+
+        cout << "CompactedDBG::construct(): After join: " << unitigsAfter3 << " unitigs" << endl;
+        cout << "CompactedDBG::construct(): Joined " << joined << " unitigs" << endl;
+    }
+
+    if (opt.useMercyKmers && !reference_mode){
+
+        string filename_mbbf_uniq_km = opt.prefixFilenameOut + "_uniq";
+
+        joinTips(filename_mbbf_uniq_km, opt.nb_threads, opt.verbose);
+
+        if (opt.verbose) cout << "CompactedDBG::construct(): After join tips using mercy k-mers: " << size() << " unitigs" << endl;
+
+        if (std::remove(filename_mbbf_uniq_km.c_str()) != 0) {
+
+            cerr << "CompactedDBG::construct(): Minimizer Blocked Bloom filter file of unique k-mers cannot be removed from disk" << endl;
+        }
+    }
+
+    return true;
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::addUnitigSequence(const Kmer km, const string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g) {
+void CompactedDBG<U, G>::addUnitigSequence(const Kmer km, const string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g, const bool map_read) {
 
     bool isAbundant = false;
 
@@ -3147,44 +3877,40 @@ bool CompactedDBG<U, G>::addUnitigSequence(const Kmer km, const string& seq, con
     if (um.isEmpty) isAbundant = addUnitig(seq, id_unitig); // If it wasn't already inserted, does it
 
     lck_g.release_writer();
-    lck_g.acquire_reader();
 
-    um = find(km);
-    um.len = len_match_km; // Prepare read mapping
+    if (map_read) {
 
-    if (!um.isShort && !um.isAbundant && !um.strand) um.dist -= um.len - 1;
+        lck_g.acquire_reader();
 
-    if (um.dist + um.len > um.size - k_){ // This is a self loop
+        um = find(km);
+        um.len = len_match_km; // Prepare read mapping
 
-        KmerIterator it(seq.c_str() + pos_match_km);
+        if (!um.isShort && !um.isAbundant && !um.strand) um.dist -= um.len - 1;
 
-        for (size_t i = 0; i != len_match_km; ++it, ++i){
+        if (um.dist + um.len > um.size - k_){ // This is a self loop
 
-            um = find(it->first);
+            KmerIterator it(seq.c_str() + pos_match_km);
 
-            mapRead(um, lck_g);
+            for (size_t i = 0; i != len_match_km; ++it, ++i){
+
+                um = find(it->first);
+
+                mapRead(um, lck_g);
+            }
         }
+        else mapRead(um, lck_g);
+
+        lck_g.release_reader();
     }
-    else mapRead(um, lck_g);
-
-    lck_g.release_reader();
-
-    return !um.isEmpty;
 }
 
-// use:  cm.findUnitigSequenceBBF(km, s, selfLoop)
-// pre:  km is in the bloom filter
-// post: s is the unitig containing the kmer km
-//       and the first k-mer in s is smaller (wrt. < operator)
-//       than the last kmer
-//       selfLoop is true of the unitig is a loop or hairpin
 template<typename U, typename G>
-size_t CompactedDBG<U, G>::findUnitigSequenceBBF(const BlockedBloomFilter& bf, Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip) {
+size_t CompactedDBG<U, G>::findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip) {
 
     string fw_s, bw_s;
 
     Kmer end(km);
-    Kmer last(end);
+    Kmer last(km);
 
     const Kmer twin(km.twin());
 
@@ -3236,12 +3962,114 @@ size_t CompactedDBG<U, G>::findUnitigSequenceBBF(const BlockedBloomFilter& bf, K
 
     km.toString(tmp);
 
+    s.reserve(k_ + fw_s.length() + bw_s.length());
+    s.append(bw_s);
+    s.append(tmp);
+    s.append(fw_s);
+
+    return bw_s.length();
+}
+
+template<typename U, typename G>
+size_t CompactedDBG<U, G>::findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip, LockGraph& lck_g) {
+
+    string fw_s, bw_s;
+
+    Kmer end(km);
+    Kmer last(km);
+
+    const Kmer twin(km.twin());
+
+    char c;
+
+    size_t j = 0;
+
+    bool has_no_neighbor;
+    bool self_loop = false;
+
+    isIsolated = false;
+
+    while (fwStepBBF(bf, end, end, c, has_no_neighbor, l_ignored_km_tip)) {
+
+        ++j;
+
+        self_loop = (end == km);
+
+        if (self_loop || (end == twin) || (end == last.twin())) break;
+
+        fw_s.push_back(c);
+        last = end;
+
+        if ((fw_s.length() % 100) == 0) {
+
+            const Kmer km_fw_tail(fw_s.c_str() + fw_s.length() - k_);
+
+            lck_g.acquire_reader();
+
+            const const_UnitigMap<U, G> um = find(km_fw_tail);
+
+            lck_g.release_reader();
+
+            if (!um.isEmpty) {
+
+                s.clear();
+
+                return 0;
+            }
+        }
+    }
+
+    if (!self_loop) {
+
+        Kmer front(km);
+        Kmer first(front);
+
+        isIsolated = (j == 0) && has_no_neighbor;
+        j = 0;
+
+        while (bwStepBBF(bf, front, front, c, has_no_neighbor, l_ignored_km_tip)) {
+
+            ++j;
+
+            if ((front == km) || (front == twin) || (front == first.twin())) break;
+
+            bw_s.push_back(c);
+            first = front;
+
+            if ((bw_s.length() % 100) == 0) {
+
+                const Kmer km_fw_head(bw_s.c_str() + bw_s.length() - k_);
+
+                lck_g.acquire_reader();
+
+                const const_UnitigMap<U, G> um = find(km_fw_head);
+
+                lck_g.release_reader();
+
+                if (!um.isEmpty) {
+
+                    s.clear();
+
+                    return 0;
+                }
+            }
+        }
+
+        isIsolated = isIsolated && (j == 0) && has_no_neighbor;
+
+        reverse(bw_s.begin(), bw_s.end());
+    }
+
+    char tmp[MAX_KMER_SIZE];
+
+    km.toString(tmp);
+
     s.reserve(k_ + fw_s.size() + bw_s.size());
     s.append(bw_s);
     s.append(tmp);
     s.append(fw_s);
 
-    return bw_s.size();
+    return bw_s.length();
 }
 
 template<typename U, typename G>

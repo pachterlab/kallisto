@@ -14,6 +14,32 @@ class StreamCounter {
 
     public:
 
+        void clear() {
+
+            e = 0.0;
+            seed = 0;
+            sumCount = 0;
+            sz = 0;
+            mask = 0;
+            maxCount = 0;
+
+            std::memset(M, 0, MAX_TABLE * sizeof(size_t));
+
+            for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = 0;
+
+            if (blocks != nullptr) {
+
+                delete[] blocks;
+
+                blocks = nullptr;
+            }
+        }
+
+        StreamCounter() :   blocks(nullptr), shift_div_idx(__builtin_ffsll(block_sz) - 1), mask_mod_idx(block_sz - 1) {
+
+            clear();
+        }
+
         StreamCounter(const double e_, const int seed_ = 0) :   e(e_), seed(seed_), sumCount(0),
                                                                 shift_div_idx(__builtin_ffsll(block_sz) - 1), mask_mod_idx(block_sz - 1) {
 
@@ -28,7 +54,6 @@ class StreamCounter {
             blocks = new Block[((sz * MAX_TABLE) + block_sz - 1) / block_sz];
 
             for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = 0;
-
         }
 
         StreamCounter(const StreamCounter& o) : e(o.e), seed(o.seed), mask(o.mask), maxCount(o.maxCount), sumCount(o.sumCount),
@@ -44,9 +69,61 @@ class StreamCounter {
             for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = o.atomic_M[i].val.load();
         }
 
+        StreamCounter& operator=(const StreamCounter& o) {
+
+            if (this != &o) {
+
+                clear();
+
+                e = o.e;
+                seed = o.seed;
+                mask = o.mask;
+                maxCount = o.maxCount;
+                sumCount = o.sumCount;
+                sz = o.sz;
+
+                std::memcpy(M, o.M, MAX_TABLE * sizeof(size_t));
+
+                const size_t nb_blocks = ((sz * MAX_TABLE) + block_sz - 1) / block_sz;
+
+                blocks = new Block[nb_blocks];
+
+                for (size_t i = 0; i < nb_blocks; ++i) blocks[i] = o.blocks[i];
+                for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = o.atomic_M[i].val.load();
+            }
+
+            return *this;
+        };
+
+        StreamCounter& operator=(StreamCounter&& o) {
+
+            if (this != &o) {
+
+                clear();
+
+                e = o.e;
+                seed = o.seed;
+                mask = o.mask;
+                maxCount = o.maxCount;
+                sumCount = o.sumCount;
+                sz = o.sz;
+                blocks = o.blocks;
+
+                std::memcpy(M, o.M, MAX_TABLE * sizeof(size_t));
+
+                for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = o.atomic_M[i].val.load();
+
+                o.blocks = nullptr;
+
+                o.clear();
+            }
+
+            return *this;
+        };
+
         ~StreamCounter() {
 
-            delete[] blocks;
+            clear();
         }
 
         BFG_INLINE int getSeed() const {
@@ -70,6 +147,27 @@ class StreamCounter {
 
             for (size_t i = 0; i < nb_blocks; ++i) sumCount += blocks[i].sumCount;
             for (size_t i = 0; i < MAX_TABLE; ++i) M[i] = atomic_M[i].val.load();
+        }
+
+        void initialize(const double e_, const int seed_ = 0) {
+
+            clear();
+
+            e = e_;
+            seed = seed_;
+            sumCount = 0;
+
+            const size_t numcounts = max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192));
+
+            sz = rndup((numcounts + countsPerLong - 1) / countsPerLong);
+            mask = (sz * countsPerLong) - 1;
+            maxCount = sz * countsPerLong * maxVal;
+
+            std::memset(M, 0, MAX_TABLE * sizeof(size_t));
+
+            blocks = new Block[((sz * MAX_TABLE) + block_sz - 1) / block_sz];
+
+            for (size_t i = 0; i < MAX_TABLE; ++i) atomic_M[i].val = 0;
         }
 
         void update(const size_t h) {

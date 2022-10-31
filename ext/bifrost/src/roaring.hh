@@ -163,6 +163,11 @@ class Roaring {
      */
     ~Roaring() { ra_clear(&roaring.high_low_container); }
 
+    void clear() {
+
+         ra_clear(&roaring.high_low_container); 
+    };
+
     /**
      * Copies the content of the provided bitmap, and
      * discard the current content.

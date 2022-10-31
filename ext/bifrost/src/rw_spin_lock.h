@@ -10,9 +10,13 @@
 
 #include "Common.hpp"
 
+//#define HAS_WRITER 0x80000000UL
+//#define HAS_WRITER_WAITING 0x40000000UL
+//#define MASK_READER 0xBFFFFFFFUL
+
 #define HAS_WRITER 0x80000000UL
-#define HAS_WRITER_WAITING 0x40000000UL
-#define MASK_READER 0xBFFFFFFFUL
+#define HAS_WRITER_WAITING 0x00010000UL
+#define MASK_READER 0x8000FFFFUL
 
 #define RETRY_THRESHOLD 100
 #define RETRY_THRESHOLD_MAX 1023
@@ -80,7 +84,7 @@ class SpinLock {
         const char padding[63];
 };
 
-class SpinLockRW {
+/*class SpinLockRW {
 
     public:
 
@@ -102,9 +106,6 @@ class SpinLockRW {
                 }
 
                 if (++retry > RETRY_THRESHOLD) this_thread::yield();
-                //#if defined(__SSE2__)
-                //else _mm_pause();
-                //#endif
             }
         }
 
@@ -125,9 +126,6 @@ class SpinLockRW {
                 if ((prev_bits & HAS_WRITER_WAITING) == 0) _bits.fetch_or(HAS_WRITER_WAITING);
 
                 if (++retry > RETRY_THRESHOLD) this_thread::yield();
-                //#if defined(__SSE2__)
-                //else _mm_pause();
-                //#endif
             }
         }
 
@@ -139,6 +137,69 @@ class SpinLockRW {
         BFG_INLINE void release_writer_acquire_reader() {
 
             _bits = 1;
+        }
+
+        BFG_INLINE void release_all() {
+
+            _bits = 0;
+        }
+
+    private:
+
+        std::atomic<uint32_t> _bits;
+        const int padding[15];
+};*/
+
+class SpinLockRW {
+
+    public:
+
+        SpinLockRW() : _bits(0), padding{0} {}
+
+        BFG_INLINE void acquire_reader() {
+
+            int retry = 0;
+
+            while (true) {
+
+                uint32_t prev_bits = _bits;
+
+                if ((prev_bits < HAS_WRITER_WAITING) && _bits.compare_exchange_weak(prev_bits, prev_bits + 1)) return;
+
+                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+            }
+        }
+
+        BFG_INLINE void release_reader(){
+
+            _bits.fetch_sub(1);
+        }
+
+        BFG_INLINE void acquire_writer(){
+
+            int retry = 0;
+
+            _bits.fetch_add(HAS_WRITER_WAITING); 
+
+            while (true){
+
+                uint32_t prev_bits = _bits;
+
+                if (((prev_bits & MASK_READER) == 0) && _bits.compare_exchange_weak(prev_bits, prev_bits | HAS_WRITER)) return;
+
+                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+            }
+        }
+
+        BFG_INLINE void release_writer() {
+
+            _bits.fetch_sub(HAS_WRITER | HAS_WRITER_WAITING);
+        }
+
+        BFG_INLINE void release_writer_acquire_reader() {
+
+            _bits.fetch_add(1);
+            _bits.fetch_sub(HAS_WRITER | HAS_WRITER_WAITING);
         }
 
         BFG_INLINE void release_all() {

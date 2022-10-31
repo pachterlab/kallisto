@@ -614,24 +614,24 @@ int main(int argc, char **argv){
             }
             else if (opt.update){
 
-                CCDBG_Build_opt l_opt = opt;
+                CCDBG_Build_opt lopt = opt;
 
-                if (l_opt.filename_colors_in.size() != 0){ // If colors in or out
+                if (lopt.filename_colors_in.size() != 0){ // If colors in or out
 
-                    ColoredCDBG<> ccdbg1(l_opt.k, l_opt.g);
+                    ColoredCDBG<> ccdbg1(lopt.k, lopt.g);
 
-                    if (l_opt.filename_index_in.length() == 0) success = ccdbg1.read(l_opt.filename_graph_in, l_opt.filename_colors_in, l_opt.nb_threads, l_opt.verbose);
-                    else success = ccdbg1.read(l_opt.filename_graph_in, l_opt.filename_index_in, l_opt.filename_colors_in, l_opt.nb_threads, l_opt.verbose);
+                    if (lopt.filename_index_in.length() == 0) success = ccdbg1.read(lopt.filename_graph_in, lopt.filename_colors_in, lopt.nb_threads, lopt.verbose);
+                    else success = ccdbg1.read(lopt.filename_graph_in, lopt.filename_index_in, lopt.filename_colors_in, lopt.nb_threads, lopt.verbose);
 
                     if (success) {
 
-                        l_opt.k = ccdbg1.getK();
-                        l_opt.g = ccdbg1.getG();
+                        lopt.k = ccdbg1.getK();
+                        lopt.g = ccdbg1.getG();
 
-                        ColoredCDBG<> ccdbg2(l_opt.k, l_opt.g);
+                        ColoredCDBG<> ccdbg2(lopt.k, lopt.g);
 
-                        if (success) success = ccdbg2.buildGraph(l_opt);
-                        if (success) success = ccdbg2.buildColors(l_opt);
+                        if (success) success = ccdbg2.buildGraph(lopt);
+                        if (success) success = ccdbg2.buildColors(lopt);
 
                         if (success) {
 
@@ -641,28 +641,28 @@ int main(int argc, char **argv){
                             ColoredCDBG<>& ccdbg_a = (ccdbg1_len > ccdbg2_len) ? ccdbg1 : ccdbg2;
                             ColoredCDBG<>& ccdbg_b = (ccdbg1_len > ccdbg2_len) ? ccdbg2 : ccdbg1;
 
-                            if (success) success = ccdbg_a.merge(move(ccdbg_b), l_opt.nb_threads, l_opt.verbose);
+                            if (success) success = ccdbg_a.merge(move(ccdbg_b), lopt.nb_threads, lopt.verbose);
 
-                            if (success) success = ccdbg_a.simplify(l_opt.deleteIsolated, l_opt.clipTips, l_opt.verbose);
-                            if (success) success = ccdbg_a.write(l_opt.prefixFilenameOut, l_opt.nb_threads, l_opt.writeIndexFile, l_opt.compressOutput, l_opt.verbose);
+                            if (success) success = ccdbg_a.simplify(lopt.deleteIsolated, lopt.clipTips, lopt.verbose);
+                            if (success) success = ccdbg_a.write(lopt.prefixFilenameOut, lopt.nb_threads, lopt.writeIndexFile, lopt.compressOutput, lopt.verbose);
                         }
                     }
                 }
                 else {
 
-                    CompactedDBG<> cdbg1(l_opt.k, l_opt.g);
+                    CompactedDBG<> cdbg1(lopt.k, lopt.g);
 
-                    if (l_opt.filename_index_in.length() == 0) success = cdbg1.read(l_opt.filename_graph_in, l_opt.nb_threads, l_opt.verbose);
-                    else success = cdbg1.read(l_opt.filename_graph_in, l_opt.filename_index_in, l_opt.nb_threads, l_opt.verbose);
+                    if (lopt.filename_index_in.length() == 0) success = cdbg1.read(lopt.filename_graph_in, lopt.nb_threads, lopt.verbose);
+                    else success = cdbg1.read(lopt.filename_graph_in, lopt.filename_index_in, lopt.nb_threads, lopt.verbose);
 
                     if (success) {
 
-                        l_opt.k = cdbg1.getK();
-                        l_opt.g = cdbg1.getG();
+                        lopt.k = cdbg1.getK();
+                        lopt.g = cdbg1.getG();
 
-                        CompactedDBG<> cdbg2(l_opt.k, l_opt.g);
+                        CompactedDBG<> cdbg2(lopt.k, lopt.g);
 
-                        if (success) success = cdbg2.build(l_opt);
+                        if (success) success = cdbg2.build(lopt);
                         if (success) {
 
                             const size_t cdbg1_len = cdbg1.length();
@@ -673,13 +673,13 @@ int main(int argc, char **argv){
 
                             if (success) {
 
-                                success = cdbg_a.merge(cdbg_b, l_opt.nb_threads, l_opt.verbose);
+                                success = cdbg_a.merge(cdbg_b, lopt.nb_threads, lopt.verbose);
                                 cdbg_b.clear();
                             }
 
-                            if (success) success = cdbg_a.simplify(l_opt.deleteIsolated, l_opt.clipTips, l_opt.verbose);
-                            if (success) success = cdbg_a.write(l_opt.prefixFilenameOut, l_opt.nb_threads, l_opt.outputGFA,
-                                                                l_opt.outputFASTA, l_opt.outputBFG, l_opt.writeIndexFile, l_opt.compressOutput, l_opt.verbose);
+                            if (success) success = cdbg_a.simplify(lopt.deleteIsolated, lopt.clipTips, lopt.verbose);
+                            if (success) success = cdbg_a.write(lopt.prefixFilenameOut, lopt.nb_threads, lopt.outputGFA,
+                                                                lopt.outputFASTA, lopt.outputBFG, lopt.writeIndexFile, lopt.compressOutput, lopt.verbose);
                         }
                     }
                 }
