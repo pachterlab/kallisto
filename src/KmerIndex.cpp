@@ -313,7 +313,7 @@ void KmerIndex::Offlist(const std::string& path) {
         pos += um.len;
         count += um.len;
 
-        dbg.remove(um);
+        dbg.remove(um, true);
       }
 
       // Clear buffer.
@@ -322,6 +322,7 @@ void KmerIndex::Offlist(const std::string& path) {
       buf << line;
     }
   }
+  infile.close();
   std::cerr << "[build] Removed " << count << " blacklisted kmers from graph." << std::endl;
 }
 
@@ -727,7 +728,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
 
   in.close();
-
+  exit(0);
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
