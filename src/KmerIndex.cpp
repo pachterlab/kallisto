@@ -295,8 +295,16 @@ void KmerIndex::Offlist(const std::string& path) {
   std::string line;
   std::stringstream buf;
   const_UnitigMap<Node> um;
-  while (std::getline(infile, line)) {
-    if (line[0] == '>' && buf.str() != "") {
+  bool continue_reading = true;
+  while (continue_reading) {
+    if (!std::getline(infile, line)) {
+      line = "";
+      continue_reading = false;
+    }
+    if (line.size() != 0 && line[0] != '>') { // Add to buf
+      buf << line;
+    }
+    if (buf.str() != "" && (!continue_reading || (line.size() != 0 && line[0] == '>'))) { // Read from and clear buf
       // Search for everything in buffer in graph and delete the corresponding
       // nodes in case of a hit.
       size_t pos = 0;
@@ -318,8 +326,6 @@ void KmerIndex::Offlist(const std::string& path) {
 
       // Clear buffer.
       buf.str("");
-    } else {
-      buf << line;
     }
   }
   infile.close();
