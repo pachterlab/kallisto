@@ -7,6 +7,10 @@
 #include <functional>
 #include "kseq.h"
 #include "KmerIndex.h"
+// Added by Laura
+#include <iostream>
+#include <map>
+#include <string>
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -897,7 +901,103 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   }
   */
 
-  KmerIterator kit(s), kit_end;
+
+
+
+  // Translate sequence string s to commafree-code
+
+  // Create map cfc_code as a look-up table for the comma-free code
+  // nucleotide triplet -> comma-free triplet
+  std::map<string, string> cfc_code = {
+    { 'TTT', 'ACC' },
+    { 'TTC', 'ACC' },
+    { 'TTA', 'ACA' },
+    { 'TTG', 'ACA' },
+    { 'CTT', 'ACA' },
+    { 'CTC', 'ACA' },
+    { 'CTA', 'ACA' },
+    { 'CTG', 'ACA' },
+    { 'ATT', 'ATA' },
+    { 'ATC', 'ATA' },
+    { 'ATA', 'ATA' },
+    { 'ATG', 'ATC' },
+    { 'GTT', 'ATT' },
+    { 'GTC', 'ATT' },
+    { 'GTA', 'ATT' },
+    { 'GTG', 'ATT' },
+    { 'TCT', 'CTA' },
+    { 'TCC', 'CTA' },
+    { 'TCA', 'CTA' },
+    { 'TCG', 'CTA' },
+    { 'AGT', 'CTA' },
+    { 'AGC', 'CTA' },
+    { 'CCT', 'CTC' },
+    { 'CCC', 'CTC' },
+    { 'CCA', 'CTC' },
+    { 'CCG', 'CTC' },
+    { 'ACT', 'CTT' },
+    { 'ACC', 'CTT' },
+    { 'ACA', 'CTT' },
+    { 'ACG', 'CTT' },
+    { 'GCT', 'AGA' },
+    { 'GCC', 'AGA' },
+    { 'GCA', 'AGA' },
+    { 'GCG', 'AGA' },
+    { 'TAT', 'AGC' },
+    { 'TAC', 'AGC' },
+    { 'CAT', 'AGT' },
+    { 'CAC', 'AGT' },
+    { 'CAA', 'AGG' },
+    { 'CAG', 'AGG' },
+    { 'AAT', 'CGA' },
+    { 'AAC', 'CGA' },
+    { 'AAA', 'CGC' },
+    { 'AAG', 'CGC' },
+    { 'GAT', 'CGT' },
+    { 'GAC', 'CGT' },
+    { 'GAA', 'CGG' },
+    { 'GAG', 'CGG' },
+    { 'TGT', 'TGA' },
+    { 'TGC', 'TGA' },
+    { 'TGG', 'TGC' },
+    { 'CGT', 'TGT' },
+    { 'CGC', 'TGT' },
+    { 'CGA', 'TGT' },
+    { 'CGG', 'TGT' },
+    { 'AGA', 'TGT' },
+    { 'AGG', 'TGT' },
+    { 'GGT', 'TGG' },
+    { 'GGC', 'TGG' },
+    { 'GGA', 'TGG' },
+    { 'GGG', 'TGG' },
+};
+
+  // Traverse the sequence string 
+  std::stringstream all_stream;
+  int incrementer = 3;
+  for (int i = 0; i < l; i += incrementer) {
+      auto cfc_mapped = cfc_code.find(s.substr(i, 3));
+
+      // If nucleotide triplet not found in comma-free map, translate as "NNN"
+      std::string cfc_seq;
+      if (cfc_mapped == cfc_code.end()) {
+      cfc_seq = "NNN";
+      } else {
+        cfc_seq = cfc_mapped->second;
+      }
+
+      // Accumulate comma-free sequences into stream
+      all_stream << cfc_seq;
+  }
+
+  // Convert stream to new sequence string s_cfc
+  std::string s_cfc = all_stream.str();
+
+
+
+
+
+  KmerIterator kit(s_cfc.c_str()), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
