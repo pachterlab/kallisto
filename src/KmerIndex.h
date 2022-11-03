@@ -155,7 +155,7 @@ struct KmerIndex {
 
   //KmerHashTable<KmerEntry, KmerHash> kmap;
   CompactedDBG<Node> dbg;
-  std::unordered_set<Kmer, KmerHash> offlist;
+  KmerSet offlist;
   EcMap ecmap;
   DBGraph dbGraph;
   EcMapInv ecmapinv;
