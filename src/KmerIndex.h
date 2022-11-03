@@ -124,7 +124,7 @@ struct KmerIndex {
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out);
 
   // Removes all kmers occurring in opt.blacklist from the dBG.
-  void Offlist(const std::string& path);
+  void Offlist(const std::string& path, size_t threads);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
   // i.e. have more than one color.
@@ -153,6 +153,7 @@ struct KmerIndex {
 
   //KmerHashTable<KmerEntry, KmerHash> kmap;
   CompactedDBG<Node> dbg;
+  std::unordered_set<Kmer, KmerHash> offlist;
   EcMap ecmap;
   DBGraph dbGraph;
   EcMapInv ecmapinv;
