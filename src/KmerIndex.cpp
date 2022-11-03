@@ -293,7 +293,7 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
   if (!infile.good()) return;
 
   // Main worker thread
-  auto worker_function = [&](std::stringstream& buf, std::unordered_set<Kmer, KmerHash>& local_offlist) {
+  auto worker_function = [&](std::stringstream& buf, KmerSet& local_offlist) {
 
     size_t pos = 0;
     std::string seq = buf.str();
@@ -341,7 +341,7 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
 
         [&, t]{
 
-          std::unordered_set<Kmer, KmerHash> local_offlist;
+          KmerSet local_offlist;
 
           while (true) {
 
@@ -850,7 +850,7 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
-bool KmerIndex::existsInOfflist(const Kmer& km) {
+bool KmerIndex::existsInOfflist(const Kmer& km) const {
   auto off = offlist.find(km);
   return (off != offlist.end());
 }
