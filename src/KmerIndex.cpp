@@ -367,6 +367,7 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
                 offlist.insert(kmer);
 
               }
+              local_offlist.clear();
             }
 
           }
