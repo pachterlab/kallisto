@@ -580,6 +580,14 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+
+  // 7. Write out off-list
+  tmp_size = offlist.size();
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  for (auto& kmer : offlist) {
+    std::string k_str = kmer.toString();
+    out.write(k_str.c_str(), strlen(k_str.c_str()));
+  }
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -660,6 +668,13 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
 
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
+  }
+
+  // 7. Write out off-list
+  tmp_size = offlist.size();
+  for (auto& kmer : offlist) {
+    std::string k_str = kmer.toString();
+    out.write(k_str.c_str(), strlen(k_str.c_str()));
   }
 
   out.flush();
@@ -779,6 +794,21 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     target_names_.push_back(std::string(buffer));
   }
 
+  delete[] buffer;
+
+  // 7. Read off-list
+  buffer = new char[kmer_size];
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  offlist.reserve(tmp_size);
+  for (size_t i = 0; i < tmp_size; ++i) {
+
+    memset(buffer, 0, kmer_size);
+    in.read(buffer, kmer_size);
+    kmer = Kmer(buffer);
+
+    offlist.insert(std::move(kmer));
+  }
+
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
@@ -871,6 +901,9 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
     um1 = dbg.find(kit1->first);
     if (!um1.isEmpty) {
       found1 = true;
+      if (um1.strand)
+        p1 = um1.dist - kit1->second;
+      else
       if (um1.strand)
         p1 = um1.dist - kit1->second;
       else
