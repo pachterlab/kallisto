@@ -1005,7 +1005,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     int pos = kit->second;
 
     if (!um.isEmpty) {
-      
+
       if (existsInOfflist(kit->first)) continue; // Check if kmer is in off-list
 
       v.push_back({um, kit->second});
