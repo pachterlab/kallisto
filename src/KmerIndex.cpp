@@ -850,6 +850,11 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
+bool KmerIndex::existsInOfflist(const Kmer& km) {
+  auto off = offlist.find(km);
+  return (off != offlist.end());
+}
+
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   bool d1 = true;
   bool d2 = true;
@@ -863,13 +868,9 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
 
   bool found1 = false;
   for (; kit1 != kit_end; ++kit1) {
-
-    // Check if kmer is in off-list
-    auto off = offlist.find(kit1->first);
-    if (off != offlist.end()) continue;
-
     um1 = dbg.find(kit1->first);
     if (!um1.isEmpty) {
+      if (existsInOfflist(kit1->first)) continue; // Check if kmer is in off-list
       found1 = true;
       if (um1.strand)
         p1 = um1.dist - kit1->second;
@@ -887,13 +888,9 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   bool found2 = false;
 
   for (; kit2 != kit_end; ++kit2) {
-
-    // Check if kmer is in off-list
-    auto off = offlist.find(kit2->first);
-    if (off != offlist.end()) continue;
-
     um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
+      if (existsInOfflist(kit2->first)) continue; // Check if kmer is in off-list
       found2 = true;
       if (um2.strand)
         p2 = um2.dist - kit2->second;
@@ -968,10 +965,6 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
 
-    // Check if kmer is in off-list
-    auto off = offlist.find(kit->first);
-    if (off != offlist.end()) continue;
-
     // need to check it
     const_UnitigMap<Node> um = dbg.find(kit->first);
     n = um.getData();
@@ -979,6 +972,8 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     int pos = kit->second;
 
     if (!um.isEmpty) {
+      
+      if (existsInOfflist(kit->first)) continue; // Check if kmer is in off-list
 
       v.push_back({um, kit->second});
 
@@ -1007,13 +1002,14 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
         // check next position
         KmerIterator kit2(kit);
         kit2 += nextPos-pos;
-        // Check if kmer in off-list
-        auto off = offlist.find(kit2->first);
-        if (kit2 != kit_end && off == offlist.end()) {
+        if (kit2 != kit_end) {
           const_UnitigMap<Node> um2 = dbg.find(kit2->first);
           bool found2 = false;
           int  found2pos = pos+dist;
           if (um2.isEmpty) {
+            found2=true;
+            found2pos = pos;
+          } else if (existsInOfflist(kit2->first)) { // Check if kmer is in off-list (if so, treat as if um2.isEmpty)
             found2=true;
             found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2) &&
@@ -1041,11 +1037,9 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               KmerIterator kit3(kit);
               kit3 += middlePos-pos;
 
-              // Check if kmer in off-list
-              auto off = offlist.find(kit3->first);
-              if (kit3 != kit_end && off == offlist.end()) {
+              if (kit3 != kit_end) {
                 const_UnitigMap<Node> um3 = dbg.find(kit3->first);
-                if (!um3.isEmpty) {
+                if (!um3.isEmpty && !existsInOfflist(kit3->first)) {
                   if (um.isSameReferenceUnitig(um3) &&
                       n->ec[um.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
@@ -1093,7 +1087,7 @@ donejumping:
         if (j==0) {
           // need to check it
           const_UnitigMap<Node> um4 = dbg.find(kit->first);
-          if (!um4.isEmpty) {
+          if (!um4.isEmpty && !existsInOfflist(kit->first)) {
             // if k-mer found
             v.push_back({um4, kit->second}); // add equivalence class, and position
           }
