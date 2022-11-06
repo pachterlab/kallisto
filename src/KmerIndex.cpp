@@ -83,8 +83,15 @@ std::string generate_tmp_file(std::string seed) {
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) {
   // read input
   std::unordered_set<std::string> unique_names;
+
+  // Add off-list to the set of fasta files we build the graph from
+  std::vector<std::string> transfasta = opt.transfasta;
+  if (opt.offlist != "") {
+      transfasta.push_back(opt.offlist);
+  }
+
   int k = opt.k;
-  for (auto& fasta : opt.transfasta) {
+  for (auto& fasta : transfasta) {
     std::cerr << "[build] loading fasta file " << fasta
               << std::endl;
   }
@@ -104,7 +111,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   int countUNuc = 0;
   int polyAcount = 0;
 
-  for (auto& fasta : opt.transfasta) {
+  for (auto& fasta : transfasta) {
     fp = gzopen(fasta.c_str(), "r");
     seq = kseq_init(fp);
     while (true) {
@@ -181,6 +188,22 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
 
   BuildDeBruijnGraph(opt, tmp_file, out);
   BuildEquivalenceClasses(opt, tmp_file);
+  ColorOfflist(opt.offlist, opt.threads);
+
+  // DEBUG
+  std::cout << "offlist transcript: " << num_trans << std::endl;
+  for (auto& um : dbg) {
+      std::cout << um.referenceUnitigToString() << std::endl;
+      Node* n = um.getData();
+      if (n->ec.flag > 1) {
+          for (auto& b : n->ec) {
+            std::cout << "[ " << b.lb << ", " << b.ub << " ]" << b.val.toString() << std::endl;
+          }
+      } else {
+          std::cout << "[ " << n->ec.mono.lb << ", " << n->ec.mono.ub << " ]" << n->ec.mono.val.toString() << std::endl;
+      }
+  }
+  // END DEBUG
 
   /*
   for (auto& um : dbg) {
@@ -220,7 +243,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
-  Offlist(opt.offlist, opt.threads);
 
   // Write graph to a temporary binary file and read it back into a static graph
   // TODO:
@@ -287,28 +309,36 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::Offlist(const std::string& path, size_t threads) {
+void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
+
+  // Add one more transcript to represent off-list sequences
+  uint32_t offlist_tx = ++num_trans;
 
   std::ifstream infile(path.c_str());
   if (!infile.good()) return;
 
   // Main worker thread
-  auto worker_function = [&](std::stringstream& buf, KmerSet& local_offlist) {
+  auto worker_function = [&](std::stringstream& buf) {
 
-    size_t pos = 0;
+    int pos = 0;
     std::string seq = buf.str();
-    KmerIterator kit(seq.c_str()), kit_end;
 
-    const_UnitigMap<Node> um;
-    for (; kit != kit_end; ++kit) {
+    std::vector<UnitigMap<Node> > ums;
+    UnitigMap<Node> um;
+    int seqlen = seq.size() - k + 1; // number of k-mers
+    while (pos < seqlen) {
+      um = dbg.findUnitig(seq.c_str(), pos, seq.size());
 
-      um = dbg.find(kit->first);
-
-      if (!um.isEmpty) {
-        local_offlist.insert(kit->first);
+      if (um.isEmpty) {
+        ++pos;
+        continue;
       }
 
+      pos += um.len;
+      ums.push_back(um);
+
     }
+    return ums;
   };
 
   // Thread for reading fasta
@@ -333,7 +363,7 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
     std::vector<thread> workers;
 
     mutex mutex_file;
-    mutex mutex_vector;
+    mutex mutex_graph;
 
     for (size_t t = 0; t < threads; ++t){
 
@@ -341,8 +371,8 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
 
         [&, t]{
 
-          KmerSet local_offlist;
-
+          Roaring r;
+          r.add(offlist_tx);
           while (true) {
 
             std::stringstream buf;
@@ -355,19 +385,14 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
               stop = reading_function(buf);
             }
 
-            worker_function(buf, local_offlist);
+            std::vector<UnitigMap<Node> > ums = worker_function(buf);
 
             {
-              // Preempting write access for offlist
-              unique_lock<mutex> lock(mutex_vector);
-
-              offlist.reserve(offlist.size() + local_offlist.size());
-              for (auto& kmer : local_offlist) {
-
-                offlist.insert(kmer);
-
+              // Preempting write access for graph
+              unique_lock<mutex> lock(mutex_graph);
+              for (auto& um : ums) {
+                um.getData()->ec.overwrite(um.dist, um.dist + um.len, r);
               }
-              local_offlist.clear();
             }
 
           }
@@ -380,7 +405,6 @@ void KmerIndex::Offlist(const std::string& path, size_t threads) {
   }
 
   infile.close();
-  std::cerr << "[build] Index contains " << offlist.size() << " kmers in offlist." << std::endl;
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
@@ -581,14 +605,6 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
-
-  // 7. Write out off-list
-  tmp_size = offlist.size();
-  out.write((char *)&tmp_size, sizeof(tmp_size));
-  for (auto& kmer : offlist) {
-    std::string k_str = kmer.toString();
-    out.write(k_str.c_str(), strlen(k_str.c_str()));
-  }
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -669,13 +685,6 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
 
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
-  }
-
-  // 7. Write out off-list
-  tmp_size = offlist.size();
-  for (auto& kmer : offlist) {
-    std::string k_str = kmer.toString();
-    out.write(k_str.c_str(), strlen(k_str.c_str()));
   }
 
   out.flush();
@@ -795,21 +804,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     target_names_.push_back(std::string(buffer));
   }
 
-  delete[] buffer;
-
-  // 7. Read off-list
-  buffer = new char[kmer_size];
-  in.read((char *)&tmp_size, sizeof(tmp_size));
-  offlist.reserve(tmp_size);
-  for (size_t i = 0; i < tmp_size; ++i) {
-
-    memset(buffer, 0, kmer_size);
-    in.read(buffer, kmer_size);
-    kmer = Kmer(buffer);
-
-    offlist.insert(std::move(kmer));
-  }
-
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
@@ -881,11 +875,6 @@ void KmerIndex::loadTranscriptsFromFile(const ProgramOptions& opt) {
             << pretty_num(num_trans) << std::endl;
 }
 
-bool KmerIndex::existsInOfflist(const Kmer& km) const {
-  auto off = offlist.find(km);
-  return (off != offlist.end());
-}
-
 int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   bool d1 = true;
   bool d2 = true;
@@ -901,7 +890,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   for (; kit1 != kit_end; ++kit1) {
     um1 = dbg.find(kit1->first);
     if (!um1.isEmpty) {
-      if (existsInOfflist(kit1->first)) continue; // Check if kmer is in off-list
       found1 = true;
       if (um1.strand)
         p1 = um1.dist - kit1->second;
@@ -924,7 +912,6 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
   for (; kit2 != kit_end; ++kit2) {
     um2 = dbg.find(kit2->first);
     if (!um2.isEmpty) {
-      if (existsInOfflist(kit2->first)) continue; // Check if kmer is in off-list
       found2 = true;
       if (um2.strand)
         p2 = um2.dist - kit2->second;
@@ -1007,8 +994,6 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
     if (!um.isEmpty) {
 
-      if (existsInOfflist(kit->first)) continue; // Check if kmer is in off-list
-
       v.push_back({um, kit->second});
 
       // Find start and end of O.G. kallisto contig w.r.t. the bifrost-kallisto
@@ -1043,9 +1028,6 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
           if (um2.isEmpty) {
             found2=true;
             found2pos = pos;
-          } else if (existsInOfflist(kit2->first)) { // Check if kmer is in off-list (if so, treat as if um2.isEmpty)
-            found2=true;
-            found2pos = pos;
           } else if (um.isSameReferenceUnitig(um2) &&
                      n->ec[um.dist] == um2.getData()->ec[um2.dist]) {
             // um and um2 are on the same unitig and also share the same EC
@@ -1073,7 +1055,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
               if (kit3 != kit_end) {
                 const_UnitigMap<Node> um3 = dbg.find(kit3->first);
-                if (!um3.isEmpty && !existsInOfflist(kit3->first)) {
+                if (!um3.isEmpty) {
                   if (um.isSameReferenceUnitig(um3) &&
                       n->ec[um.dist] == um3.getData()->ec[um3.dist]) {
                     foundMiddle = true;
@@ -1121,7 +1103,7 @@ donejumping:
         if (j==0) {
           // need to check it
           const_UnitigMap<Node> um4 = dbg.find(kit->first);
-          if (!um4.isEmpty && !existsInOfflist(kit->first)) {
+          if (!um4.isEmpty) {
             // if k-mer found
             v.push_back({um4, kit->second}); // add equivalence class, and position
           }
