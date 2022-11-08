@@ -165,6 +165,12 @@ class BlockArray {
                     if (mono.ub == ub) {
                         // [ mono ][ overwrite ]
                         m.ub = lb;
+                        mono.~block();
+                        new (&poly) std::vector<block<T> >;
+                        // Pushing blocks in-order: don't need to sort
+                        poly.push_back(m);
+                        poly.push_back(ow);
+                        flag = 2;
                     } else {
                         // [ mono ][ overwrite ][ mono ]
 
@@ -176,6 +182,7 @@ class BlockArray {
                         poly.push_back(m);
                         poly.push_back(ow);
                         poly.push_back(rest);
+                        flag = 2;
                     }
 
                 } else if (mono.ub > ub) {
@@ -189,9 +196,12 @@ class BlockArray {
                     new (&poly) std::vector<block<T> >;
                     poly.push_back(m);
                     poly.push_back(ow);
+                    flag = 2;
                 } else {
+                    // [ overwrite ]
                     // mono.lb == lb, mono.ub == ub
                     mono.val = val;
+
                 }
 
             } else {
@@ -199,9 +209,14 @@ class BlockArray {
                 // that overlap [lb, ub]
 
                 if (poly[0].lb == lb && poly[poly.size()-1].ub == ub) {
+                    // [ overwrite ]
                     // Overwrite spans entire unitig
                     poly.~vector();
+
                     new (&mono) block<T>(lb, ub, val);
+                    flag = 1;
+
+                    return;
 
                 }
 

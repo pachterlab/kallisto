@@ -191,6 +191,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   ColorOfflist(opt.offlist, opt.threads);
 
   // DEBUG
+  /*
   std::cout << "offlist transcript: " << num_trans << std::endl;
   for (auto& um : dbg) {
       std::cout << um.referenceUnitigToString() << std::endl;
@@ -202,7 +203,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
       } else {
           std::cout << "[ " << n->ec.mono.lb << ", " << n->ec.mono.ub << " ]" << n->ec.mono.val.toString() << std::endl;
       }
-  }
+  }*/
   // END DEBUG
 
   /*
