@@ -313,7 +313,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
 
   // Add one more transcript to represent off-list sequences
-  uint32_t offlist_tx = ++num_trans;
+  uint32_t offlist_tx = num_trans+1;
 
   std::ifstream infile(path.c_str());
   if (!infile.good()) return;
@@ -788,6 +788,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t bufsz = 1024;
   buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
+
     // 6.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
