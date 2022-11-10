@@ -301,6 +301,7 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
   // Main worker thread
   auto worker_function = [&](std::stringstream& buf) {
 
+    int lb = -1, ub = -1;
     int pos = 0;
     std::string seq = buf.str();
 
@@ -311,24 +312,44 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
       um = dbg.findUnitig(seq.c_str(), pos, seq.size());
 
       if (um.isEmpty) {
+
+        // Add leading kmer to set
+        if (lb >= 0 && ub >= lb) {
+          kmers_.emplace(seq.substr(lb, k));
+        }
+
+        // Add trailing kmer to set
+        if (ub > lb && ub + k < seq.length()) {
+            kmers_.emplace(seq.substr(ub, k));
+        }
+
+        lb = -1;
+        ub = -1;
         ++pos;
-        continue;
-      }
 
-      // Add leading kmer to set
-      if (pos > 0) {
-        kmers_.emplace(seq.substr(pos - 1, k).c_str());
-      }
+      } else {
 
-      // Add trailing kmer to set
-      if (pos + um.len + k <= seq.length()) {
-        kmers_.emplace(seq.substr(pos + um.len, k).c_str());
-      }
+        if (lb < 0 && pos > 0) {
+          lb = pos - 1;
+        }
 
-      pos += um.len;
+        pos += um.len;
+        ub = pos;
+      }
 
     }
-    return kmers;
+
+    // Add last leading kmer to set
+    if (lb >= 0 && ub >= lb) {
+      kmers_.emplace(seq.substr(lb, k));
+    }
+
+    // Add last trailing kmer to set
+    if (ub > lb && ub + k < seq.length()) {
+        kmers_.emplace(seq.substr(ub, k));
+    }
+
+    return kmers_;
   };
 
   // Thread for reading fasta
