@@ -288,7 +288,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
 //void KmerIndex::OfflistFlankingKmers(const std::string& path, size_t threads) {
 
   if (opt.offlist == "") return;
@@ -317,12 +317,12 @@ void OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file
 
       // Add leading kmer to set
       if (pos > 0) {
-        kmers_.emplace(seq.substr(pos - 1, k));
+        kmers_.emplace(seq.substr(pos - 1, k).c_str());
       }
 
       // Add trailing kmer to set
       if (pos + um.len + k <= seq.length()) {
-        kmers_.emplace(seq.substr(pos + um.len, k));
+        kmers_.emplace(seq.substr(pos + um.len, k).c_str());
       }
 
       pos += um.len;
