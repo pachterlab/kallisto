@@ -188,23 +188,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
 
   BuildDeBruijnGraph(opt, tmp_file, out);
   BuildEquivalenceClasses(opt, tmp_file);
-  ColorOfflist(opt.offlist, opt.threads);
-
-  // DEBUG
-  /*
-  std::cout << "offlist transcript: " << num_trans << std::endl;
-  for (auto& um : dbg) {
-      std::cout << um.referenceUnitigToString() << std::endl;
-      Node* n = um.getData();
-      if (n->ec.flag > 1) {
-          for (auto& b : n->ec) {
-            std::cout << "[ " << b.lb << ", " << b.ub << " ]" << b.val.toString() << std::endl;
-          }
-      } else {
-          std::cout << "[ " << n->ec.mono.lb << ", " << n->ec.mono.ub << " ]" << n->ec.mono.val.toString() << std::endl;
-      }
-  }*/
-  // END DEBUG
 
   /*
   for (auto& um : dbg) {
@@ -244,16 +227,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
-
-  // Write graph to a temporary binary file and read it back into a static graph
-  // TODO:
-  // Only do this if graph exceeds certain size
-  //dbg.to_static();
-  //std::string tmp_bin = generate_tmp_file(tmp_file);
-  //dbg.writeBinary(tmp_bin, opt.threads);
-  //dbg = CompactedDBG<Node>(k, c_opt.g);
-  //dbg.readBinary(tmp_bin, true, opt.threads);
-  //std::remove(tmp_bin.c_str());
+  // If off-list is supplied, add off-listed kmers flanking the common
+  // sequences to the graph and append those sequences to the tmp_file
+  onlist_sequences = Roaring();
+  onlist_sequences.addRange(0, num_trans);
+  OfflistFlankingKmers(opt, tmp_file);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -310,13 +288,15 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
+void OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+//void KmerIndex::OfflistFlankingKmers(const std::string& path, size_t threads) {
 
-  // Add one more transcript to represent off-list sequences
-  uint32_t offlist_tx = num_trans+1;
+  if (opt.offlist == "") return;
 
-  std::ifstream infile(path.c_str());
+  std::ifstream infile(opt.offlist.c_str());
   if (!infile.good()) return;
+
+  std::unordered_set<Kmer, KmerHash> kmers;
 
   // Main worker thread
   auto worker_function = [&](std::stringstream& buf) {
@@ -324,8 +304,8 @@ void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
     int pos = 0;
     std::string seq = buf.str();
 
-    std::vector<UnitigMap<Node> > ums;
-    UnitigMap<Node> um;
+    std::unordered_set<Kmer, KmerHash> kmers_;
+    const_UnitigMap<Node> um;
     int seqlen = seq.size() - k + 1; // number of k-mers
     while (pos < seqlen) {
       um = dbg.findUnitig(seq.c_str(), pos, seq.size());
@@ -335,11 +315,20 @@ void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
         continue;
       }
 
+      // Add leading kmer to set
+      if (pos > 0) {
+        kmers_.emplace(seq.substr(pos - 1, k));
+      }
+
+      // Add trailing kmer to set
+      if (pos + um.len + k <= seq.length()) {
+        kmers_.emplace(seq.substr(pos + um.len, k));
+      }
+
       pos += um.len;
-      ums.push_back(um);
 
     }
-    return ums;
+    return kmers;
   };
 
   // Thread for reading fasta
@@ -361,38 +350,36 @@ void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
   {
     bool stop = false;
 
-    std::vector<thread> workers;
+    std::vector<std::thread> workers;
 
-    mutex mutex_file;
-    mutex mutex_graph;
+    std::mutex mutex_file;
+    std::mutex mutex_kmers;
 
-    for (size_t t = 0; t < threads; ++t){
+    for (size_t t = 0; t < opt.threads; ++t){
 
       workers.emplace_back(
 
         [&, t]{
 
-          Roaring r;
-          r.add(offlist_tx);
           while (true) {
 
             std::stringstream buf;
 
             {
               // Preempting read access for fasta
-              unique_lock<mutex> lock(mutex_file);
+              std::unique_lock<std::mutex> lock(mutex_file);
 
               if (stop) return;
               stop = reading_function(buf);
             }
 
-            std::vector<UnitigMap<Node> > ums = worker_function(buf);
+            auto kmers_local = worker_function(buf);
 
             {
-              // Preempting write access for graph
-              unique_lock<mutex> lock(mutex_graph);
-              for (auto& um : ums) {
-                um.getData()->ec.overwrite(um.dist, um.dist + um.len, r);
+              // Preempting write access for kmer set
+              std::unique_lock<std::mutex> lock(mutex_kmers);
+              for (auto& kmer : kmers_local) {
+                kmers.insert(kmer);
               }
             }
 
@@ -404,8 +391,32 @@ void KmerIndex::ColorOfflist(const std::string& path, size_t threads) {
     // Wait for all threads to finish;
     for (auto& t : workers) t.join();
   }
-
   infile.close();
+
+  size_t N = 0;
+  size_t start = num_trans;
+  std::ofstream outfile;
+  outfile.open(tmp_file, std::ios_base::app);
+  for (const auto& kmer : kmers) {
+    // Insert all flanking kmers into graph
+    dbg.add(kmer.toString());
+
+    // Insert all flanking kmers into tmp_file and transcript-related member variables
+    std::string tx_name = "offlist." + std::to_string(N++);
+
+    ++num_trans;
+    target_names_.push_back(tx_name);
+    target_lens_.push_back(k);
+
+    outfile << ">"
+            << tx_name
+            << std::endl
+            << kmer.toString()
+            << std::endl;
+
+  }
+
+  outfile.close();
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
@@ -1205,7 +1216,9 @@ Roaring KmerIndex::intersect(const Roaring& ec, const Roaring& v) const {
     // Do an actual intersect
     res = ec & v;
   }
-  return res;
+
+  // Mask out off-listed transcripts
+  return res & onlist_sequences;
 }
 
 void KmerIndex::loadTranscriptSequences() const {
