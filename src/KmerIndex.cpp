@@ -225,6 +225,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
+  std::cout << "onlist_sequences: " << onlist_sequences.toString() << std::endl;
   OfflistFlankingKmers(opt, tmp_file);
 
   // 1. write version
