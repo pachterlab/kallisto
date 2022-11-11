@@ -84,14 +84,8 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   // read input
   std::unordered_set<std::string> unique_names;
 
-  // Add off-list to the set of fasta files we build the graph from
-  std::vector<std::string> transfasta = opt.transfasta;
-  if (opt.offlist != "") {
-      transfasta.push_back(opt.offlist);
-  }
-
-  int k = opt.k;
-  for (auto& fasta : transfasta) {
+  k = opt.k;
+  for (auto& fasta : opt.transfasta) {
     std::cerr << "[build] loading fasta file " << fasta
               << std::endl;
   }
@@ -111,7 +105,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   int countUNuc = 0;
   int polyAcount = 0;
 
-  for (auto& fasta : transfasta) {
+  for (auto& fasta : opt.transfasta) {
     fp = gzopen(fasta.c_str(), "r");
     seq = kseq_init(fp);
     while (true) {
@@ -231,7 +225,17 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
+  std::cout << "Before offlisting flanking kmers" << std::endl;
+  for (const auto& um : dbg) {
+      std::cout << um.referenceUnitigToString() << std::endl;
+  }
+  std::cout << "=====================" << std::endl;
   OfflistFlankingKmers(opt, tmp_file);
+  std::cout << "After offlisting flanking kmers" << std::endl;
+  for (const auto& um : dbg) {
+      std::cout << um.referenceUnitigToString() << std::endl;
+  }
+  std::cout << "=====================" << std::endl;
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -315,12 +319,12 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
 
         // Add leading kmer to set
         if (lb >= 0 && ub >= lb) {
-          kmers_.emplace(seq.substr(lb, k));
+          kmers_.emplace(seq.substr(lb, k).c_str());
         }
 
         // Add trailing kmer to set
         if (ub > lb && ub + k < seq.length()) {
-            kmers_.emplace(seq.substr(ub, k));
+          kmers_.emplace(seq.substr(ub, k).c_str());
         }
 
         lb = -1;
@@ -341,12 +345,12 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
 
     // Add last leading kmer to set
     if (lb >= 0 && ub >= lb) {
-      kmers_.emplace(seq.substr(lb, k));
+      kmers_.emplace(seq.substr(lb, k).c_str());
     }
 
     // Add last trailing kmer to set
     if (ub > lb && ub + k < seq.length()) {
-        kmers_.emplace(seq.substr(ub, k));
+        kmers_.emplace(seq.substr(ub, k).c_str());
     }
 
     return kmers_;
@@ -606,7 +610,6 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     exit(1);
   }
 
-
   // 3. serialize nodes
   tmp_size = dbg.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
@@ -638,6 +641,15 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+
+  // 7. Write on-list
+  char* buffer = new char[onlist_sequences.getSizeInBytes()];
+  tmp_size = onlist_sequences.write(buffer);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  out.write(buffer, tmp_size);
+  delete[] buffer;
+  buffer = nullptr;
+
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -719,6 +731,14 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+
+  // 7. Write on-list
+  char* buffer = new char[onlist_sequences.getSizeInBytes()];
+  tmp_size = onlist_sequences.write(buffer);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  out.write(buffer, tmp_size);
+  delete[] buffer;
+  buffer = nullptr;
 
   out.flush();
   out.close();
@@ -837,6 +857,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     target_names_.push_back(std::string(buffer));
   }
+  delete[] buffer;
+
+  // 7. Read on-list
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  buffer = new char[tmp_size];
+  in.read(buffer, tmp_size);
+  onlist_sequences = onlist_sequences.read(buffer);
 
   // delete the buffer
   delete[] buffer;
