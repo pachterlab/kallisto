@@ -819,7 +819,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       }
     }
   }
-  
+
   auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
     if (num_new_ecs_ >= transfer_threshold) {
       std::vector<std::unique_lock<std::mutex>> locks;
@@ -1000,7 +1000,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       newB.push_back(std::move(bp));
     } */
   }
-  
+
   attempt_transfer_ecs(num_new_ecs);
 
   numreads += n;
@@ -1210,6 +1210,9 @@ void ReadProcessor::processBuffer() {
 
     // collect the target information
     int r = tc.intersectKmers(v1, v2, !paired, u);
+    // Mask out off-listed kmers
+    u &= index.onlist_sequences;
+
     if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
         std:cerr << "TODO: Implement fusion" << std::endl;
@@ -1758,6 +1761,8 @@ void BUSProcessor::processBuffer() {
 
     // collect the target information
     int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+    // Mask out off-listed kmers
+    u &= index.onlist_sequences;
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       int p = -1;
