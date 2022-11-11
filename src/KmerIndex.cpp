@@ -1265,8 +1265,7 @@ Roaring KmerIndex::intersect(const Roaring& ec, const Roaring& v) const {
     res = ec & v;
   }
 
-  // Mask out off-listed transcripts
-  return res & onlist_sequences;
+  return res;
 }
 
 void KmerIndex::loadTranscriptSequences() const {
