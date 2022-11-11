@@ -225,17 +225,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  std::cout << "Before offlisting flanking kmers" << std::endl;
-  for (const auto& um : dbg) {
-      std::cout << um.referenceUnitigToString() << std::endl;
-  }
-  std::cout << "=====================" << std::endl;
   OfflistFlankingKmers(opt, tmp_file);
-  std::cout << "After offlisting flanking kmers" << std::endl;
-  for (const auto& um : dbg) {
-      std::cout << um.referenceUnitigToString() << std::endl;
-  }
-  std::cout << "=====================" << std::endl;
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
