@@ -34,6 +34,11 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
+
+// Laura to do: Add intersectKmersCFC function to intersect set of equivalence classes for each frame
+
+
+
 int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
   Roaring u1 = intersectECs(v1);

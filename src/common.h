@@ -11,6 +11,72 @@
 typedef unsigned int uint;
 #endif
 
+// Create map cfc_code as a look-up table for the comma-free code
+// nucleotide triplet -> comma-free triplet
+std::map<std::string, std::string>cfc_code = {
+  {"TTT", "ACC"},
+  {"TTC", "ACC"},
+  {"TTA", "ACA"},
+  {"TTG", "ACA"},
+  {"CTT", "ACA"},
+  {"CTC", "ACA"},
+  {"CTA", "ACA"},
+  {"CTG", "ACA"},
+  {"ATT", "ATA"},
+  {"ATC", "ATA"},
+  {"ATA", "ATA"},
+  {"ATG", "ATC"},
+  {"GTT", "ATT"},
+  {"GTC", "ATT"},
+  {"GTA", "ATT"},
+  {"GTG", "ATT"},
+  {"TCT", "CTA"},
+  {"TCC", "CTA"},
+  {"TCA", "CTA"},
+  {"TCG", "CTA"},
+  {"AGT", "CTA"},
+  {"AGC", "CTA"},
+  {"CCT", "CTC"},
+  {"CCC", "CTC"},
+  {"CCA", "CTC"},
+  {"CCG", "CTC"},
+  {"ACT", "CTT"},
+  {"ACC", "CTT"},
+  {"ACA", "CTT"},
+  {"ACG", "CTT"},
+  {"GCT", "AGA"},
+  {"GCC", "AGA"},
+  {"GCA", "AGA"},
+  {"GCG", "AGA"},
+  {"TAT", "AGC"},
+  {"TAC", "AGC"},
+  {"CAT", "AGT"},
+  {"CAC", "AGT"},
+  {"CAA", "AGG"},
+  {"CAG", "AGG"},
+  {"AAT", "CGA"},
+  {"AAC", "CGA"},
+  {"AAA", "CGC"},
+  {"AAG", "CGC"},
+  {"GAT", "CGT"},
+  {"GAC", "CGT"},
+  {"GAA", "CGG"},
+  {"GAG", "CGG"},
+  {"TGT", "TGA"},
+  {"TGC", "TGA"},
+  {"TGG", "TGC"},
+  {"CGT", "TGT"},
+  {"CGC", "TGT"},
+  {"CGA", "TGT"},
+  {"CGG", "TGT"},
+  {"AGA", "TGT"},
+  {"AGG", "TGT"},
+  {"GGT", "TGG"},
+  {"GGC", "TGG"},
+  {"GGA", "TGG"},
+  {"GGG", "TGG"}
+};
+
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
   BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}
@@ -62,6 +128,7 @@ struct BUSOptions {
 };
 
 struct ProgramOptions {
+  bool cfc;
   bool verbose;
   int threads;
   std::string index;
@@ -153,7 +220,8 @@ ProgramOptions() :
   batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  cfc(false)
   {}
 };
 

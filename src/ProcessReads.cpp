@@ -1756,8 +1756,33 @@ void BUSProcessor::processBuffer() {
       index.match(seq2, seqlen2, v2);
     }
 
-    // collect the target information
-    int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+    // to-do Laura
+    // process frames for commafree (to do: extend to paired-end reads)
+    if (opt.cfc) {
+      std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
+      v3.reserve(1000);
+      v4.reserve(1000);
+      v5.reserve(1000);
+      v6.reserve(1000);
+      v7.reserve(1000);
+
+      seq3 = seq[1:]
+      seqlen3 = len(seq3)
+      v3.clear();
+      index.match(seq3, seqlen3, v3);
+
+      etc....
+
+    }
+
+    // intersect set of equivalence classes for each frame
+    if (opt.cfc) {
+      tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u)
+    }
+    else {
+      // collect the target information
+      int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+    }
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       int p = -1;

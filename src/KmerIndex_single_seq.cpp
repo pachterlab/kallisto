@@ -900,8 +900,78 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     proc += um.len;
   }
   */
- 
+
+
+
+
   // Translate sequence string s to commafree-code
+
+  // Create map cfc_code as a look-up table for the comma-free code
+  // nucleotide triplet -> comma-free triplet
+  std::map<std::string, std::string>cfc_code = {
+    {"TTT", "ACC"},
+    {"TTC", "ACC"},
+    {"TTA", "ACA"},
+    {"TTG", "ACA"},
+    {"CTT", "ACA"},
+    {"CTC", "ACA"},
+    {"CTA", "ACA"},
+    {"CTG", "ACA"},
+    {"ATT", "ATA"},
+    {"ATC", "ATA"},
+    {"ATA", "ATA"},
+    {"ATG", "ATC"},
+    {"GTT", "ATT"},
+    {"GTC", "ATT"},
+    {"GTA", "ATT"},
+    {"GTG", "ATT"},
+    {"TCT", "CTA"},
+    {"TCC", "CTA"},
+    {"TCA", "CTA"},
+    {"TCG", "CTA"},
+    {"AGT", "CTA"},
+    {"AGC", "CTA"},
+    {"CCT", "CTC"},
+    {"CCC", "CTC"},
+    {"CCA", "CTC"},
+    {"CCG", "CTC"},
+    {"ACT", "CTT"},
+    {"ACC", "CTT"},
+    {"ACA", "CTT"},
+    {"ACG", "CTT"},
+    {"GCT", "AGA"},
+    {"GCC", "AGA"},
+    {"GCA", "AGA"},
+    {"GCG", "AGA"},
+    {"TAT", "AGC"},
+    {"TAC", "AGC"},
+    {"CAT", "AGT"},
+    {"CAC", "AGT"},
+    {"CAA", "AGG"},
+    {"CAG", "AGG"},
+    {"AAT", "CGA"},
+    {"AAC", "CGA"},
+    {"AAA", "CGC"},
+    {"AAG", "CGC"},
+    {"GAT", "CGT"},
+    {"GAC", "CGT"},
+    {"GAA", "CGG"},
+    {"GAG", "CGG"},
+    {"TGT", "TGA"},
+    {"TGC", "TGA"},
+    {"TGG", "TGC"},
+    {"CGT", "TGT"},
+    {"CGC", "TGT"},
+    {"CGA", "TGT"},
+    {"CGG", "TGT"},
+    {"AGA", "TGT"},
+    {"AGG", "TGT"},
+    {"GGT", "TGG"},
+    {"GGC", "TGG"},
+    {"GGA", "TGG"},
+    {"GGG", "TGG"}
+  };
+
   // Convert char const* to string
   std::string s_string(s);
 
@@ -925,6 +995,9 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
 
   // Convert stream to new sequence string s_cfc
   std::string s_cfc = all_stream.str();
+
+
+
 
   KmerIterator kit(s_cfc.c_str()), kit_end;
   bool backOff = false;
