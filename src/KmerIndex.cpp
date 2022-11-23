@@ -128,6 +128,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
 
+      /*
       if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
         // clip off polyA tail
         //std::cerr << "[index] clipping off polyA tail" << std::endl;
@@ -136,6 +137,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
         str = str.substr(0,j+1);
       }
+      */
       of << ">" << num_trans++ << "\n" << str << std::endl;
 
       target_lens_.push_back(seq->seq.l);
@@ -203,7 +205,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
   c_opt.verbose = true;
-  c_opt.filename_ref_in.push_back(tmp_file);
+  //c_opt.filename_ref_in.push_back(tmp_file);
+  c_opt.filename_ref_in.push_back(opt.transfasta[0]);
 
   if (opt.g > 0) { // If minimizer length supplied, override the default
     c_opt.g = opt.g;
@@ -225,7 +228,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  std::cout << "onlist_sequences: " << onlist_sequences.toString() << std::endl;
   OfflistFlankingKmers(opt, tmp_file);
 
   // 1. write version
@@ -274,7 +276,9 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   in.ignore(sizeof(tmp_size));
 
   dbg = CompactedDBG<Node>(k, c_opt.g);
+
   dbg.readBinary(in, mphf);
+
   //infile.close();
 
   uint32_t running_id = 0;
@@ -284,9 +288,10 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 }
 
 void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
-//void KmerIndex::OfflistFlankingKmers(const std::string& path, size_t threads) {
 
   if (opt.offlist == "") return;
+
+  std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.offlist << std::endl;
 
   std::ifstream infile(opt.offlist.c_str());
   if (!infile.good()) return;
@@ -431,6 +436,7 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
             << std::endl;
 
   }
+  std::cerr << "[build] identified " << kmers.size() << " distinguishing flanking k-mers" << std::endl;
 
   outfile.close();
 }

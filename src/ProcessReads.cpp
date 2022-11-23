@@ -1219,6 +1219,7 @@ void ReadProcessor::processBuffer() {
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
+      //std::cout << s1 << std::endl;
     }
 
     /* --  possibly modify the pseudoalignment  -- */
