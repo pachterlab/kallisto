@@ -29,6 +29,9 @@
 #include <htslib/kstring.h>
 #include <unordered_set>
 
+// Added by Laura                                                                                                                                                                                      
+#include <algorithm>
+// End Laura 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -1749,16 +1752,18 @@ void BUSProcessor::processBuffer() {
     v.clear();
     u = Roaring();
 
-    // process 2nd read
     index.match(seq, seqlen, v);
+
+    // process 2nd read
     if (busopt.paired) {
       v2.clear();
       index.match(seq2, seqlen2, v2);
     }
 
-    // to-do Laura
+    // Added by Laura
     // process frames for commafree (to do: extend to paired-end reads)
     if (opt.cfc) {
+      // initiate equivalence classes
       std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
       v3.reserve(1000);
       v4.reserve(1000);
@@ -1766,23 +1771,56 @@ void BUSProcessor::processBuffer() {
       v6.reserve(1000);
       v7.reserve(1000);
 
-      seq3 = seq[1:]
-      seqlen3 = len(seq3)
+      // align remaining forward frames using the match function
+      std::string seq3 = seq.substr(1);
+      size_t seqlen3 = seq3.size();
       v3.clear();
       index.match(seq3, seqlen3, v3);
 
-      etc....
+      std::string seq4 = seq.substr(2);
+      size_t seqlen4 = seq4.size();
+      v4.clear();
+      index.match(seq4, seqlen4, v4);
 
-    }
+      // get reverse complement of seq
+      // create a copy of seq
+      std::string com_seq = seq;
+
+      // tansform com_seq to its complement (complement function stored in common.h)
+      transform(
+          begin(com_seq),
+          end(com_seq),
+          begin(com_seq),
+          complement);
+
+      // reverse com_seq
+      reverse(com_seq.begin(), com_seq.end());
+
+      // align reverse complement frames using the match function
+      size_t seqlen5 = com_seq.size();
+      v5.clear();
+      index.match(com_seq, seqlen5, v5);
+
+      std::string seq6 = com_seq.substr(1);
+      size_t seqlen6 = seq6.size();
+      v6.clear();
+      index.match(seq6, seqlen6, v6);
+
+      std::string seq7 = com_seq.substr(2);
+      size_t seqlen7 = seq7.size();
+      v7.clear();
+      index.match(seq7, seqlen7, v7);
 
     // intersect set of equivalence classes for each frame
+    // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?
     if (opt.cfc) {
-      tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u)
+      int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
     }
     else {
       // collect the target information
       int r = tc.intersectKmers(v, v2, !busopt.paired, u);
     }
+    // End Laura
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       int p = -1;

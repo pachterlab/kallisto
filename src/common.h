@@ -11,6 +11,9 @@
 typedef unsigned int uint;
 #endif
 
+// Added by Laura
+#include <map>                                                                                                                                                                                       
+#include <algorithm>
 // Create map cfc_code as a look-up table for the comma-free code
 // nucleotide triplet -> comma-free triplet
 std::map<std::string, std::string>cfc_code = {
@@ -77,6 +80,47 @@ std::map<std::string, std::string>cfc_code = {
   {"GGG", "TGG"}
 };
 
+// function to transform nucleotide seq to its complement
+char complement(char n)
+{   
+    switch(n)
+    {   
+    case 'A':
+        return 'T';
+        break;
+    case 'T':
+        return 'A';
+        break;
+    case 'G':
+        return 'C';
+        break;
+    case 'C':
+        return 'G';
+        break;
+    case 'N':
+        return 'N';
+        break;
+    case 'a':
+        return 't';
+        break;
+    case 't':
+        return 'a';
+        break;
+    case 'g':
+        return 'c';
+        break;
+    case 'c':
+        return 'g';
+        break;
+    case 'n':
+        return 'n';
+        break;
+    default:
+        return 'N';
+    }
+};
+// End Laura
+
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
   BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}
@@ -127,6 +171,7 @@ struct BUSOptions {
   }
 };
 
+// Laura: Added cfc option and defined as false by default
 struct ProgramOptions {
   bool cfc;
   bool verbose;

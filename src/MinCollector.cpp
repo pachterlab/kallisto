@@ -35,9 +35,50 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
 }
 
 
-// Laura to do: Add intersectKmersCFC function to intersect set of equivalence classes for each frame
+// Added by Laura
+int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+  Roaring u1 = intersectECs(v1);
+  Roaring u3 = intersectECs(v3);
+  Roaring u4 = intersectECs(v4);
+  Roaring u5 = intersectECs(v5);
+  Roaring u6 = intersectECs(v6);
+  Roaring u7 = intersectECs(v7);
+
+  if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
+    return -1;
+  }
+
+  // non-strict intersection
+
+  if (u1.isEmpty()) {
+    if (v1.empty()) {
+      r = u2;
+    } else {
+      return -1;
+    }
+  } else if (u2.isEmpty()) {
+    if (v2.empty()) {
+      r = u1;
+    } else {
+      return -1;
+    }
+  } else {
+    r = u1 & u2;
+  }
 
 
+
+  if (r.isEmpty()) {
+    return -1;
+  }
+  return 1;
+}
+// End Laura
 
 int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
