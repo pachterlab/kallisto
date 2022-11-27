@@ -123,8 +123,9 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt, std::ofstream& out);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out);
 
-  // Removes all kmers occurring in opt.blacklist from the dBG.
-  void Offlist(const std::string& path);
+  // If off-list is supplied, add off-listed kmers flanking the common
+  // sequences to the graph and append those sequences to the tmp_file
+  void OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
   // i.e. have more than one color.
@@ -151,7 +152,6 @@ struct KmerIndex {
   int num_trans; // number of targets
   int skip;
 
-  //KmerHashTable<KmerEntry, KmerHash> kmap;
   CompactedDBG<Node> dbg;
   EcMap ecmap;
   DBGraph dbGraph;
@@ -163,6 +163,10 @@ struct KmerIndex {
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
   bool target_seqs_loaded;
+
+  // Sequences not in off-list: 1
+  // Sequences in off-list:     0
+  Roaring onlist_sequences;
 };
 
 #endif // KALLISTO_KMERINDEX_H

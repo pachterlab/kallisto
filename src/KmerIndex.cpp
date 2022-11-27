@@ -83,7 +83,8 @@ std::string generate_tmp_file(std::string seed) {
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) {
   // read input
   std::unordered_set<std::string> unique_names;
-  int k = opt.k;
+
+  k = opt.k;
   for (auto& fasta : opt.transfasta) {
     std::cerr << "[build] loading fasta file " << fasta
               << std::endl;
@@ -202,7 +203,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
   c_opt.verbose = true;
-  c_opt.filename_ref_in.push_back(tmp_file);
+  //c_opt.filename_ref_in.push_back(tmp_file);
+  c_opt.filename_ref_in.push_back(opt.transfasta[0]);
 
   if (opt.g > 0) { // If minimizer length supplied, override the default
     c_opt.g = opt.g;
@@ -220,17 +222,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   dbg = CompactedDBG<Node>(k, c_opt.g);
   dbg.build(c_opt);
 
-  Offlist(opt.offlist);
-
-  // Write graph to a temporary binary file and read it back into a static graph
-  // TODO:
-  // Only do this if graph exceeds certain size
-  //dbg.to_static();
-  //std::string tmp_bin = generate_tmp_file(tmp_file);
-  //dbg.writeBinary(tmp_bin, opt.threads);
-  //dbg = CompactedDBG<Node>(k, c_opt.g);
-  //dbg.readBinary(tmp_bin, true, opt.threads);
-  //std::remove(tmp_bin.c_str());
+  // If off-list is supplied, add off-listed kmers flanking the common
+  // sequences to the graph and append those sequences to the tmp_file
+  onlist_sequences = Roaring();
+  onlist_sequences.addRange(0, num_trans);
+  OfflistFlankingKmers(opt, tmp_file);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -278,7 +274,9 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   in.ignore(sizeof(tmp_size));
 
   dbg = CompactedDBG<Node>(k, c_opt.g);
+
   dbg.readBinary(in, mphf);
+
   //infile.close();
 
   uint32_t running_id = 0;
@@ -287,49 +285,159 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::Offlist(const std::string& path) {
-  std::ifstream infile(path.c_str());
+void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+
+  if (opt.offlist == "") return;
+
+  std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.offlist << std::endl;
+
+  std::ifstream infile(opt.offlist.c_str());
   if (!infile.good()) return;
 
-  size_t count = 0;
-  std::string line;
-  std::stringstream buf;
-  const_UnitigMap<Node> um;
-  bool continue_reading = true;
-  while (continue_reading) {
-    if (!std::getline(infile, line)) {
-      line = "";
-      continue_reading = false;
-    }
-    if (line.size() != 0 && line[0] != '>') { // Add to buf
-      buf << line;
-    }
-    if (buf.str() != "" && (!continue_reading || (line.size() != 0 && line[0] == '>'))) { // Read from and clear buf
-      // Search for everything in buffer in graph and delete the corresponding
-      // nodes in case of a hit.
-      size_t pos = 0;
-      std::string seq = buf.str();
-      while (pos < seq.size() - k + 1) {
+  std::unordered_set<Kmer, KmerHash> kmers;
 
-        um = dbg.findUnitig(seq.c_str(), pos, seq.size());
+  // Main worker thread
+  auto worker_function = [&](std::stringstream& buf) {
 
-        if (um.isEmpty) {
-          ++pos;
-          continue;
+    int lb = -1, ub = -1;
+    int pos = 0;
+    std::string seq = buf.str();
+
+    std::unordered_set<Kmer, KmerHash> kmers_;
+    const_UnitigMap<Node> um;
+    int seqlen = seq.size() - k + 1; // number of k-mers
+    while (pos < seqlen) {
+      um = dbg.findUnitig(seq.c_str(), pos, seq.size());
+
+      if (um.isEmpty) {
+
+        // Add leading kmer to set
+        if (lb >= 0 && ub >= lb) {
+          kmers_.emplace(seq.substr(lb, k).c_str());
+        }
+
+        // Add trailing kmer to set
+        if (ub > lb && ub + k < seq.length()) {
+          kmers_.emplace(seq.substr(ub, k).c_str());
+        }
+
+        lb = -1;
+        ub = -1;
+        ++pos;
+
+      } else {
+
+        if (lb < 0 && pos > 0) {
+          lb = pos - 1;
         }
 
         pos += um.len;
-        count += um.len;
-
-        dbg.remove(um, true);
+        ub = pos;
       }
 
-      // Clear buffer.
-      buf.str("");
     }
+
+    // Add last leading kmer to set
+    if (lb >= 0 && ub >= lb) {
+      kmers_.emplace(seq.substr(lb, k).c_str());
+    }
+
+    // Add last trailing kmer to set
+    if (ub > lb && ub + k < seq.length()) {
+        kmers_.emplace(seq.substr(ub, k).c_str());
+    }
+
+    return kmers_;
+  };
+
+  // Thread for reading fasta
+  auto reading_function = [&](std::stringstream& buf) {
+
+    std::string line;
+    while (std::getline(infile, line)) {
+
+      // Read on this thread until we reach next fasta entry
+      if (line[0] == '>') return false;
+      buf << line;
+
+    }
+
+    // Stop reading on all threads once we reach EOF
+    return true;
+
+  };
+
+  {
+    bool stop = false;
+
+    std::vector<std::thread> workers;
+
+    std::mutex mutex_file;
+    std::mutex mutex_kmers;
+
+    for (size_t t = 0; t < opt.threads; ++t){
+
+      workers.emplace_back(
+
+        [&, t]{
+
+          while (true) {
+
+            std::stringstream buf;
+
+            {
+              // Preempting read access for fasta
+              std::unique_lock<std::mutex> lock(mutex_file);
+
+              if (stop) return;
+              stop = reading_function(buf);
+            }
+
+            auto kmers_local = worker_function(buf);
+
+            {
+              // Preempting write access for kmer set
+              std::unique_lock<std::mutex> lock(mutex_kmers);
+              for (auto& kmer : kmers_local) {
+                kmers.insert(kmer);
+              }
+            }
+
+          }
+        }
+      );
+    }
+
+    // Wait for all threads to finish;
+    for (auto& t : workers) t.join();
   }
   infile.close();
-  std::cerr << "[build] Removed " << count << " blacklisted kmers from graph." << std::endl;
+
+  size_t N = 0;
+  size_t start = num_trans;
+  std::ofstream outfile;
+  outfile.open(tmp_file, std::ios_base::app);
+  for (const auto& kmer : kmers) {
+    // Insert all flanking kmers into graph
+    dbg.add(kmer.toString());
+
+    // Insert all flanking kmers into tmp_file and transcript-related member variables
+    std::string tx_name = "offlist." + std::to_string(N++);
+
+    ++num_trans;
+    target_names_.push_back(tx_name);
+    target_lens_.push_back(k);
+
+    outfile << ">"
+            << tx_name
+            << std::endl
+            << kmer.toString()
+            << std::endl;
+
+  }
+  std::cerr << "[build] identified " << kmers.size() << " distinguishing flanking k-mers" << std::endl;
+
+  outfile.close();
 }
 
 void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file) {
@@ -498,7 +606,6 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     exit(1);
   }
 
-
   // 3. serialize nodes
   tmp_size = dbg.size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
@@ -530,6 +637,15 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+
+  // 7. Write on-list
+  char* buffer = new char[onlist_sequences.getSizeInBytes()];
+  tmp_size = onlist_sequences.write(buffer);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  out.write(buffer, tmp_size);
+  delete[] buffer;
+  buffer = nullptr;
+
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -611,6 +727,14 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     // 6.2 write out the actual string
     out.write(tid.c_str(), tmp_size);
   }
+
+  // 7. Write on-list
+  char* buffer = new char[onlist_sequences.getSizeInBytes()];
+  tmp_size = onlist_sequences.write(buffer);
+  out.write((char *)&tmp_size, sizeof(tmp_size));
+  out.write(buffer, tmp_size);
+  delete[] buffer;
+  buffer = nullptr;
 
   out.flush();
   out.close();
@@ -712,6 +836,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t bufsz = 1024;
   buffer = new char[bufsz];
   for (auto i = 0; i < num_trans; ++i) {
+
     // 6.1 read in the size
     in.read((char *)&tmp_size, sizeof(tmp_size));
 
@@ -728,6 +853,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
     target_names_.push_back(std::string(buffer));
   }
+  delete[] buffer;
+
+  // 7. Read on-list
+  in.read((char *)&tmp_size, sizeof(tmp_size));
+  buffer = new char[tmp_size];
+  in.read(buffer, tmp_size);
+  onlist_sequences = onlist_sequences.read(buffer);
 
   // delete the buffer
   delete[] buffer;
@@ -820,6 +952,9 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
       if (um1.strand)
         p1 = um1.dist - kit1->second;
       else
+      if (um1.strand)
+        p1 = um1.dist - kit1->second;
+      else
         p1 = um1.dist + k + kit1->second;
       break;
     }
@@ -908,6 +1043,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
+
     // need to check it
     const_UnitigMap<Node> um = dbg.find(kit->first);
     n = um.getData();
@@ -974,6 +1110,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
               int found3pos = pos+dist;
               KmerIterator kit3(kit);
               kit3 += middlePos-pos;
+
               if (kit3 != kit_end) {
                 const_UnitigMap<Node> um3 = dbg.find(kit3->first);
                 if (!um3.isEmpty) {
@@ -1124,6 +1261,7 @@ Roaring KmerIndex::intersect(const Roaring& ec, const Roaring& v) const {
     // Do an actual intersect
     res = ec & v;
   }
+
   return res;
 }
 

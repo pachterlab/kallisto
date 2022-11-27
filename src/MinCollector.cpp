@@ -144,16 +144,27 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
          }
        }); // sort by contig, and then first position
 
-  //int ec = index.dbGraph.ecs[v[0].first.contig];
   Roaring ec = v[0].first.getData()->ec[v[0].first.dist];
+  bool found_nonempty = !ec.isEmpty();
   Roaring lastEC = ec;
   r = ec;
 
   for (int i = 1; i < v.size(); i++) {
+
+    // Find a non-empty EC before we start taking the intersection
+    if (!found_nonempty) {
+      ec = v[i].first.getData()->ec[v[i].first.dist];
+      found_nonempty = !ec.isEmpty();
+      r = ec;
+    }
+
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
+
       ec = v[i].first.getData()->ec[v[i].first.dist];
-      if (!(ec == lastEC)) {
+
+      // Don't intersect empty EC (because of thresholding)
+      if (!(ec == lastEC) && !ec.isEmpty()) {
         r = r & ec;
         lastEC = ec;
         if (r.isEmpty()) {
