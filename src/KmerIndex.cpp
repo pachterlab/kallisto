@@ -359,6 +359,7 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
       // Read on this thread until we reach next fasta entry
       if (line[0] == '>') return false;
       buf << line;
+
     }
 
     // Stop reading on all threads once we reach EOF
@@ -865,6 +866,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   buffer=nullptr;
 
   in.close();
+
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
   }
