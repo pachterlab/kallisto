@@ -128,7 +128,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
 
-      /*
       if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
         // clip off polyA tail
         //std::cerr << "[index] clipping off polyA tail" << std::endl;
@@ -137,7 +136,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
         str = str.substr(0,j+1);
       }
-      */
       of << ">" << num_trans++ << "\n" << str << std::endl;
 
       target_lens_.push_back(seq->seq.l);
