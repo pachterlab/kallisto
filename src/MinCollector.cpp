@@ -54,24 +54,21 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
   }
 
   // non-strict intersection
+  // to-do: currently the different frames are treated as if they were paired reads
+  // this might not be the best way to handle them
+  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
 
-  if (u1.isEmpty()) {
-    if (v1.empty()) {
-      r = u2;
-    } else {
-      return -1;
-    }
-  } else if (u2.isEmpty()) {
-    if (v2.empty()) {
-      r = u1;
-    } else {
-      return -1;
-    }
-  } else {
-    r = u1 & u2;
+  bool found_non_empty = false;
+  for (const auto& u_ : u_vector) {
+      if (!found_non_empty) {
+        r = u_;
+        if (!r.isEmpty()) {
+            found_non_empty = true;
+        }
+      } else if (!u_.isEmpty()) {
+          r &= u_;
+      }
   }
-
-
 
   if (r.isEmpty()) {
     return -1;
