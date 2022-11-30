@@ -72,6 +72,7 @@ struct BUSOptions {
 
 struct ProgramOptions {
   bool verbose;
+  bool cfc;
   int threads;
   std::string index;
   int k;
@@ -162,7 +163,8 @@ ProgramOptions() :
   batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  cfc(false)
   {}
 };
 

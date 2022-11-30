@@ -641,10 +641,12 @@ void ListSingleCellTechnologies() {
   << endl;
  }
 
+// Laura: Added cfc argument
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
-  int paired_end_flag = 0;
+  int paired_end_flag = 0;  
+  int cfc_flag = 0;
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
@@ -668,6 +670,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
+    {"cfc", no_argument, &cfc_flag, 1},
     {0,0,0,0}
   };
 
@@ -767,6 +770,16 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = false;
   } else {
     opt.single_end = true;
+  }
+
+  // Laura
+  // throw warning when cfc is passed with paired-end arg (paired-end not supported in cfc mode, will always switch to single-end)
+  if (cfc_flag) {
+    opt.cfc =true;
+    opt.single_end = true;
+    if (paired_end_flag) {
+      cerr << "[bus] --paired ignored; cfc mode only supports single-end reads" << endl;
+    }
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -2023,6 +2036,7 @@ void usageBus() {
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
+       << "    --cfc                     Align to an amino acid reference using comma-free code (cfc)" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
