@@ -1752,7 +1752,7 @@ void BUSProcessor::processBuffer() {
     v.clear();
     u = Roaring();
 
-    index.match(seq, seqlen, v);
+    index.match(seq, seqlen, v, busopt.cfc);
 
     // process 2nd read
     if (busopt.paired) {
@@ -1760,9 +1760,12 @@ void BUSProcessor::processBuffer() {
       index.match(seq2, seqlen2, v2);
     }
 
-    // Added by Laura
+    // Added by Laura (also added busopt.cfc arg to match call above)
     // process frames for commafree (to do: extend to paired-end reads)
-    if (opt.cfc) {
+    if (busopt.cfc) {
+      // const char * to string
+      std::string seq_string(seq);
+
       // initiate equivalence classes
       std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
       v3.reserve(1000);
@@ -1772,21 +1775,21 @@ void BUSProcessor::processBuffer() {
       v7.reserve(1000);
 
       // align remaining forward frames using the match function
-      std::string seq3 = seq.substr(1);
+      std::string seq3 = seq_string.substr(1);
       size_t seqlen3 = seq3.size();
       v3.clear();
-      index.match(seq3, seqlen3, v3);
+      index.match(seq3.c_str(), seqlen3, v3, busopt.cfc);
 
-      std::string seq4 = seq.substr(2);
+      std::string seq4 = seq_string.substr(2);
       size_t seqlen4 = seq4.size();
       v4.clear();
-      index.match(seq4, seqlen4, v4);
+      index.match(seq4.c_str(), seqlen4, v4, busopt.cfc);
 
       // get reverse complement of seq
       // create a copy of seq
-      std::string com_seq = seq;
+      std::string com_seq = seq_string;
 
-      // tansform com_seq to its complement (complement function stored in common.h)
+      // tansform com_seq to its complement (complement function stored in common)
       transform(
           begin(com_seq),
           end(com_seq),
@@ -1799,21 +1802,20 @@ void BUSProcessor::processBuffer() {
       // align reverse complement frames using the match function
       size_t seqlen5 = com_seq.size();
       v5.clear();
-      index.match(com_seq, seqlen5, v5);
+      index.match(com_seq.c_str(), seqlen5, v5, busopt.cfc);
 
       std::string seq6 = com_seq.substr(1);
       size_t seqlen6 = seq6.size();
       v6.clear();
-      index.match(seq6, seqlen6, v6);
+      index.match(seq6.c_str(), seqlen6, v6, busopt.cfc);
 
       std::string seq7 = com_seq.substr(2);
       size_t seqlen7 = seq7.size();
       v7.clear();
-      index.match(seq7, seqlen7, v7);
-
-    // intersect set of equivalence classes for each frame
-    // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?
-    if (opt.cfc) {
+      index.match(seq7.c_str(), seqlen7, v7, busopt.cfc);
+    
+      // intersect set of equivalence classes for each frame
+      // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?
       int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
     }
     else {

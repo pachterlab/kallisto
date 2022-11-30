@@ -34,8 +34,7 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-
-// Added by Laura
+// Added by Laura (also added to MinCollector.h)
 int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4,

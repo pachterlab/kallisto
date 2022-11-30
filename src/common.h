@@ -11,114 +11,11 @@
 typedef unsigned int uint;
 #endif
 
-// Added by Laura
-#include <map>                                                                                                                                                                                       
-#include <algorithm>
-// Create map cfc_code as a look-up table for the comma-free code
-// nucleotide triplet -> comma-free triplet
-std::map<std::string, std::string>cfc_code = {
-  {"TTT", "ACC"},
-  {"TTC", "ACC"},
-  {"TTA", "ACA"},
-  {"TTG", "ACA"},
-  {"CTT", "ACA"},
-  {"CTC", "ACA"},
-  {"CTA", "ACA"},
-  {"CTG", "ACA"},
-  {"ATT", "ATA"},
-  {"ATC", "ATA"},
-  {"ATA", "ATA"},
-  {"ATG", "ATC"},
-  {"GTT", "ATT"},
-  {"GTC", "ATT"},
-  {"GTA", "ATT"},
-  {"GTG", "ATT"},
-  {"TCT", "CTA"},
-  {"TCC", "CTA"},
-  {"TCA", "CTA"},
-  {"TCG", "CTA"},
-  {"AGT", "CTA"},
-  {"AGC", "CTA"},
-  {"CCT", "CTC"},
-  {"CCC", "CTC"},
-  {"CCA", "CTC"},
-  {"CCG", "CTC"},
-  {"ACT", "CTT"},
-  {"ACC", "CTT"},
-  {"ACA", "CTT"},
-  {"ACG", "CTT"},
-  {"GCT", "AGA"},
-  {"GCC", "AGA"},
-  {"GCA", "AGA"},
-  {"GCG", "AGA"},
-  {"TAT", "AGC"},
-  {"TAC", "AGC"},
-  {"CAT", "AGT"},
-  {"CAC", "AGT"},
-  {"CAA", "AGG"},
-  {"CAG", "AGG"},
-  {"AAT", "CGA"},
-  {"AAC", "CGA"},
-  {"AAA", "CGC"},
-  {"AAG", "CGC"},
-  {"GAT", "CGT"},
-  {"GAC", "CGT"},
-  {"GAA", "CGG"},
-  {"GAG", "CGG"},
-  {"TGT", "TGA"},
-  {"TGC", "TGA"},
-  {"TGG", "TGC"},
-  {"CGT", "TGT"},
-  {"CGC", "TGT"},
-  {"CGA", "TGT"},
-  {"CGG", "TGT"},
-  {"AGA", "TGT"},
-  {"AGG", "TGT"},
-  {"GGT", "TGG"},
-  {"GGC", "TGG"},
-  {"GGA", "TGG"},
-  {"GGG", "TGG"}
-};
-
-// function to transform nucleotide seq to its complement
-char complement(char n)
-{   
-    switch(n)
-    {   
-    case 'A':
-        return 'T';
-        break;
-    case 'T':
-        return 'A';
-        break;
-    case 'G':
-        return 'C';
-        break;
-    case 'C':
-        return 'G';
-        break;
-    case 'N':
-        return 'N';
-        break;
-    case 'a':
-        return 't';
-        break;
-    case 't':
-        return 'a';
-        break;
-    case 'g':
-        return 'c';
-        break;
-    case 'c':
-        return 'g';
-        break;
-    case 'n':
-        return 'n';
-        break;
-    default:
-        return 'N';
-    }
-};
+// Added by Laura 
+// declaring cfc_map and complement (both are defined in common.cpp)
+#include <map>
+extern std::map<std::string, std::string>cfc_map;
+extern char complement(char n);
 // End Laura
 
 struct BUSOptionSubstr {
@@ -129,6 +26,7 @@ struct BUSOptionSubstr {
   int stop;
 };
 
+// Laura: Added cfc option
 struct BUSOptions {
   int nfiles;
 
@@ -137,6 +35,7 @@ struct BUSOptions {
   std::vector<BUSOptionSubstr> seq;
 
   bool paired;
+  bool cfc;
 
   int getBCLength() const {
     int r =0 ;
@@ -171,9 +70,7 @@ struct BUSOptions {
   }
 };
 
-// Laura: Added cfc option and defined as false by default
 struct ProgramOptions {
-  bool cfc;
   bool verbose;
   int threads;
   std::string index;
@@ -265,8 +162,7 @@ ProgramOptions() :
   batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false),
-  cfc(false)
+  single_overhang(false)
   {}
 };
 
