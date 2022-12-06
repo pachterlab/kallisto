@@ -51,7 +51,7 @@ bool checkFileExists(std::string fn) {
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
-  const char *opt_string = "i:k:m:e:t:b:";
+  const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -62,7 +62,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"min-size", required_argument, 0, 'm'},
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
-    {"offlist", required_argument, 0, 'b'},
+    {"d-list", required_argument, 0, 'd'},
     {0,0,0,0}
   };
   int c;
@@ -98,7 +98,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'b': {
-      stringstream(optarg) >> opt.offlist;
+      stringstream(optarg) >> opt.d_list;
       break;
     }
     default: break;
@@ -2039,7 +2039,7 @@ void usageIndex() {
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (MAX_KMER_SIZE-1) << ")" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
-       << "-b, --offlist=STRING      Path to a FASTA-file containing sequences to exclude from index" << endl
+       << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl

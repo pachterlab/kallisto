@@ -203,8 +203,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   c_opt.clipTips = false;
   c_opt.deleteIsolated = false;
   c_opt.verbose = true;
-  //c_opt.filename_ref_in.push_back(tmp_file);
-  c_opt.filename_ref_in.push_back(opt.transfasta[0]);
+  c_opt.filename_ref_in.push_back(tmp_file);
 
   if (opt.g > 0) { // If minimizer length supplied, override the default
     c_opt.g = opt.g;
@@ -226,7 +225,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  OfflistFlankingKmers(opt, tmp_file);
+  DListFlankingKmers(opt, tmp_file);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -285,13 +284,13 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
 
-  if (opt.offlist == "") return;
+  if (opt.d_list == "") return;
 
-  std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.offlist << std::endl;
+  std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.d_list << std::endl;
 
-  std::ifstream infile(opt.offlist.c_str());
+  std::ifstream infile(opt.d_list.c_str());
   if (!infile.good()) return;
 
   std::unordered_set<Kmer, KmerHash> kmers;
@@ -422,7 +421,7 @@ void KmerIndex::OfflistFlankingKmers(const ProgramOptions& opt, const std::strin
     dbg.add(kmer.toString());
 
     // Insert all flanking kmers into tmp_file and transcript-related member variables
-    std::string tx_name = "offlist." + std::to_string(N++);
+    std::string tx_name = "d_list." + std::to_string(N++);
 
     ++num_trans;
     target_names_.push_back(tx_name);
@@ -501,7 +500,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
-      trinfos[n->id].reserve(trinfos[n->id].size()+1);
       trinfos[n->id].push_back(tr);
     }
     j++;

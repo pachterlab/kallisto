@@ -117,7 +117,7 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
-  std::string offlist;
+  std::string d_list;
 
 ProgramOptions() :
   verbose(false),
