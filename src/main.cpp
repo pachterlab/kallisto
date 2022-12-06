@@ -97,7 +97,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.threads;
       break;
     }
-    case 'b': {
+    case 'd': {
       stringstream(optarg) >> opt.d_list;
       break;
     }
