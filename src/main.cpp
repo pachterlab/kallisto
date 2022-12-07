@@ -659,6 +659,7 @@ void ListSingleCellTechnologies() {
   << "inDropsv1        inDrops version 1 chemistry" << endl
   << "inDropsv2        inDrops version 2 chemistry" << endl
   << "inDropsv3        inDrops version 3 chemistry" << endl
+  << "MPRA             Massively Parallel Reporter Assay" << endl
   << "SCRBSeq          SCRB-Seq" << endl
   << "SHARE-seq        SHARE-seq RNA" << endl
   << "SmartSeq3        Smart-seq3" << endl
@@ -1327,6 +1328,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.bc.push_back(BUSOptionSubstr(0,15+8+30,15+8+30+8));  
         busopt.bc.push_back(BUSOptionSubstr(0,15+8+30+8+30,15+8+30+8+30+8));
         busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+      } else if (opt.technology == "MPRA") {
+        busopt.nfiles = 3;
+        busopt.bc.push_back(BUSOptionSubstr(0,0,15));
+        busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
+        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
         busopt.seq.push_back(BUSOptionSubstr(2,0,0));
       } else if (opt.technology == "VISIUM") {
         busopt.nfiles = 2;
