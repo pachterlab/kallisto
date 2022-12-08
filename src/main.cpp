@@ -1149,6 +1149,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.seq.push_back(BUSOptionSubstr(0,0,0));
       busopt.umi.resize(0);
       busopt.bc.resize(0);
+      busopt.cfc = opt.cfc;
       if (opt.single_end) {
         busopt.nfiles = 1;
         busopt.paired = false;
@@ -1162,6 +1163,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     return ret;
   } else {
     auto& busopt = opt.busOptions;
+    busopt.cfc = opt.cfc;
 
     if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;

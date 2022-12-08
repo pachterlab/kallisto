@@ -1822,7 +1822,6 @@ void BUSProcessor::processBuffer() {
       // collect the target information
       int r = tc.intersectKmers(v, v2, !busopt.paired, u);
     }
-    // End Laura
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       int p = -1;

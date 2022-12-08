@@ -52,26 +52,45 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
     return -1;
   }
 
+  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
+
   // non-strict intersection
   // to-do: currently the different frames are treated as if they were paired reads
   // this might not be the best way to handle them
-  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
+  //bool found_non_empty = false;
+  //for (const auto& u_ : u_vector) {
+  //    if (!found_non_empty) {
+  //      r = u_;
+  //      if (!r.isEmpty()) {
+  //          found_non_empty = true;
+  //      }
+  //    } else if (!u_.isEmpty()) {
+  //        r &= u_;
+  //    }
+  //}
 
-  bool found_non_empty = false;
+  // find best match (smallest non-zero roaring)
+  // to-do/note: if two reads have the same roaring, we will use the first one (even though the second is just as valid)
+  uint32_t smallest_t=-1;
+  int frame_idx=0;
+  int winner_frame_idx=-1;
   for (const auto& u_ : u_vector) {
-      if (!found_non_empty) {
-        r = u_;
-        if (!r.isEmpty()) {
-            found_non_empty = true;
-        }
-      } else if (!u_.isEmpty()) {
-          r &= u_;
-      }
+    if (u_.cardinality() > 0 && u_.cardinality() < smallest_t) {
+      r = u_;
+      smallest_t = u_.cardinality();
+      winner_frame_idx = frame_idx;
+    }
+    // Throw warning if new frame is as good as the current winning match
+    if (u_.cardinality() > 0 && u_.cardinality() == smallest_t) {
+      std::cout << "Warning: Frame " << frame_idx << " has same roaring as winning frame, but will be dismissed." << endl;
+    }
+    frame_idx++;
   }
 
   if (r.isEmpty()) {
     return -1;
   }
+  std::cout << "Aligned frame: " << winner_frame_idx << endl;
   return 1;
 }
 // End Laura
