@@ -378,8 +378,8 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     contig_length = mc_bounds.second - contig_start;
 
     size_t pos = um.dist - contig_start;
-    if (( um.strand && (pos - p > pre)) ||
-        (!um.strand && (contig_length - 1 - pos - p >= pre))) {
+    if (( um.strand && ((int64_t)(pos - p) >= (int64_t)pre)) ||
+        (!um.strand && ((int64_t)(contig_length - 1 - pos - p) >= (int64_t)pre))) {
 
       int hex = -1;
       //std::cout << "  " << s << "\n";
