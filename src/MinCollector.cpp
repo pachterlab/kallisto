@@ -81,8 +81,8 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
       winner_frame_idx = frame_idx;
     }
     // Throw warning if new frame is as good as the current winning match
-    if (u_.cardinality() > 0 && u_.cardinality() == smallest_t) {
-      std::cout << "Warning: Frame " << frame_idx << " has same roaring as winning frame, but will be dismissed." << endl;
+    else if (u_.cardinality() > 0 && u_.cardinality() == smallest_t) {
+      std::cout << "Warning: Frame " << frame_idx << " has same equivalence class cardinality as winning frame, but will be dismissed." << endl;
     }
     frame_idx++;
   }
