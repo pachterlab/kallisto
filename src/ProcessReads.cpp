@@ -1752,7 +1752,7 @@ void BUSProcessor::processBuffer() {
     v.clear();
     u = Roaring();
 
-    index.match(seq, seqlen, v, busopt.cfc);
+    index.match(seq, seqlen, v, busopt.aa);
 
     // process 2nd read
     if (busopt.paired) {
@@ -1760,9 +1760,9 @@ void BUSProcessor::processBuffer() {
       index.match(seq2, seqlen2, v2);
     }
 
-    // Added by Laura (also added busopt.cfc arg to match call above)
+    // Added by Laura (also added busopt.aa arg to match call above)
     // process frames for commafree (to do: extend to paired-end reads)
-    if (busopt.cfc) {
+    if (busopt.aa) {
       // const char * to string
       std::string seq_string(seq);
 
@@ -1778,12 +1778,12 @@ void BUSProcessor::processBuffer() {
       std::string seq3 = seq_string.substr(1);
       size_t seqlen3 = seq3.size();
       v3.clear();
-      index.match(seq3.c_str(), seqlen3, v3, busopt.cfc);
+      index.match(seq3.c_str(), seqlen3, v3, busopt.aa);
 
       std::string seq4 = seq_string.substr(2);
       size_t seqlen4 = seq4.size();
       v4.clear();
-      index.match(seq4.c_str(), seqlen4, v4, busopt.cfc);
+      index.match(seq4.c_str(), seqlen4, v4, busopt.aa);
 
       // get reverse complement of seq
       // create a copy of seq
@@ -1802,17 +1802,17 @@ void BUSProcessor::processBuffer() {
       // align reverse complement frames using the match function
       size_t seqlen5 = com_seq.size();
       v5.clear();
-      index.match(com_seq.c_str(), seqlen5, v5, busopt.cfc);
+      index.match(com_seq.c_str(), seqlen5, v5, busopt.aa);
 
       std::string seq6 = com_seq.substr(1);
       size_t seqlen6 = seq6.size();
       v6.clear();
-      index.match(seq6.c_str(), seqlen6, v6, busopt.cfc);
+      index.match(seq6.c_str(), seqlen6, v6, busopt.aa);
 
       std::string seq7 = com_seq.substr(2);
       size_t seqlen7 = seq7.size();
       v7.clear();
-      index.match(seq7.c_str(), seqlen7, v7, busopt.cfc);
+      index.match(seq7.c_str(), seqlen7, v7, busopt.aa);
     
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?

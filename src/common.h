@@ -26,7 +26,7 @@ struct BUSOptionSubstr {
   int stop;
 };
 
-// Laura: Added cfc option
+// Laura: Added aa (previously named cfc) option
 struct BUSOptions {
   int nfiles;
 
@@ -35,7 +35,7 @@ struct BUSOptions {
   std::vector<BUSOptionSubstr> seq;
 
   bool paired;
-  bool cfc;
+  bool aa;
 
   int getBCLength() const {
     int r =0 ;
@@ -72,7 +72,7 @@ struct BUSOptions {
 
 struct ProgramOptions {
   bool verbose;
-  bool cfc;
+  bool aa;
   int threads;
   std::string index;
   int k;
@@ -164,7 +164,7 @@ ProgramOptions() :
   batch_bus(false),
   inspect_thorough(false),
   single_overhang(false),
-  cfc(false)
+  aa(false)
   {}
 };
 
