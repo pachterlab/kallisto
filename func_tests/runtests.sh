@@ -47,6 +47,36 @@ checkcmdoutput() {
 ### FASTA files ###
 
 echo ">t1
+ATCTGGTGCCGTAGcctCCGC
+>t2
+ATACTTTggcGTCGACTTCGC
+>t3
+ATACTTTGGCGTCGACTT
+>t4
+ATACTTTGGCGTCGA" > $test_dir/cfc_ref.fasta
+
+echo ">t1
+ATGGGTTGGGATTATCCTAAA
+>t2
+ATTACTGGTGATAATACTAAG
+>t3
+ATCACCGGCGACAATACA
+>t4
+ATCACAGGAGACAAC" > $test_dir/virus_nn_frame0.fasta
+
+# to-do convert t3 - t5 to reverse complement frames
+echo ">t1
+GATGGGTTGGGATTATCCTAAA
+>t2
+GGATTACTGGTGATAATACTAAG
+>t3
+ATCACCGGCGACAATACA  
+>t4
+ATCACAGGAGACAAC
+>t5
+ATCACAGGAGACAAC" > $test_dir/virus_nn_mixed_frames.fasta
+
+echo ">t1
 ACGTGATGAGTGAGTCAGT
 >t2
 ACGTGATGAGATGATGAGTCAGT
@@ -94,7 +124,6 @@ cat $test_dir/simple.fasta $test_dir/nonATCG.fasta $test_dir/polyA.fasta $test_d
 	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
 	| gzip > $test_dir/small.fastq.gz
 
-
 cat /dev/null > $test_dir/medium.fastq.gz
 for i in {1..700}; do cat $test_dir/small.fastq.gz >> $test_dir/medium.fastq.gz; done
 
@@ -102,6 +131,15 @@ cat /dev/null > $test_dir/large.fastq.gz
 for i in {1..100}; do cat $test_dir/medium.fastq.gz >> $test_dir/large.fastq.gz; done
 
 rm $test_dir/medium.fastq.gz
+
+# Generate fastq's from virus nucleotide seqs (to test aa/cfc mode)
+cat $test_dir/virus_nn_frame0.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_frame0.fastq.gz
+
+cat $test_dir/virus_nn_mixed_frames.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_mixed_frames.fastq.gz
 
 # Paired-end reads for basic7.idx index
 
@@ -178,6 +216,10 @@ JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ
 
 echo "[INDEX]"
 
+# Test k=7 cfc reference
+
+cmdexec "$kallisto index -i $test_dir/basic7_cfc.idx -k 7 $test_dir/cfc_ref.fasta"
+
 # Test k=7
 
 cmdexec "$kallisto index -i $test_dir/basic7.idx -k 7 $test_dir/simple.fasta"
@@ -208,6 +250,14 @@ cmdexec "$kallisto index -i $test_dir/duplicates.idx -k 11 --make-unique $test_d
 
 
 ### TEST - kallisto quant ###
+
+# Test --aa (cfc index)
+
+cmdexec "$kallisto quant --aa -o $test_dir/quantbasic -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
+checkcmdoutput "cat $test_dir/quantaa_f0/abundance.tsv" f1c8927dc29b943758242902d5c45a87
+
+cmdexec "$kallisto quant --aa -o $test_dir/quantbasic -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
+checkcmdoutput "cat $test_dir/quantaa_mixedframes/abundance.tsv" f1c8927dc29b943758242902d5c45a87
 
 # Test single-end small.fastq.gz using various indices
 
