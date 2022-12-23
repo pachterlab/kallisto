@@ -2284,7 +2284,7 @@ int main(int argc, char *argv[]) {
 
         plaintext_aux(
           opt.output + "/run_info.json",
-          std::string(std::to_string(index.num_trans)),
+          std::string(std::to_string(index.onlist_sequences.cardinality())),
           std::string(std::to_string(0)), // no bootstraps in pseudo
           std::string(std::to_string(num_processed)),
           std::string(std::to_string(num_pseudoaligned)),
@@ -2453,13 +2453,13 @@ int main(int argc, char *argv[]) {
         std::string call = argv_to_string(argc, argv);
         plaintext_aux(
             opt.output + "/run_info.json",
-            std::string(std::to_string(num_trans)),
+            std::string(std::to_string(index.onlist_sequences.cardinality())),
             std::string(std::to_string(0)),
             std::string(std::to_string(num_processed)),
             std::string(std::to_string(num_pseudoaligned)),
             std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
-            std::string(std::to_string(index_version)),
+            std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
             call);
 
@@ -2574,7 +2574,7 @@ int main(int argc, char *argv[]) {
 
         plaintext_aux(
             opt.output + "/run_info.json",
-            std::string(std::to_string(index.num_trans)),
+            std::string(std::to_string(index.onlist_sequences.cardinality())),
             std::string(std::to_string(opt.bootstrap)),
             std::string(std::to_string(num_processed)),
             std::string(std::to_string(num_pseudoaligned)),
