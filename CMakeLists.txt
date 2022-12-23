@@ -34,6 +34,7 @@ else()
 endif()
 
 #add_compile_options(-Wall -Wno-unused-function)
+add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 
 if(LINK MATCHES static)
     message("static build")
