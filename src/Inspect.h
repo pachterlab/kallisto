@@ -125,14 +125,15 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
   auto Dna = [](int i) {return dna[i & 0x03];};
 
   int k = index.k;
-  cout << "#[inspect] Index version number = " << index.INDEX_VERSION << endl;
-  cout << "#[inspect] k = " << index.k << endl;;
-  cout << "#[inspect] number of targets = " << index.num_trans << endl;
+  cout << "[inspect] Index version number = " << index.INDEX_VERSION << endl;
+  //cout << "#[inspect] k = " << index.k << endl;;
+  //cout << "#[inspect] number of targets = " << index.num_trans << endl;
 
-  cout << "#[inspect] number of unitigs = " << index.dbg.size() << endl;
+  cout << "[inspect] number of unitigs = " << index.dbg.size() << endl;
+  cout << "[inspect] minimizer length = " << index.dbg.getG() << endl;
 
 
-  cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
+  // cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
 
   if (!gfa.empty()) {
     //index.dbg.write(gfa);
