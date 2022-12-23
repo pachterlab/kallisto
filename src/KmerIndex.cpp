@@ -790,6 +790,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     //dbg.to_static();
     k = dbg.getK();
   }
+  std::cerr << "[index] k-mer length: " << std::to_string(k) << std::endl;
 
   // 3. deserialize nodes
   Kmer kmer;
@@ -862,6 +863,12 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
+  
+  std::cerr << "[index] number of targets: " << pretty_num(onlist_sequences.cardinality()) << std::endl;
+  std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;
+  if (num_trans-onlist_sequences.cardinality() > 0) {
+    std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(num_trans-onlist_sequences.cardinality()) << std::endl;
+  }
 
   in.close();
 
