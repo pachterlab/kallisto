@@ -417,12 +417,7 @@ class BlockArray {
 
                 out.write((char *)&mono.lb, sizeof(mono.lb));
                 out.write((char *)&mono.ub, sizeof(mono.ub));
-                char* buffer = new char[mono.val.getSizeInBytes()];
-                size_t tmp_size = mono.val.write(buffer);
-                out.write((char *)&tmp_size, sizeof(tmp_size));
-                out.write(buffer, tmp_size);
-                delete[] buffer;
-                buffer = nullptr;
+                mono.val.serialize(out);
             } else {
 
                 size_t tmp_size = poly.size();
@@ -430,12 +425,7 @@ class BlockArray {
                 for (const auto b : poly) {
                     out.write((char *)&b.lb, sizeof(b.lb));
                     out.write((char *)&b.ub, sizeof(b.ub));
-                    char* buffer = new char[b.val.getSizeInBytes()];
-                    tmp_size = b.val.write(buffer);
-                    out.write((char *)&tmp_size, sizeof(tmp_size));
-                    out.write(buffer, tmp_size);
-                    delete[] buffer;
-                    buffer = nullptr;
+                    b.val.serialize(out);
                 }
             }
         }
@@ -444,7 +434,6 @@ class BlockArray {
 
             clear();
 
-            size_t roaring_size;
             in.read((char *)&flag, sizeof(flag));
             if (flag == 0) {
                 return;
@@ -452,12 +441,9 @@ class BlockArray {
 
                 in.read((char *)&mono.lb, sizeof(mono.lb));
                 in.read((char *)&mono.ub, sizeof(mono.ub));
-                in.read((char *)&roaring_size, sizeof(roaring_size));
-                char* buffer = new char[roaring_size];
-                in.read(buffer, roaring_size);
-                mono.val = mono.val.read(buffer);
-                delete[] buffer;
-                buffer = nullptr;
+                T val;
+                val.deserialize(in);
+                mono.val = std::move(val);
             } else {
 
                 size_t tmp_size;
@@ -471,14 +457,9 @@ class BlockArray {
                     in.read((char *)&lb, sizeof(lb));
                     in.read((char *)&ub, sizeof(ub));
 
-                    in.read((char *)&roaring_size, sizeof(roaring_size));
-                    char* buffer = new char[roaring_size];
-                    in.read(buffer, roaring_size);
                     T val;
-                    val = val.read(buffer);
-                    delete[] buffer;
-                    buffer = nullptr;
-                    insert(lb, ub, val);
+                    val.deserialize(in);
+                    insert(lb, ub, std::move(val));
                 }
             }
         }
