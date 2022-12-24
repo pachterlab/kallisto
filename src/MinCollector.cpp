@@ -144,7 +144,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
          }
        }); // sort by contig, and then first position
 
-  Roaring ec = v[0].first.getData()->ec[v[0].first.dist];
+  Roaring ec = v[0].first.getData()->ec[v[0].first.dist].getIndices();
   bool found_nonempty = !ec.isEmpty();
   Roaring lastEC = ec;
   r = ec;
@@ -153,7 +153,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
 
     // Find a non-empty EC before we start taking the intersection
     if (!found_nonempty) {
-      ec = v[i].first.getData()->ec[v[i].first.dist];
+      ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       found_nonempty = !ec.isEmpty();
       r = ec;
     }
@@ -161,7 +161,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
 
-      ec = v[i].first.getData()->ec[v[i].first.dist];
+      ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
 
       // Don't intersect empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
