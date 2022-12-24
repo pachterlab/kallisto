@@ -7,6 +7,7 @@
 
 #include <CompactedDBG.hpp>
 #include <BlockArray.hpp>
+#include <SparseVector.hpp>
 
 // Unitig to transcript
 struct u2t {
@@ -23,12 +24,7 @@ class Node: public CDBG_Data_t<Node> {
         uint32_t id;
         // Mosaic Equivalence Class:
         // Each kmer in the unitig can have a different equivalence class
-        BlockArray<Roaring> ec;
-
-        // Positing of unitig within each of its transcripts
-        // Most significant bit stores the sense of the transcript w.r.t. the
-        // unitig
-        std::vector<uint32_t> pos;
+        BlockArray<SparseVector<uint32_t>> ec;
 
     Node() : id(-1) {}
 
@@ -47,7 +43,6 @@ class Node: public CDBG_Data_t<Node> {
 
     void clear(const UnitigMap<Node>& um_dest) {
         ec.clear();
-        pos.clear();
     }
 
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
@@ -62,13 +57,6 @@ class Node: public CDBG_Data_t<Node> {
 
         // 2 Write mosaic equivalence class
         ec.serialize(out);
-
-        // 3 Write the positions of each transcript
-        tmp_size = pos.size();
-        out.write((char *)&tmp_size, sizeof(tmp_size));
-        for (uint32_t p : pos) {
-            out.write((char *)&p, sizeof(p));
-        }
     }
 
     void deserialize(std::ifstream& in) {
@@ -81,14 +69,6 @@ class Node: public CDBG_Data_t<Node> {
 
         // 2 Read mosaic equivalence class
         ec.deserialize(in);
-
-        // 3 Read the positions of each transcript
-        in.read((char *)&tmp_size, sizeof(tmp_size));
-        pos.reserve(tmp_size);
-        for (size_t i = 0; i < tmp_size; ++i) {
-            in.read((char *)&tmp_uint, sizeof(tmp_uint));
-            pos.push_back(tmp_uint);
-        }
     }
 };
 
