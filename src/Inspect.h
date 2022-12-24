@@ -132,6 +132,11 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
   cout << "[inspect] number of unitigs = " << index.dbg.size() << endl;
   cout << "[inspect] minimizer length = " << index.dbg.getG() << endl;
 
+  std::pair<size_t,size_t> ec_info = index.getECInfo();
+
+  cout << "[inspect] max EC size = " << ec_info.first << std::endl;
+  cout << "[inspect] number of ECs discarded = " << ec_info.second << std::endl;
+
 
   // cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
 
