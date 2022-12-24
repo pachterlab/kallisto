@@ -1282,18 +1282,16 @@ void ReadProcessor::processBuffer() {
         // might need to optimize this
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
+        const auto& v_ec = ecs[ecs.size() - 1];
+        const Roaring& ec = v_ec.getIndices();
+
+        uint32_t* trs = new uint32_t[ec.cardinality()];
+        ec.toUint32Array(trs);
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
+              bool sense = v_ec[tr];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1301,9 +1299,9 @@ void ReadProcessor::processBuffer() {
               break;
             }
           }
-          delete[] trs;
-          trs = nullptr;
         }
+        delete[] trs;
+        trs = nullptr;
 
         if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
@@ -1319,18 +1317,19 @@ void ReadProcessor::processBuffer() {
         // might need to optimize this
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
+        const auto& v_ec = ecs[ecs.size() - 1];
+        const Roaring& ec = v_ec.getIndices();
         for (size_t j = 0; j < ecs.size() - 1; ++j) {
           offset += ecs[j].cardinality();
         }
 
+        uint32_t* trs = new uint32_t[ec.cardinality()];
+        ec.toUint32Array(trs);
+
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
+              bool sense = v_ec[tr];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1338,9 +1337,9 @@ void ReadProcessor::processBuffer() {
               break;
             }
           }
-          delete[] trs;
-          trs = nullptr;
         }
+        delete[] trs;
+        trs = nullptr;
         if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
@@ -1781,18 +1780,16 @@ void BUSProcessor::processBuffer() {
         // might need to optimize this
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const auto& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
+        const auto& v_ec = ecs[ecs.size() - 1];
+        const Roaring& ec = v_ec.getIndices();
+
+        uint32_t* trs = new uint32_t[ec.cardinality()];
+        ec.toUint32Array(trs);
 
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
+              bool sense = v_ec[tr];
               if ((um.strand == sense) == firstStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1800,9 +1797,9 @@ void BUSProcessor::processBuffer() {
               break;
             }
           }
-          delete[] trs;
-          trs = nullptr;
         }
+        delete[] trs;
+        trs = nullptr;
         if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
@@ -1816,18 +1813,19 @@ void BUSProcessor::processBuffer() {
         // might need to optimize this
         const Node* n = um.getData();
         auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
+        const auto& v_ec = ecs[ecs.size() - 1];
+        const Roaring& ec = v_ec.getIndices();
         for (size_t j = 0; j < ecs.size() - 1; ++j) {
           offset += ecs[j].cardinality();
         }
 
+        uint32_t* trs = new uint32_t[ec.cardinality()];
+        ec.toUint32Array(trs);
+
         for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
           for (size_t j = 0; j < ec.cardinality(); ++j) {
             if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
+              bool sense = v_ec[tr];
               if ((um.strand == sense) == secondStrand) {
                 // swap out
                 vtmp.add(tr);
@@ -1835,9 +1833,9 @@ void BUSProcessor::processBuffer() {
               break;
             }
           }
-          delete[] trs;
-          trs = nullptr;
         }
+        delete[] trs;
+        trs = nullptr;
         if (vtmp.cardinality() < u.cardinality()) {
           u = vtmp; // copy
         }
@@ -2251,21 +2249,21 @@ void AlnProcessor::processBufferTrans() {
             }
 
             auto ecs = n->ec.get_leading_vals(val.dist);
-            size_t offset = 0;
-            const Roaring& ec = ecs[ecs.size() - 1];
+            const auto& v_ec = ecs[ecs.size() - 1];
+            const Roaring& ec = v_ec.getIndices();
 
             for (size_t i = 0; i < ecs.size() - 1; ++i) {
               offset += ecs[i].cardinality();
             }
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
+            bool trsense = v_ec[ec.minimum()];
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
             for (size_t i = 0; i < ec.cardinality(); ++i) {
               // If sense does not agree
-              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+              if ((!v_ec[trs[i]]) != trsense) {
                 for (const auto& y : ua) {
                   if (y.first == trs[i]) {
                     return {false, reptrue};
@@ -2741,21 +2739,21 @@ void AlnProcessor::processBufferGenome() {
             }
 
             auto ecs = n->ec.get_leading_vals(val.dist);
-            size_t offset = 0;
-            const Roaring& ec = ecs[ecs.size() - 1];
+            const auto& v_ec = ecs[ecs.size() - 1];
+            const Roaring& ec = v_ec.getIndices();
 
             for (size_t i = 0; i < ecs.size() - 1; ++i) {
               offset += ecs[i].cardinality();
             }
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
+            bool trsense = (v_ec[ec.minimum()]);
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
             for (size_t i = 0; i < ec.cardinality(); ++i) {
               // If sense does not agree
-              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+              if ((!v_ec[trs[i]]) != trsense) {
                 for (const auto& y : ua) {
                   if (y.first == trs[i]) {
                     return {false, reptrue};
