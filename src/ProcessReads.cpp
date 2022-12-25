@@ -1319,9 +1319,6 @@ void ReadProcessor::processBuffer() {
         auto ecs = n->ec.get_leading_vals(um.dist);
         const auto& v_ec = ecs[ecs.size() - 1];
         const Roaring& ec = v_ec.getIndices();
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
 
         uint32_t* trs = new uint32_t[ec.cardinality()];
         ec.toUint32Array(trs);
@@ -1815,9 +1812,6 @@ void BUSProcessor::processBuffer() {
         auto ecs = n->ec.get_leading_vals(um.dist);
         const auto& v_ec = ecs[ecs.size() - 1];
         const Roaring& ec = v_ec.getIndices();
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
 
         uint32_t* trs = new uint32_t[ec.cardinality()];
         ec.toUint32Array(trs);
@@ -2251,10 +2245,6 @@ void AlnProcessor::processBufferTrans() {
             auto ecs = n->ec.get_leading_vals(val.dist);
             const auto& v_ec = ecs[ecs.size() - 1];
             const Roaring& ec = v_ec.getIndices();
-
-            for (size_t i = 0; i < ecs.size() - 1; ++i) {
-              offset += ecs[i].cardinality();
-            }
 
             uint32_t bitmask = 0x7FFFFFFF;
             bool trsense = v_ec[ec.minimum()];
@@ -2741,10 +2731,6 @@ void AlnProcessor::processBufferGenome() {
             auto ecs = n->ec.get_leading_vals(val.dist);
             const auto& v_ec = ecs[ecs.size() - 1];
             const Roaring& ec = v_ec.getIndices();
-
-            for (size_t i = 0; i < ecs.size() - 1; ++i) {
-              offset += ecs[i].cardinality();
-            }
 
             uint32_t bitmask = 0x7FFFFFFF;
             bool trsense = (v_ec[ec.minimum()]);
