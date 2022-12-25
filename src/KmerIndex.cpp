@@ -1190,12 +1190,13 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
     return {-1,true};
   }
 }
+
 //use:  (pos,sense) = index.findPosition(tr,km,val,p)
 //pre:  index.kmap[km] == val,
 //      km is the p-th k-mer of a read
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const {
   return std::make_pair(0,false);
 }
 
