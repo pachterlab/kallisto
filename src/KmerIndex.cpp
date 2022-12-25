@@ -7,6 +7,7 @@
 #include <functional>
 #include "kseq.h"
 #include "KmerIndex.h"
+#include "SparseVector.hpp"
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
@@ -80,9 +81,29 @@ std::string generate_tmp_file(std::string seed) {
   return tmp_file;
 }
 
+std::pair<size_t,size_t> KmerIndex::getECInfo() const {
+  size_t max_ec_len = 0;
+  size_t cardinality_zero_encounters = 0;
+  for (const auto& um : dbg) {
+    const Node* n = um.getData();
+    std::vector<SparseVector<uint32_t> > vs;
+    n->ec.get_vals(vs);
+    bool cardinality_zero = true;
+    for (auto &v : vs) {
+      size_t cardinality = v.cardinality();
+      if (cardinality > max_ec_len) {
+        max_ec_len = cardinality;
+      }
+      if (cardinality > 0) cardinality_zero = false;
+    }
+    if (cardinality_zero) cardinality_zero_encounters++;
+  }
+  return std::make_pair(max_ec_len, cardinality_zero_encounters);
+}
+
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) {
   // read input
-  std::unordered_set<std::string> unique_names;
+  robin_hood::unordered_set<std::string> unique_names;
 
   k = opt.k;
   for (auto& fasta : opt.transfasta) {
@@ -183,14 +204,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   BuildDeBruijnGraph(opt, tmp_file, out);
   BuildEquivalenceClasses(opt, tmp_file);
 
-  /*
-  for (auto& um : dbg) {
-    auto* node = um.getData();
-    node->ec.shrink_to_size();
-    node->pos.shrink_to_size();
-  }
-  */
-
   std::remove(tmp_file.c_str());
 }
 
@@ -290,19 +303,16 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.d_list << std::endl;
 
-  std::ifstream infile(opt.d_list.c_str());
-  if (!infile.good()) return;
-
-  std::unordered_set<Kmer, KmerHash> kmers;
+  robin_hood::unordered_set<Kmer, KmerHash> kmers;
 
   // Main worker thread
-  auto worker_function = [&](std::stringstream& buf) {
+  auto worker_function = [&](std::string& seq) {
 
     int lb = -1, ub = -1;
     int pos = 0;
-    std::string seq = buf.str();
 
-    std::unordered_set<Kmer, KmerHash> kmers_;
+    std::transform(seq.begin(), seq.end(),seq.begin(), ::toupper);
+    robin_hood::unordered_set<Kmer, KmerHash> kmers_;
     const_UnitigMap<Node> um;
     int seqlen = seq.size() - k + 1; // number of k-mers
     while (pos < seqlen) {
@@ -349,68 +359,64 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     return kmers_;
   };
 
-  // Thread for reading fasta
-  auto reading_function = [&](std::stringstream& buf) {
-
-    std::string line;
-    while (std::getline(infile, line)) {
-
-      // Read on this thread until we reach next fasta entry
-      if (line[0] == '>') return false;
-      buf << line;
-
-    }
-
-    // Stop reading on all threads once we reach EOF
-    return true;
-
-  };
-
-  {
-    bool stop = false;
-
+  // FASTA reading for D-list
+  std::vector<std::string> dlist_fasta_files;
+  dlist_fasta_files.push_back(opt.d_list);
+  gzFile fp = 0;
+  kseq_t *seq;
+  size_t max_threads_read = std::min(opt.threads, 8);
+  size_t n = 0;
+  int l = 0;
+  size_t rlen = 0;
+  const size_t max_rlen = 1000000;
+  for (auto& fasta : dlist_fasta_files) {
+    std::vector<std::string > seqs_v(max_threads_read, "");
     std::vector<std::thread> workers;
-
     std::mutex mutex_file;
     std::mutex mutex_kmers;
-
-    for (size_t t = 0; t < opt.threads; ++t){
-
+    fp = gzopen(fasta.c_str(), "r");
+    seq = kseq_init(fp);
+    while (true) {
+      l = kseq_read(seq);
+      if (l <= 0) {
+        break;
+      }
+      std::string sequence = seq->seq.s;
+      auto slen = sequence.size();
+      if (slen < max_rlen || max_threads_read <= 1) { // Small enough; no need to create a new thread
+        auto kmers_local = worker_function(sequence);
+        {
+          // Preempting write access for kmer set
+          std::unique_lock<std::mutex> lock(mutex_kmers);
+          for (auto& kmer : kmers_local) {
+            kmers.insert(kmer);
+          }
+        }
+        continue;
+      }
+      seqs_v[n % seqs_v.size()] = std::move(sequence);
       workers.emplace_back(
-
-        [&, t]{
-
-          while (true) {
-
-            std::stringstream buf;
-
-            {
-              // Preempting read access for fasta
-              std::unique_lock<std::mutex> lock(mutex_file);
-
-              if (stop) return;
-              stop = reading_function(buf);
+        [&, n] {
+          auto kmers_local = worker_function(seqs_v[n % seqs_v.size()]);
+          {
+            // Preempting write access for kmer set
+            std::unique_lock<std::mutex> lock(mutex_kmers);
+            for (auto& kmer : kmers_local) {
+              kmers.insert(kmer);
             }
-
-            auto kmers_local = worker_function(buf);
-
-            {
-              // Preempting write access for kmer set
-              std::unique_lock<std::mutex> lock(mutex_kmers);
-              for (auto& kmer : kmers_local) {
-                kmers.insert(kmer);
-              }
-            }
-
           }
         }
       );
+      n++;
+      if (n % seqs_v.size() == 0) {
+        for (auto& t : workers) t.join();
+        workers.clear();
+      }
     }
-
-    // Wait for all threads to finish;
-    for (auto& t : workers) t.join();
+    for (auto& t : workers) t.join(); // finish up all remaining threads
+    gzclose(fp);
+    fp = 0;
   }
-  infile.close();
 
   size_t N = 0;
   size_t start = num_trans;
@@ -537,8 +543,8 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
 
     // Process empty ECs
     if (trinfos[n->id].size() == 0) {
-      Roaring r;
-      n->ec.insert(0, um.len, std::move(r));
+      SparseVector<uint32_t> u(true);
+      n->ec.insert(0, um.len, std::move(u));
       continue;
     }
 
@@ -566,26 +572,23 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
               });
 
     size_t j = 0;
-    std::vector<uint32_t> pos;
     // Create a mosaic EC for the unitig, where each break point interval
     // corresponds to one set of transcripts and therefore an EC
     for (size_t i = 1; i < brpoints.size(); ++i) {
 
-      Roaring u;
+      SparseVector<uint32_t> u(true);
 
       for (const auto& tr : trinfos[n->id]) {
         // If a transcript encompasses the full breakpoint interval
         if (tr.start <= brpoints[i-1] && tr.stop >= brpoints[i]) {
-          u.add(tr.trid);
-          pos.reserve(pos.size()+1);
-          pos.push_back(tr.pos);
+          u.insert(tr.trid, tr.pos);
         }
       }
 
       assert(!u.isEmpty());
       u.runOptimize();
 
-      // Assign mosaic EC to the corresponding part of unitig
+      // Assign mosaic EC and transcript position+sense to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
     }
     // Assign position and sense for all transcripts belonging to unitig
@@ -1181,72 +1184,8 @@ donejumping:
   }
 }
 
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
-  const_UnitigMap<Node> um = dbg.find(km);
-  if (!um.isEmpty) {
-    return findPosition(tr, km, um, p);
-  } else {
-    return {-1,true};
-  }
-}
-
-//use:  (pos,sense) = index.findPosition(tr,km,val,p)
-//pre:  index.kmap[km] == val,
-//      km is the p-th k-mer of a read
-//      val.contig maps to tr
-//post: km is found in position pos (1-based) on the sense/!sense strand of tr
-std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const {
-  bool csense = um.strand;
-
-  int trpos = -1;
-  uint32_t bitmask = 0x7FFFFFFF, rawpos;
-  bool trsense = true;
-  if (um.getData()->id == -1) {
-    return {-1, true};
-  }
-  const Node* n = um.getData();
-  auto ecs = n->ec.get_leading_vals(um.dist);
-  size_t offset = 0;
-  const Roaring& ec = ecs[ecs.size() - 1];
-
-  for (size_t i = 0; i < ecs.size() - 1; ++i) {
-    offset += ecs[i].cardinality();
-  }
-
-  uint32_t* trs = new uint32_t[ec.cardinality()];
-  ec.toUint32Array(trs);
-  for (size_t i = 0; i < ec.cardinality(); ++i) {
-    if (trs[i] == tr) {
-      rawpos = n->pos[offset + i];
-      trpos = rawpos & bitmask;
-      trsense = (rawpos == trpos);
-      break;
-    }
-  }
-  delete[] trs;
-  trs = nullptr;
-
-  if (trpos == -1) {
-    return {-1,true};
-  }
-
-  // TODO:
-  // Check whether um.dist does the same thing as KmerEntry.getPos();
-  // If something doesn't work, it's most likely this!
-  if (trsense) {
-    if (csense) {
-      return {(trpos - p - (um.size - um.dist - k)), csense}; // 1-based, case I
-    } else {
-      return {(trpos + p + k - (um.size - k + 1 - um.dist)), csense}; // 1-based, case III
-    }
-  } else {
-    if (csense) {
-      // UnitigMapBase.size is the length in base pairs
-      return {trpos + (-um.dist - 1) + k + p, !csense};  // 1-based, case IV
-    } else {
-      return {trpos + (-um.dist) - p, !csense}; // 1-based, case II
-    }
-  }
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
+  return std::make_pair(0,false);
 }
 
 // use:  res = intersect(ec,v)
@@ -1274,62 +1213,6 @@ void KmerIndex::loadTranscriptSequences() const {
   if (target_seqs_loaded) {
     return;
   }
-
-  std::vector<std::vector<std::pair<std::string, u2t> > > trans_contigs(num_trans);
-  for (auto& um : dbg) {
-    const Node* data = um.getData();
-    std::string um_seq = um.mappedSequenceToString();
-    // XXX:
-    // We also reverse complement in the following for-loop. Is this correct?
-    if (!um.strand) {
-      um_seq = revcomp(um_seq);
-    }
-
-    const Node* n = um.getData();
-    auto ecs = n->ec.get_leading_vals(um.dist);
-    size_t offset = 0;
-    const Roaring& ec = ecs[ecs.size() - 1];
-    for (size_t i = 0; i < ecs.size() - 1; ++i) {
-      offset += ecs[i].cardinality();
-    }
-
-    uint32_t* trs = new uint32_t[ec.cardinality()];
-    ec.toUint32Array(trs);
-    for (size_t i = 0; i < ec.cardinality(); ++i) {
-      bool sense = (n->pos[offset + i] & 0x7FFFFFFF) != n->pos[offset + i];
-      u2t tr(trs[i], n->pos[offset + i]);
-      // TODO:
-      // Verify that this method of choosing to reverse complement is legit
-      if (um.strand ^ sense) {
-        trans_contigs[trs[i]].emplace_back(revcomp(um_seq), tr);
-      } else {
-        trans_contigs[trs[i]].emplace_back(um_seq, tr);
-      }
-    }
-  }
-
-  auto &target_seqs = const_cast<std::vector<std::string>&>(target_seqs_);
-
-  for (size_t i = 0; i < trans_contigs.size(); ++i) {
-    auto& v = trans_contigs[i];
-    std::sort(v.begin(),
-              v.end(),
-              [](std::pair<std::string, u2t> a, std::pair<std::string, u2t> b) {
-                return a.second.pos < b.second.pos;
-              });
-
-    std::string seq;
-    seq.reserve(target_lens_[i]);
-    for (const auto& pct : v) {
-      int start = (pct.second.pos == 0) ? 0 : k-1;
-      seq.append(pct.first.substr(start));
-    }
-    target_seqs.push_back(seq);
-  }
-
-  bool &t = const_cast<bool&>(target_seqs_loaded);
-  t = true;//target_seqs_loaded = true;
-  return;
 }
 
 void KmerIndex::clear() {
