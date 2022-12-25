@@ -389,7 +389,6 @@ void SparseVector<T>::serialize(std::ostream& out) const {
   out.write((char *)&tmp_size, sizeof(tmp_size));
   for (auto p : v) {
     p.runOptimize();
-    p.shrinkToFit();
     tmp_size = p.getSizeInBytes(false);
     buffer = new char[tmp_size];
     p.write(buffer, false);
@@ -475,7 +474,6 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
 template <class T>
 void SparseVector<T>::runOptimize() {
   r.runOptimize(); // Note: Roarings in v not optimized here
-  r.shrinkToFit();
 }
 
 template <class T>
