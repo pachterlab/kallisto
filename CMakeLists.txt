@@ -35,6 +35,7 @@ endif()
 
 #add_compile_options(-Wall -Wno-unused-function)
 add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
+set(PROJECT_BIFROST_CMAKE_CXX_FLAGS "-Wno-subobject-linkage -Wno-return-type") # Suppress bifrost warning
 
 if(LINK MATCHES static)
     message("static build")
@@ -58,7 +59,7 @@ ExternalProject_Add(bifrost
     PREFIX ${PROJECT_SOURCE_DIR}/ext/bifrost
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/bifrost
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_CXX_FLAGS=${PROJECT_BIFROST_CMAKE_CXX_FLAGS}
     BUILD_COMMAND cd build && make
     INSTALL_COMMAND ""
 )
