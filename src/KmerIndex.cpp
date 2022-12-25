@@ -591,8 +591,6 @@ void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
       // Assign mosaic EC and transcript position+sense to the corresponding part of unitig
       n->ec.insert(brpoints[i-1], brpoints[i], std::move(u));
     }
-    // Assign position and sense for all transcripts belonging to unitig
-    n->pos = std::move(pos);
     std::vector<TRInfo>().swap(trinfos[n->id]); // potentially free up memory
   }
 }
@@ -1184,6 +1182,19 @@ donejumping:
   }
 }
 
+std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
+  const_UnitigMap<Node> um = dbg.find(km);
+  if (!um.isEmpty) {
+    return findPosition(tr, km, um, p);
+  } else {
+    return {-1,true};
+  }
+}
+//use:  (pos,sense) = index.findPosition(tr,km,val,p)
+//pre:  index.kmap[km] == val,
+//      km is the p-th k-mer of a read
+//      val.contig maps to tr
+//post: km is found in position pos (1-based) on the sense/!sense strand of tr
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const {
   return std::make_pair(0,false);
 }
@@ -1213,6 +1224,10 @@ void KmerIndex::loadTranscriptSequences() const {
   if (target_seqs_loaded) {
     return;
   }
+
+  bool &t = const_cast<bool&>(target_seqs_loaded);
+  t = true;//target_seqs_loaded = true;
+  return;
 }
 
 void KmerIndex::clear() {
