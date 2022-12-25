@@ -1,19 +1,3 @@
-/*
-#include <zlib.h>
-#include "kseq.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-
-#include <iostream>
-#include <fstream>
-#include "MinCollector.h"
-
-
-#include "common.h"
-*/
-
 #include <fstream>
 #include <limits>
 
@@ -74,6 +58,50 @@ std::pair<const_UnitigMap<Node>, int> findFirstMappingKmer(const std::vector<std
     }
   }
   return std::make_pair(um, p);
+}
+
+void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v2) {
+  int p = -1;
+  const_UnitigMap<Node> um;
+  Roaring vtmp;
+  if (!v.empty()) {
+    vtmp = Roaring();
+    bool firstStrand = (strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+    auto res = findFirstMappingKmer(v);
+    um = res.first;
+    p = res.second;
+    // might need to optimize this
+    const Node* n = um.getData();
+    auto ecs = n->ec.get_leading_vals(um.dist);
+    const auto& v_ec = ecs[ecs.size() - 1];
+    const Roaring& ec = v_ec.getIndices();
+    
+    u &= ec; // intersection
+    for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
+      bool sense = v_ec[tr];
+      if ((um.strand == sense) == firstStrand) vtmp.add(tr);
+    }
+    if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
+  }
+  if (!v2.empty()) {
+    vtmp = Roaring();
+    bool secondStrand = (strand == ProgramOptions::StrandType::RF);
+    auto res = findFirstMappingKmer(v2);
+    um = res.first;
+    p = res.second;
+    // might need to optimize this
+    const Node* n = um.getData();
+    auto ecs = n->ec.get_leading_vals(um.dist);
+    const auto& v_ec = ecs[ecs.size() - 1];
+    const Roaring& ec = v_ec.getIndices();
+    
+    u &= ec; // intersection
+    for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
+      bool sense = v_ec[tr];
+      if ((um.strand == sense) == secondStrand) vtmp.add(tr);
+    }
+    if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
+  }
 }
 
 // constants
@@ -1270,77 +1298,7 @@ void ReadProcessor::processBuffer() {
     }
 
     if (mp.opt.strand_specific && !u.isEmpty()) {
-
-      int p = -1;
-      const_UnitigMap<Node> um;
-      if (!v1.empty()) {
-        vtmp = Roaring();
-        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        auto res = findFirstMappingKmer(v1);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        const auto& v_ec = ecs[ecs.size() - 1];
-        const Roaring& ec = v_ec.getIndices();
-
-        uint32_t* trs = new uint32_t[ec.cardinality()];
-        ec.toUint32Array(trs);
-
-        for (auto tr : u) {
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = v_ec[tr];
-              if ((um.strand == sense) == firstStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-        }
-        delete[] trs;
-        trs = nullptr;
-
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
-
-      if (!v2.empty()) {
-        vtmp = Roaring();
-        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        auto res = findFirstMappingKmer(v2);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        const auto& v_ec = ecs[ecs.size() - 1];
-        const Roaring& ec = v_ec.getIndices();
-
-        uint32_t* trs = new uint32_t[ec.cardinality()];
-        ec.toUint32Array(trs);
-
-        for (auto tr : u) {
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = v_ec[tr];
-              if ((um.strand == sense) == secondStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-        }
-        delete[] trs;
-        trs = nullptr;
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
+      doStrandSpecificity(u, mp.opt.strand, v1, v2);
     }
 
     // find the ec
@@ -1762,78 +1720,7 @@ void BUSProcessor::processBuffer() {
     u &= index.onlist_sequences;
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
-      int p = -1;
-      Kmer km;
-      const_UnitigMap<Node> um;
-      // This is copied verbatim from ReadProcessor::processBuffer()
-      // Is there a reason it's not offloaded into a function that both
-      // BUSProcessor::processBuffer() and ReadProcessor::processBuffer() call?
-      if (!v.empty()) {
-        vtmp = Roaring();
-        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        auto res = findFirstMappingKmer(v);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        const auto& v_ec = ecs[ecs.size() - 1];
-        const Roaring& ec = v_ec.getIndices();
-
-        uint32_t* trs = new uint32_t[ec.cardinality()];
-        ec.toUint32Array(trs);
-
-        for (auto tr : u) {
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = v_ec[tr];
-              if ((um.strand == sense) == firstStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-        }
-        delete[] trs;
-        trs = nullptr;
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
-      if (!v2.empty()) {
-        vtmp = Roaring();
-        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        auto res = findFirstMappingKmer(v2);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        const auto& v_ec = ecs[ecs.size() - 1];
-        const Roaring& ec = v_ec.getIndices();
-
-        uint32_t* trs = new uint32_t[ec.cardinality()];
-        ec.toUint32Array(trs);
-
-        for (auto tr : u) {
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = v_ec[tr];
-              if ((um.strand == sense) == secondStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-        }
-        delete[] trs;
-        trs = nullptr;
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
+      doStrandSpecificity(u, mp.opt.strand, v, v2);
     }
 
     // find the ec
