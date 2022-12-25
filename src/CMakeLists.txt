@@ -5,6 +5,7 @@ list(REMOVE_ITEM sources main.cpp)
 
 include_directories(../ext/htslib)
 
+add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 
 add_library(kallisto_core ${sources} ${headers})
 target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
