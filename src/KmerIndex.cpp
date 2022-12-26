@@ -812,7 +812,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     }
 
     // 3.2 deserialize node
-    um.getData()->deserialize(in);
+    um.getData()->deserialize(in, !load_positional_info);
   }
   delete[] buffer;
   buffer = nullptr;
