@@ -111,6 +111,7 @@ struct DBGraph {
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
+    load_positional_info = opt.bias || opt.pseudobam || opt.genomebam;
   }
 
   ~KmerIndex() {}
@@ -164,6 +165,7 @@ struct KmerIndex {
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
   bool target_seqs_loaded;
+  bool load_positional_info; // when should we load positional info in addition to strandedness
 
   // Sequences not in off-list: 1
   // Sequences in off-list:     0
