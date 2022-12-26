@@ -265,7 +265,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   std::vector<Minimizer> minz;
   dbg.clearAndGetMinimizers(minz);
-  boophf_t* mphf = new boophf_t(minz.size(), minz, opt.threads, 1.0, true, true);
+  std::cerr << "[build] building MPHF" << std::endl;
+  boophf_t* mphf = new boophf_t(minz.size(), minz, opt.threads, 1.0, false, true);
   out.write((char *)&tmp_size, sizeof(tmp_size));
   mphf->save(out);
   pos1 = out.tellp();
