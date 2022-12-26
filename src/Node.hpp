@@ -59,7 +59,7 @@ class Node: public CDBG_Data_t<Node> {
         ec.serialize(out);
     }
 
-    void deserialize(std::ifstream& in) {
+    void deserialize(std::ifstream& in, bool small = true) {
 
         size_t tmp_size;
         uint32_t tmp_uint;
@@ -68,7 +68,7 @@ class Node: public CDBG_Data_t<Node> {
         in.read((char *)&id, sizeof(id));
 
         // 2 Read mosaic equivalence class
-        ec.deserialize(in);
+        ec.deserialize(in, small);
     }
 };
 
