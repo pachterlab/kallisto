@@ -785,7 +785,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     auto pos2 = in.tellg();
     in.seekg(pos1);
 
-    auto success = dbg.readBinary(in, mphf);
+    auto success = dbg.readBinary(in, mphf, opt.threads);
 
     in.seekg(pos2);
 
