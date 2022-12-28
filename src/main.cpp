@@ -119,7 +119,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
-  const char *opt_string = "G:g:b:";
+  const char *opt_string = "G:g:b:t:";
 
   int para_flag = 0;
   static struct option long_options[] = {
@@ -127,6 +127,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     {"gfa", required_argument, 0, 'G'},
     {"gtf", required_argument, 0, 'g'},
     {"bed", required_argument, 0, 'b'},
+    {"threads", required_argument, 0, 't'},
     {"paranoid", no_argument, &para_flag, 1},
     {0,0,0,0}
   };
@@ -153,6 +154,11 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'g': {
       stringstream(optarg) >> opt.gtfFile;
+      break;
+    }
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      if (opt.threads <= 0) opt.threads = 1;
       break;
     }
     default: break;

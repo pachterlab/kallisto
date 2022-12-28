@@ -288,7 +288,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
   dbg = CompactedDBG<Node>(k, c_opt.g);
 
-  dbg.readBinary(in, mphf);
+  dbg.readBinary(in, mphf, opt.threads);
 
   //infile.close();
 
