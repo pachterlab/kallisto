@@ -614,7 +614,11 @@ void KmerIndex::write(std::ofstream& out, int threads) {
     std::string kmer = um.getUnitigHead().toString();
     out.write(kmer.c_str(), strlen(kmer.c_str()));
     // 3.2 serialize node
-    um.getData()->serialize(out);
+    std::ostringstream out_;
+    um.getData()->serialize(out_);
+    uint32_t s_size = out_.str().length();
+    out.write((char*)&s_size, sizeof(s_size));
+    out.write(out_.str().c_str(), s_size);
   }
 
   // 4. write number of targets
@@ -796,24 +800,30 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   // 3. deserialize nodes
   Kmer kmer;
-  UnitigMap<Node> um;
   size_t kmer_size = k * sizeof(char);
   char* buffer = new char[kmer_size];
   in.read((char *)&tmp_size, sizeof(tmp_size));
+  std::vector<std::thread> workers;
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
     in.read(buffer, kmer_size);
     kmer = Kmer(buffer);
-    um = dbg.find(kmer);
-
-    if (um.isEmpty) {
-      std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
-      exit(1);
-    }
 
     // 3.2 deserialize node
-    um.getData()->deserialize(in, !load_positional_info);
+    uint32_t node_size;
+    in.read((char *)&node_size, sizeof(node_size));
+    if (opt.threads == 1) { // single-threaded; read directly in
+        UnitigMap<Node> um;
+        um = dbg.find(kmer);
+        if (um.isEmpty) {
+            std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
+          exit(1);
+        }
+        um.getData()->deserialize(in, !load_positional_info);
+    } else { // multi-threaded
+        char* node_buf = new char[node_size];
+    }
   }
   delete[] buffer;
   buffer = nullptr;
