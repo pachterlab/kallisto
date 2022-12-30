@@ -48,7 +48,7 @@ class Node: public CDBG_Data_t<Node> {
     void extract(const UnitigMap<Node>& um_src, bool last_extraction) {
     }
 
-    void serialize(std::ofstream& out) const {
+    void serialize(std::ostream& out) const {
 
         size_t tmp_size;
 
@@ -59,7 +59,7 @@ class Node: public CDBG_Data_t<Node> {
         ec.serialize(out);
     }
 
-    void deserialize(std::ifstream& in, bool small = true) {
+    void deserialize(std::istream& in, bool small = true) {
 
         size_t tmp_size;
         uint32_t tmp_uint;
