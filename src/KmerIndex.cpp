@@ -701,10 +701,11 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     out.write((char *)&tmp_size, sizeof(tmp_size));
     for (const auto& um : dbg) {
       // 3.1 write head kmer to associate unitig with node
-      std::string kmer = um.getUnitigHead().toString();
-      out.write(kmer.c_str(), strlen(kmer.c_str()));
-      // 3.2 serialize node
-      um.getData()->serialize(out);
+      std::ostringstream out_;
+      um.getData()->serialize(out_);
+      uint32_t s_size = out_.str().length();
+      out.write((char*)&s_size, sizeof(s_size));
+      out.write(out_.str().c_str(), s_size);
     }
   } else {
     tmp_size = 0;
