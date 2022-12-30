@@ -803,7 +803,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   size_t kmer_size = k * sizeof(char);
   char* buffer = new char[kmer_size];
   in.read((char *)&tmp_size, sizeof(tmp_size));
+  const size_t max_num_nodes_buffer = 524288;
+  std::vector<std::pair<char*, std::pair<Kmer, uint32_t> > > in_buf_v;
+  in_buf_v.reserve(max_num_nodes_buffer);
   std::vector<std::thread> workers;
+  workers.reserve(opt.threads);
   for (size_t i = 0; i < tmp_size; ++i) {
     // 3.1 read head kmer
     memset(buffer, 0, kmer_size);
@@ -813,20 +817,51 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     // 3.2 deserialize node
     uint32_t node_size;
     in.read((char *)&node_size, sizeof(node_size));
-    if (opt.threads == 1) { // single-threaded; read directly in
-        UnitigMap<Node> um;
-        um = dbg.find(kmer);
-        if (um.isEmpty) {
-            std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
-          exit(1);
-        }
-        um.getData()->deserialize(in, !load_positional_info);
+    if (opt.threads == 1) {
+      UnitigMap<Node> um;
+      um = dbg.find(kmer);
+      if (um.isEmpty) {
+        std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
+        exit(1);
+      }
+      um.getData()->deserialize(in, !load_positional_info); // Just one thread; read it directly
     } else { // multi-threaded
-        char* node_buf = new char[node_size];
+      char* node_buf = new char[node_size];
+      in.read(node_buf, node_size);
+      in_buf_v.push_back(std::make_pair(node_buf, std::make_pair(kmer, node_size)));
+      if (in_buf_v.size() >= in_buf_v.capacity() || i == tmp_size-1) {
+        for (size_t t = 0; t < opt.threads; t++) {
+          workers.emplace_back([&, t] {
+            for (size_t j = t; j < in_buf_v.size(); j += opt.threads) {
+              char* node_content = in_buf_v[j].first;
+              Kmer km = in_buf_v[j].second.first;
+              auto node_size_ = in_buf_v[j].second.second;
+              UnitigMap<Node> um;
+              um = dbg.find(km);
+              if (um.isEmpty) {
+                std::cerr << "Error: Corrupted index; unitig not found: " << std::string(buffer) << std::endl;
+                exit(1);
+              }
+              std::stringstream oss;
+              oss.write(node_content, node_size_);
+              delete[] node_content; // free memory associated with node_buf
+              node_content = nullptr;
+              std::istringstream iss;
+              iss.basic_ios<char>::rdbuf(oss.rdbuf());
+              um.getData()->deserialize(iss, !load_positional_info); // No need to lock because each node is necessarily unique
+            }
+          });
+        }
+        for (auto& t : workers) t.join();
+        in_buf_v.clear();
+        workers.clear();
+      }
     }
   }
   delete[] buffer;
   buffer = nullptr;
+  std::vector<std::pair<char*, std::pair<Kmer, uint32_t> > >().swap(in_buf_v); // potentially free up memory
+  std::vector<std::thread>().swap(workers);
 
   // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
