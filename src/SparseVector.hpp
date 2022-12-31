@@ -57,7 +57,7 @@ private:
     posinfo arr; // activated when flag=1
     char* tinyarr; // activated when flag=2
     uint64_t tinybits; // activated when flag=3
-    std::vector<Roaring> v; // activated when flag=4
+    std::vector<Roaring> v; // activated when flag=4 -- vector creates memory alignment issue for this whole struct but oh well
   };
 };
 
