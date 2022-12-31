@@ -56,8 +56,8 @@ struct RoaringHasher {
       uint64_t t;
       MurmurHash3_x64_64(&x, sizeof(x), 0, &t);
       t = (x>>i) | (x<<(64-i));
-      r = r ^ t;
-      i = (i+1)%64;
+      r ^= t;
+      i = (i+1)&63; // (i+1)%64
     }
     return r;
   }
