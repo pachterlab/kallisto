@@ -200,7 +200,6 @@ void SparseVector<T>::insert(size_t i, const T &elem) {
   } else {
     idx = r.rank(i);
     r.add(i);
-    v.reserve(v.size()+1); // Memory efficient but slow insertion
     Roaring new_elem;
     new_elem.add(elem);
     if (v.size() == idx) {
