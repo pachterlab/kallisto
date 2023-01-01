@@ -118,7 +118,7 @@ int MinCollector::increaseCount(const Roaring& r) {
 }
 
 int MinCollector::decreaseCount(const int ec) {
-  assert(ec >= 0 && ec <= index.ecmap.size());
+  assert(ec >= 0);
   --counts[ec];
   return ec;
 }
@@ -222,38 +222,6 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
   }
 
-}
-
-void MinCollector::write(const std::string& pseudoprefix) const {
-  std::string ecfilename = pseudoprefix + ".ec";
-  std::string countsfilename = pseudoprefix + ".tsv";
-
-  std::ofstream ecof, countsof;
-  ecof.open(ecfilename.c_str(), std::ios::out);
-  // output equivalence classes in the form "EC TXLIST";
-  for (int i = 0; i < index.ecmap.size(); i++) {
-    ecof << i << "\t";
-    // output the rest of the class
-    const Roaring& r = index.ecmap[i];
-
-    bool first = true;
-    for (uint32_t tr : r) {
-      if (!first) {
-        ecof << ",";
-      } else {
-        first = false;
-      }
-      ecof << tr;
-    }
-    ecof << "\n";
-  }
-  ecof.close();
-
-  countsof.open(countsfilename.c_str(), std::ios::out);
-  for (int i = 0; i < counts.size(); i++) {
-    countsof << i << "\t" << counts[i] << "\n";
-  }
-  countsof.close();
 }
 
 double MinCollector::get_mean_frag_len(bool lenient) const {
