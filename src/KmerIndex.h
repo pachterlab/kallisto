@@ -111,7 +111,7 @@ struct DBGraph {
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
-    load_positional_info = opt.bias || opt.pseudobam || opt.genomebam;
+    load_positional_info = opt.bias || opt.pseudobam || opt.genomebam || (!opt.bus_mode && !opt.single_overhang);
   }
 
   ~KmerIndex() {}
