@@ -31,23 +31,6 @@ struct TRInfo {
   uint32_t pos;
 };
 
-using EcMap = std::vector<Roaring>; //std::unordered_map<int, std::vector<int>>;
-
-struct SortedVectorHasher {
-  size_t operator()(const std::vector<int>& v) const {
-    uint64_t r = 0;
-    int i=0;
-    for (auto x : v) {
-      uint64_t t;
-      MurmurHash3_x64_64(&x,sizeof(x), 0,&t);
-      t = (x>>i) | (x<<(64-i));
-      r = r ^ t;
-      i = (i+1)%64;
-    }
-    return r;
-  }
-};
-
 struct RoaringHasher {
   size_t operator()(const Roaring& rr) const {
     uint64_t r = 0;
@@ -86,26 +69,6 @@ struct KmerEntry {
       return getPos();
     }
   }
-};
-
-struct ContigToTranscript {
-  int trid;
-  int pos;
-  bool sense; // true for sense,
-};
-
-struct Contig {
-  int id; // internal id
-  int length; // number of k-mers
-  int ec;
-  std::string seq; // sequence
-  std::vector<ContigToTranscript> transcripts;
-};
-
-struct DBGraph {
-  std::vector<int> ecs; // contig id -> ec-id
-  std::vector<Contig> contigs; // contig id -> contig
-//  std::vector<pair<int, bool>> edges; // contig id -> edges
 };
 
 struct KmerIndex {
@@ -155,8 +118,6 @@ struct KmerIndex {
   int skip;
 
   CompactedDBG<Node> dbg;
-  EcMap ecmap;
-  DBGraph dbGraph;
   EcMapInv ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
