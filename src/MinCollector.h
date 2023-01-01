@@ -61,7 +61,6 @@ struct MinCollector {
       o << id << "\t" << counts[id] << "\n";
     }
   }
-  void write(const std::string& index_out) const;
 
   void loadCounts(ProgramOptions& opt);
 
