@@ -520,6 +520,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
+  int interleaved_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:T:B:";
   static struct option long_options[] = {
@@ -540,6 +541,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
+    {"inleaved", no_argument, &interleaved_flag, 1},
     {0,0,0,0}
   };
 
@@ -639,6 +641,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     opt.single_end = false;
   } else {
     opt.single_end = true;
+  }
+  
+  if (interleaved_flag) {
+    opt.input_interleaved_nfiles = 1;
   }
 
   // all other arguments are fast[a/q] files to be read
@@ -808,10 +814,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
 
   // check files
+  bool read_stdin = opt.files.size() == 1 && !opt.batch_mode && !opt.bam && opt.files[0] == "-"; // - means read from stdin
   if (opt.files.size() == 0 && !opt.batch_mode) {
     cerr << ERROR_STR << " Missing read files" << endl;
     ret = false;
-  } else {
+  } else if (!read_stdin) {
     struct stat stFileInfo;
     for (auto& fn : opt.files) {
       auto intStat = stat(fn.c_str(), &stFileInfo);
@@ -819,6 +826,21 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         cerr << ERROR_STR << " file not found " << fn << endl;
         ret = false;
       }
+    }
+  }
+  
+  if (opt.input_interleaved_nfiles != 0) {
+    if (opt.files.size() > 1) {
+      cerr << ERROR_STR << " interleaved input cannot consist of more than one input" << endl;
+      ret = false;
+    }
+    if (opt.bam) {
+      cerr << ERROR_STR << " interleaved input is not compatible with the bam option" << endl;
+      ret = false;
+    }
+    if (opt.batch_mode) {
+      cerr << ERROR_STR << " interleaved input cannot be specified with a batch file" << endl;
+      ret = false;
     }
   }
 
@@ -871,7 +893,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     if (!opt.batch_mode) {
       cerr << "[bus] will try running read files as-is in bulk mode" << endl;
       opt.batch_mode = true;
-      if (!opt.single_end && opt.files.size() % 2 != 0) {
+      if (!opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
       } else {
@@ -885,7 +907,16 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           if (opt.single_end) {
             opt.batch_files.push_back({f1});
             auto intstat = stat(f1.c_str(), &stFileInfo);
-            if (intstat != 0) {
+            if (intstat != 0 && !read_stdin) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+          } else if (opt.input_interleaved_nfiles != 0) {
+            f2 = "interleaved";
+            opt.batch_files.push_back({f1,f2});
+            opt.input_interleaved_nfiles = 2;
+            auto intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0 && !read_stdin) {
               cerr << ERROR_STR << " file not found " << f1 << endl;
               ret = false;
             }
@@ -1346,10 +1377,16 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
   }
 
-  if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
+  if (ret && !opt.bam && !(opt.input_interleaved_nfiles != 0) && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;
+  }
+  if (opt.input_interleaved_nfiles != 0) {
+    opt.input_interleaved_nfiles = opt.busOptions.nfiles;
+    for (int i = 1; i < opt.busOptions.nfiles; i++) {
+      opt.files.push_back("interleaved");
+    }
   }
 
   if (opt.bam && opt.num) {
@@ -1899,6 +1936,7 @@ void usageBus() {
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl
+       << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
