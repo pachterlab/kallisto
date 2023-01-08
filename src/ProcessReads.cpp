@@ -3075,7 +3075,7 @@ FastqSequenceReader::~FastqSequenceReader() {
 
 
 bool FastqSequenceReader::empty() {
-  return (!state && current_file >= files.size());
+  return (!state && (current_file >= files.size() || (interleave_nfiles != 0 && current_file >= 1)));
 }
 
 void FastqSequenceReader::reset() {
@@ -3140,6 +3140,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 
   int bufpos = 0;
   int pad = nfiles; //(paired) ? 2 : 1;
+  int count = 0; // for interleaving
   while (true) {
     if (!state) { // should we open a file
       if (current_file >= files.size()) {
@@ -3160,7 +3161,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 
         // open the next one
         for (int i = 0; i < nfiles; i++) {
-          fp[i] = gzopen(files[current_file+i].c_str(), "r");
+          fp[i] = files[0] == "-" && nfiles == 1 && files.size() == 1 ? gzdopen(fileno(stdin), "r") : gzopen(files[current_file+i].c_str(), "r");
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
 
@@ -3192,6 +3193,13 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
       }
 
       if (bufpos+bufadd< limit) {
+        if (interleave_nfiles != 0) { // Hack to allow interleaving
+          // assert(nfiles == 1);
+          if (bufpos+bufadd >= limit-262144 && count % interleave_nfiles == 0) {
+            return true;
+          }
+          count++;
+        }
 
         for (int i = 0; i < nfiles; i++) {
           char *pi = buf + bufpos;
@@ -3222,6 +3230,10 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
         numreads++;
         flags.push_back(numreads-1);
       } else {
+        if (interleave_nfiles != 0) {
+          std::cerr << "Error: There was an error processing interleaved FASTQ input. Exiting..." << std::endl;
+          exit(1);
+        }
         return true; // read it next time
       }
 
