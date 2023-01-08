@@ -4,7 +4,8 @@ SparseVector<T>::SparseVector(bool init) {
   flag = 0;
   if (init) { // Initialize it for insertion/serialization purposes
     flag = 4;
-    new (&v) std::vector<Roaring>;
+    new (&v) std::vector<Roaring>*;
+    v = new std::vector<Roaring>();
   }
 }
 
@@ -28,7 +29,12 @@ SparseVector<T>::~SparseVector() {
     }
     break;
   case 4:
-    v.~vector();
+    if (v != nullptr) {
+      v->clear();
+      //(*v).~vector();
+      delete v;
+      v = nullptr;
+    }
     break;
   }
 }
@@ -55,8 +61,9 @@ SparseVector<T>::SparseVector(SparseVector<T> &&arg) {
     tinybits = arg.tinybits;
     break;
   case 4:
-    new (&v) std::vector<Roaring>;
-    v = std::move(arg.v);
+    new (&v) std::vector<Roaring>*;
+    v = arg.v;
+    arg.v = nullptr;
     break;
   }
   r = std::move(arg.r);
@@ -94,8 +101,14 @@ SparseVector<T>::SparseVector(const SparseVector<T> &arg) {
     new (&tinybits) auto(arg.tinybits);
     tinybits = arg.tinybits;
   } else if (flag == 4) {
-    new (&v) std::vector<Roaring>;
-    v = arg.v;
+    new (&v) std::vector<Roaring>*;
+    v = new std::vector<Roaring>();
+    if (arg.v != nullptr) {
+      v->reserve(arg.v->size());
+      for (size_t i = 0; i < arg.v->size(); i++) {
+        v->push_back((*(arg.v))[i]);
+      }
+    }
   }
   r = arg.r;
 };
@@ -125,8 +138,9 @@ SparseVector<T>& SparseVector<T>::operator=(SparseVector<T> &&other) {
     tinybits = other.tinybits;
     break;
   case 4:
-    new (&v) std::vector<Roaring>;
-    v = std::move(other.v);
+    new (&v) std::vector<Roaring>*;
+    v = other.v;
+    other.v = nullptr;
     break;
   }
   r = std::move(other.r);
@@ -174,8 +188,14 @@ SparseVector<T>& SparseVector<T>::operator=(const SparseVector<T> &other) {
     tinybits = other.tinybits;
     break;
   case 4:
-    new (&v) std::vector<Roaring>;
-    v = other.v;
+    new (&v) std::vector<Roaring>*;
+    v = new std::vector<Roaring>();
+    if (other.v != nullptr) {
+      v->reserve(other.v->size());
+      for (size_t i = 0; i < other.v->size(); i++) {
+        v->push_back((*(other.v))[i]);
+      }
+    }
     break;
   }
   r = other.r;
@@ -189,23 +209,24 @@ template <class T>
 void SparseVector<T>::insert(size_t i, const T &elem) {
   if (flag == 0) {
     flag = 4;
-    new (&v) std::vector<Roaring>;
+    new (&v) std::vector<Roaring>*;
+    if (v == nullptr) v = new std::vector<Roaring>();
   } else if (flag != 4) {
     throw std::runtime_error("Invalid call to insert() in SparseVector.");
   }
   size_t idx;
   if (r.contains(i)) {
     idx = r.rank(i) - 1;
-    v[idx].add(elem);
+    (*v)[idx].add(elem);
   } else {
     idx = r.rank(i);
     r.add(i);
     Roaring new_elem;
     new_elem.add(elem);
-    if (v.size() == idx) {
-      v.push_back(new_elem);
+    if (v->size() == idx) {
+      v->push_back(new_elem);
     } else {
-      v.emplace(v.begin() + idx, new_elem);
+      v->emplace(v->begin() + idx, new_elem);
     }
   }
 }
@@ -226,9 +247,9 @@ Roaring SparseVector<T>::remove(size_t i) {
   Roaring t;
   if (r.contains(i)) {
     size_t idx = r.rank(i) - 1;
-    t = v[idx];
+    t = (*v)[idx];
     r.remove(i);
-    v.erase(v.begin()+idx);
+    v->erase(v->begin()+idx);
   }
   return t;
 }
@@ -236,7 +257,7 @@ Roaring SparseVector<T>::remove(size_t i) {
 template <class T>
 void SparseVector<T>::clear() {
   if (flag == 4) {
-    v.clear();
+    if (v != nullptr) v->clear();
   }
   if (flag == 2) {
     if (tinyarr != nullptr) {
@@ -272,7 +293,7 @@ void SparseVector<T>::getElements(std::vector<std::pair<uint32_t, Roaring> > &el
   elems.reserve(r.cardinality());
   uint32_t i = 0;
   for (const auto &idx : r) {
-    elems.push_back(std::pair<uint32_t, Roaring>(idx, v[i]));
+    elems.push_back(std::pair<uint32_t, Roaring>(idx, (*v)[i]));
     ++i;
   }
 }
@@ -285,8 +306,7 @@ Roaring SparseVector<T>::get(size_t i, bool getOne) const {
   if (flag == 1 && r.contains(i)) {
     Roaring x;
     i = r.rank(i)-1;
-    for (size_t j = 0; j < r.cardinality(); j++) {
-      if ((arr.v[j] | 0x40000000) == arr.v[j]) { // Second MSB is 1
+    if ((arr.v[i] | 0x40000000) == arr.v[i]) { // Second MSB is 1
         uint32_t offset = arr.v[i] & ~(0x40000000);
         uint32_t arr_size = arr.a[offset];
         for (size_t n = 0; n < arr_size; n++) {
@@ -295,12 +315,8 @@ Roaring SparseVector<T>::get(size_t i, bool getOne) const {
             break;
           }
         }
-      } else { // Second MSB is 0 so just add this item to the set
-        x.add(arr.v[j]);
-      }
-      if (getOne) {
-        break;
-      }
+    } else { // Second MSB is 0 so just add this item to the set
+        x.add(arr.v[i]);
     }
     return x;
   }
@@ -325,7 +341,7 @@ bool SparseVector<T>::operator[] (size_t i) {
     } else if (flag == 3) {
       return (bool)((tinybits & ((uint64_t)1 << (uint64_t)(r.rank(i)-1))) != 0);
     } else if (flag == 4) {
-      return (v[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == v[r.rank(i) - 1].minimum();
+      return ((*v)[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == (*v)[r.rank(i) - 1].minimum();
     } else if (flag == 1) {
       i = r.rank(i)-1;
       if ((arr.v[i] | 0x40000000) != arr.v[i]) { // Second MSB not set to 1
@@ -349,7 +365,7 @@ const bool SparseVector<T>::operator[] (size_t i) const {
     } else if (flag == 3) {
       return (bool)((tinybits & ((uint64_t)1 << (uint64_t)(r.rank(i)-1))) != 0);
     } else if (flag == 4) {
-      return (v[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == v[r.rank(i) - 1].minimum();
+      return ((*v)[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == (*v)[r.rank(i) - 1].minimum();
     } else if (flag == 1) {
       i = r.rank(i)-1;
       if ((arr.v[i] | 0x40000000) != arr.v[i]) { // Second MSB not set to 1
@@ -384,9 +400,11 @@ void SparseVector<T>::serialize(std::ostream& out) const {
   out.write(buffer, tmp_size);
   delete[] buffer;
   // Write vector
-  tmp_size = v.size();
+  tmp_size = 0;
+  if (v != nullptr) tmp_size = v->size();
   out.write((char *)&tmp_size, sizeof(tmp_size));
-  for (auto p : v) {
+  if (v == nullptr) return;
+  for (auto p : *v) {
     p.runOptimize();
     tmp_size = p.getSizeInBytes(false);
     buffer = new char[tmp_size];
