@@ -72,11 +72,13 @@ public:
   f_umi(new std::ifstream{}) {
     SequenceReader::state = false;
 
+    interleave_nfiles = opt.input_interleaved_nfiles;
     if (opt.bus_mode) {
       nfiles = opt.busOptions.nfiles;
     } else {
       nfiles = paired ? 2 : 1;
     }
+    if (interleave_nfiles != 0) nfiles = 1;
     reserveNfiles(nfiles);
   }
   FastqSequenceReader() : SequenceReader(),
@@ -108,6 +110,7 @@ public:
   std::unique_ptr<std::ifstream> f_umi;
   int current_file;
   std::vector<kseq_t*> seq;
+  int interleave_nfiles;
 };
 
 class BamSequenceReader : public SequenceReader {
