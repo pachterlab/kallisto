@@ -503,7 +503,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       TRInfo tr;
 
       tr.trid = j;
-      tr.pos = proc | (!um.strand ? sense : missense);
+      tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
 
@@ -1244,7 +1244,110 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const {
-  return std::make_pair(0,false);
+  int trpos = -1;
+  uint32_t bitmask = 0x7FFFFFFF, rawpos;
+  bool trsense = true;
+  if (um.getData()->id == -1) {
+    return {-1, true};
+  }
+  const Node* n = um.getData();
+  auto mc = n->get_mc_contig(um.dist);
+  auto ecs = n->ec.get_leading_vals(um.dist);
+  const auto& v_ec = ecs[ecs.size() - 1];
+  const Roaring& ec = v_ec.getIndices(); // transcripts
+  
+  rawpos = v_ec.get(tr, true).minimum();
+  trpos = rawpos & bitmask;
+  trsense = (rawpos == trpos);
+  auto um_dist = um.dist - mc.first; // for mosaic ECs, need to start from beginning of current block, not zero
+  
+  if (trpos == -1) {
+    return {-1,true};
+  }
+  
+  std::pair<int,bool> ret;
+  
+  if (trsense) {
+    if (csense) {
+      size_t padding = 0;
+      if (trpos == 0) {
+        for (int i = ecs.size()-2; i >= 0; i--) {
+          if (!ecs[i].contains(tr)) {
+            padding = mc.first;
+            break;
+          }
+          mc = n->get_mc_contig(mc.first-1);
+        }
+      }
+      ret = {static_cast<int64_t>(trpos - p + static_cast<int64_t>(um.dist) + 1 - padding), csense}; // Case I
+    } else {
+      int64_t padding = um.size-mc.second+1-k;
+      int64_t initial = mc.second;
+      
+      int right_one = 0;
+      int left_one = 0;
+      for (int i = ecs.size()-1; i >= 0; i--) {
+        if (i == ecs.size()-1) right_one = mc.second;
+        if (!ecs[i].contains(tr)) { left_one = mc.second; break; }
+        else if (i == 0) left_one = 0;
+        mc = n->get_mc_contig(mc.first-1); // if goes below 0, it'll be cast as the largest unsigned int and return the right-most block
+      }
+      padding = -(left_one+right_one-um.size+k-1);
+      ret = {trpos + p + k - (um.size - k - um.dist) + initial - 1 + padding, csense}; // Case III
+    }
+  } else {
+    if (csense) {
+      int64_t start = mc.first;
+      auto mc_ = n->get_mc_contig(mc.first-1);
+      start = 0;
+      auto ecs_ = n->ec.get_leading_vals(mc.first-1);
+      int curr_mc = 0;
+      int left_one = 0;
+      int right_one = 0;
+      int unmapped_len = 0;
+      bool found_first_mapped = false;
+      
+      ecs_ = n->ec.get_leading_vals(-1);
+      for (int i = 0; i < ecs_.size(); i++) {
+        auto mc__ = n->get_mc_contig(curr_mc);
+        if ((!ecs_[i].contains(tr)) && found_first_mapped) {
+          if (unmapped_len == 0) left_one = mc__.first;
+          right_one = mc__.second;
+          unmapped_len += (mc__.second - mc__.first);
+        }
+        if (ecs_[i].contains(tr)) found_first_mapped = true;
+        curr_mc = mc__.second;
+      }
+      start -= right_one-left_one;
+      start += um.size-k;
+      ret = {trpos + (static_cast<int64_t>(-(um.dist-start))) + k + p, !csense}; // Case IV
+    } else {
+      int curr_mc = 0;
+      int left_one = 0;
+      int right_one = 0;
+      auto ecs_ = n->ec.get_leading_vals(-1);
+      int unmapped_len = 0;
+      bool found_first_mapped = false;
+      for (int i = 0; i < ecs_.size(); i++) {
+        auto mc__ = n->get_mc_contig(curr_mc);
+        if ((!ecs_[i].contains(tr)) && found_first_mapped) {
+          if (unmapped_len == 0) left_one = mc__.first;
+          right_one = mc__.second;
+          unmapped_len += (mc__.second - mc__.first);
+        }
+        if (ecs_[i].contains(tr)) {
+          found_first_mapped = true;
+        }
+        curr_mc = mc__.second;//+1;
+      }
+      unmapped_len = right_one - left_one;
+      int64_t padding = um.size-um.dist-(unmapped_len)-k+1;
+      ret = {trpos+padding-p, !csense}; // case II
+    }
+  }
+  // DEBUG:
+  //std::cout << std::to_string(ret.first) << " " << std::to_string(ret.second) << std::endl;
+  return ret;
 }
 
 // use:  res = intersect(ec,v)
