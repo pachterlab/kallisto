@@ -107,6 +107,7 @@ struct ProgramOptions {
   std::string gfa; // used for inspect
   bool inspect_thorough;
   bool single_overhang;
+  int input_interleaved_nfiles;
   std::string gtfFile;
   std::string chromFile;
   std::string bedFile;
@@ -132,6 +133,7 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  input_interleaved_nfiles(0),
   batch_mode(false),
   pseudo_read_files_supplied(false),
   bus_mode(false),
