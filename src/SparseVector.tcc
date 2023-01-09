@@ -496,6 +496,14 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
     }
     delete[] buffer;
   }
+  // For small case with comppressed 64-bit representation, set flag and do transfer
+  if (small && flag != 2) {
+		      flag = 3;
+		      new (&tinybits) uint64_t;
+		      tinybits = tinybits_;
+		      delete[] tinyarr_; // free memory
+		      tinyarr_ = nullptr;
+  }
   // Transfer from arr_a_vec to arr.a (for flag=1)
   if (!small && !arr_a_vec.empty()) {
     arr.a = new uint32_t[arr_a_vec.size()];
