@@ -1506,7 +1506,7 @@ void BUSProcessor::operator()() {
     // update the results, MP acquires the lock
     std::vector<std::pair<Roaring, std::string>> ec_umi;
     std::vector<std::pair<Roaring, std::string>> new_ec_umi;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, std::move(newB), &bc_len[0], &umi_len[0], id, local_id);
     clear();
   }
 }
