@@ -78,8 +78,8 @@ void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, co
     
     u &= ec; // intersection
     for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
-      bool sense = v_ec[tr];
-      if ((um.strand == sense) == firstStrand) vtmp.add(tr);
+      char sense = v_ec[tr];
+      if ((um.strand == (bool)sense) == firstStrand || sense == 2) vtmp.add(tr);
     }
     if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
   }
@@ -97,8 +97,8 @@ void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, co
     
     u &= ec; // intersection
     for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
-      bool sense = v_ec[tr];
-      if ((um.strand == sense) == secondStrand) vtmp.add(tr);
+      char sense = v_ec[tr];
+      if ((um.strand == (bool)sense) == secondStrand || sense == 2) vtmp.add(tr);
     }
     if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
   }
