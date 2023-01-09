@@ -79,7 +79,7 @@ SparseVector<T>::SparseVector(const SparseVector<T> &arg) {
     for (size_t i = 0; i < arg.cardinality(); i++) {
       arr.v[i] = arg.arr.v[i];
       if ((arg.arr.v[i] | 0x40000000) == arg.arr.v[i]) { // Second MSB is 1
-        uint32_t offset = arg.arr.v[i] & ~(0x40000000);
+        uint32_t offset = arg.arr.v[i] & ~(0x60000000);
         num_elems += 1; // To account for first element of the array storing the size
         num_elems += arg.arr.a[offset]; // The size of the remaining elements of the array
       }
@@ -159,7 +159,7 @@ SparseVector<T>& SparseVector<T>::operator=(const SparseVector<T> &other) {
       for (size_t i = 0; i < other.cardinality(); i++) {
         arr.v[i] = other.arr.v[i];
         if ((other.arr.v[i] | 0x40000000) == other.arr.v[i]) { // Second MSB is 1
-          uint32_t offset = other.arr.v[i] & ~(0x40000000);
+          uint32_t offset = other.arr.v[i] & ~(0x60000000);
           num_elems += 1; // To account for first element of the array storing the size
           num_elems += other.arr.a[offset]; // The size of the remaining elements of the array
         }
@@ -307,7 +307,7 @@ Roaring SparseVector<T>::get(size_t i, bool getOne) const {
     Roaring x;
     i = r.rank(i)-1;
     if ((arr.v[i] | 0x40000000) == arr.v[i]) { // Second MSB is 1
-        uint32_t offset = arr.v[i] & ~(0x40000000);
+        uint32_t offset = arr.v[i] & ~(0x60000000); // Mask out second and third MSB
         uint32_t arr_size = arr.a[offset];
         for (size_t n = 0; n < arr_size; n++) {
           x.add(arr.a[offset+n+1]);
@@ -315,8 +315,8 @@ Roaring SparseVector<T>::get(size_t i, bool getOne) const {
             break;
           }
         }
-    } else { // Second MSB is 0 so just add this item to the set
-        x.add(arr.v[i]);
+    } else { // Second MSB is 0
+        x.add(arr.v[i] & ~(0x60000000)); // Mask out second and third MSB
     }
     return x;
   }
@@ -334,20 +334,23 @@ bool SparseVector<T>::isEmpty() const {
 }
 
 template <class T>
-bool SparseVector<T>::operator[] (size_t i) {
+char SparseVector<T>::operator[] (size_t i) {
   if (r.contains(i)) {
     if (flag == 2) {
-      return (bool)(tinyarr[r.rank(i) - 1]);
+      return (tinyarr[r.rank(i) - 1]);
     } else if (flag == 3) {
       return (bool)((tinybits & ((uint64_t)1 << (uint64_t)(r.rank(i)-1))) != 0);
     } else if (flag == 4) {
       return ((*v)[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == (*v)[r.rank(i) - 1].minimum();
     } else if (flag == 1) {
       i = r.rank(i)-1;
+      if ((arr.v[i] | 0x20000000) == arr.v[i]) { // Third MSB is set to 1 (aka ambiguous strand)
+        return 2; 
+      }
       if ((arr.v[i] | 0x40000000) != arr.v[i]) { // Second MSB not set to 1
         return (arr.v[i] & 0x7FFFFFFF) == arr.v[i];
       } else { // Second MSB set to 1
-        uint32_t offset = arr.v[i] & ~(0x40000000);
+        uint32_t offset = arr.v[i] & ~(0x60000000); // Mask out second and third MSB
         return (arr.a[offset+1] & 0x7FFFFFFF) == arr.a[offset+1];
       }
     } else {
@@ -358,20 +361,23 @@ bool SparseVector<T>::operator[] (size_t i) {
 }
 
 template <class T>
-const bool SparseVector<T>::operator[] (size_t i) const {
+const char SparseVector<T>::operator[] (size_t i) const {
   if (r.contains(i)) {
     if (flag == 2) {
-      return (bool)(tinyarr[r.rank(i) - 1]);
+      return (tinyarr[r.rank(i) - 1]);
     } else if (flag == 3) {
       return (bool)((tinybits & ((uint64_t)1 << (uint64_t)(r.rank(i)-1))) != 0);
     } else if (flag == 4) {
       return ((*v)[r.rank(i) - 1].minimum() & 0x7FFFFFFF) == (*v)[r.rank(i) - 1].minimum();
     } else if (flag == 1) {
       i = r.rank(i)-1;
+      if ((arr.v[i] | 0x20000000) == arr.v[i]) { // Third MSB is set to 1 (aka ambiguous strand)
+        return 2;
+      }
       if ((arr.v[i] | 0x40000000) != arr.v[i]) { // Second MSB not set to 1
         return (arr.v[i] & 0x7FFFFFFF) == arr.v[i];
       } else { // Second MSB set to 1
-        uint32_t offset = arr.v[i] & ~(0x40000000);
+        uint32_t offset = arr.v[i] & ~(0x60000000); // Mask out second and third MSB
         return (arr.a[offset+1] & 0x7FFFFFFF) == arr.a[offset+1];
       }
     } else {
@@ -428,15 +434,16 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
   delete[] buffer;
   size_t v_size;
   in.read((char *)&v_size, sizeof(v_size)); // Number of elements (aka number of transcripts in set)
-  if (small && v_size <= 64) {
-    flag = 3;
-    new (&tinybits) uint64_t;
-    tinybits = 0;
-  } else if (small) {
-    flag = 2;
-    new (&tinyarr) char*;
-    tinyarr = new char[v_size];
-  } else {
+  char* tinyarr_ = nullptr;
+  uint64_t tinybits_ = 0;
+  if (small) {
+    tinyarr_ = new char[v_size];
+    if (v_size > 64) { // large enough so might as well use tinyarr instead of tinybits
+      flag = 2;
+      new (&tinyarr) char*;
+      tinyarr = tinyarr_; // copy pointer
+    }
+  } else { // Store everything: strand+position
     if (flag == 0) {
       flag = 1;
       new (&arr) posinfo;
@@ -445,7 +452,7 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
     }
     arr.v = new uint32_t[v_size];
   }
-  //assert(r.cardinality() == v_size);
+  assert(r.cardinality() == v_size);
   size_t offset = 0; // offset (only for flag=1)
   std::vector<uint32_t> arr_a_vec; // Temporary vector to store contents that will be transferred to arr.a (only for flag=1)
   for (size_t i = 0; i < v_size; ++i) {
@@ -458,7 +465,10 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
         arr.v[i] = (uint32_t)x.minimum();
       } else { // Multiple items in this transcript's set
         arr.v[i] = (uint32_t)(offset); // Set offset
-        arr.v[i] |= 0x40000000; // Set second MSB to 1
+        arr.v[i] |= 0x40000000; // Set second MSB to 1 (denoting multiple items in transcript's set)
+        if (((x.minimum() & 0x7FFFFFFF) == x.minimum()) != ((x.maximum() & 0x7FFFFFFF) == x.maximum())) { // ambiguous strand
+          arr.v[i] |= 0x20000000; // Set third MSB to 1 (denoting strand ambiguity)
+        }
         arr_a_vec.push_back(x.cardinality());
         offset++; // Since first element is the size (number of elements)
         for (uint32_t p : x) {
@@ -468,12 +478,20 @@ void SparseVector<T>::deserialize(std::istream& in, bool small) {
       }
     } else {
       Roaring x = Roaring::read(buffer, false);
-      if (flag == 3) {
+      if (flag != 2) {
         if ((x.minimum() & 0x7FFFFFFF) == x.minimum()) {
-          tinybits |= (uint64_t)((uint64_t)1 << i);
+          tinybits_ |= (uint64_t)((uint64_t)1 << i);
         }
-      } else {
-        tinyarr[i] = (char)((x.minimum() & 0x7FFFFFFF) == x.minimum());
+        tinyarr_[i] = (char)((x.minimum() & 0x7FFFFFFF) == x.minimum());
+        if (((x.minimum() & 0x7FFFFFFF) == x.minimum()) != ((x.maximum() & 0x7FFFFFFF) == x.maximum())) { // ambiguous strand; don't store in compressed format
+          flag = 2;
+          new (&tinyarr) char*;
+          tinyarr = tinyarr_; // copy pointer
+        }
+      }
+      if (flag == 2) {
+        tinyarr_[i] = (char)(((x.minimum() & 0x7FFFFFFF) == x.minimum()));
+        if (((x.minimum() & 0x7FFFFFFF) == x.minimum()) != ((x.maximum() & 0x7FFFFFFF) == x.maximum())) tinyarr_[i] = 2; // ambiguous
       }
     }
     delete[] buffer;
