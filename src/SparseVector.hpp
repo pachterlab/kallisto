@@ -29,8 +29,8 @@ public:
   SparseVector<T>& operator=(const SparseVector<T> &other);
   // checks if r is equal between two objects (only r is considered, nothing else):
   bool operator==(const SparseVector<T>& other) const;
-  bool operator[] (size_t i); // Returns strandedness: (pos & 0x7FFFFFFF) == pos, for transcript id: i
-  const bool operator[] (size_t i) const;
+  char operator[] (size_t i); // Returns strandedness: (pos & 0x7FFFFFFF) == pos, for transcript id: i; could also return 2 if ambiguous (e.g. for tx i, a + part and a - part exist in this block)
+  const char operator[] (size_t i) const;
   
   // Serialization/Deserialization
   void serialize(std::ostream& out) const;
@@ -49,9 +49,9 @@ private:
   // flag=4 means strand+positional info grows dynamically (we can add stuff into it like a vector; this is only for insertion/serialization purposes, not for querying purposes)
   
   struct posinfo { // 16 byte data structure containing two arrays (see below):
-    uint32_t* v; // For each element (num elements = r.cardinality()), if second most significant bit (MSB) is 0 [since first MSB is the strand], the transcript has a single position+strand which is contained in the remaining 31 bits
-    uint32_t* a; // If an element in v's second MSB is 1, the remaining 31 bits in v contains the offset w.r.t. the pointer a. a+o is an array of the the multiple positions+strands with the first element being the the number of elements in the a+o array (aka the positions/strands span from (a+o)[1] to (a+o)[1]+(a+o)[0], inclusive, where o=offset*sizeof(uint32_t)).
-  };
+    uint32_t* v; // For each element (num elements = r.cardinality()), if second most significant bit (MSB) is 0 [since first MSB is the strand], the transcript has a single position+strand which is contained in the remaining 30 bits (note: the third MSB is excluded)
+    uint32_t* a; // If an element in v's second MSB is 1, the remaining bits in v (after the third MSB) contains the offset w.r.t. the pointer a. a+o is an array of the the multiple positions+strands with the first element being the the number of elements in the a+o array (aka the positions/strands span from (a+o)[1] to (a+o)[1]+(a+o)[0], inclusive, where o=offset*sizeof(uint32_t)).
+  }; // What about the third MSB in v's element? It's 1 if the transcript is strand-ambiguous (i.e. both + and - exist in that transcript's array a), 0 otherwise
   
   union {
     posinfo arr; // activated when flag=1
