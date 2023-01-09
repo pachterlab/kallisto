@@ -1244,6 +1244,7 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, int p) const{
 //      val.contig maps to tr
 //post: km is found in position pos (1-based) on the sense/!sense strand of tr
 std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Node>& um, int p) const {
+  bool csense = um.strand;
   int trpos = -1;
   uint32_t bitmask = 0x7FFFFFFF, rawpos;
   bool trsense = true;
