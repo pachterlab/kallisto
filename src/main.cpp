@@ -522,7 +522,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int unstranded_flag = 0;
   int interleaved_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:T:B:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:B:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
@@ -542,6 +542,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
     {"inleaved", no_argument, &interleaved_flag, 1},
+    {"numReads", required_argument, 0, 'N'},
     {0,0,0,0}
   };
 
@@ -590,6 +591,13 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       opt.num = true;
+      break;
+    }
+    case 'N': {
+      stringstream(optarg) >> opt.max_num_reads;
+      if (opt.max_num_reads == 0) {
+        opt.max_num_reads = -1;
+      }
       break;
     }
     case 'g': {
@@ -811,6 +819,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       cerr << ERROR_STR << " kallisto index file not found " << opt.index << endl;
       ret = false;
     }
+  }
+  
+  if (opt.max_num_reads < 0) {
+    std::cerr << ERROR_STR << " --numReads must be a positive number" << std::endl;
+    ret = false;
   }
 
   // check files
@@ -2139,6 +2152,7 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       ParseOptionsBus(argc-1, argv+1,opt);
+      int64_t num_processed = 0;
       if (!CheckOptionsBus(opt)) {
         usageBus();
         exit(1);
@@ -2149,7 +2163,6 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
 
@@ -2248,7 +2261,6 @@ int main(int argc, char *argv[]) {
         }
       } else { // kallisto bus -x
         int num_trans, index_version;
-        int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
 
@@ -2378,6 +2390,10 @@ int main(int argc, char *argv[]) {
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
+      }
+      if (opt.max_num_reads != 0 && num_processed < opt.max_num_reads) {
+        std::cerr << "Note: Number of reads processed is less than --numReads: " << opt.max_num_reads << ", returning 1" << std::endl;
+        return 1;
       }
     } else if (cmd == "merge") {
         cerr << "Deprecated: `kallisto merge` is deprecated. See `kallisto bus`." << endl;
