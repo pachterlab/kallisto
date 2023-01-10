@@ -1047,7 +1047,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
 
   numreads += n;
   
-  if (opt.verbose) {
+  //if (opt.verbose) {
     counter += n;
     if (counter >= 1000000) {
       counter = 0;
@@ -1057,7 +1057,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
         << "% mapped)             ";
       std::cerr.flush();
     }
-  }
+  //}
   // releases the lock
 }
 
