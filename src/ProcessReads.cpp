@@ -1001,6 +1001,20 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
         bus_umi_len[i] += umi_len[i];
       }
     }
+    
+    if (opt.max_num_reads != 0 && numreads+n > opt.max_num_reads) { // Downsample current batch of reads while maintaining ratio of unmapped/mapped reads
+      int bv_size = bv.size();
+      int newBP_size = newBP.size(); // We'll also try to maintain the ratio of bv to newBP records
+      int n_mapped = bv_size+newBP_size;
+      int new_n = opt.max_num_reads-numreads;
+      int new_mapped_num = ((double)n_mapped/(double)n)*new_n;
+      int new_mapped_bv_num = ((double)bv_size/(double)n_mapped)*new_mapped_num;
+      int new_mapped_newBP_num = new_mapped_num - new_mapped_bv_num;
+      n = new_n;
+      
+      if (new_mapped_bv_num < bv_size) bv.resize(new_mapped_bv_num);
+      if (new_mapped_newBP_num < newBP_size) newBP.resize(new_mapped_newBP_num);
+    }
 
     // add new equiv classes to extra format
     int offset = 0; // index.ecmapinv.size();
@@ -1508,6 +1522,9 @@ void BUSProcessor::operator()() {
     std::vector<std::pair<Roaring, std::string>> new_ec_umi;
     mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, std::move(newB), &bc_len[0], &umi_len[0], id, local_id);
     clear();
+    if (mp.opt.max_num_reads != 0 && mp.numreads >= mp.opt.max_num_reads) {
+      return;
+    }
   }
 }
 
@@ -1810,7 +1827,7 @@ void BUSProcessor::clear() {
   memset(buffer,0,bufsize);
   newEcs.clear();
   counts.clear();
-  counts.resize(tc.counts.size(), 0);
+  //counts.resize(tc.counts.size(), 0);
   bv.clear();
   newB.clear();
 }
