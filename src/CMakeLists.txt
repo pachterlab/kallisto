@@ -35,6 +35,7 @@ if(USE_HDF5)
     find_package( HDF5 REQUIRED )
 endif(USE_HDF5)
 
+if (NOT ZLIBNG)
 find_package( ZLIB REQUIRED )
 
 if ( ZLIB_FOUND )
@@ -43,6 +44,14 @@ if ( ZLIB_FOUND )
 else()
     message(FATAL_ERROR "zlib not found. Required for to output files" )
 endif( ZLIB_FOUND )
+endif(NOT ZLIBNG)
+
+if (ZLIBNG)
+    add_definitions(-DSPLITCODE_USE_ZLIB_NG)
+    include_directories(../ext/zlib-ng/build)
+    include_directories(../ext/zlib-ng)
+    target_link_libraries(splitcode ${CMAKE_CURRENT_SOURCE_DIR}/../ext/zlib-ng/build/libz-ng.a)
+endif(ZLIBNG)
 
 if(USE_HDF5)
     if(HDF5_FOUND)
