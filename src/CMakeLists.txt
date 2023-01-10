@@ -47,7 +47,7 @@ endif( ZLIB_FOUND )
 endif(NOT ZLIBNG)
 
 if (ZLIBNG)
-    add_definitions(-DSPLITCODE_USE_ZLIB_NG)
+    add_definitions(-DKALLISTO_USE_ZLIB_NG)
     include_directories(../ext/zlib-ng/build)
     include_directories(../ext/zlib-ng)
     target_link_libraries(kallisto ${CMAKE_CURRENT_SOURCE_DIR}/../ext/zlib-ng/build/libz-ng.a)
