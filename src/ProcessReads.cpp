@@ -1046,6 +1046,18 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
   attempt_transfer_ecs(num_new_ecs);
 
   numreads += n;
+  
+  if (opt.verbose) {
+    counter += n;
+    if (counter >= 1000000) {
+      counter = 0;
+      std::cerr << '\r' << "[progress] " << (numreads/1000000) << "M reads processed";
+      std::cerr << " ("
+        << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nummapped)/double(numreads))
+        << "% mapped)             ";
+      std::cerr.flush();
+    }
+  }
   // releases the lock
 }
 
@@ -1385,18 +1397,6 @@ void ReadProcessor::processBuffer() {
         info.ec = u;
       }
       pseudobatch.aln.push_back(std::move(info));
-    }
-
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
-      int nmap = mp.nummapped;
-      for (const auto& count : counts) {
-        nmap += count;
-      }
-      nmap += newEcs.size();
-
-      std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
-        << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
-        << "% pseudoaligned)"; std::cerr.flush();
     }
   }
 }
@@ -1807,18 +1807,6 @@ void BUSProcessor::processBuffer() {
       }
       pseudobatch.aln.push_back(std::move(info));
     }
-
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
-        int nmap = mp.nummapped;
-        for (const auto& count : counts) {
-          nmap += count;
-        }
-        nmap += newEcs.size();
-
-        std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
-          << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
-          << "% pseudoaligned)"; std::cerr.flush();
-      }
   }
 }
 
