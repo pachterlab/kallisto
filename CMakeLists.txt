@@ -64,6 +64,18 @@ ExternalProject_Add(bifrost
     INSTALL_COMMAND ""
 )
 
+if (ZLIBNG)
+    message("zlib-ng enabled.")
+    ExternalProject_Add(zlib-ng
+    PREFIX ${PROJECT_SOURCE_DIR}/ext/zlib-ng
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/zlib-ng
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    BUILD_COMMAND cd build && make
+    INSTALL_COMMAND ""
+    )
+endif(ZLIBNG)
+
 include_directories(${htslib_PREFIX}/src/htslib)
 include_directories(${EXT_PROJECTS_DIR}/bifrost/build/src)
 
