@@ -76,6 +76,7 @@ struct ProgramOptions {
   double sd;
   int min_range;
   int bootstrap;
+  int max_num_reads;
   std::vector<std::string> transfasta;
   bool batch_mode;
   bool pseudo_read_files_supplied;
@@ -133,6 +134,7 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  max_num_reads(0),
   input_interleaved_nfiles(0),
   batch_mode(false),
   pseudo_read_files_supplied(false),
