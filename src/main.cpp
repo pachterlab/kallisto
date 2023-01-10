@@ -897,7 +897,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
 
   if (opt.technology.empty()) { // kallisto pseudo
     opt.single_overhang = true;
-    if (!opt.num) {
+    if (!opt.num && !(opt.max_num_reads > 0)) {
       opt.batch_bus_write = true;
     } else {
       opt.batch_bus = true;
