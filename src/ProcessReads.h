@@ -174,7 +174,7 @@ private:
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0), transfer_threshold(1)
+    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0), transfer_threshold(1), counter(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
       if (opt.bam) {
         SR = new BamSequenceReader(opt);
@@ -259,6 +259,7 @@ public:
   int64_t numreads;
   int64_t nummapped;
   int64_t num_umi;
+  int64_t counter;
   size_t bufsize;
 
   int bus_bc_len[33];
