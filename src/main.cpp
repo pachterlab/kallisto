@@ -12,10 +12,6 @@
 
 #include <cstdio>
 
-#include <zlib.h>
-
-#include <CompactedDBG.hpp>
-
 #include "common.h"
 #include "ProcessReads.h"
 #include "KmerIndex.h"
@@ -27,6 +23,7 @@
 #include "H5Writer.h"
 #include "PlaintextWriter.h"
 #include "GeneModel.h"
+#include <CompactedDBG.hpp>
 
 //#define ERROR_STR "\033[1mError:\033[0m"
 #define ERROR_STR "Error:"
