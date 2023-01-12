@@ -170,25 +170,14 @@ std::string pretty_num(int num);
 
 
 #ifdef KALLISTO_USE_ZLIB_NG
-#ifndef WITH_GZFILEOP
-#define WITH_GZFILEOP
-#endif
-#include "zlib-ng.h"
-constexpr auto gzopen = zng_gzopen;
-constexpr auto gzclose = zng_gzclose;
-constexpr auto gzwrite = zng_gzwrite;
-constexpr auto gzdopen = zng_gzdopen;
+#include "zlib-ng/zlib.h"
 #else
 #include <zlib.h>
 #endif
 
 #ifndef KSEQ_INIT_READY
 #define KSEQ_INIT_READY
-#ifndef KALLISTO_USE_ZLIB_NG
 KSEQ_INIT(gzFile, gzread)
-#else
-KSEQ_INIT(gzFile, zng_gzread)
-#endif
 #endif
 
 
