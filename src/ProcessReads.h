@@ -1,8 +1,6 @@
 #ifndef KALLISTO_PROCESSREADS_H
 #define KALLISTO_PROCESSREADS_H
 
-#include <zlib.h>
-#include "kseq.h"
 #include "robin_hood.h"
 #include <string>
 #include <vector>
@@ -16,9 +14,9 @@
 #include <atomic>
 #include <condition_variable>
 
+#include "common.h"
 #include "MinCollector.h"
 #include "KmerIndex.h"
-#include "common.h"
 #include "PseudoBam.h"
 #include "EMAlgorithm.h"
 #include "GeneModel.h"
