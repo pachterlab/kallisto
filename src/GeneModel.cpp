@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <iostream>
 #include <htslib/sam.h> // needed for CIGAR ops
-#include <zlib.h>
 
 char strandToChar(bool s) {
   return (s) ? '+' : '-';
