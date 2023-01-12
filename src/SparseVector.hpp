@@ -48,6 +48,7 @@ private:
   // flag=3 is like flag=2 except store strand info is stored as individual bits in a 64-bit integer (lowest memory but only works if cardinality of set r <= 64)
   // flag=4 means strand+positional info grows dynamically (we can add stuff into it like a vector; this is only for insertion/serialization purposes, not for querying purposes)
   
+  // TODO: See if we can just make the following one array (instead of two) in order to optimize alignment
   struct posinfo { // 16 byte data structure containing two arrays (see below):
     uint32_t* v; // For each element (num elements = r.cardinality()), if second most significant bit (MSB) is 0 [since first MSB is the strand], the transcript has a single position+strand which is contained in the remaining 30 bits (note: the third MSB is excluded)
     uint32_t* a; // If an element in v's second MSB is 1, the remaining bits in v (after the third MSB) contains the offset w.r.t. the pointer a. a+o is an array of the the multiple positions+strands with the first element being the the number of elements in the a+o array (aka the positions/strands span from (a+o)[1] to (a+o)[1]+(a+o)[0], inclusive, where o=offset*sizeof(uint32_t)).
