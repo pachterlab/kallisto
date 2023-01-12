@@ -77,7 +77,7 @@ public:
   FastqSequenceReader() : SequenceReader(),
   paired(false),
   f_umi(new std::ifstream{}),
-  current_file(0) {};
+  current_file(0), interleave_nfiles(0) {};
   FastqSequenceReader(FastqSequenceReader &&o);
   ~FastqSequenceReader();
 
