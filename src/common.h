@@ -3,6 +3,8 @@
 
 #define KALLISTO_VERSION "0.49.0"
 
+// NOTE: MAKE SURE THIS FILE GETS INCLUDED FIRST IN ALL OTHER FILES AND BEFORE ANY EXTERNAL LIBRARIES
+
 #include <string>
 #include <vector>
 #include <iostream>
