@@ -74,6 +74,7 @@ if (ZLIBNG)
     BUILD_COMMAND cd zlib-ng && make
     INSTALL_COMMAND ""
     )
+    include_directories(${EXT_PROJECTS_DIR}/ext/zlib-ng/zlib-ng)
 endif(ZLIBNG)
 
 include_directories(${htslib_PREFIX}/src/htslib)
