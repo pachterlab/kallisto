@@ -4,7 +4,6 @@
 #include <iomanip>
 
 #include "ProcessReads.h"
-#include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
 #include "BUSData.h"
