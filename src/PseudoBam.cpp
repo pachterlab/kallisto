@@ -1,6 +1,6 @@
-
-#include <htslib/sam.h>
+#include "common.h"
 #include "PseudoBam.h"
+#include <htslib/sam.h>
 
 
 bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
