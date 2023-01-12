@@ -70,8 +70,8 @@ if (ZLIBNG)
     PREFIX ${PROJECT_SOURCE_DIR}/ext/zlib-ng
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/zlib-ng
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DZLIB_COMPAT=ON -DCMAKE_INSTALL_PREFIX=${PREFIX}
-    BUILD_COMMAND cd build && make
+    CONFIGURE_COMMAND mkdir -p zlib-ng && cd zlib-ng && cmake .. -DZLIB_COMPAT=ON -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    BUILD_COMMAND cd zlib-ng && make
     INSTALL_COMMAND ""
     )
 endif(ZLIBNG)
