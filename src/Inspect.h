@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <limits>
+#include "common.h"
 #include "KmerIndex.h"
 #include "GeneModel.h"
 
