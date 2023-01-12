@@ -3264,6 +3264,7 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   umi_files(std::move(o.umi_files)),
   f_umi(std::move(o.f_umi)),
   current_file(o.current_file),
+  interleave_nfiles(o.interleave_nfiles),
   seq(std::move(o.seq)) {
 
   o.fp.resize(nfiles);
