@@ -25,11 +25,6 @@
 #include <htslib/sam.h>
 
 
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
-
 class MasterProcessor;
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
