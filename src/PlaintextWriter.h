@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "common.h"
 #include "KmerIndex.h"
 #include "GeneModel.h"
 
