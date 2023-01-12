@@ -651,6 +651,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   if (interleaved_flag) {
     opt.input_interleaved_nfiles = 1;
   }
+  
+  opt.single_overhang = true;
 
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
@@ -893,7 +895,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
-    opt.single_overhang = true;
     if (!opt.num && !(opt.max_num_reads > 0)) {
       opt.batch_bus_write = true;
     } else {
