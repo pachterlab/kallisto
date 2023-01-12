@@ -1,7 +1,7 @@
 #ifndef KALLISTO_PSEUDOBAM_H
 #define KALLISTO_PSEUDOBAM_H
 
-
+#include "common.h"
 #include <vector>
 #include <iostream>
 #include <utility>
