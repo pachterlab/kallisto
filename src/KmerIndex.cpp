@@ -2,17 +2,11 @@
 #include <random>
 #include <sstream>
 #include <ctype.h>
-#include <zlib.h>
 #include <unordered_set>
 #include <functional>
-#include "kseq.h"
+#include "common.h"
 #include "KmerIndex.h"
 #include "SparseVector.hpp"
-
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
 
 // helper functions
 // pre: u is sorted
