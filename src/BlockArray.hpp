@@ -24,7 +24,7 @@ class BlockArray {
     private:
 
     public:
-        union {
+        union { // TODO: could optimize memory if just vector w/o union
             block<T> mono;
             std::vector<block<T> > poly;
         };
