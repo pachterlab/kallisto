@@ -2580,7 +2580,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.pseudobam) {
+          #ifndef NO_HTSLIB
           MP.processAln(em, true);
+          #endif
         }
 
         cerr << endl;
