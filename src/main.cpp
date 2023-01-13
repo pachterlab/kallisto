@@ -806,6 +806,14 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   bool ret = true;
 
   cerr << endl;
+  
+  // check bam options
+  #ifndef NO_HTSLIB
+  if (opt.bam || opt.genomebam || opt.pseudobam) {
+    cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
+    ret = false;
+  }
+  #endif
 
   // check index
   if (opt.index.empty()) {
@@ -1459,6 +1467,13 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   bool ret = true;
+  
+  #ifndef NO_HTSLIB
+  if (opt.bam || opt.genomebam || opt.pseudobam) {
+    cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
+    ret = false;
+  }
+  #endif
 
   cerr << endl;
   // check for index
@@ -2381,7 +2396,9 @@ int main(int argc, char *argv[]) {
         if (opt.pseudobam) {
           std::vector<double> fl_means(index.target_lens_.size(),0.0);
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          #ifndef NO_HTSLIB
           MP.processAln(em, false);
+          #endif
         }
 
         cerr << endl;
