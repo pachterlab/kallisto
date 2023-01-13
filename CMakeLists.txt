@@ -6,10 +6,15 @@ include(GNUInstallDirs)
 
 
 option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
+option(USE_BAM "Compile with HTSLIB support" OFF) # OFF by default
 
 if(USE_HDF5)
     add_compile_definitions("USE_HDF5=ON")
 endif(USE_HDF5)
+
+if(NOT USE_BAM)
+    add_compile_definitions("NO_HTSLIB=ON")
+endif()
 
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(CMAKE_CXX_FLAGS_PROFILE "-g")
@@ -45,6 +50,7 @@ ENDIF(LINK MATCHES static)
 
 
 include(ExternalProject)
+if (USE_BAM)
 ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
@@ -54,6 +60,7 @@ ExternalProject_Add(htslib
     BUILD_COMMAND make lib-static
     INSTALL_COMMAND ""
 )
+endif(USE_BAM)
 
 ExternalProject_Add(bifrost
     PREFIX ${PROJECT_SOURCE_DIR}/ext/bifrost
@@ -76,7 +83,9 @@ if (ZLIBNG)
     )
 endif(ZLIBNG)
 
+if (USE_BAM)
 include_directories(${htslib_PREFIX}/src/htslib)
+endif(USE_BAM)
 include_directories(${EXT_PROJECTS_DIR}/bifrost/build/src)
 
 ExternalProject_Get_Property(bifrost install_dir)
