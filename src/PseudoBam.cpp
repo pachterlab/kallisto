@@ -1,6 +1,7 @@
 #include "common.h"
 #include "PseudoBam.h"
-#include <htslib/sam.h>
+
+#ifndef NO_HTSLIB
 
 
 bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
@@ -456,3 +457,5 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     batch.aln.push_back(std::move(info));
   }
 }
+#endif
+
