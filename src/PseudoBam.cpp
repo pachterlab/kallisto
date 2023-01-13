@@ -386,6 +386,8 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
   }
 }
 
+#endif // NO_HTSLIB
+
 /** -- pseudoalignment info methods -- **/
 
 void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& batch) {
@@ -457,5 +459,4 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     batch.aln.push_back(std::move(info));
   }
 }
-#endif
 
