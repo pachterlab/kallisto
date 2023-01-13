@@ -26,7 +26,7 @@
 #ifndef NO_HTSLIB
 #include <htslib/kstring.h>
 #include <htslib/sam.h>
-#endif
+#endif // NO_HTSLIB
 
 
 class MasterProcessor;
@@ -176,7 +176,11 @@ public:
     : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0), transfer_threshold(1), counter(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
       if (opt.bam) {
+        #ifndef NO_HTSLIB
         SR = new BamSequenceReader(opt);
+        #else
+        throw std::runtime_error("HTSLIB required for bam reading but not included");
+        #endif // NO_HTSLIB
       } else {
         SR = new FastqSequenceReader(opt);
       }
@@ -413,6 +417,6 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang);
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra);
 void reverseComplementSeqInData(bam1_t &b);
-#endif
+#endif // NO_HTSLIB
 
 #endif // KALLISTO_PROCESSREADS_H
