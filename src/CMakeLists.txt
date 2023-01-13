@@ -3,7 +3,9 @@ file(GLOB headers *.h *.hpp)
 
 list(REMOVE_ITEM sources main.cpp)
 
+if (USE_BAM)
 include_directories(../ext/htslib)
+endif(USE_BAM)
 
 add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 
@@ -14,7 +16,11 @@ add_executable(kallisto main.cpp)
 
 find_package( Threads REQUIRED )
 ExternalProject_Get_Property(bifrost install_dir)
+if (USE_BAM)
 target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a)
+else()
+target_link_libraries(kallisto kallisto_core pthread ${install_dir}/build/src/libbifrost.a)
+endif(USE_BAM)
 
 if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
