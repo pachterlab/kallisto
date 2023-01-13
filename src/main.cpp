@@ -808,7 +808,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   cerr << endl;
   
   // check bam options
-  #ifndef NO_HTSLIB
+  #ifdef NO_HTSLIB
   if (opt.bam || opt.genomebam || opt.pseudobam) {
     cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
     ret = false;
@@ -1468,7 +1468,7 @@ bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   bool ret = true;
   
-  #ifndef NO_HTSLIB
+  #ifdef NO_HTSLIB
   if (opt.bam || opt.genomebam || opt.pseudobam) {
     cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
     ret = false;
