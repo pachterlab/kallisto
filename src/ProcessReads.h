@@ -22,7 +22,11 @@
 #include "GeneModel.h"
 #include "BUSData.h"
 #include "BUSTools.h"
+
+#ifndef NO_HTSLIB
+#include <htslib/kstring.h>
 #include <htslib/sam.h>
+#endif
 
 
 class MasterProcessor;
@@ -106,6 +110,7 @@ public:
   int interleave_nfiles;
 };
 
+#ifndef NO_HTSLIB
 class BamSequenceReader : public SequenceReader {
 public:
 
@@ -163,6 +168,7 @@ public:
 private:
   static const std::string seq_enc;
 };
+#endif
 
 class MasterProcessor {
 public:
@@ -243,11 +249,8 @@ public:
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
-  htsFile *bamfp;
   const int numSortFiles = 32;
-  htsFile **bamfps;
 
-  bam_hdr_t *bamh;
   const ProgramOptions& opt;
   int64_t numreads;
   int64_t nummapped;
@@ -281,9 +284,14 @@ public:
   std::vector<std::vector<std::pair<Roaring, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<Roaring, std::string>>> newBatchECumis;
   void processReads();
+  #ifndef NO_HTSLIB
+  htsFile *bamfp;
+  htsFile **bamfps;
+  bam_hdr_t *bamh;
   void processAln(const EMAlgorithm& em, bool useEM);
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
+  #endif
   std::vector<uint64_t> breakpoints;
   void update(const std::vector<uint32_t>& c, const std::vector<Roaring>& newEcs, std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
 };
@@ -364,7 +372,7 @@ public:
   void clear();
 };
 
-
+#ifndef NO_HTSLIB
 class AlnProcessor {
 public:
   AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, bool useEM, int id = -1);
@@ -405,5 +413,6 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang);
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra);
 void reverseComplementSeqInData(bam1_t &b);
+#endif
 
 #endif // KALLISTO_PROCESSREADS_H
