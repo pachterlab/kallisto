@@ -95,7 +95,13 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'd': {
-      stringstream(optarg) >> opt.d_list;
+      std::string d_list;
+      stringstream(optarg) >> d_list;
+      stringstream ss(d_list);
+      std::string filename;
+      while (std::getline(ss, filename, ',')) { 
+        opt.d_list.push_back(filename);
+      }
       break;
     }
     default: break;
@@ -1436,6 +1442,17 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 
     for (auto& fasta : opt.transfasta) {
       // we want to generate the index, check k, index and transfasta
+      struct stat stFileInfo;
+      auto intStat = stat(fasta.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: FASTA file not found " << fasta << endl;
+        ret = false;
+      }
+    }
+  }
+  
+  if (!opt.d_list.empty()) {
+    for (auto& fasta : opt.d_list) {
       struct stat stFileInfo;
       auto intStat = stat(fasta.c_str(), &stFileInfo);
       if (intStat != 0) {
