@@ -855,7 +855,7 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   // place breakpoints on evenly spaced
   for (auto& chrw : chrWeights) {
     // sort each by stop point
-    std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t>& a, std::pair<uint32_t, uint32_t>& b) { return a.first < b.first;});
+    std::sort(chrw.begin(), chrw.end(), [](const std::pair<uint32_t, uint32_t>& a, const std::pair<uint32_t, uint32_t>& b) { return a.first < b.first;});
   }
 
   double bp = 0.0;
