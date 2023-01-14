@@ -294,9 +294,11 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 
 void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
 
-  if (opt.d_list == "") return;
+  if (opt.d_list.empty()) return;
 
-  std::cerr << "[build] extracting distinguishing flanking k-mers from " << opt.d_list << std::endl;
+  std::cerr << "[build] extracting distinguishing flanking k-mers from";
+  for (std::string s : opt.d_list) std::cerr << " \"" << s << "\""; 
+  std::cerr << std::endl;
 
   robin_hood::unordered_set<Kmer, KmerHash> kmers;
 
@@ -356,7 +358,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   // FASTA reading for D-list
   std::vector<std::string> dlist_fasta_files;
-  dlist_fasta_files.push_back(opt.d_list);
+  dlist_fasta_files = opt.d_list;
   gzFile fp = 0;
   kseq_t *seq;
   size_t max_threads_read = std::min(opt.threads, 8);
