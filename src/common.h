@@ -93,6 +93,7 @@ struct ProgramOptions {
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;
+  std::vector<std::string> d_list;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -122,7 +123,6 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
-  std::string d_list;
 
 ProgramOptions() :
   verbose(false),
