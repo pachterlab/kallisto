@@ -1456,7 +1456,7 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       struct stat stFileInfo;
       auto intStat = stat(fasta.c_str(), &stFileInfo);
       if (intStat != 0) {
-        cerr << "Error: FASTA file not found " << fasta << endl;
+        cerr << "Error: D-list FASTA file not found \"" << fasta << "\"" << endl;
         ret = false;
       }
     }
