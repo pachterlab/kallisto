@@ -1,8 +1,0 @@
-close-templates  
-add-brackets 
-align-reference=type 
-align-pointer=name 
-style=google
-indent=spaces=2
-keep-one-line-blocks
-keep-one-line-statements
