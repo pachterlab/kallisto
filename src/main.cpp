@@ -1969,6 +1969,7 @@ void usageBus() {
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
+       << "-N, --numReads                Maximum number of reads to process from supplied input" << endl
        << "-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies" << endl
        << "    --fr-stranded             Strand specific reads for UMI-tagged reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
