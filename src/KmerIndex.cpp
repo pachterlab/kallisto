@@ -8,6 +8,12 @@
 #include "KmerIndex.h"
 #include "SparseVector.hpp"
 
+// Added by Laura
+#include <iostream>
+#include <map>
+#include <string>
+// End Laura
+
 // helper functions
 // pre: u is sorted
 bool isUnique(const std::vector<int>& u) {
@@ -1058,7 +1064,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const{
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v, bool cfc) const{
   const Node* n;
 
   // TODO:
@@ -1088,7 +1094,43 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   }
   */
 
-  KmerIterator kit(s), kit_end;
+  // Added by Laura (also added bool cfc=false arg to function args in .cpp and .h files)
+  std::string s_cfc;
+  // convert char const* to string
+  std::string s_string(s);
+  if (cfc) {
+    // translate sequence string s to comma-free code
+    // traverse the sequence string in triplets
+    std::stringstream all_stream;
+    int incrementer = 3;
+    for (int i = 0; i < l; i += incrementer) {
+        // map triplet to comma-free code using cfc_map (in common)
+        auto cfc_mapped = cfc_map.find(s_string.substr(i, 3));
+
+        // if nucleotide triplet not found in comma-free map, translate as "NNN"
+        std::string cfc_seq;
+        if (cfc_mapped == cfc_map.end()) {
+        cfc_seq = "NNN";
+        } else {
+          cfc_seq = cfc_mapped->second;
+        }
+
+        // accumulate comma-free sequences into stream
+        all_stream << cfc_seq;
+    }
+
+    // convert stream to new comma-free sequence string s_cfc
+    s_cfc = all_stream.str();
+  }
+  else {
+    // to-do: rewrite this so s is not unnecessarily converted char -> string -> char when running kallisto in non-cfc mode
+    // if not in cfc mode, s_cfc is just a copy of s
+    s_cfc = s_string;
+  }
+
+  // End Laura (except replace s with s_cfc.c_str() in KmerIterator line below)
+
+  KmerIterator kit(s_cfc.c_str()), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {

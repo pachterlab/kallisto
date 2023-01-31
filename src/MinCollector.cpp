@@ -34,6 +34,67 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
+// Added by Laura (also added to MinCollector.h)
+int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+  Roaring u1 = intersectECs(v1);
+  Roaring u3 = intersectECs(v3);
+  Roaring u4 = intersectECs(v4);
+  Roaring u5 = intersectECs(v5);
+  Roaring u6 = intersectECs(v6);
+  Roaring u7 = intersectECs(v7);
+
+  if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
+    return -1;
+  }
+
+  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
+
+  // non-strict intersection
+  // to-do: currently the different frames are treated as if they were paired reads
+  // this might not be the best way to handle them
+  //bool found_non_empty = false;
+  //for (const auto& u_ : u_vector) {
+  //    if (!found_non_empty) {
+  //      r = u_;
+  //      if (!r.isEmpty()) {
+  //          found_non_empty = true;
+  //      }
+  //    } else if (!u_.isEmpty()) {
+  //        r &= u_;
+  //    }
+  //}
+
+  // find best match (smallest non-zero roaring)
+  // to-do/note: if two reads have the same roaring, we will use the first one (even though the second is just as valid)
+  uint32_t smallest_t=-1;
+  int frame_idx=0;
+  int winner_frame_idx=-1;
+  for (const auto& u_ : u_vector) {
+    if (u_.cardinality() > 0 && u_.cardinality() < smallest_t) {
+      r = u_;
+      smallest_t = u_.cardinality();
+      winner_frame_idx = frame_idx;
+    }
+    // Throw warning if new frame is as good as the current winning match
+    else if (u_.cardinality() > 0 && u_.cardinality() == smallest_t) {
+      std::cout << "Warning: Frame " << frame_idx << " has same equivalence class cardinality as winning frame, but will be dismissed." << endl;
+    }
+    frame_idx++;
+  }
+
+  if (r.isEmpty()) {
+    return -1;
+  }
+  std::cout << "Aligned frame: " << winner_frame_idx << endl;
+  return 1;
+}
+// End Laura
+
 int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
   Roaring u1 = intersectECs(v1);

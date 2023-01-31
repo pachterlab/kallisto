@@ -11,6 +11,9 @@
 #include "Node.hpp"
 #include <unordered_set>
 
+// Added by Laura                                                                                                                                                                                      
+#include <algorithm>
+// End Laura 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -1663,17 +1666,78 @@ void BUSProcessor::processBuffer() {
     v.clear();
     u = Roaring();
 
+    index.match(seq, seqlen, v, busopt.aa);
+
     // process 2nd read
-    index.match(seq, seqlen, v);
     if (busopt.paired) {
       v2.clear();
       index.match(seq2, seqlen2, v2);
     }
 
-    // collect the target information
-    int r = tc.intersectKmers(v, v2, !busopt.paired, u);
-    // Mask out off-listed kmers
-    u &= index.onlist_sequences;
+    // Added by Laura (also added busopt.aa arg to match call above)
+    // process frames for commafree (to do: extend to paired-end reads)
+    if (busopt.aa) {
+      // const char * to string
+      std::string seq_string(seq);
+
+      // initiate equivalence classes
+      std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
+      v3.reserve(1000);
+      v4.reserve(1000);
+      v5.reserve(1000);
+      v6.reserve(1000);
+      v7.reserve(1000);
+
+      // align remaining forward frames using the match function
+      std::string seq3 = seq_string.substr(1);
+      size_t seqlen3 = seq3.size();
+      v3.clear();
+      index.match(seq3.c_str(), seqlen3, v3, busopt.aa);
+
+      std::string seq4 = seq_string.substr(2);
+      size_t seqlen4 = seq4.size();
+      v4.clear();
+      index.match(seq4.c_str(), seqlen4, v4, busopt.aa);
+
+      // get reverse complement of seq
+      // create a copy of seq
+      std::string com_seq = seq_string;
+
+      // tansform com_seq to its complement (complement function stored in common)
+      transform(
+          begin(com_seq),
+          end(com_seq),
+          begin(com_seq),
+          complement);
+
+      // reverse com_seq
+      reverse(com_seq.begin(), com_seq.end());
+
+      // align reverse complement frames using the match function
+      size_t seqlen5 = com_seq.size();
+      v5.clear();
+      index.match(com_seq.c_str(), seqlen5, v5, busopt.aa);
+
+      std::string seq6 = com_seq.substr(1);
+      size_t seqlen6 = seq6.size();
+      v6.clear();
+      index.match(seq6.c_str(), seqlen6, v6, busopt.aa);
+
+      std::string seq7 = com_seq.substr(2);
+      size_t seqlen7 = seq7.size();
+      v7.clear();
+      index.match(seq7.c_str(), seqlen7, v7, busopt.aa);
+    
+      // intersect set of equivalence classes for each frame
+      // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?
+      int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
+    }
+    else {
+      // collect the target information
+      int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+      // Mask out off-listed kmers
+      u &= index.onlist_sequences;
+    }
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       doStrandSpecificity(u, mp.opt.strand, v, v2);

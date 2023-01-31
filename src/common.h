@@ -14,6 +14,13 @@
 typedef unsigned int uint;
 #endif
 
+// Added by Laura 
+// declaring cfc_map and complement (both are defined in common.cpp)
+#include <map>
+extern std::map<std::string, std::string>cfc_map;
+extern char complement(char n);
+// End Laura
+
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
   BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}
@@ -22,6 +29,7 @@ struct BUSOptionSubstr {
   int stop;
 };
 
+// Laura: Added aa (previously named cfc) option
 struct BUSOptions {
   int nfiles;
 
@@ -30,6 +38,7 @@ struct BUSOptions {
   std::vector<BUSOptionSubstr> seq;
 
   bool paired;
+  bool aa;
 
   int getBCLength() const {
     int r =0 ;
@@ -66,6 +75,7 @@ struct BUSOptions {
 
 struct ProgramOptions {
   bool verbose;
+  bool aa;
   int threads;
   std::string index;
   int k;
@@ -160,7 +170,8 @@ ProgramOptions() :
   batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  aa(false)
   {}
 };
 
