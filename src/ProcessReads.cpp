@@ -628,7 +628,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
             }
             int ec = tc.increaseCount(t.first); // modifies the ecmap
             if (ec >= tmp_bc[i].size()) {
-                    tmp_bc[i].push_back(0);
+              tmp_bc[i].resize(ec+1, 0);
             }
             if (ec != -1 && t.second > 0) {
               tmp_bc[i][ec] += (t.second);
