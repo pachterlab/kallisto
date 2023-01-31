@@ -168,6 +168,8 @@ class MinimizerIndex {
 
         pair<iterator, bool> insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
 
+        pair<iterator, bool> add_unitig_p(const Minimizer& key, const size_t pos_id_unitig); // only if static
+
         iterator begin();
         const_iterator begin() const;
 

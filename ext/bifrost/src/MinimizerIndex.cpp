@@ -832,6 +832,45 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& k
     lck_edit_table.release_reader(); // Just for safety
 }
 
+pair<MinimizerIndex::iterator, bool> MinimizerIndex::add_unitig_p(const Minimizer& key, const size_t pos_id_unitig) {
+    if (!is_static) {
+        std::cerr << "Illegal operation on non-static MinimizerIndex: MinimizerIndex::add_unitig_p" << std::endl;
+        exit(1);
+    }
+    size_t h = mphf->lookup(key);
+    size_t id_block = h >> lck_block_div_shift;
+  
+    lck_min[id_block].acquire();
+
+    if (table_keys[h].isEmpty()) {
+    
+        table_keys[h] = key;
+        table_tinyv_sz[h] = packed_tiny_vector::FLAG_EMPTY;
+        table_tinyv[h].copy(table_tinyv_sz[h], packed_tiny_vector(), 0);
+    
+        iterator i = iterator(this, h);
+        packed_tiny_vector& v = i.getVector();
+        uint8_t& flag_v = i.getVectorSize();
+        flag_v = v.push_back(pos_id_unitig, flag_v);
+        lck_min[id_block].release();
+        return {iterator(this, h), true};
+    } else if (table_keys[h] == key){
+
+        iterator i = iterator(this, h);
+        packed_tiny_vector& v = i.getVector();
+        uint8_t& flag_v = i.getVectorSize();
+        flag_v = v.push_back(pos_id_unitig, flag_v);
+        lck_min[id_block].release();
+        return {iterator(this, h), false};
+    } else if (table_keys[h].isDeleted()) {
+        std::cerr << "Illegal operation: MinimizerIndex::add_unitig_p cannot be used if a key is deleted" << std::endl;
+        exit(1);
+    }
+  
+    lck_min[id_block].release(); // Just for safety
+}
+
+
 MinimizerIndex::iterator MinimizerIndex::begin() {
 
     iterator it(this, 0xffffffffffffffffULL);

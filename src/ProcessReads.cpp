@@ -1,32 +1,14 @@
-/*
-#include <zlib.h>
-#include "kseq.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-
-#include <iostream>
-#include <fstream>
-#include "MinCollector.h"
-
-
-#include "common.h"
-*/
-
 #include <fstream>
 #include <limits>
 
 #include <iomanip>
 
 #include "ProcessReads.h"
-#include "kseq.h"
 #include "PseudoBam.h"
 #include "Fusion.hpp"
 #include "BUSData.h"
 #include "BUSTools.h"
 #include "Node.hpp"
-#include <htslib/kstring.h>
 #include <unordered_set>
 
 // Added by Laura                                                                                                                                                                                      
@@ -77,6 +59,50 @@ std::pair<const_UnitigMap<Node>, int> findFirstMappingKmer(const std::vector<std
     }
   }
   return std::make_pair(um, p);
+}
+
+void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v2) {
+  int p = -1;
+  const_UnitigMap<Node> um;
+  Roaring vtmp;
+  if (!v.empty()) {
+    vtmp = Roaring();
+    bool firstStrand = (strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
+    auto res = findFirstMappingKmer(v);
+    um = res.first;
+    p = res.second;
+    // might need to optimize this
+    const Node* n = um.getData();
+    auto ecs = n->ec.get_leading_vals(um.dist);
+    const auto& v_ec = ecs[ecs.size() - 1];
+    const Roaring& ec = v_ec.getIndices();
+    
+    u &= ec; // intersection
+    for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
+      char sense = v_ec[tr];
+      if ((um.strand == (bool)sense) == firstStrand || sense == 2) vtmp.add(tr);
+    }
+    if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
+  }
+  if (!v2.empty()) {
+    vtmp = Roaring();
+    bool secondStrand = (strand == ProgramOptions::StrandType::RF);
+    auto res = findFirstMappingKmer(v2);
+    um = res.first;
+    p = res.second;
+    // might need to optimize this
+    const Node* n = um.getData();
+    auto ecs = n->ec.get_leading_vals(um.dist);
+    const auto& v_ec = ecs[ecs.size() - 1];
+    const Roaring& ec = v_ec.getIndices();
+    
+    u &= ec; // intersection
+    for (auto tr : u) { // strand-specific filtering to produce subset of u: vtmp
+      char sense = v_ec[tr];
+      if ((um.strand == (bool)sense) == secondStrand || sense == 2) vtmp.add(tr);
+    }
+    if (vtmp.cardinality() < u.cardinality()) u = std::move(vtmp);
+  }
 }
 
 // constants
@@ -176,10 +202,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     std::cerr << std::endl;
   }
 
-  /*if (opt.pseudobam) {
-    bam_hdr_t *t = createPseudoBamHeader(index);
-    index.writePseudoBamHeader(std::cout);
-  }*/
 
   MP.processReads();
   numreads = MP.numreads;
@@ -189,8 +211,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   } else {
     std::cerr << " done" << std::endl;
   }
-
-  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
 
   if (opt.bias) {
     std::cerr << "[quant] learning parameters for sequence specific bias" << std::endl;
@@ -248,58 +268,6 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   // for each file
   std::cerr << "[quant] finding pseudoalignments for the reads ..."; std::cerr.flush();
 
-  if (opt.genomebam) {
-    /*
-    // open bam files for writing
-    MP.bamh = createPseudoBamHeaderGenome(MP.model);
-    MP.bamfps = new htsFile*[MP.numSortFiles];
-    for (int i = 0; i < MP.numSortFiles; i++) {
-      MP.bamfps[i] = sam_open((opt.output + "/tmp." + std::to_string(i) + ".bam").c_str(), "wb1");
-      int r = sam_hdr_write(MP.bamfps[i], MP.bamh);
-    }
-
-    // assign breakpoints to chromosomes
-    MP.breakpoints.clear();
-    MP.breakpoints.assign(MP.numSortFiles -1 , (((uint64_t)-1)<<32));
-    std::vector<std::vector<std::pair<uint32_t, uint32_t>>> chrWeights(MP.model.chr.size());
-    for (const auto& t : MP.model.genes) {
-      if (t.chr != -1 && t.stop > 0) {
-        chrWeights[t.chr].push_back({t.stop, 1});
-      }
-    }
-
-    double sum = 0;
-    for (const auto &chrw : chrWeights) {
-      for (const auto &p : chrw) {
-        sum += p.second;
-      }
-    }
-    double bpLimit = sum / (MP.numSortFiles-1);
-
-    for (auto& chrw : chrWeights) {
-      // sort each by stop point
-      std::sort(chrw.begin(), chrw.end(), [](std::pair<uint32_t, uint32_t> a, std::pair<uint32_t, uint32_t> b) { return a.first < b.first;});
-    }
-
-    double bp = 0.0;
-    int ifile = 0;
-    for (int i = 0; i < chrWeights.size(); i++) {
-      const auto &chrw = chrWeights[i];
-      for (const auto &x : chrw) {
-        bp += x.second;
-        if (bp > bpLimit) {
-          uint64_t pos = ((uint64_t) i) << 32 | ((uint64_t) x.first+1) << 1;
-          MP.breakpoints[ifile] = pos;
-          ifile++;
-          while (bp > bpLimit) {
-            bp -= bpLimit;
-          }
-        }
-      }
-    }
-    */
-  }
-
   MP.processReads();
   numreads = MP.numreads;
   nummapped = MP.nummapped;
@@ -308,9 +276,6 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   } else {
     std::cerr << " done" << std::endl;
   }
-
-  //std::cout << "betterCount = " << betterCount << ", out of betterCand = " << betterCand << std::endl;
-
 
   std::cerr << "[quant] processed " << pretty_num(numreads) << " reads, "
     << pretty_num(nummapped) << " reads pseudoaligned" << std::endl;
@@ -602,6 +567,246 @@ void MasterProcessor::processReads() {
   }
 }
 
+void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<Roaring> &newEcs,
+                            std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi,
+                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
+  // acquire the writer lock
+  std::lock_guard<std::mutex> lock(this->writer_lock);
+  size_t num_new_ecs = 0;
+
+  if (!opt.batch_mode || opt.batch_bus) {
+    for (int i = 0; i < c.size(); i++) {
+      tc.counts[i] += c[i]; // add up ec counts
+      nummapped += c[i];
+    }
+  } else {
+    if (!opt.umi) {
+      auto& bc = tmp_bc[opt.pseudo_read_files_supplied ? 0 : local_id]; // local_id = batch (each batch gets its own thread) but pseudo_read_files_supplied means all read files belong to one and only one batch (batch 0)
+      for (int i = 0; i < c.size(); i++) {
+        bc[i] += c[i];
+        nummapped += c[i];
+      }
+    } else {
+      for (auto &t : ec_umi) {
+        batchUmis[id].push_back(std::move(t));
+      }
+    }
+  }
+
+  auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
+    if (num_new_ecs_ >= transfer_threshold) {
+      std::vector<std::unique_lock<std::mutex>> locks;
+      for (int i = 0; i < this->transfer_locks.size(); i++) { // acquire one lock per thread
+        locks.push_back(std::unique_lock<std::mutex>(this->transfer_locks[i]));
+      }
+      size_t num_new_ecs_actual = 0;
+      int curr_max_ec = index.ecmapinv.size()-1;
+      if (opt.bus_mode || opt.batch_bus) {
+        num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
+        if (num_new_ecs_actual >= transfer_threshold) {
+          for (auto &x : bus_ecmapinv) {
+            index.ecmapinv.insert({x.first,x.second});
+          }
+        }
+      } else if (!opt.batch_mode) {
+        for (auto &t : newECcount) {
+          if (t.second <= 0) {
+            continue;
+          }
+          int ec = tc.increaseCount(t.first); // modifies the ecmap
+          if (ec != -1 && t.second > 1) {
+            tc.counts[ec] += (t.second-1);
+          }
+          if (ec > curr_max_ec) {
+            num_new_ecs_actual++;
+          }
+        }
+        newECcount.clear();
+      } else if (opt.batch_mode && !opt.umi) {
+        auto &b = newBatchECcount;
+        for (int i = 0; i < b.size(); i++) {
+          for (auto &t : b[i]) {
+            if (t.second <= 0) {
+              continue;
+            }
+            int ec = tc.increaseCount(t.first); // modifies the ecmap
+            if (ec >= tmp_bc[i].size()) {
+              tmp_bc[i].resize(ec+1, 0);
+            }
+            if (ec != -1 && t.second > 0) {
+              tmp_bc[i][ec] += (t.second);
+            }
+            if (ec > curr_max_ec && i == id) {
+              num_new_ecs_actual++;
+            }
+          }
+          b[i].clear();
+        }
+      }
+      if (num_new_ecs_actual >= transfer_threshold) {
+        if (transfer_threshold <= 4) {
+          transfer_threshold++;
+        } else {
+          transfer_threshold *= 1.25;
+        }
+      }
+      for (int i = 0; i < this->transfer_locks.size(); i++) { // release each lock
+        locks[i].unlock();
+      }
+    }
+  };
+
+  if (!opt.batch_mode || opt.batch_bus) {
+    for(auto &u : newEcs) {
+      ++newECcount[u];
+    }
+  } else {
+    if (!opt.umi) {
+      for(auto &u : newEcs) {
+        ++newBatchECcount[id][u];
+      }
+    } else {
+      for (auto &u : new_ec_umi) {
+        newBatchECumis[id].push_back(std::move(u));
+      }
+    }
+  }
+  if (!opt.umi) {
+    nummapped += newEcs.size();
+    if (opt.batch_mode) {
+      num_new_ecs = newBatchECcount[id].size();
+    } else {
+      num_new_ecs = newECcount.size();
+    }
+  } else {
+    nummapped += new_ec_umi.size();
+  }
+
+  if (!flens.empty()) {
+    if (opt.batch_mode) {
+      auto &bflen = batchFlens[id];
+      auto &tcount = tlencounts[id];
+      for (int i = 0; i < flens.size(); i++) {
+        bflen[i] += flens[i];
+        tcount += flens[i];
+      }
+    } else {
+      int local_tlencount = 0;
+      for (int i = 0; i < flens.size(); i++) {
+        tc.flens[i] += flens[i];
+        local_tlencount += flens[i];
+      }
+      tlencount += local_tlencount;
+    }
+  }
+
+  if (!bias.empty()) {
+    int local_biasCount = 0;
+    for (int i = 0; i < bias.size(); i++) {
+      tc.bias5[i] += bias[i];
+      local_biasCount += bias[i];
+    }
+    biasCount += local_biasCount;
+  }
+
+  if (opt.pseudobam) {
+    // copy the pseudo alignment information, either write to disk or queue up
+    pseudobatch_stragglers.push_back(std::move(pseudobatch));
+    while (true) {
+      if (pseudobatch_stragglers.empty()) {
+        break;
+      }
+      // find the smallest batch id
+      auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(),
+      [](const PseudoAlignmentBatch &p1, const PseudoAlignmentBatch &p2) -> bool {
+        return p1.batch_id < p2.batch_id;
+      });
+      if ((last_pseudobatch_id + 1) != min_it->batch_id) {
+        break;
+      }
+      // if it is in sequence, write it out
+      writePseudoAlignmentBatch(pseudobatchf_out, *min_it);
+      // remove from processing
+      pseudobatch_stragglers.erase(min_it);
+      last_pseudobatch_id += 1;
+    }
+  }
+
+  if (opt.bus_mode || opt.batch_bus) {
+    int bus_bc_sum = 0;
+    int bus_umi_sum = 0;
+    for (int i = 0; i <= 32; i++) {
+      bus_bc_sum += bus_bc_len[i];
+      bus_umi_sum += bus_umi_len[i];
+    }
+
+    if (bus_bc_sum < 10000 or bus_umi_sum < 10000) {
+      for (int i = 0; i < 32; i++) {
+        bus_bc_len[i] += bc_len[i];
+        bus_umi_len[i] += umi_len[i];
+      }
+    }
+    
+    if (opt.max_num_reads != 0 && numreads+n > opt.max_num_reads) { // Downsample current batch of reads while maintaining ratio of unmapped/mapped reads
+      int bv_size = bv.size();
+      int newBP_size = newBP.size(); // We'll also try to maintain the ratio of bv to newBP records
+      int n_mapped = bv_size+newBP_size;
+      int new_n = opt.max_num_reads-numreads;
+      int new_mapped_num = ((double)n_mapped/(double)n)*new_n;
+      int new_mapped_bv_num = ((double)bv_size/(double)n_mapped)*new_mapped_num;
+      int new_mapped_newBP_num = new_mapped_num - new_mapped_bv_num;
+      n = new_n;
+      
+      if (new_mapped_bv_num < bv_size) bv.resize(new_mapped_bv_num);
+      if (new_mapped_newBP_num < newBP_size) newBP.resize(new_mapped_newBP_num);
+    }
+
+    // add new equiv classes to extra format
+    int offset = 0; // index.ecmapinv.size();
+    num_new_ecs = 0;
+    for (auto &bp : newBP) {
+      auto& u = bp.second;
+      int32_t ec = -1;
+      auto it = bus_ecmapinv.find(u);
+      if (it != bus_ecmapinv.end()) {
+        ec = it->second;
+      } else {
+        ec = offset + bus_ecmapinv.size();
+        bus_ecmapinv.insert({u,ec});
+        tc.counts.push_back(0); // Push back zero count (so we can update the EC's actual count later)
+        num_new_ecs++;
+      }
+      auto &b = bp.first;
+      b.ec = ec;
+      bv.push_back(b);
+    }
+
+    //copy bus mode information, write to disk or queue up
+    nummapped += writeBUSData(busf_out, bv, &tc);
+    /*for (auto &bp : newBP) {
+      newB.push_back(std::move(bp));
+    } */
+  }
+
+  attempt_transfer_ecs(num_new_ecs);
+
+  numreads += n;
+  
+  //if (opt.verbose) {
+    counter += n;
+    if (counter >= 1000000) {
+      counter = 0;
+      std::cerr << '\r' << "[progress] " << (numreads/1000000) << "M reads processed";
+      std::cerr << " ("
+        << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nummapped)/double(numreads))
+        << "% mapped)             ";
+      std::cerr.flush();
+    }
+  //}
+  // releases the lock
+}
+
+#ifndef NO_HTSLIB
 void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   // open bamfile and fetch header
   std::string bamfn = opt.output + "/pseudoalignments.bam";
@@ -797,219 +1002,6 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   }
 }
 
-void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<Roaring> &newEcs,
-                            std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi,
-                            int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newBP, int *bc_len, int *umi_len,  int id, int local_id) {
-  // acquire the writer lock
-  std::lock_guard<std::mutex> lock(this->writer_lock);
-  size_t num_new_ecs = 0;
-
-  if (!opt.batch_mode || opt.batch_bus) {
-    for (int i = 0; i < c.size(); i++) {
-      tc.counts[i] += c[i]; // add up ec counts
-      nummapped += c[i];
-    }
-  } else {
-    if (!opt.umi) {
-      auto& bc = tmp_bc[opt.pseudo_read_files_supplied ? 0 : local_id]; // local_id = batch (each batch gets its own thread) but pseudo_read_files_supplied means all read files belong to one and only one batch (batch 0)
-      for (int i = 0; i < c.size(); i++) {
-        bc[i] += c[i];
-        nummapped += c[i];
-      }
-    } else {
-      for (auto &t : ec_umi) {
-        batchUmis[id].push_back(std::move(t));
-      }
-    }
-  }
-  
-  auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
-    if (num_new_ecs_ >= transfer_threshold) {
-      std::vector<std::unique_lock<std::mutex>> locks;
-      for (int i = 0; i < this->transfer_locks.size(); i++) { // acquire one lock per thread
-        locks.push_back(std::unique_lock<std::mutex>(this->transfer_locks[i]));
-      }
-      size_t num_new_ecs_actual = 0;
-      int curr_max_ec = index.ecmapinv.size()-1;
-      if (opt.bus_mode || opt.batch_bus) {
-        num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
-        if (num_new_ecs_actual >= transfer_threshold) {
-          for (auto &x : bus_ecmapinv) {
-            index.ecmapinv.insert({x.first,x.second});
-          }
-        }
-      } else if (!opt.batch_mode) {
-        for (auto &t : newECcount) {
-          if (t.second <= 0) {
-            continue;
-          }
-          int ec = tc.increaseCount(t.first); // modifies the ecmap
-          if (ec != -1 && t.second > 1) {
-            tc.counts[ec] += (t.second-1);
-          }
-          if (ec > curr_max_ec) {
-            num_new_ecs_actual++;
-          }
-        }
-        newECcount.clear();
-      } else if (opt.batch_mode && !opt.umi) {
-        auto &b = newBatchECcount;
-        for (int i = 0; i < b.size(); i++) {
-          for (auto &t : b[i]) {
-            if (t.second <= 0) {
-              continue;
-            }
-            int ec = tc.increaseCount(t.first); // modifies the ecmap
-            if (ec >= tmp_bc[i].size()) {
-                    tmp_bc[i].push_back(0);
-            }
-            if (ec != -1 && t.second > 0) {
-              tmp_bc[i][ec] += (t.second);
-            }
-            if (ec > curr_max_ec && i == id) {
-              num_new_ecs_actual++;
-            }
-          }
-          b[i].clear();
-        }
-      }
-      if (num_new_ecs_actual >= transfer_threshold) {
-        if (transfer_threshold <= 4) {
-          transfer_threshold++;
-        } else {
-          transfer_threshold *= 1.25;
-        }
-      }
-      for (int i = 0; i < this->transfer_locks.size(); i++) { // release each lock
-        locks[i].unlock();
-      }
-    }
-  };
-
-  if (!opt.batch_mode || opt.batch_bus) {
-    for(auto &u : newEcs) {
-      ++newECcount[u];
-    }
-  } else {
-    if (!opt.umi) {
-      for(auto &u : newEcs) {
-        ++newBatchECcount[id][u];
-      }
-    } else {
-      for (auto &u : new_ec_umi) {
-        newBatchECumis[id].push_back(std::move(u));
-      }
-    }
-  }
-  if (!opt.umi) {
-    nummapped += newEcs.size();
-    if (opt.batch_mode) {
-      num_new_ecs = newBatchECcount[id].size();
-    } else {
-      num_new_ecs = newECcount.size();
-    }
-  } else {
-    nummapped += new_ec_umi.size();
-  }
-
-  if (!flens.empty()) {
-    if (opt.batch_mode) {
-      auto &bflen = batchFlens[id];
-      auto &tcount = tlencounts[id];
-      for (int i = 0; i < flens.size(); i++) {
-        bflen[i] += flens[i];
-        tcount += flens[i];
-      }
-    } else {
-      int local_tlencount = 0;
-      for (int i = 0; i < flens.size(); i++) {
-        tc.flens[i] += flens[i];
-        local_tlencount += flens[i];
-      }
-      tlencount += local_tlencount;
-    }
-  }
-
-  if (!bias.empty()) {
-    int local_biasCount = 0;
-    for (int i = 0; i < bias.size(); i++) {
-      tc.bias5[i] += bias[i];
-      local_biasCount += bias[i];
-    }
-    biasCount += local_biasCount;
-  }
-
-  if (opt.pseudobam) {
-    // copy the pseudo alignment information, either write to disk or queue up
-    pseudobatch_stragglers.push_back(std::move(pseudobatch));
-    while (true) {
-      if (pseudobatch_stragglers.empty()) {
-        break;
-      }
-      // find the smallest batch id
-      auto min_it = std::min_element(pseudobatch_stragglers.begin(), pseudobatch_stragglers.end(),
-      [](const PseudoAlignmentBatch &p1, const PseudoAlignmentBatch &p2) -> bool {
-        return p1.batch_id < p2.batch_id;
-      });
-      if ((last_pseudobatch_id + 1) != min_it->batch_id) {
-        break;
-      }
-      // if it is in sequence, write it out
-      writePseudoAlignmentBatch(pseudobatchf_out, *min_it);
-      // remove from processing
-      pseudobatch_stragglers.erase(min_it);
-      last_pseudobatch_id += 1;
-    }
-  }
-
-  if (opt.bus_mode || opt.batch_bus) {
-    int bus_bc_sum = 0;
-    int bus_umi_sum = 0;
-    for (int i = 0; i <= 32; i++) {
-      bus_bc_sum += bus_bc_len[i];
-      bus_umi_sum += bus_umi_len[i];
-    }
-
-    if (bus_bc_sum < 10000 or bus_umi_sum < 10000) {
-      for (int i = 0; i < 32; i++) {
-        bus_bc_len[i] += bc_len[i];
-        bus_umi_len[i] += umi_len[i];
-      }
-    }
-
-    // add new equiv classes to extra format
-    int offset = 0; // index.ecmapinv.size();
-    num_new_ecs = 0;
-    for (auto &bp : newBP) {
-      auto& u = bp.second;
-      int32_t ec = -1;
-      auto it = bus_ecmapinv.find(u);
-      if (it != bus_ecmapinv.end()) {
-        ec = it->second;
-      } else {
-        ec = offset + bus_ecmapinv.size();
-        bus_ecmapinv.insert({u,ec});
-        tc.counts.push_back(0); // Push back zero count (so we can update the EC's actual count later)
-        num_new_ecs++;
-      }
-      auto &b = bp.first;
-      b.ec = ec;
-      bv.push_back(b);
-    }
-
-    //copy bus mode information, write to disk or queue up
-    nummapped += writeBUSData(busf_out, bv, &tc);
-    /*for (auto &bp : newBP) {
-      newB.push_back(std::move(bp));
-    } */
-  }
-  
-  attempt_transfer_ecs(num_new_ecs);
-
-  numreads += n;
-  // releases the lock
-}
-
 void MasterProcessor::writePseudoBam(const std::vector<bam1_t> &bv) {
   std::lock_guard<std::mutex> lock(this->writer_lock);
   // locking is handled by htslib
@@ -1044,6 +1036,7 @@ void MasterProcessor::writeSortedPseudobam(const std::vector<std::vector<bam1_t>
     }
   }
 }
+#endif // NO_HTSLIB
 
 void MasterProcessor::outputFusion(const std::stringstream &o) {
   std::string os = o.str();
@@ -1213,12 +1206,16 @@ void ReadProcessor::processBuffer() {
 
     // collect the target information
     int r = tc.intersectKmers(v1, v2, !paired, u);
+    // Mask out off-listed kmers
+    u &= index.onlist_sequences;
+
     if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
         std:cerr << "TODO: Implement fusion" << std::endl;
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
+      //std::cout << s1 << std::endl;
     }
 
     /* --  possibly modify the pseudoalignment  -- */
@@ -1269,81 +1266,7 @@ void ReadProcessor::processBuffer() {
     }
 
     if (mp.opt.strand_specific && !u.isEmpty()) {
-
-      int p = -1;
-      const_UnitigMap<Node> um;
-      if (!v1.empty()) {
-        vtmp = Roaring();
-        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        auto res = findFirstMappingKmer(v1);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
-
-        for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
-              if ((um.strand == sense) == firstStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-          delete[] trs;
-          trs = nullptr;
-        }
-
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
-
-      if (!v2.empty()) {
-        vtmp = Roaring();
-        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        auto res = findFirstMappingKmer(v2);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
-
-        for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
-              if ((um.strand == sense) == secondStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-          delete[] trs;
-          trs = nullptr;
-        }
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
+      doStrandSpecificity(u, mp.opt.strand, v1, v2);
     }
 
     // find the ec
@@ -1416,18 +1339,6 @@ void ReadProcessor::processBuffer() {
         info.ec = u;
       }
       pseudobatch.aln.push_back(std::move(info));
-    }
-
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
-      int nmap = mp.nummapped;
-      for (const auto& count : counts) {
-        nmap += count;
-      }
-      nmap += newEcs.size();
-
-      std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
-        << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
-        << "% pseudoaligned)"; std::cerr.flush();
     }
   }
 }
@@ -1551,8 +1462,11 @@ void BUSProcessor::operator()() {
     // update the results, MP acquires the lock
     std::vector<std::pair<Roaring, std::string>> ec_umi;
     std::vector<std::pair<Roaring, std::string>> new_ec_umi;
-    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, newB, &bc_len[0], &umi_len[0], id, local_id);
+    mp.update(counts, newEcs, ec_umi, new_ec_umi, seqs.size() / mp.opt.busOptions.nfiles , flens, bias5, pseudobatch, bv, std::move(newB), &bc_len[0], &umi_len[0], id, local_id);
     clear();
+    if (mp.opt.max_num_reads != 0 && mp.numreads >= mp.opt.max_num_reads) {
+      return;
+    }
   }
 }
 
@@ -1821,85 +1735,12 @@ void BUSProcessor::processBuffer() {
     else {
       // collect the target information
       int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+      // Mask out off-listed kmers
+      u &= index.onlist_sequences;
     }
 
     if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
-      int p = -1;
-      Kmer km;
-      const_UnitigMap<Node> um;
-      // This is copied verbatim from ReadProcessor::processBuffer()
-      // Is there a reason it's not offloaded into a function that both
-      // BUSProcessor::processBuffer() and ReadProcessor::processBuffer() call?
-      if (!v.empty()) {
-        vtmp = Roaring();
-        bool firstStrand = (mp.opt.strand == ProgramOptions::StrandType::FR); // FR have first read mapping forward
-        auto res = findFirstMappingKmer(v);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const auto& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
-
-        for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
-              if ((um.strand == sense) == firstStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-          delete[] trs;
-          trs = nullptr;
-        }
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
-      if (!v2.empty()) {
-        vtmp = Roaring();
-        bool secondStrand = (mp.opt.strand == ProgramOptions::StrandType::RF);
-        auto res = findFirstMappingKmer(v2);
-        um = res.first;
-        p = res.second;
-        // might need to optimize this
-        const Node* n = um.getData();
-        auto ecs = n->ec.get_leading_vals(um.dist);
-        size_t offset = 0;
-        const Roaring& ec = ecs[ecs.size() - 1];
-        for (size_t j = 0; j < ecs.size() - 1; ++j) {
-          offset += ecs[j].cardinality();
-        }
-
-        for (auto tr : u) {
-          uint32_t* trs = new uint32_t[ec.cardinality()];
-          ec.toUint32Array(trs);
-          for (size_t j = 0; j < ec.cardinality(); ++j) {
-            if (tr == trs[j]) {
-              bool sense = (n->pos[offset + j] & 0x7FFFFFFF) == n->pos[offset + j];
-              if ((um.strand == sense) == secondStrand) {
-                // swap out
-                vtmp.add(tr);
-              }
-              break;
-            }
-          }
-          delete[] trs;
-          trs = nullptr;
-        }
-        if (vtmp.cardinality() < u.cardinality()) {
-          u = vtmp; // copy
-        }
-      }
+      doStrandSpecificity(u, mp.opt.strand, v, v2);
     }
 
     // find the ec
@@ -1969,18 +1810,6 @@ void BUSProcessor::processBuffer() {
       }
       pseudobatch.aln.push_back(std::move(info));
     }
-
-    if (mp.opt.verbose && numreads > 0 && numreads % 1000000 == 0 ) {
-        int nmap = mp.nummapped;
-        for (const auto& count : counts) {
-          nmap += count;
-        }
-        nmap += newEcs.size();
-
-        std::cerr << '\r' << (numreads/1000000) << "M reads processed ("
-          << std::fixed << std::setw( 3 ) << std::setprecision( 1 ) << ((100.0*nmap)/double(numreads))
-          << "% pseudoaligned)"; std::cerr.flush();
-      }
   }
 }
 
@@ -1989,12 +1818,12 @@ void BUSProcessor::clear() {
   memset(buffer,0,bufsize);
   newEcs.clear();
   counts.clear();
-  counts.resize(tc.counts.size(), 0);
+  //counts.resize(tc.counts.size(), 0);
   bv.clear();
   newB.clear();
 }
 
-
+#ifndef NO_HTSLIB
 AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome &model, bool useEM, int _id) :
  paired(!opt.single_end), index(index), mp(mp), em(em), model(model), useEM(useEM), id(_id) {
    // initialize buffer
@@ -2309,21 +2138,17 @@ void AlnProcessor::processBufferTrans() {
             }
 
             auto ecs = n->ec.get_leading_vals(val.dist);
-            size_t offset = 0;
-            const Roaring& ec = ecs[ecs.size() - 1];
-
-            for (size_t i = 0; i < ecs.size() - 1; ++i) {
-              offset += ecs[i].cardinality();
-            }
+            const auto& v_ec = ecs[ecs.size() - 1];
+            const Roaring& ec = v_ec.getIndices();
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
+            bool trsense = v_ec[ec.minimum()];
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
             for (size_t i = 0; i < ec.cardinality(); ++i) {
               // If sense does not agree
-              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+              if ((!v_ec[trs[i]]) != trsense) {
                 for (const auto& y : ua) {
                   if (y.first == trs[i]) {
                     return {false, reptrue};
@@ -2799,21 +2624,17 @@ void AlnProcessor::processBufferGenome() {
             }
 
             auto ecs = n->ec.get_leading_vals(val.dist);
-            size_t offset = 0;
-            const Roaring& ec = ecs[ecs.size() - 1];
-
-            for (size_t i = 0; i < ecs.size() - 1; ++i) {
-              offset += ecs[i].cardinality();
-            }
+            const auto& v_ec = ecs[ecs.size() - 1];
+            const Roaring& ec = v_ec.getIndices();
 
             uint32_t bitmask = 0x7FFFFFFF;
-            bool trsense = (n->pos[offset] & bitmask) == n->pos[offset];
+            bool trsense = (v_ec[ec.minimum()]);
 
             uint32_t* trs = new uint32_t[ec.cardinality()];
             ec.toUint32Array(trs);
             for (size_t i = 0; i < ec.cardinality(); ++i) {
               // If sense does not agree
-              if (((n->pos[i + offset] & bitmask) != n->pos[i + offset]) != trsense) {
+              if ((!v_ec[trs[i]]) != trsense) {
                 for (const auto& y : ua) {
                   if (y.first == trs[i]) {
                     return {false, reptrue};
@@ -3233,6 +3054,7 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
   b.l_data = p;
   return p;
 }
+#endif // NO_HTSLIB
 
 
 /** -- sequence readers -- **/
@@ -3262,7 +3084,7 @@ FastqSequenceReader::~FastqSequenceReader() {
 
 
 bool FastqSequenceReader::empty() {
-  return (!state && current_file >= files.size());
+  return (!state && (current_file >= files.size() || (interleave_nfiles != 0 && current_file >= 1)));
 }
 
 void FastqSequenceReader::reset() {
@@ -3327,6 +3149,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 
   int bufpos = 0;
   int pad = nfiles; //(paired) ? 2 : 1;
+  int count = 0; // for interleaving
   while (true) {
     if (!state) { // should we open a file
       if (current_file >= files.size()) {
@@ -3347,7 +3170,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 
         // open the next one
         for (int i = 0; i < nfiles; i++) {
-          fp[i] = gzopen(files[current_file+i].c_str(), "r");
+          fp[i] = files[0] == "-" && nfiles == 1 && files.size() == 1 ? gzdopen(fileno(stdin), "r") : gzopen(files[current_file+i].c_str(), "r");
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
 
@@ -3379,6 +3202,13 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
       }
 
       if (bufpos+bufadd< limit) {
+        if (interleave_nfiles != 0) { // Hack to allow interleaving
+          // assert(nfiles == 1);
+          if (bufpos+bufadd >= limit-262144 && count % interleave_nfiles == 0) {
+            return true;
+          }
+          count++;
+        }
 
         for (int i = 0; i < nfiles; i++) {
           char *pi = buf + bufpos;
@@ -3409,6 +3239,10 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
         numreads++;
         flags.push_back(numreads-1);
       } else {
+        if (interleave_nfiles != 0) {
+          std::cerr << "Error: There was an error processing interleaved FASTQ input. Exiting..." << std::endl;
+          exit(1);
+        }
         return true; // read it next time
       }
 
@@ -3435,6 +3269,7 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   umi_files(std::move(o.umi_files)),
   f_umi(std::move(o.f_umi)),
   current_file(o.current_file),
+  interleave_nfiles(o.interleave_nfiles),
   seq(std::move(o.seq)) {
 
   o.fp.resize(nfiles);
@@ -3444,6 +3279,7 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   o.state = false;
 }
 
+#ifndef NO_HTSLIB
 const std::string BamSequenceReader::seq_enc = "=ACMGRSVTWYHKDBN";
 
 BamSequenceReader::~BamSequenceReader() {
@@ -3546,3 +3382,4 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
     }
   }
 }
+#endif // NO_HTS_LIB

@@ -1,11 +1,14 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.48.0"
+#define KALLISTO_VERSION "0.49.0"
+
+// NOTE: MAKE SURE THIS FILE GETS INCLUDED FIRST IN ALL OTHER FILES AND BEFORE ANY EXTERNAL LIBRARIES
 
 #include <string>
 #include <vector>
 #include <iostream>
+#include "kseq.h"
 
 #ifdef _WIN64
 typedef unsigned int uint;
@@ -86,6 +89,7 @@ struct ProgramOptions {
   double sd;
   int min_range;
   int bootstrap;
+  int max_num_reads;
   std::vector<std::string> transfasta;
   bool batch_mode;
   bool pseudo_read_files_supplied;
@@ -99,6 +103,7 @@ struct ProgramOptions {
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   std::vector<std::string> umi_files;
+  std::vector<std::string> d_list;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -117,6 +122,7 @@ struct ProgramOptions {
   std::string gfa; // used for inspect
   bool inspect_thorough;
   bool single_overhang;
+  int input_interleaved_nfiles;
   std::string gtfFile;
   std::string chromFile;
   std::string bedFile;
@@ -127,7 +133,6 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
-  std::string offlist;
 
 ProgramOptions() :
   verbose(false),
@@ -142,6 +147,8 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  max_num_reads(0),
+  input_interleaved_nfiles(0),
   batch_mode(false),
   pseudo_read_files_supplied(false),
   bus_mode(false),
@@ -173,6 +180,16 @@ std::string pretty_num(int64_t num);
 std::string pretty_num(int num);
 
 
+#ifdef KALLISTO_USE_ZLIB_NG
+#include "zlib-ng/zlib.h"
+#else
+#include <zlib.h>
+#endif
+
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
+KSEQ_INIT(gzFile, gzread)
+#endif
 
 
 #endif // KALLISTO_COMMON_H

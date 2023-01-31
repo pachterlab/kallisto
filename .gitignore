@@ -26,3 +26,7 @@ ext/bifrost/src/bifrost-stamp/
 .snakemake
 *.swp
 *.swo
+
+ext/zlib-ng/src/
+ext/zlib-ng/build/
+ext/zlib-ng/tmp/

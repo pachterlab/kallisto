@@ -12,10 +12,6 @@
 
 #include <cstdio>
 
-#include <zlib.h>
-
-#include <CompactedDBG.hpp>
-
 #include "common.h"
 #include "ProcessReads.h"
 #include "KmerIndex.h"
@@ -27,6 +23,7 @@
 #include "H5Writer.h"
 #include "PlaintextWriter.h"
 #include "GeneModel.h"
+#include <CompactedDBG.hpp>
 
 //#define ERROR_STR "\033[1mError:\033[0m"
 #define ERROR_STR "Error:"
@@ -51,7 +48,7 @@ bool checkFileExists(std::string fn) {
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
-  const char *opt_string = "i:k:m:e:t:b:";
+  const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -62,7 +59,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"min-size", required_argument, 0, 'm'},
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
-    {"offlist", required_argument, 0, 'b'},
+    {"d-list", required_argument, 0, 'd'},
     {0,0,0,0}
   };
   int c;
@@ -97,8 +94,14 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.threads;
       break;
     }
-    case 'b': {
-      stringstream(optarg) >> opt.offlist;
+    case 'd': {
+      std::string d_list;
+      stringstream(optarg) >> d_list;
+      stringstream ss(d_list);
+      std::string filename;
+      while (std::getline(ss, filename, ',')) { 
+        opt.d_list.push_back(filename);
+      }
       break;
     }
     default: break;
@@ -119,7 +122,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
 
-  const char *opt_string = "G:g:b:";
+  const char *opt_string = "G:g:b:t:";
 
   int para_flag = 0;
   static struct option long_options[] = {
@@ -127,6 +130,7 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     {"gfa", required_argument, 0, 'G'},
     {"gtf", required_argument, 0, 'g'},
     {"bed", required_argument, 0, 'b'},
+    {"threads", required_argument, 0, 't'},
     {"paranoid", no_argument, &para_flag, 1},
     {0,0,0,0}
   };
@@ -153,6 +157,11 @@ void ParseOptionsInspect(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'g': {
       stringstream(optarg) >> opt.gtfFile;
+      break;
+    }
+    case 't': {
+      stringstream(optarg) >> opt.threads;
+      if (opt.threads <= 0) opt.threads = 1;
       break;
     }
     default: break;
@@ -483,140 +492,6 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
-void ParseOptionsPseudo(int argc, char **argv, ProgramOptions& opt) {
-  int verbose_flag = 0;
-  int single_flag = 0;
-  int strand_flag = 0;
-  int strand_FR_flag = 0;
-  int strand_RF_flag = 0;
-  int pbam_flag = 0;
-  int gbam_flag = 0;
-  int umi_flag = 0;
-  int quant_flag = 0;
-  int bus_flag = 0;
-
-  const char *opt_string = "t:i:l:s:o:b:u:g:n";
-  static struct option long_options[] = {
-    // long args
-    {"verbose", no_argument, &verbose_flag, 1},
-    {"single", no_argument, &single_flag, 1},
-    //{"strand-specific", no_argument, &strand_flag, 1},
-    {"fr-stranded", no_argument, &strand_FR_flag, 1},
-    {"rf-stranded", no_argument, &strand_RF_flag, 1},
-    {"pseudobam", no_argument, &pbam_flag, 1},
-    {"quant", no_argument, &quant_flag, 1},
-    {"bus", no_argument, &bus_flag, 1},
-    {"num", no_argument, 0, 'n'},
-    {"umi", no_argument, &umi_flag, 'u'},
-    {"batch", required_argument, 0, 'b'},
-    // short args
-    {"threads", required_argument, 0, 't'},
-    {"gtf", required_argument, 0, 'g'},
-    {"index", required_argument, 0, 'i'},
-    {"fragment-length", required_argument, 0, 'l'},
-    {"sd", required_argument, 0, 's'},
-    {"output-dir", required_argument, 0, 'o'},
-    {0,0,0,0}
-  };
-  int c;
-  int option_index = 0;
-  while (true) {
-    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
-
-    if (c == -1) {
-      break;
-    }
-
-    switch (c) {
-    case 0:
-      break;
-    case 't': {
-      stringstream(optarg) >> opt.threads;
-      break;
-    }
-    case 'i': {
-      opt.index = optarg;
-      break;
-    }
-    case 'l': {
-      stringstream(optarg) >> opt.fld;
-      break;
-    }
-    case 's': {
-      stringstream(optarg) >> opt.sd;
-      break;
-    }
-    case 'n': {
-      opt.num = true;
-      break;
-    }
-    case 'o': {
-      opt.output = optarg;
-      break;
-    }
-    case 'g': {
-      stringstream(optarg) >> opt.gtfFile;
-      break;
-    }
-    case 'b': {
-      opt.batch_mode = true;
-      opt.batch_file_name = optarg;
-      break;
-    }
-    default: break;
-    }
-  }
-
-  if (umi_flag) {
-    opt.umi = true;
-    opt.single_end = true; // UMI implies single-end reads
-  }
-
-  if (bus_flag) {
-    if (!opt.num) {
-      opt.batch_bus_write = true;
-    } else {
-      opt.batch_bus = true;
-    }
-  }
-
-  // all other arguments are fast[a/q] files to be read
-  for (int i = optind; i < argc; i++) {
-    opt.files.push_back(argv[i]);
-  }
-
-  if (verbose_flag) {
-    opt.verbose = true;
-  }
-
-  if (single_flag) {
-    opt.single_end = true;
-    opt.single_overhang = true;
-  }
-
-  if (quant_flag) {
-    opt.pseudo_quant = true;
-  }
-
-  if (strand_flag) {
-    opt.strand_specific = true;
-  }
-
-  if (strand_FR_flag) {
-    opt.strand_specific = true;
-    opt.strand = ProgramOptions::StrandType::FR;
-  }
-
-  if (strand_RF_flag) {
-    opt.strand_specific = true;
-    opt.strand = ProgramOptions::StrandType::RF;
-  }
-
-  if (pbam_flag) {
-    opt.pseudobam = true;
-  }
-}
-
 void ListSingleCellTechnologies() {
   //todo, figure this out
   cout << "List of supported single-cell technologies" << endl << endl
@@ -650,8 +525,9 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
+  int interleaved_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:T:B:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:B:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"index", required_argument, 0, 'i'},
@@ -671,6 +547,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
+    {"inleaved", no_argument, &interleaved_flag, 1},
+    {"numReads", required_argument, 0, 'N'},
     {0,0,0,0}
   };
 
@@ -719,6 +597,13 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       opt.num = true;
+      break;
+    }
+    case 'N': {
+      stringstream(optarg) >> opt.max_num_reads;
+      if (opt.max_num_reads == 0) {
+        opt.max_num_reads = -1;
+      }
       break;
     }
     case 'g': {
@@ -771,6 +656,12 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   } else {
     opt.single_end = true;
   }
+  
+  if (interleaved_flag) {
+    opt.input_interleaved_nfiles = 1;
+  }
+  
+  opt.single_overhang = true;
 
   // Laura
   // throw warning when --aa is passed with paired-end arg (paired-end not supported in aa mode, will always switch to single-end)
@@ -934,6 +825,14 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   bool ret = true;
 
   cerr << endl;
+  
+  // check bam options
+  #ifdef NO_HTSLIB
+  if (opt.bam || opt.genomebam || opt.pseudobam) {
+    cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
+    ret = false;
+  }
+  #endif
 
   // check index
   if (opt.index.empty()) {
@@ -947,12 +846,18 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       ret = false;
     }
   }
+  
+  if (opt.max_num_reads < 0) {
+    std::cerr << ERROR_STR << " --numReads must be a positive number" << std::endl;
+    ret = false;
+  }
 
   // check files
+  bool read_stdin = opt.files.size() == 1 && !opt.batch_mode && !opt.bam && opt.files[0] == "-"; // - means read from stdin
   if (opt.files.size() == 0 && !opt.batch_mode) {
     cerr << ERROR_STR << " Missing read files" << endl;
     ret = false;
-  } else {
+  } else if (!read_stdin) {
     struct stat stFileInfo;
     for (auto& fn : opt.files) {
       auto intStat = stat(fn.c_str(), &stFileInfo);
@@ -960,6 +865,21 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         cerr << ERROR_STR << " file not found " << fn << endl;
         ret = false;
       }
+    }
+  }
+  
+  if (opt.input_interleaved_nfiles != 0) {
+    if (opt.files.size() > 1) {
+      cerr << ERROR_STR << " interleaved input cannot consist of more than one input" << endl;
+      ret = false;
+    }
+    if (opt.bam) {
+      cerr << ERROR_STR << " interleaved input is not compatible with the bam option" << endl;
+      ret = false;
+    }
+    if (opt.batch_mode) {
+      cerr << ERROR_STR << " interleaved input cannot be specified with a batch file" << endl;
+      ret = false;
     }
   }
 
@@ -1002,17 +922,16 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
-    opt.single_overhang = true;
-    if (!opt.num) {
+    if (!opt.num && !(opt.max_num_reads > 0)) {
       opt.batch_bus_write = true;
     } else {
       opt.batch_bus = true;
     }
     // check for read files
     if (!opt.batch_mode) {
-      cerr << "[bus] no technology specified; will try running read files as-is" << endl;
+      cerr << "[bus] will try running read files as-is in bulk mode" << endl;
       opt.batch_mode = true;
-      if (!opt.single_end && opt.files.size() % 2 != 0) {
+      if (!opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
       } else {
@@ -1026,7 +945,16 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           if (opt.single_end) {
             opt.batch_files.push_back({f1});
             auto intstat = stat(f1.c_str(), &stFileInfo);
-            if (intstat != 0) {
+            if (intstat != 0 && !read_stdin) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+          } else if (opt.input_interleaved_nfiles != 0) {
+            f2 = "interleaved";
+            opt.batch_files.push_back({f1,f2});
+            opt.input_interleaved_nfiles = 2;
+            auto intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0 && !read_stdin) {
               cerr << ERROR_STR << " file not found " << f1 << endl;
               ret = false;
             }
@@ -1489,10 +1417,16 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
   }
 
-  if (ret && !opt.bam && opt.files.size() %  opt.busOptions.nfiles != 0) {
+  if (ret && !opt.bam && !(opt.input_interleaved_nfiles != 0) && opt.files.size() %  opt.busOptions.nfiles != 0) {
     cerr << "Error: Number of files (" << opt.files.size() << ") does not match number of input files required by "
     << "technology " << opt.technology << " (" << opt.busOptions.nfiles << ")" << endl;
     ret = false;
+  }
+  if (opt.input_interleaved_nfiles != 0) {
+    opt.input_interleaved_nfiles = opt.busOptions.nfiles;
+    for (int i = 1; i < opt.busOptions.nfiles; i++) {
+      opt.files.push_back("interleaved");
+    }
   }
 
   if (opt.bam && opt.num) {
@@ -1531,6 +1465,17 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       }
     }
   }
+  
+  if (!opt.d_list.empty()) {
+    for (auto& fasta : opt.d_list) {
+      struct stat stFileInfo;
+      auto intStat = stat(fasta.c_str(), &stFileInfo);
+      if (intStat != 0) {
+        cerr << "Error: D-list FASTA file not found \"" << fasta << "\"" << endl;
+        ret = false;
+      }
+    }
+  }
 
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
@@ -1554,6 +1499,13 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
 bool CheckOptionsEM(ProgramOptions& opt, bool emonly = false) {
 
   bool ret = true;
+  
+  #ifdef NO_HTSLIB
+  if (opt.bam || opt.genomebam || opt.pseudobam) {
+    cerr << ERROR_STR << " in order to use BAM, must compile with BAM option enabled" << endl;
+    ret = false;
+  }
+  #endif
 
   cerr << endl;
   // check for index
@@ -2032,6 +1984,7 @@ void usageBus() {
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-b, --bam                     Input file is a BAM file" << endl
        << "-n, --num                     Output number of read in flag column (incompatible with --bam)" << endl
+       << "-N, --numReads                Maximum number of reads to process from supplied input" << endl
        << "-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies" << endl
        << "    --fr-stranded             Strand specific reads for UMI-tagged reads, first read forward" << endl
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
@@ -2043,6 +1996,7 @@ void usageBus() {
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl
+       << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
@@ -2055,7 +2009,7 @@ void usageIndex() {
        << "Optional argument:" << endl
        << "-k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: " << (MAX_KMER_SIZE-1) << ")" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
-       << "-b, --offlist=STRING      Path to a FASTA-file containing sequences to exclude from index" << endl
+       << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
@@ -2245,6 +2199,7 @@ int main(int argc, char *argv[]) {
         return 0;
       }
       ParseOptionsBus(argc-1, argv+1,opt);
+      int64_t num_processed = 0;
       if (!CheckOptionsBus(opt)) {
         usageBus();
         exit(1);
@@ -2255,7 +2210,6 @@ int main(int argc, char *argv[]) {
         index.load(opt);
 
         MinCollector collection(index, opt);
-        int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
 
@@ -2264,12 +2218,7 @@ int main(int argc, char *argv[]) {
           model.parseGTF(opt.gtfFile, index, opt, true);
         }
         MasterProcessor MP(index, opt, collection, model);
-        if (!opt.batch_mode) {
-          num_processed = ProcessReads(MP, opt);
-          collection.write((opt.output + "/pseudoalignments"));
-        } else {
-          num_processed = ProcessBatchReads(MP,opt);
-        }
+        num_processed = ProcessBatchReads(MP,opt);
 
         std::string call = argv_to_string(argc, argv);
 
@@ -2300,7 +2249,7 @@ int main(int argc, char *argv[]) {
 
         plaintext_aux(
           opt.output + "/run_info.json",
-          std::string(std::to_string(index.num_trans)),
+          std::string(std::to_string(index.onlist_sequences.cardinality())),
           std::string(std::to_string(0)), // no bootstraps in pseudo
           std::string(std::to_string(num_processed)),
           std::string(std::to_string(num_pseudoaligned)),
@@ -2359,7 +2308,6 @@ int main(int argc, char *argv[]) {
         }
       } else { // kallisto bus -x
         int num_trans, index_version;
-        int64_t num_processed = 0;
         int64_t num_pseudoaligned = 0;
         int64_t num_unique = 0;
 
@@ -2469,26 +2417,32 @@ int main(int argc, char *argv[]) {
         std::string call = argv_to_string(argc, argv);
         plaintext_aux(
             opt.output + "/run_info.json",
-            std::string(std::to_string(num_trans)),
+            std::string(std::to_string(index.onlist_sequences.cardinality())),
             std::string(std::to_string(0)),
             std::string(std::to_string(num_processed)),
             std::string(std::to_string(num_pseudoaligned)),
             std::string(std::to_string(num_unique)),
             KALLISTO_VERSION,
-            std::string(std::to_string(index_version)),
+            std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
             call);
 
         if (opt.pseudobam) {
           std::vector<double> fl_means(index.target_lens_.size(),0.0);
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          #ifndef NO_HTSLIB
           MP.processAln(em, false);
+          #endif
         }
 
         cerr << endl;
         if (num_pseudoaligned == 0) {
           exit(1); // exit with error
         }
+      }
+      if (opt.max_num_reads != 0 && num_processed < opt.max_num_reads) {
+        std::cerr << "Note: Number of reads processed is less than --numReads: " << opt.max_num_reads << ", returning 1" << std::endl;
+        return 1;
       }
     } else if (cmd == "merge") {
         cerr << "Deprecated: `kallisto merge` is deprecated. See `kallisto bus`." << endl;
@@ -2590,7 +2544,7 @@ int main(int argc, char *argv[]) {
 
         plaintext_aux(
             opt.output + "/run_info.json",
-            std::string(std::to_string(index.num_trans)),
+            std::string(std::to_string(index.onlist_sequences.cardinality())),
             std::string(std::to_string(opt.bootstrap)),
             std::string(std::to_string(num_processed)),
             std::string(std::to_string(num_pseudoaligned)),
@@ -2660,7 +2614,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (opt.pseudobam) {
+          #ifndef NO_HTSLIB
           MP.processAln(em, true);
+          #endif
         }
 
         cerr << endl;

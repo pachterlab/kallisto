@@ -948,13 +948,13 @@ bool CompactedDBG<U, G>::readBinary(istream& in, std::vector<Minimizer>& minz, u
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinary(istream& in, boophf_t* mphf) {
+bool CompactedDBG<U, G>::readBinary(istream& in, boophf_t* mphf, uint32_t threads) {
 
     if (!in.fail()) {
 
         const pair<uint64_t, bool> p_readSuccess_checksum = readBinaryGraph(in);
 
-        if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first, mphf);
+        if (p_readSuccess_checksum.second) return readBinaryIndex(in, p_readSuccess_checksum.first, mphf, threads);
     }
 
     return false;
@@ -1410,7 +1410,7 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
 // BEGIN TODO
 // Refactor this and above function so as to minimize repetition
 template<typename U, typename G>
-bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, boophf_t* mphf) {
+bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, boophf_t* mphf, uint32_t threads) {
 
     bool read_success = !in.fail();
 
@@ -1441,6 +1441,10 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
 
         if (read_success && !v_bmp_unitigs.empty() && !v_bmp_unitigs.front().isEmpty()) {
 
+            vector<size_t> unitig_pos_ids;
+            const size_t n_elems_buffer = 33554432; // 2^25
+            hmap_min_unitigs.init_threads();
+
             size_t unitig_id = 0,
                    tot_unitig_len = 0,
                    curr_unitig_len = v_unitigs[0]->getSeq().size() - g_ + 1;
@@ -1449,33 +1453,46 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
 
                 const size_t id_bmp = i << 32;
 
+                const auto bmp_unitigs_size = v_bmp_unitigs[i].size();
+                unitig_pos_ids.reserve(n_elems_buffer > bmp_unitigs_size ? bmp_unitigs_size : n_elems_buffer);
+                vector<thread> workers;
+                size_t n = 0;
                 for (const auto pos_bmp : v_bmp_unitigs[i]) {
 
+                    n++;
                     const size_t pos = id_bmp + pos_bmp;
 
                     while (pos >= (tot_unitig_len + curr_unitig_len)) {
 
                         ++unitig_id;
                         tot_unitig_len += curr_unitig_len;
-
                         curr_unitig_len = v_unitigs[unitig_id]->getSeq().size() - g_ + 1;
                     }
-
                     const size_t relative_pos = pos - tot_unitig_len;
                     const size_t pos_id_unitig = (unitig_id << 32) | relative_pos;
 
-                    const Minimizer minz_rep = v_unitigs[unitig_id]->getSeq().getMinimizer(relative_pos).rep();
+                    unitig_pos_ids.push_back(pos_id_unitig);
 
-                    std::pair<MinimizerIndex::iterator, bool> p = hmap_min_unitigs.insert(minz_rep, packed_tiny_vector(), 0);
-
-                    packed_tiny_vector& v = p.first.getVector();
-                    uint8_t& flag_v = p.first.getVectorSize();
-
-                    flag_v = v.push_back(pos_id_unitig, flag_v);
+                    if (unitig_pos_ids.size() >= unitig_pos_ids.capacity() || n == bmp_unitigs_size) {
+                        for (size_t t = 0; t < threads; t++) {
+                            workers.emplace_back([&, t]{
+                                for (size_t j = t; j < unitig_pos_ids.size(); j+= threads) {
+                                    const size_t relative_pos = unitig_pos_ids[j] & 0xFFFFFFFF;
+                                    const size_t unitig_id_ = unitig_pos_ids[j] >> 32;
+                                    const Minimizer minz_rep = v_unitigs[unitig_id_]->getSeq().getMinimizer(relative_pos).rep();
+                                    hmap_min_unitigs.add_unitig_p(minz_rep, unitig_pos_ids[j]);
+                                }
+                           });
+                        }
+                        for (auto& t : workers) t.join();
+                        unitig_pos_ids.clear();
+                        workers.clear();
+                    }
                 }
 
-                v_bmp_unitigs[i].clear();
             }
+
+            hmap_min_unitigs.release_threads();
         }
     }
 

@@ -22,13 +22,14 @@ struct block {
 template<typename T = int>
 class BlockArray {
     private:
-        union {
+
+    public:
+        union { // TODO: could optimize memory if just vector w/o union
             block<T> mono;
             std::vector<block<T> > poly;
         };
         uint8_t flag;
 
-    public:
         BlockArray() : flag(0), mono(0) {
         }
 
@@ -121,15 +122,136 @@ class BlockArray {
 
                 return;
             } else if (flag == 1) {
-                block<T> b = mono;
+                block<T> m = mono;
                 mono.~block();
                 new (&poly) std::vector<block<T> >;
-                poly.push_back(b);
+                poly.push_back(m);
                 flag = 2;
             }
 
             poly.emplace_back(lb, ub, val);
             std::sort(poly.begin(), poly.end());
+        }
+
+        void insert(block<T>& b) {
+
+            if (flag == 0) {
+                mono = b;
+                flag = 1;
+                return;
+            } else if (flag == 1) {
+                block<T> m = mono;
+                mono.~block();
+                new (&poly) std::vector<block<T> >;
+                poly.push_back(m);
+                flag = 2;
+            }
+            poly.push_back(b);
+            std::sort(poly.begin(), poly.end());
+
+        }
+
+        void overwrite(uint32_t lb, uint32_t ub, T& val) {
+            // Overwrites part of the BlockArray with a new value
+
+            if (flag == 1) {
+                // If the unitig is monochrome
+
+                if (mono.lb < lb) {
+                    // lb is an internal index
+
+                    block<T> ow(lb, ub, val);
+                    block<T> m = mono;
+                    if (mono.ub == ub) {
+                        // [ mono ][ overwrite ]
+                        m.ub = lb;
+                        mono.~block();
+                        new (&poly) std::vector<block<T> >;
+                        // Pushing blocks in-order: don't need to sort
+                        poly.push_back(m);
+                        poly.push_back(ow);
+                        flag = 2;
+                    } else {
+                        // [ mono ][ overwrite ][ mono ]
+
+                        block<T> rest(ub, m.ub, m.val);
+                        m.ub = lb;
+                        mono.~block();
+                        new (&poly) std::vector<block<T> >;
+                        // Pushing blocks in-order: don't need to sort
+                        poly.push_back(m);
+                        poly.push_back(ow);
+                        poly.push_back(rest);
+                        flag = 2;
+                    }
+
+                } else if (mono.ub > ub) {
+                    // ub is an internal index
+                    // [ overwrite ][ mono ]
+
+                    block<T> ow(lb, ub, val);
+                    block<T> m = mono;
+                    m.lb = ub;
+                    mono.~block();
+                    new (&poly) std::vector<block<T> >;
+                    poly.push_back(m);
+                    poly.push_back(ow);
+                    flag = 2;
+                } else {
+                    // [ overwrite ]
+                    // mono.lb == lb, mono.ub == ub
+                    mono.val = val;
+
+                }
+
+            } else {
+                // If the unitig is polychrome, we need to find all the blocks
+                // that overlap [lb, ub]
+
+                if (poly[0].lb == lb && poly[poly.size()-1].ub == ub) {
+                    // [ overwrite ]
+                    // Overwrite spans entire unitig
+                    poly.~vector();
+
+                    new (&mono) block<T>(lb, ub, val);
+                    flag = 1;
+
+                    return;
+
+                }
+
+                std::vector<block<T> > rep;
+                for (auto& b : poly) {
+                    if (b.ub < lb || b.lb > ub) {
+                        // ... [ b ] ... [ overwrite ] ...
+                        // or
+                        // ... [ overwrite ] ... [ b ] ...
+                        rep.push_back(b);
+                    } else if (b.lb >= lb && b.ub <= ub) {
+                        // ... [ overwrite [ b ] overwrite ] ...
+                        continue;
+                    } else if (b.lb < lb) {
+                        // ... [ b ] overwrite ] ...
+
+                        rep.emplace_back(b.lb, lb, b.val);
+                        if (b.ub > ub) {
+                            // ... [ b [ overwrite ] b ] ...
+                            rep.emplace_back(ub, b.ub, b.val);
+                        }
+                    } else if (b.ub > ub) {
+                        // ... [ overwrite [ b ] ...
+                        rep.emplace_back(ub, b.ub, b.val);
+                    }
+                }
+
+                // Finally insert new block
+                rep.emplace_back(lb, ub, val);
+                std::sort(rep.begin(), rep.end());
+                poly.clear();
+                poly.assign(rep.begin(), rep.end());
+
+            }
+
         }
 
         const T& operator[](size_t idx) const {
@@ -295,12 +417,7 @@ class BlockArray {
 
                 out.write((char *)&mono.lb, sizeof(mono.lb));
                 out.write((char *)&mono.ub, sizeof(mono.ub));
-                char* buffer = new char[mono.val.getSizeInBytes()];
-                size_t tmp_size = mono.val.write(buffer);
-                out.write((char *)&tmp_size, sizeof(tmp_size));
-                out.write(buffer, tmp_size);
-                delete[] buffer;
-                buffer = nullptr;
+                mono.val.serialize(out);
             } else {
 
                 size_t tmp_size = poly.size();
@@ -308,21 +425,15 @@ class BlockArray {
                 for (const auto b : poly) {
                     out.write((char *)&b.lb, sizeof(b.lb));
                     out.write((char *)&b.ub, sizeof(b.ub));
-                    char* buffer = new char[b.val.getSizeInBytes()];
-                    tmp_size = b.val.write(buffer);
-                    out.write((char *)&tmp_size, sizeof(tmp_size));
-                    out.write(buffer, tmp_size);
-                    delete[] buffer;
-                    buffer = nullptr;
+                    b.val.serialize(out);
                 }
             }
         }
 
-        void deserialize(std::istream& in) {
+        void deserialize(std::istream& in, bool additional_opt) {
 
             clear();
 
-            size_t roaring_size;
             in.read((char *)&flag, sizeof(flag));
             if (flag == 0) {
                 return;
@@ -330,12 +441,9 @@ class BlockArray {
 
                 in.read((char *)&mono.lb, sizeof(mono.lb));
                 in.read((char *)&mono.ub, sizeof(mono.ub));
-                in.read((char *)&roaring_size, sizeof(roaring_size));
-                char* buffer = new char[roaring_size];
-                in.read(buffer, roaring_size);
-                mono.val = mono.val.read(buffer);
-                delete[] buffer;
-                buffer = nullptr;
+                T val;
+                val.deserialize(in, additional_opt);
+                mono.val = std::move(val);
             } else {
 
                 size_t tmp_size;
@@ -349,14 +457,9 @@ class BlockArray {
                     in.read((char *)&lb, sizeof(lb));
                     in.read((char *)&ub, sizeof(ub));
 
-                    in.read((char *)&roaring_size, sizeof(roaring_size));
-                    char* buffer = new char[roaring_size];
-                    in.read(buffer, roaring_size);
                     T val;
-                    val = val.read(buffer);
-                    delete[] buffer;
-                    buffer = nullptr;
-                    insert(lb, ub, val);
+                    val.deserialize(in, additional_opt);
+                    insert(lb, ub, std::move(val));
                 }
             }
         }

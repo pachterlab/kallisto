@@ -1,8 +1,6 @@
 #ifndef KALLISTO_PROCESSREADS_H
 #define KALLISTO_PROCESSREADS_H
 
-#include <zlib.h>
-#include "kseq.h"
 #include "robin_hood.h"
 #include <string>
 #include <vector>
@@ -16,21 +14,20 @@
 #include <atomic>
 #include <condition_variable>
 
+#include "common.h"
 #include "MinCollector.h"
 #include "KmerIndex.h"
-#include "common.h"
 #include "PseudoBam.h"
 #include "EMAlgorithm.h"
 #include "GeneModel.h"
 #include "BUSData.h"
 #include "BUSTools.h"
+
+#ifndef NO_HTSLIB
+#include <htslib/kstring.h>
 #include <htslib/sam.h>
+#endif // NO_HTSLIB
 
-
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
 
 class MasterProcessor;
 
@@ -72,17 +69,19 @@ public:
   f_umi(new std::ifstream{}) {
     SequenceReader::state = false;
 
+    interleave_nfiles = opt.input_interleaved_nfiles;
     if (opt.bus_mode) {
       nfiles = opt.busOptions.nfiles;
     } else {
       nfiles = paired ? 2 : 1;
     }
+    if (interleave_nfiles != 0) nfiles = 1;
     reserveNfiles(nfiles);
   }
   FastqSequenceReader() : SequenceReader(),
   paired(false),
   f_umi(new std::ifstream{}),
-  current_file(0) {};
+  current_file(0), interleave_nfiles(0) {};
   FastqSequenceReader(FastqSequenceReader &&o);
   ~FastqSequenceReader();
 
@@ -108,8 +107,10 @@ public:
   std::unique_ptr<std::ifstream> f_umi;
   int current_file;
   std::vector<kseq_t*> seq;
+  int interleave_nfiles;
 };
 
+#ifndef NO_HTSLIB
 class BamSequenceReader : public SequenceReader {
 public:
 
@@ -167,14 +168,25 @@ public:
 private:
   static const std::string seq_enc;
 };
+#endif
 
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0), transfer_threshold(1)
+    : tc(tc), index(index), model(model), opt(opt), numreads(0), transfer_threshold(1), counter(0)
     ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
+
+      #ifndef NO_HTSLIB
+      bamfp = nullptr;
+      bamfps = nullptr;
+      bamh = nullptr;
+      #endif // NO_HTSLIB
       if (opt.bam) {
+        #ifndef NO_HTSLIB
         SR = new BamSequenceReader(opt);
+        #else
+        throw std::runtime_error("HTSLIB required for bam reading but not included");
+        #endif // NO_HTSLIB
       } else {
         SR = new FastqSequenceReader(opt);
       }
@@ -214,6 +226,7 @@ public:
     }
 
   ~MasterProcessor() {
+    #ifndef NO_HTSLIB
     if (bamfp) {
       hts_close(bamfp);
       bamfp = nullptr;
@@ -231,6 +244,7 @@ public:
       bam_hdr_destroy(bamh);
       bamh = nullptr;
     }
+    #endif // NO_HTSLIB
     delete SR;
   }
 
@@ -247,15 +261,13 @@ public:
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
-  htsFile *bamfp;
   const int numSortFiles = 32;
-  htsFile **bamfps;
 
-  bam_hdr_t *bamh;
   const ProgramOptions& opt;
   int64_t numreads;
   int64_t nummapped;
   int64_t num_umi;
+  int64_t counter;
   size_t bufsize;
 
   int bus_bc_len[33];
@@ -284,9 +296,14 @@ public:
   std::vector<std::vector<std::pair<Roaring, std::string>>> batchUmis;
   std::vector<std::vector<std::pair<Roaring, std::string>>> newBatchECumis;
   void processReads();
+  #ifndef NO_HTSLIB
+  htsFile *bamfp;
+  htsFile **bamfps;
+  bam_hdr_t *bamh;
   void processAln(const EMAlgorithm& em, bool useEM);
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
+  #endif
   std::vector<uint64_t> breakpoints;
   void update(const std::vector<uint32_t>& c, const std::vector<Roaring>& newEcs, std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
 };
@@ -367,7 +384,7 @@ public:
   void clear();
 };
 
-
+#ifndef NO_HTSLIB
 class AlnProcessor {
 public:
   AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, bool useEM, int id = -1);
@@ -408,5 +425,6 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang);
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra);
 void reverseComplementSeqInData(bam1_t &b);
+#endif // NO_HTSLIB
 
 #endif // KALLISTO_PROCESSREADS_H

@@ -179,7 +179,7 @@ int MinCollector::increaseCount(const Roaring& r) {
 }
 
 int MinCollector::decreaseCount(const int ec) {
-  assert(ec >= 0 && ec <= index.ecmap.size());
+  assert(ec >= 0);
   --counts[ec];
   return ec;
 }
@@ -205,21 +205,31 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
          }
        }); // sort by contig, and then first position
 
-  //int ec = index.dbGraph.ecs[v[0].first.contig];
-  Roaring ec = v[0].first.getData()->ec[v[0].first.dist];
-  Roaring lastEC = ec;
-  r = ec;
+  r = v[0].first.getData()->ec[v[0].first.dist].getIndices();
+  bool found_nonempty = !r.isEmpty();
+  Roaring lastEC = r;
+  Roaring ec;
 
   for (int i = 1; i < v.size(); i++) {
+
+    // Find a non-empty EC before we start taking the intersection
+    if (!found_nonempty) {
+      r = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+      found_nonempty = !r.isEmpty();
+    }
+
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
-      ec = v[i].first.getData()->ec[v[i].first.dist];
-      if (!(ec == lastEC)) {
-        r = r & ec;
-        lastEC = ec;
+
+      ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+
+      // Don't intersect empty EC (because of thresholding)
+      if (!(ec == lastEC) && !ec.isEmpty()) {
+        r &= ec;
         if (r.isEmpty()) {
           return r;
         }
+        lastEC = std::move(ec);
       }
     }
   }
@@ -273,38 +283,6 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
   }
 
-}
-
-void MinCollector::write(const std::string& pseudoprefix) const {
-  std::string ecfilename = pseudoprefix + ".ec";
-  std::string countsfilename = pseudoprefix + ".tsv";
-
-  std::ofstream ecof, countsof;
-  ecof.open(ecfilename.c_str(), std::ios::out);
-  // output equivalence classes in the form "EC TXLIST";
-  for (int i = 0; i < index.ecmap.size(); i++) {
-    ecof << i << "\t";
-    // output the rest of the class
-    const Roaring& r = index.ecmap[i];
-
-    bool first = true;
-    for (uint32_t tr : r) {
-      if (!first) {
-        ecof << ",";
-      } else {
-        first = false;
-      }
-      ecof << tr;
-    }
-    ecof << "\n";
-  }
-  ecof.close();
-
-  countsof.open(countsfilename.c_str(), std::ios::out);
-  for (int i = 0; i < counts.size(); i++) {
-    countsof << i << "\t" << counts[i] << "\n";
-  }
-  countsof.close();
 }
 
 double MinCollector::get_mean_frag_len(bool lenient) const {
@@ -428,8 +406,8 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     contig_length = mc_bounds.second - contig_start;
 
     size_t pos = um.dist - contig_start;
-    if (( um.strand && (pos - p > pre)) ||
-        (!um.strand && (contig_length - 1 - pos - p >= pre))) {
+    if (( um.strand && ((int64_t)(pos - p) >= (int64_t)pre)) ||
+        (!um.strand && ((int64_t)(contig_length - 1 - pos - p) >= (int64_t)pre))) {
 
       int hex = -1;
       //std::cout << "  " << s << "\n";

@@ -1,8 +1,9 @@
 #include "GeneModel.h"
 #include <assert.h>
 #include <iostream>
+#ifndef NO_HTSLIB
 #include <htslib/sam.h> // needed for CIGAR ops
-#include <zlib.h>
+#endif
 
 char strandToChar(bool s) {
   return (s) ? '+' : '-';
@@ -32,6 +33,7 @@ int chrLookup(const Transcriptome& model, const std::string chr) {
 };
 
 bool Transcriptome::translateTrPosition(const int tr, const int pos, const int rlen, bool strand, TranscriptAlignment &aln) const {
+  #ifndef NO_HTSLIB
   const TranscriptModel& model = transcripts[tr];
   if (model.chr == -1) {
     return false;
@@ -126,7 +128,9 @@ bool Transcriptome::translateTrPosition(const int tr, const int pos, const int r
     }
   }
 
-
+  #else
+  throw std::runtime_error("HTSLIB required but not included");
+  #endif
   return true;
 }
 

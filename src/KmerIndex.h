@@ -31,23 +31,6 @@ struct TRInfo {
   uint32_t pos;
 };
 
-using EcMap = std::vector<Roaring>; //std::unordered_map<int, std::vector<int>>;
-
-struct SortedVectorHasher {
-  size_t operator()(const std::vector<int>& v) const {
-    uint64_t r = 0;
-    int i=0;
-    for (auto x : v) {
-      uint64_t t;
-      MurmurHash3_x64_64(&x,sizeof(x), 0,&t);
-      t = (x>>i) | (x<<(64-i));
-      r = r ^ t;
-      i = (i+1)%64;
-    }
-    return r;
-  }
-};
-
 struct RoaringHasher {
   size_t operator()(const Roaring& rr) const {
     uint64_t r = 0;
@@ -56,8 +39,8 @@ struct RoaringHasher {
       uint64_t t;
       MurmurHash3_x64_64(&x, sizeof(x), 0, &t);
       t = (x>>i) | (x<<(64-i));
-      r = r ^ t;
-      i = (i+1)%64;
+      r ^= t;
+      i = (i+1)&63; // (i+1)%64
     }
     return r;
   }
@@ -88,34 +71,17 @@ struct KmerEntry {
   }
 };
 
-struct ContigToTranscript {
-  int trid;
-  int pos;
-  bool sense; // true for sense,
-};
-
-struct Contig {
-  int id; // internal id
-  int length; // number of k-mers
-  int ec;
-  std::string seq; // sequence
-  std::vector<ContigToTranscript> transcripts;
-};
-
-struct DBGraph {
-  std::vector<int> ecs; // contig id -> ec-id
-  std::vector<Contig> contigs; // contig id -> contig
-//  std::vector<pair<int, bool>> edges; // contig id -> edges
-};
-
 struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
+    load_positional_info = opt.bias || opt.pseudobam || opt.genomebam || !opt.single_overhang;
   }
 
   ~KmerIndex() {}
 
+  std::pair<size_t,size_t> getECInfo() const; // Get max EC size encountered and second element is the number of nodes in which an EC is empty (b/c it was discarded)
   void match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v, bool cfc = false) const;
+
 //  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
   int mapPair(const char *s1, int l1, const char *s2, int l2) const;
   Roaring intersect(const Roaring& ec, const Roaring& v) const;
@@ -123,8 +89,9 @@ struct KmerIndex {
   void BuildTranscripts(const ProgramOptions& opt, std::ofstream& out);
   void BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out);
 
-  // Removes all kmers occurring in opt.blacklist from the dBG.
-  void Offlist(const std::string& path);
+  // If off-list is supplied, add off-listed kmers flanking the common
+  // sequences to the graph and append those sequences to the tmp_file
+  void DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
   // i.e. have more than one color.
@@ -151,10 +118,7 @@ struct KmerIndex {
   int num_trans; // number of targets
   int skip;
 
-  //KmerHashTable<KmerEntry, KmerHash> kmap;
   CompactedDBG<Node> dbg;
-  EcMap ecmap;
-  DBGraph dbGraph;
   EcMapInv ecmapinv;
   const size_t INDEX_VERSION = 12; // increase this every time you change the file format
 
@@ -163,6 +127,11 @@ struct KmerIndex {
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
   bool target_seqs_loaded;
+  bool load_positional_info; // when should we load positional info in addition to strandedness
+
+  // Sequences not in off-list: 1
+  // Sequences in off-list:     0
+  Roaring onlist_sequences;
 };
 
 #endif // KALLISTO_KMERINDEX_H

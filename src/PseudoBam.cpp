@@ -1,6 +1,7 @@
-
-#include <htslib/sam.h>
+#include "common.h"
 #include "PseudoBam.h"
+
+#ifndef NO_HTSLIB
 
 
 bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
@@ -385,6 +386,8 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
   }
 }
 
+#endif // NO_HTSLIB
+
 /** -- pseudoalignment info methods -- **/
 
 void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& batch) {
@@ -456,3 +459,4 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     batch.aln.push_back(std::move(info));
   }
 }
+
