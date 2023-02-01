@@ -922,7 +922,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
-    if (!opt.num && !(opt.max_num_reads > 0)) {
+    if (!opt.num && !(opt.max_num_reads > 0) && !opt.aa) {
       opt.batch_bus_write = true;
     } else {
       opt.batch_bus = true;
