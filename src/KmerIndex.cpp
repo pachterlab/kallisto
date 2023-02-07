@@ -117,7 +117,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   std::ofstream of(tmp_file);
   num_trans = 0;
 
-  // read fasta file
+  // read fasta file using kseq (https://lh3lh3.users.sourceforge.net/kseq.shtml)
   gzFile fp = 0;
   kseq_t *seq;
   int l = 0;
@@ -125,65 +125,133 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   int countNonNucl = 0;
   int countUNuc = 0;
   int polyAcount = 0;
+  int countNonAA =0;
 
   for (auto& fasta : opt.transfasta) {
     fp = gzopen(fasta.c_str(), "r");
     seq = kseq_init(fp);
-    while (true) {
-      l = kseq_read(seq);
-      if (l <= 0) {
-        break;
-      }
-      std::string str = seq->seq.s;
-      auto n = str.size();
-      for (auto i = 0; i < n; i++) {
-        char c = str[i];
-        c = ::toupper(c);
-        if (c=='U') {
-          str[i] = 'T';
-          countUNuc++;
-        } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
-          str[i] = Dna(gen()); // replace with pseudorandom string
-          countNonNucl++;
+
+    // start Laura
+    if (opt.aa) {
+      while (true) {
+        l = kseq_read(seq);
+        if (l <= 0) {
+          break;
         }
-      }
-      std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+        // store amino acid (AA) sequence in string 'aa_string'
+        std::string aa_string = seq->seq.s;
 
-      if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
-        // clip off polyA tail
-        //std::cerr << "[index] clipping off polyA tail" << std::endl;
-        polyAcount++;
-        int j;
-        for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
-        str = str.substr(0,j+1);
-      }
-      of << ">" << num_trans++ << "\n" << str << std::endl;
+        // rev translate AA sequence to comma-free code (cfc)
+        std::stringstream all_stream_aa;
+        auto n = aa_string.size();
+        for (int i = 0; i < n; i ++) {
+            // map amino acid to comma-free code using cfc_aa_map (in common.cpp)
+            char aa = aa_string[i];
+            aa = ::toupper(aa);
+            auto cfc_aa_mapped = cfc_aa_map.find(aa);
 
-      target_lens_.push_back(seq->seq.l);
-      std::string name(seq->name.s);
-      size_t p = name.find(' ');
-      if (p != std::string::npos) {
-        name = name.substr(0,p);
-      }
+            // if AA not found in comma-free map, translate as "NNN"
+            std::string cfc_aa_seq;
+            if (cfc_aa_mapped == cfc_aa_map.end()) {
+              cfc_aa_seq = "NNN";
+              countNonAA++;
+            } else {
+              cfc_aa_seq = cfc_aa_mapped->second;
+            }
 
-      if (unique_names.find(name) != unique_names.end()) {
-        if (!opt.make_unique) {
-          std::cerr << "Error: repeated name in FASTA file " << fasta << "\n" << name << "\n\n" << "Run with --make-unique to replace repeated names with unique names" << std::endl;
-          exit(1);
-        } else {
-          for (int i = 1; ; i++) { // potential bug if you have more than 2^32 repeated names
-            std::string new_name = name + "_" + std::to_string(i);
-            if (unique_names.find(new_name) == unique_names.end()) {
-              name = new_name;
-              break;
+            // accumulate comma-free sequences into stream
+            all_stream_aa << cfc_aa_seq;
+        }
+
+        // convert stream to new comma-free AA sequence in string 'str'
+        std::string str = all_stream_aa.str();
+
+        of << ">" << num_trans++ << "\n" << str << std::endl;
+        // record length of sequence after translating to cfc (will be 3x length of AA seq)
+        target_lens_.push_back(str.size());
+        std::string name(seq->name.s);
+        size_t p = name.find(' ');
+        if (p != std::string::npos) {
+          name = name.substr(0,p);
+        }
+
+        if (unique_names.find(name) != unique_names.end()) {
+          if (!opt.make_unique) {
+            std::cerr << "Error: repeated name in FASTA file " << fasta << "\n" << name << "\n\n" << "Run with --make-unique to replace repeated names with unique names" << std::endl;
+            exit(1);
+          } else {
+            for (int i = 1; ; i++) { // potential bug if you have more than 2^32 repeated names
+              std::string new_name = name + "_" + std::to_string(i);
+              if (unique_names.find(new_name) == unique_names.end()) {
+                name = new_name;
+                break;
+              }
             }
           }
         }
+        unique_names.insert(name);
+        target_names_.push_back(name);
       }
-      unique_names.insert(name);
-      target_names_.push_back(name);
-
     }
+
+    if (!(opt.aa)) {
+      // end Laura
+      while (true) {
+        l = kseq_read(seq);
+        if (l <= 0) {
+          break;
+        }
+        std::string str = seq->seq.s;
+        auto n = str.size();
+        for (auto i = 0; i < n; i++) {
+          char c = str[i];
+          c = ::toupper(c);
+          if (c=='U') {
+            str[i] = 'T';
+            countUNuc++;
+          } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
+            str[i] = Dna(gen()); // replace with pseudorandom string
+            countNonNucl++;
+          }
+        }
+        std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+
+        if (str.size() >= 10 && str.substr(str.size()-10,10) == "AAAAAAAAAA") {
+          // clip off polyA tail
+          //std::cerr << "[index] clipping off polyA tail" << std::endl;
+          polyAcount++;
+          int j;
+          for (j = str.size()-1; j >= 0 && str[j] == 'A'; j--) {}
+          str = str.substr(0,j+1);
+        }
+        of << ">" << num_trans++ << "\n" << str << std::endl;
+
+        target_lens_.push_back(seq->seq.l);
+        std::string name(seq->name.s);
+        size_t p = name.find(' ');
+        if (p != std::string::npos) {
+          name = name.substr(0,p);
+        }
+
+        if (unique_names.find(name) != unique_names.end()) {
+          if (!opt.make_unique) {
+            std::cerr << "Error: repeated name in FASTA file " << fasta << "\n" << name << "\n\n" << "Run with --make-unique to replace repeated names with unique names" << std::endl;
+            exit(1);
+          } else {
+            for (int i = 1; ; i++) { // potential bug if you have more than 2^32 repeated names
+              std::string new_name = name + "_" + std::to_string(i);
+              if (unique_names.find(new_name) == unique_names.end()) {
+                name = new_name;
+                break;
+              }
+            }
+          }
+        }
+        unique_names.insert(name);
+        target_names_.push_back(name);
+      }
+    }
+
     gzclose(fp);
     fp=0;
   }
@@ -197,8 +265,13 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: replaced " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl << "        with pseudorandom nucleotides" << std::endl;
   }
+
   if (countUNuc > 0) {
     std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
+  }
+
+  if (countNonAA > 0) {
+    std::cerr << "[build] warning: found " << countNonAA << " non-standard amino acid characters in the input sequence" << std::endl << "        which were reverse translated to 'NNN'" << std::endl;
   }
 
   BuildDeBruijnGraph(opt, tmp_file, out);
@@ -913,7 +986,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
-  
+
   std::cerr << "[index] number of targets: " << pretty_num(onlist_sequences.cardinality()) << std::endl;
   std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;
   if (num_trans-onlist_sequences.cardinality() > 0) {
