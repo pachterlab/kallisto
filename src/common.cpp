@@ -2,7 +2,7 @@
 
 // Added by Laura
 #include <map>
-// Look-up maps for comma-free code
+// Look-up maps for comma-free code (also defined in common.h)
 // amino acid -> comma-free triplet
 std::map<char, std::string>cfc_aa_map = {
     {'F', "ACC"},
