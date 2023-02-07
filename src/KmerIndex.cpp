@@ -908,10 +908,10 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
   delete[] buffer;
   buffer=nullptr;
   
-  std::cerr << "[index] number of targets: " << pretty_num(onlist_sequences.cardinality()) << std::endl;
+  std::cerr << "[index] number of targets: " << pretty_num(static_cast<size_t>(onlist_sequences.cardinality())) << std::endl;
   std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;
   if (num_trans-onlist_sequences.cardinality() > 0) {
-    std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(num_trans-onlist_sequences.cardinality()) << std::endl;
+    std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
   }
 
   in.close();
