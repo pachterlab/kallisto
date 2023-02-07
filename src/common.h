@@ -17,6 +17,7 @@ typedef unsigned int uint;
 // Added by Laura 
 // declaring cfc_map and complement (both are defined in common.cpp)
 #include <map>
+extern std::map<char, std::string>cfc_aa_map;
 extern std::map<std::string, std::string>cfc_map;
 extern char complement(char n);
 // End Laura
