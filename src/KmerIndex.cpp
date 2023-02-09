@@ -190,10 +190,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
           }
         }
 
-        // temp
-        std::cout << name << std::endl;
-        std::cout << str << std::endl;
-
         unique_names.insert(name);
         target_names_.push_back(name);
       }
