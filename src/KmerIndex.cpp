@@ -166,8 +166,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         // convert stream to new comma-free AA sequence in string 'str'
         std::string str = all_stream_aa.str();
 
-        std::cout << str << std::endl;
-
         of << ">" << num_trans++ << "\n" << str << std::endl;
         // record length of sequence after translating to cfc (will be 3x length of AA seq)
         target_lens_.push_back(str.size());
@@ -191,6 +189,11 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
             }
           }
         }
+
+        // temp
+        std::cout << name << std::endl;
+        std::cout << str << std::endl;
+
         unique_names.insert(name);
         target_names_.push_back(name);
       }
