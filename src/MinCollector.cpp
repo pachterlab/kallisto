@@ -37,16 +37,22 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
 // Added by Laura (also added to MinCollector.h)
 int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, Roaring& r) const {
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
   Roaring u1 = intersectECs(v1);
   Roaring u3 = intersectECs(v3);
   Roaring u4 = intersectECs(v4);
+  Roaring u5 = intersectECs(v5);
+  Roaring u6 = intersectECs(v6);
+  Roaring u7 = intersectECs(v7);
 
-  if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty()) {
+  if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
     return -1;
   }
 
-  vector<Roaring> u_vector{u1, u3, u4};
+  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
 
   // non-strict intersection
   // to-do: currently the different frames are treated as if they were paired reads

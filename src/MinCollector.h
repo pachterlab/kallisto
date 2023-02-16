@@ -52,7 +52,10 @@ struct MinCollector {
   Roaring intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const;
   int intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, Roaring& r) const;
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const;
   int intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                     std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const;
   int findEC(const std::vector<int32_t>& u) const;
