@@ -212,10 +212,6 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         target_lens_.push_back(com_seq.size());
         std::string name_rev = name + "_rev";
 
-        std::cout << str << endl;
-        std::cout << com_seq << endl;
-        std::cout << name_rev << endl;
-
         target_names_.push_back(name_rev);
       }
     }
