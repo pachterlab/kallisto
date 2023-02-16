@@ -194,25 +194,25 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         target_names_.push_back(name);
 
 
-        // Also add reverse complement of rev translated (to cfc) sequence
-        // create a copy of rev translated sequence
-        std::string com_seq = str;
-        // tansform com_seq to its complement (complement function stored in common.cpp)
-        transform(
-            begin(com_seq),
-            end(com_seq),
-            begin(com_seq),
-            complement);
+        // // Also add reverse complement of rev translated (to cfc) sequence
+        // // create a copy of rev translated sequence
+        // std::string com_seq = str;
+        // // tansform com_seq to its complement (complement function stored in common.cpp)
+        // transform(
+        //     begin(com_seq),
+        //     end(com_seq),
+        //     begin(com_seq),
+        //     complement);
 
-        // reverse com_seq
-        reverse(com_seq.begin(), com_seq.end());
+        // // reverse com_seq
+        // reverse(com_seq.begin(), com_seq.end());
         
-        of << ">" << num_trans++ << "\n" << com_seq << std::endl;
-        // record length of sequence
-        target_lens_.push_back(com_seq.size());
-        std::string name_rev = name + "_rev";
+        // of << ">" << num_trans++ << "\n" << com_seq << std::endl;
+        // // record length of sequence
+        // target_lens_.push_back(com_seq.size());
+        // std::string name_rev = name + "_rev";
 
-        target_names_.push_back(name_rev);
+        // target_names_.push_back(name_rev);
       }
     }
 
