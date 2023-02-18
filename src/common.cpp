@@ -1,6 +1,5 @@
 #include "common.h"
 
-// Added by Laura
 #include <map>
 // Look-up maps for comma-free code (also defined in common.h)
 // amino acid -> comma-free triplet
@@ -95,46 +94,6 @@ std::map<std::string, std::string>cfc_map = {
   {"GGA", "TGG"},
   {"GGG", "TGG"}
 };
-
-// function to transform nucleotide seq to its complement
-char complement(char n) {   
-    switch(n)
-    {   
-    case 'A':
-        return 'T';
-        break;
-    case 'T':
-        return 'A';
-        break;
-    case 'G':
-        return 'C';
-        break;
-    case 'C':
-        return 'G';
-        break;
-    case 'N':
-        return 'N';
-        break;
-    case 'a':
-        return 't';
-        break;
-    case 't':
-        return 'a';
-        break;
-    case 'g':
-        return 'c';
-        break;
-    case 'c':
-        return 'g';
-        break;
-    case 'n':
-        return 'n';
-        break;
-    default:
-        return 'N';
-    }
-};
-// End Laura
 
 std::string pretty_num(int num) {
   return pretty_num(static_cast<size_t>(num));

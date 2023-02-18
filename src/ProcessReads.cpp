@@ -12,6 +12,25 @@
 #include <unordered_set>                                                                                                                                                                                     
 #include <algorithm>
 
+std::string revcomp(const std::string s) {
+  std::string r(s);
+  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
+      switch(c) {
+      case 'A': return 'T';
+      case 'C': return 'G';
+      case 'G': return 'C';
+      case 'T': return 'A';
+      case 'a': return 'T';
+      case 'c': return 'G';
+      case 'g': return 'C';
+      case 't': return 'A';
+      default: return 'N';
+      }
+      return 'N';
+    });
+  return r;
+}
+
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
   int i = 0;
@@ -1693,35 +1712,29 @@ void BUSProcessor::processBuffer() {
       index.match(seq4, seqlen4, v4, busopt.aa);
 
       // get reverse complement of seq
-      // create a copy of seq
-
       // const char * to string
       std::string com_seq(seq);
-
-      // tansform com_seq to its complement (complement function stored in common)
-      transform(
-          begin(com_seq),
-          end(com_seq),
-          begin(com_seq),
-          complement);
-
-      // reverse com_seq
-      reverse(com_seq.begin(), com_seq.end());
+      // transform comseq to its reverse complement
+      com_seq = revcomp (com_seq);
+      // string to const char *
+      const char * com_seq_char = com_seq.c_str();
 
       // align reverse complement frames using the match function
-      size_t seqlen5 = com_seq.size();
+      size_t seqlen5 = strlen(com_seq_char);
       v5.clear();
-      index.match(com_seq.c_str(), seqlen5, v5, busopt.aa);
+      index.match(com_seq_char, seqlen5, v5, busopt.aa);
 
-      std::string seq6 = com_seq.substr(1);
-      size_t seqlen6 = seq6.size();
+      const char * seq6 = com_seq_char+1;
+      size_t seqlen6 = strlen(seq6);
       v6.clear();
-      index.match(seq6.c_str(), seqlen6, v6, busopt.aa);
+      index.match(seq6, seqlen6, v6, busopt.aa);
 
-      std::string seq7 = com_seq.substr(2);
-      size_t seqlen7 = seq7.size();
+      const char * seq7 = com_seq_char+2;
+      size_t seqlen7 = strlen(seq7);
       v7.clear();
-      index.match(seq7.c_str(), seqlen7, v7, busopt.aa);
+      index.match(seq7, seqlen7, v7, busopt.aa);
+
+      std::cout << "just checking" << endl;
     
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?

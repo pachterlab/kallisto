@@ -14,13 +14,9 @@
 typedef unsigned int uint;
 #endif
 
-// Added by Laura 
-// declaring cfc_map and complement (both are defined in common.cpp)
 #include <map>
 extern std::map<char, std::string>cfc_aa_map;
 extern std::map<std::string, std::string>cfc_map;
-extern char complement(char n);
-// End Laura
 
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}

@@ -28,6 +28,7 @@
 #include <htslib/sam.h>
 #endif // NO_HTSLIB
 
+std::string revcomp(const std::string s);
 
 class MasterProcessor;
 
