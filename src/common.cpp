@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "common.h"
 
 #include <map>
