@@ -1583,7 +1583,7 @@ void BUSProcessor::processBuffer() {
     if (check_tag_sequence) {
       uint32_t f = 0;
       umi_binary = stringToBinary(umi, ulen, f);
-      if (hamming(tag_binary, umi_binary >> 2*(ulen-taglen), taglen) <= hamming_dist) { // if tag present
+      if (hamming(tag_binary, umi_binary >> 2*(ulen-taglen), taglen) <= (taglen <= 5 ? 0 : hamming_dist)) { // if tag present (hamming_dist threshold kicks in when taglen > 5)
         umi_binary = umi_binary & ~(~0ULL << (2*(ulen - taglen)));
         ulen = ulen - taglen;
         if (ulen <= 32) {
