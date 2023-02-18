@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 #include "kseq.h"
 
 #ifdef _WIN64
