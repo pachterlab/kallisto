@@ -7,14 +7,73 @@
 #include "common.h"
 #include "KmerIndex.h"
 #include "SparseVector.hpp"
-
-// Added by Laura
 #include <iostream>
 #include <map>
 #include <string>
-// End Laura
 
-// helper functions
+// --aa option helper functions
+int countNonAA=0;
+std::string AA_to_cfc (const std::string aa_string) {
+  // rev translate AA sequence to comma-free code (cfc)
+  std::stringstream all_stream_aa;
+  auto n = aa_string.size();
+  for (int i = 0; i < n; i ++) {
+      // map amino acid to comma-free code using cfc_aa_map (in common.cpp)
+      char aa = aa_string[i];
+      aa = ::toupper(aa);
+      auto cfc_aa_mapped = cfc_aa_map.find(aa);
+
+      // if AA not found in comma-free map, translate as "NNN"
+      std::string cfc_aa_seq;
+      if (cfc_aa_mapped == cfc_aa_map.end()) {
+        cfc_aa_seq = "NNN";
+        ::countNonAA++;
+      } else {
+        cfc_aa_seq = cfc_aa_mapped->second;
+      }
+
+      // accumulate comma-free sequences into stream
+      all_stream_aa << cfc_aa_seq;
+  }
+
+  // convert stream to new comma-free AA sequence in string 'str'
+  std::string str = all_stream_aa.str();
+
+  return str;
+}
+
+const char * nn_to_cfc (const char * s, int l) {
+  // convert char const* to string
+  std::string s_string(s);
+
+  // translate sequence string s to comma-free code
+  // traverse the sequence string in triplets
+  std::string s_cfc;
+  std::stringstream all_stream;
+  int incrementer = 3;
+  for (int i = 0; i < l; i += incrementer) {
+      // map triplet to comma-free code using cfc_map (in common.cpp)
+      auto cfc_mapped = cfc_map.find(s_string.substr(i, 3));
+
+      // if nucleotide triplet not found in comma-free map, translate as "NNN"
+      std::string cfc_seq;
+      if (cfc_mapped == cfc_map.end()) {
+      cfc_seq = "NNN";
+      } else {
+        cfc_seq = cfc_mapped->second;
+      }
+
+      // accumulate comma-free sequences into stream
+      all_stream << cfc_seq;
+  }
+
+  // convert stream to new comma-free sequence string s_cfc
+  s_cfc = all_stream.str();
+
+  return s_cfc.c_str();
+}
+
+// other helper functions
 // pre: u is sorted
 bool isUnique(const std::vector<int>& u) {
   for (int j = 1; j < u.size(); j++) {
@@ -125,50 +184,25 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   int countNonNucl = 0;
   int countUNuc = 0;
   int polyAcount = 0;
-  int countNonAA =0;
 
   for (auto& fasta : opt.transfasta) {
     fp = gzopen(fasta.c_str(), "r");
     seq = kseq_init(fp);
 
-    // start Laura
     if (opt.aa) {
       while (true) {
         l = kseq_read(seq);
         if (l <= 0) {
           break;
         }
-        // store amino acid (AA) sequence in string 'aa_string'
-        std::string aa_string = seq->seq.s;
-
-        // rev translate AA sequence to comma-free code (cfc)
-        std::stringstream all_stream_aa;
-        auto n = aa_string.size();
-        for (int i = 0; i < n; i ++) {
-            // map amino acid to comma-free code using cfc_aa_map (in common.cpp)
-            char aa = aa_string[i];
-            aa = ::toupper(aa);
-            auto cfc_aa_mapped = cfc_aa_map.find(aa);
-
-            // if AA not found in comma-free map, translate as "NNN"
-            std::string cfc_aa_seq;
-            if (cfc_aa_mapped == cfc_aa_map.end()) {
-              cfc_aa_seq = "NNN";
-              countNonAA++;
-            } else {
-              cfc_aa_seq = cfc_aa_mapped->second;
-            }
-
-            // accumulate comma-free sequences into stream
-            all_stream_aa << cfc_aa_seq;
-        }
-
-        // convert stream to new comma-free AA sequence in string 'str'
-        std::string str = all_stream_aa.str();
+        
+        // Translate amino acid (AA) sequence to comma-free code (cfc)
+        std::string str = AA_to_cfc (seq->seq.s);
 
         of << ">" << num_trans++ << "\n" << str << std::endl;
         // record length of sequence after translating to cfc (will be 3x length of AA seq)
         target_lens_.push_back(str.size());
+        // record sequence name
         std::string name(seq->name.s);
         size_t p = name.find(' ');
         if (p != std::string::npos) {
@@ -195,8 +229,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
       }
     }
 
-    if (!(opt.aa)) {
-      // end Laura
+    else {
       while (true) {
         l = kseq_read(seq);
         if (l <= 0) {
@@ -1168,43 +1201,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   }
   */
 
-  // Added by Laura (also added bool cfc=false arg to function args in .cpp and .h files)
-  std::string s_cfc;
-  // convert char const* to string
-  std::string s_string(s);
   if (cfc) {
-    // translate sequence string s to comma-free code
-    // traverse the sequence string in triplets
-    std::stringstream all_stream;
-    int incrementer = 3;
-    for (int i = 0; i < l; i += incrementer) {
-        // map triplet to comma-free code using cfc_map (in common)
-        auto cfc_mapped = cfc_map.find(s_string.substr(i, 3));
-
-        // if nucleotide triplet not found in comma-free map, translate as "NNN"
-        std::string cfc_seq;
-        if (cfc_mapped == cfc_map.end()) {
-        cfc_seq = "NNN";
-        } else {
-          cfc_seq = cfc_mapped->second;
-        }
-
-        // accumulate comma-free sequences into stream
-        all_stream << cfc_seq;
-    }
-
-    // convert stream to new comma-free sequence string s_cfc
-    s_cfc = all_stream.str();
-  }
-  else {
-    // to-do: rewrite this so s is not unnecessarily converted char -> string -> char when running kallisto in non-cfc mode
-    // if not in cfc mode, s_cfc is just a copy of s
-    s_cfc = s_string;
+    // translate nucleotide sequence to comma-free code (cfc)
+    s = nn_to_cfc (s, l);
   }
 
-  // End Laura (except replace s with s_cfc.c_str() in KmerIterator line below)
-
-  KmerIterator kit(s_cfc.c_str()), kit_end;
+  KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
