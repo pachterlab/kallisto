@@ -1,10 +1,10 @@
 #include <algorithm>
+#include <unordered_map>
 #include "common.h"
 
-#include <map>
-// Look-up maps for comma-free code (also defined in common.h)
+// Look-up maps for comma-free code
 // amino acid -> comma-free triplet
-std::map<char, std::string>cfc_aa_map = {
+std::unordered_map<char, std::string>cfc_aa_map = {
     {'F', "ACC"},
     {'L', "ACA"},
     {'I', "ATA"},
@@ -32,7 +32,7 @@ std::map<char, std::string>cfc_aa_map = {
 };
 
 // nucleotide triplet -> comma-free triplet
-std::map<std::string, std::string>cfc_map = {
+std::unordered_map<std::string, std::string>cfc_map = {
   {"TTT", "ACC"},
   {"TTC", "ACC"},
   {"TTA", "ACA"},
@@ -96,6 +96,7 @@ std::map<std::string, std::string>cfc_map = {
   {"GGG", "TGG"}
 };
 
+// nucleotide seq -> reverse complement
 std::string revcomp(const std::string s) {
   std::string r(s);
   std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {

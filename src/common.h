@@ -14,10 +14,8 @@
 typedef unsigned int uint;
 #endif
 
-#include <map>
-extern std::map<char, std::string>cfc_aa_map;
-extern std::map<std::string, std::string>cfc_map;
-
+std::unordered_map<char, std::string>cfc_aa_map;
+std::unordered_map<std::string, std::string>cfc_map;
 std::string revcomp(const std::string s);
 
 struct BUSOptionSubstr {
@@ -28,7 +26,6 @@ struct BUSOptionSubstr {
   int stop;
 };
 
-// Laura: Added aa (previously named cfc) option
 struct BUSOptions {
   int nfiles;
 
