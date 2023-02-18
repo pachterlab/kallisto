@@ -9,11 +9,8 @@
 #include "BUSData.h"
 #include "BUSTools.h"
 #include "Node.hpp"
-#include <unordered_set>
-
-// Added by Laura                                                                                                                                                                                      
+#include <unordered_set>                                                                                                                                                                                     
 #include <algorithm>
-// End Laura 
 
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
@@ -1674,12 +1671,8 @@ void BUSProcessor::processBuffer() {
       index.match(seq2, seqlen2, v2);
     }
 
-    // Added by Laura (also added busopt.aa arg to index.match call above)
     // process frames for commafree (to do: extend to paired-end reads)
     if (busopt.aa) {
-      // const char * to string
-      std::string seq_string(seq);
-
       // initiate equivalence classes
       std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
       v3.reserve(1000);
@@ -1689,19 +1682,21 @@ void BUSProcessor::processBuffer() {
       v7.reserve(1000);
 
       // align remaining forward frames using the match function
-      std::string seq3 = seq_string.substr(1);
-      size_t seqlen3 = seq3.size();
+      const char * seq3 = seq+1;
+      size_t seqlen3 = strlen(seq3);
       v3.clear();
-      index.match(seq3.c_str(), seqlen3, v3, busopt.aa);
+      index.match(seq3, seqlen3, v3, busopt.aa);
 
-      std::string seq4 = seq_string.substr(2);
-      size_t seqlen4 = seq4.size();
+      const char * seq4 = seq+2;
+      size_t seqlen4 = strlen(seq4);
       v4.clear();
-      index.match(seq4.c_str(), seqlen4, v4, busopt.aa);
+      index.match(seq4, seqlen4, v4, busopt.aa);
 
       // get reverse complement of seq
       // create a copy of seq
-      std::string com_seq = seq_string;
+
+      // const char * to string
+      std::string com_seq(seq);
 
       // tansform com_seq to its complement (complement function stored in common)
       transform(
@@ -1729,7 +1724,7 @@ void BUSProcessor::processBuffer() {
       index.match(seq7.c_str(), seqlen7, v7, busopt.aa);
     
       // intersect set of equivalence classes for each frame
-      // NOTE: intersectKmers if called again further up. to-do: Do I need to modify that too?
+      // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
       int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
     }
     else {
