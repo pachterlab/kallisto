@@ -1714,8 +1714,6 @@ void BUSProcessor::processBuffer() {
       size_t seqlen7 = strlen(seq7);
       v7.clear();
       index.match(seq7, seqlen7, v7, busopt.aa);
-
-      std::cout << "just checking" << endl;
     
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
