@@ -15,9 +15,9 @@
 typedef unsigned int uint;
 #endif
 
-std::unordered_map<char, std::string>cfc_aa_map;
-std::unordered_map<std::string, std::string>cfc_map;
-std::string revcomp(const std::string s);
+extern std::unordered_map<char, std::string>cfc_aa_map;
+extern std::unordered_map<std::string, std::string>cfc_map;
+extern std::string revcomp(const std::string s);
 
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
