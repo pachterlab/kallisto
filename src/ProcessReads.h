@@ -28,8 +28,6 @@
 #include <htslib/sam.h>
 #endif // NO_HTSLIB
 
-std::string revcomp(const std::string s);
-
 class MasterProcessor;
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);

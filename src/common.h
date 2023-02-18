@@ -18,6 +18,8 @@ typedef unsigned int uint;
 extern std::map<char, std::string>cfc_aa_map;
 extern std::map<std::string, std::string>cfc_map;
 
+std::string revcomp(const std::string s);
+
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
   BUSOptionSubstr(int f, int a, int b) : fileno(f), start(a), stop(b) {}

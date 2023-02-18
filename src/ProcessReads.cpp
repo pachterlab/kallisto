@@ -12,25 +12,6 @@
 #include <unordered_set>                                                                                                                                                                                     
 #include <algorithm>
 
-std::string revcomp(const std::string s) {
-  std::string r(s);
-  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
-      switch(c) {
-      case 'A': return 'T';
-      case 'C': return 'G';
-      case 'G': return 'C';
-      case 'T': return 'A';
-      case 'a': return 'T';
-      case 'c': return 'G';
-      case 'g': return 'C';
-      case 't': return 'A';
-      default: return 'N';
-      }
-      return 'N';
-    });
-  return r;
-}
-
 void printVector(const std::vector<int>& v, std::ostream& o) {
   o << "[";
   int i = 0;

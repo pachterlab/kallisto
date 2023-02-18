@@ -95,6 +95,25 @@ std::map<std::string, std::string>cfc_map = {
   {"GGG", "TGG"}
 };
 
+std::string revcomp(const std::string s) {
+  std::string r(s);
+  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
+      switch(c) {
+      case 'A': return 'T';
+      case 'C': return 'G';
+      case 'G': return 'C';
+      case 'T': return 'A';
+      case 'a': return 'T';
+      case 'c': return 'G';
+      case 'g': return 'C';
+      case 't': return 'A';
+      default: return 'N';
+      }
+      return 'N';
+    });
+  return r;
+}
+
 std::string pretty_num(int num) {
   return pretty_num(static_cast<size_t>(num));
 }

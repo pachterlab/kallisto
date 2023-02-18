@@ -19,7 +19,6 @@
 
 std::string AA_to_cfc (const std::string aa_string);
 const char * nn_to_cfc (const char * s, int l);
-std::string revcomp(const std::string s);
 
 struct TRInfo {
   uint32_t trid;

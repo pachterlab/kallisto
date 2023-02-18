@@ -113,21 +113,6 @@ int hamming(const char *a, const char *b) {
   return h;
 }
 
-std::string revcomp(const std::string s) {
-  std::string r(s);
-  std::transform(s.rbegin(), s.rend(), r.begin(), [](char c) {
-      switch(c) {
-      case 'A': return 'T';
-      case 'C': return 'G';
-      case 'G': return 'C';
-      case 'T': return 'A';
-      default: return 'N';
-      }
-      return 'N';
-    });
-  return r;
-}
-
 std::string generate_tmp_file(std::string seed) {
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   std::string tmp_file = ".kallisto.";
