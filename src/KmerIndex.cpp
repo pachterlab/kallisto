@@ -57,7 +57,7 @@ std::string nn_to_cfc (const char * s) {
       std::string s_str_sub = s_string.substr(i, 3);
 
       if (s_str_sub.size() == 3) {
-        // // convert to upper case (should already be upper case at this point)
+        // // convert to upper case (already upper case at this point)
         // transform(s_str_sub.begin(), s_str_sub.end(), s_str_sub.begin(), ::toupper);
 
         auto cfc_mapped = cfc_map.find(s_str_sub);
