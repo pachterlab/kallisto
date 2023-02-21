@@ -93,7 +93,10 @@ std::unordered_map<std::string, std::string>cfc_map = {
   {"GGT", "TGG"},
   {"GGC", "TGG"},
   {"GGA", "TGG"},
-  {"GGG", "TGG"}
+  {"GGG", "TGG"},
+  {"TGA", "NNN"}, // stop codon
+  {"TAA", "NNN"}, // stop codon
+  {"TAG", "NNN"}  // stop codon
 };
 
 // nucleotide seq -> reverse complement
