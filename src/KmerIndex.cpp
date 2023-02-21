@@ -66,7 +66,6 @@ std::string nn_to_cfc (const char * s) {
         if (cfc_mapped == cfc_map.end()) {
           cfc_seq = "NNN";
           // ::countNonNN++;
-
         } else {
           cfc_seq = cfc_mapped->second;
         }
