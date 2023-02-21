@@ -66,6 +66,7 @@ std::string nn_to_cfc (const char * s) {
         if (cfc_mapped == cfc_map.end()) {
           cfc_seq = "NNN";
           ::countNonNN++;
+          std::cout << s_str_sub << std::endl;
         } else {
           cfc_seq = cfc_mapped->second;
         }
@@ -79,7 +80,7 @@ std::string nn_to_cfc (const char * s) {
   std::string s_cfc = all_stream.str();
 
   std::cout << s_cfc << std::endl;
-  
+
   return s_cfc;
 }
 
@@ -1203,8 +1204,10 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     s = s_string.c_str();
 
     if (countNonNN > 0) {
-      std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequences" << std::endl << "        which were translated to 'NNN'" << std::endl;
+      std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequence" << std::endl << "        which were translated to 'NNN'" << std::endl;
     }
+    // reset countNonNN
+    ::countNonNN = 0
   }
 
   KmerIterator kit(s), kit_end;
