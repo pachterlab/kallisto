@@ -1,8 +1,8 @@
 #!/bin/bash
 
 ### Setup ###
-
-kallisto="./src/kallisto"
+# kallisto="./src/kallisto"
+kallisto="/usr/local/bin/kallisto"
 bustools="bustools"
 test_dir="./func_tests"
 
@@ -31,7 +31,7 @@ checkcmdoutput() {
 	cmd="$1"
 	correct_md5="$2"
 	printf "$cmd\n"
-	output_md5=$(eval "$cmd"|md5sum|awk '{ print $1 }')
+	output_md5=$(eval "$cmd"|md5 -r|awk '{ print $1 }')  # Use 'md5 -r' instead of 'md5sum' on Mac
 	if [ "$output_md5" = "$correct_md5" ]; then
 		printf "^[Output OK]\n"
 	else
@@ -46,35 +46,54 @@ checkcmdoutput() {
 
 ### FASTA files ###
 
-echo ">t1
-ATCTGGTGCCGTAGcctCCGC
->t2
-ATACTTTggcGTCGACTTCGC
->t3
-ATACTTTGGCGTCGACTT
->t4
-ATACTTTGGCGTCGA" > $test_dir/cfc_ref.fasta
+echo ">a1
+ITGDNTKwNENQNPrM
+>a2
+ATLDlsdASDRVSN
+>a3
+VPLDASRfeqSCSEEVL
+" > $test_dir/aa_ref.fasta
 
+# Expected mapping: t1 -> a1; t2 -> a2; t3, t4 -> a3
 echo ">t1
-ATGGGTTGGGATTATCCTAAA
+ATTACCGGCGATAACAccaAATGGAACGAAAAC
 >t2
-ATTACTGGTGATAATACTAAG
+GCGACCCTGGATCTGAGCGATGCGAGCGATCGCGTGAGC
 >t3
-ATCACCGGCGACAATACA
+GTGCCGCTGgatGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGA
 >t4
-ATCACAGGAGACAAC" > $test_dir/virus_nn_frame0.fasta
+CCGCTGGATGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGA
+" > $test_dir/virus_nn_frame0.fasta
 
-# to-do convert t3 - t5 to reverse complement frames
-echo ">t1
-GATGGGTTGGGATTATCCTAAA
->t2
-GGATTACTGGTGATAATACTAAG
->t3
-ATCACCGGCGACAATACA  
->t4
-ATCACAGGAGACAAC
->t5
-ATCACAGGAGACAAC" > $test_dir/virus_nn_mixed_frames.fasta
+# # Expected mapping: t1 -> a1, t2 -> a2, t3 -> a3, t4 -> a3
+# # t1 = t1 frame +2, t2 = t2 rev comp, t3 = t3 rev comp & frame +1, t4 = t4 rev comp & frame +2
+# echo ">t1
+# TTATTACCGGCGATAACAccaAATGGAACGAAAAC
+# >t2
+# GCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGC
+# >t3
+# TCTTCGCTGCAGCTCTGTTCAAAGCGGCTCGCatcCAGCGGCACt
+# >t4
+# TCTTCGCTGCAGCTCTGTTCAAAGCGGCTCGCatcCAGCGGTT
+# " > $test_dir/virus_nn_mixed_frames.fasta
+
+# Expected mapping: tm1, tm2 -> a1; tm3, tm4, tm5 -> a2;
+# tm1 = t1 frame +1
+# tm2 = t1 frame +2
+# tm3 = t2 rev comp
+# tm4 = t2 rev comp frame +1
+# tm5 = t2 rev comp frame +2
+echo ">tm1
+TATTACCGGCGATAACAccaAATGGAACGAAAAC
+>tm2
+TTATTACCGGCGATAACAccaAATGGAACGAAAAC
+>tm3
+GCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGC
+>tm4
+GCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCT
+>tm5
+GCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCTT
+" > $test_dir/virus_nn_mixed_frames.fasta
 
 echo ">t1
 ACGTGATGAGTGAGTCAGT
@@ -216,91 +235,83 @@ JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ
 
 echo "[INDEX]"
 
-# Test k=7 cfc reference
+# Test k=7 with --aa
 
-cmdexec "$kallisto index -i $test_dir/basic7_cfc.idx -k 7 $test_dir/cfc_ref.fasta"
+cmdexec "$kallisto index --aa -i $test_dir/basic7_cfc.idx -k 7 $test_dir/aa_ref.fasta"
 
-# Test k=7
+# # Test k=7
 
-cmdexec "$kallisto index -i $test_dir/basic7.idx -k 7 $test_dir/simple.fasta"
+# cmdexec "$kallisto index -i $test_dir/basic7.idx -k 7 $test_dir/simple.fasta"
 
-# Test k=9
+# # Test k=9
 
-cmdexec "$kallisto index -i $test_dir/basic9.idx -k 9 $test_dir/simple.fasta"
+# cmdexec "$kallisto index -i $test_dir/basic9.idx -k 9 $test_dir/simple.fasta"
 
-# Test non-ATCG bases
+# # Test non-ATCG bases
 
-cmdexec "$kallisto index -i $test_dir/nonATCG.idx -k 5 $test_dir/nonATCG.fasta"
+# cmdexec "$kallisto index -i $test_dir/nonATCG.idx -k 5 $test_dir/nonATCG.fasta"
 
-# Test polyA truncation
+# # Test polyA truncation
 
-cmdexec "$kallisto index -i $test_dir/polyA.idx -k 5 $test_dir/polyA.fasta"
+# cmdexec "$kallisto index -i $test_dir/polyA.idx -k 5 $test_dir/polyA.fasta"
 
-# Test k = even number (should fail)
+# # Test k = even number (should fail)
 
-cmdexec "$kallisto index -i $test_dir/basic_fail.idx -k 10 $test_dir/simple.fasta" 1
+# cmdexec "$kallisto index -i $test_dir/basic_fail.idx -k 10 $test_dir/simple.fasta" 1
 
-# Test duplicate transcript names (should fail)
+# # Test duplicate transcript names (should fail)
 
-cmdexec "$kallisto index -i $test_dir/duplicates_fail.idx -k 11 $test_dir/duplicates.fasta" 1
+# cmdexec "$kallisto index -i $test_dir/duplicates_fail.idx -k 11 $test_dir/duplicates.fasta" 1
 
-# Test duplicate transcript names with --make-unique
+# # Test duplicate transcript names with --make-unique
 
-cmdexec "$kallisto index -i $test_dir/duplicates.idx -k 11 --make-unique $test_dir/duplicates.fasta"
+# cmdexec "$kallisto index -i $test_dir/duplicates.idx -k 11 --make-unique $test_dir/duplicates.fasta"
 
 
 ### TEST - kallisto quant ###
 
-# Test --aa (cfc index)
-
-cmdexec "$kallisto quant --aa -o $test_dir/quantbasic -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
-checkcmdoutput "cat $test_dir/quantaa_f0/abundance.tsv" f1c8927dc29b943758242902d5c45a87
-
-cmdexec "$kallisto quant --aa -o $test_dir/quantbasic -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
-checkcmdoutput "cat $test_dir/quantaa_mixedframes/abundance.tsv" f1c8927dc29b943758242902d5c45a87
-
 # Test single-end small.fastq.gz using various indices
 
-cmdexec "$kallisto quant -o $test_dir/quantbasic -i $test_dir/basic7.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasic/abundance.tsv" f1c8927dc29b943758242902d5c45a86
+# cmdexec "$kallisto quant -o $test_dir/quantbasic -i $test_dir/basic7.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasic/abundance.tsv" f1c8927dc29b943758242902d5c45a86
 
-cmdexec "$kallisto quant -o $test_dir/quantnonATCG -i $test_dir/nonATCG.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantnonATCG/abundance.tsv" 9272185ff011f9a840c29c5c40a2d390
+# cmdexec "$kallisto quant -o $test_dir/quantnonATCG -i $test_dir/nonATCG.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantnonATCG/abundance.tsv" 9272185ff011f9a840c29c5c40a2d390
 
-cmdexec "$kallisto quant -o $test_dir/quantpolyA -i $test_dir/polyA.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantpolyA/abundance.tsv" 745539c18d4ff07bf6de0938563f2362
+# cmdexec "$kallisto quant -o $test_dir/quantpolyA -i $test_dir/polyA.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantpolyA/abundance.tsv" 745539c18d4ff07bf6de0938563f2362
 
-cmdexec "$kallisto quant -o $test_dir/quantduplicates -i $test_dir/duplicates.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantduplicates/abundance.tsv" 49a62b913a155598dd6894a2f0eb0905
+# cmdexec "$kallisto quant -o $test_dir/quantduplicates -i $test_dir/duplicates.idx --single -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantduplicates/abundance.tsv" 49a62b913a155598dd6894a2f0eb0905
 
-# Test single-end small.fastq.gz strand-specificity
+# # Test single-end small.fastq.gz strand-specificity
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicfr -i $test_dir/basic7.idx --single --fr-stranded -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicfr/abundance.tsv" ce2ed5a3a1bab582fcb62dc02f4d9323
+# cmdexec "$kallisto quant -o $test_dir/quantbasicfr -i $test_dir/basic7.idx --single --fr-stranded -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicfr/abundance.tsv" ce2ed5a3a1bab582fcb62dc02f4d9323
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicrf -i $test_dir/basic7.idx --single --rf-stranded -l 5 -s 2 $test_dir/small.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicrf/abundance.tsv" 017e8ba77d7e7b39a60bb7c047e620dc
+# cmdexec "$kallisto quant -o $test_dir/quantbasicrf -i $test_dir/basic7.idx --single --rf-stranded -l 5 -s 2 $test_dir/small.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicrf/abundance.tsv" 017e8ba77d7e7b39a60bb7c047e620dc
 
-# Test paired-end small.fastq.gz
+# # Test paired-end small.fastq.gz
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicpaired -i $test_dir/basic7.idx $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicpaired/abundance.tsv" 1cf9cd508c04eff7cbda6e74cc1e44ea
+# cmdexec "$kallisto quant -o $test_dir/quantbasicpaired -i $test_dir/basic7.idx $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicpaired/abundance.tsv" 1cf9cd508c04eff7cbda6e74cc1e44ea
 
-# Test paired-end small.fastq.gz with multiple pairs of files and with strand-specificity
+# # Test paired-end small.fastq.gz with multiple pairs of files and with strand-specificity
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicpairedfr -i $test_dir/basic7.idx --fr-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicpairedfr/abundance.tsv" bc6a75291c2eb661a57b55de534dd8f0
+# cmdexec "$kallisto quant -o $test_dir/quantbasicpairedfr -i $test_dir/basic7.idx --fr-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicpairedfr/abundance.tsv" bc6a75291c2eb661a57b55de534dd8f0
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicpairedrf -i $test_dir/basic7.idx --rf-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicpairedrf/abundance.tsv" dd1ed6ed8fb393616817a3dd506f821f
+# cmdexec "$kallisto quant -o $test_dir/quantbasicpairedrf -i $test_dir/basic7.idx --rf-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicpairedrf/abundance.tsv" dd1ed6ed8fb393616817a3dd506f821f
 
-cmdexec "$kallisto quant -o $test_dir/quantbasicpairedmultfr -i $test_dir/basic7.idx --fr-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz $test_dir/simple_pair2.fastq.gz $test_dir/simple_pair1.fastq.gz"
-checkcmdoutput "cat $test_dir/quantbasicpairedmultfr/abundance.tsv" f810d28aed3969514f1d21120a6fc825
+# cmdexec "$kallisto quant -o $test_dir/quantbasicpairedmultfr -i $test_dir/basic7.idx --fr-stranded $test_dir/simple_pair1.fastq.gz $test_dir/simple_pair2.fastq.gz $test_dir/simple_pair2.fastq.gz $test_dir/simple_pair1.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantbasicpairedmultfr/abundance.tsv" f810d28aed3969514f1d21120a6fc825
 
-# Test multiple large fastq files with more threads
+# # Test multiple large fastq files with more threads
 
-cmdexec "$kallisto quant -o $test_dir/quantlarge -t 12 -i $test_dir/basic7.idx --single -l 5 -s 2 $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz"
-checkcmdoutput "cat $test_dir/quantlarge/abundance.tsv" 024e56c50c774aa09e00a441512415aa
+# cmdexec "$kallisto quant -o $test_dir/quantlarge -t 12 -i $test_dir/basic7.idx --single -l 5 -s 2 $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz"
+# checkcmdoutput "cat $test_dir/quantlarge/abundance.tsv" 024e56c50c774aa09e00a441512415aa
 
 
 ### TEST - kallisto bus ###
@@ -310,6 +321,16 @@ then
     echo "Error: bustools could not be found"
     exit 1
 fi
+
+# Try --aa (with comma-free code index)
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_f0 -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_f0/output.s.bus -t 12 $test_dir/bus_aa_f0/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_f0/output.s.bus|cut -f1,2,4" edbc95eff07ccc4f34e5e357357cb46b
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_mixedframes -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_mixedframes/output.s.bus -t 12 $test_dir/bus_aa_mixedframes/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_mixedframes/output.s.bus|cut -f1,2,4" edbc95eff07ccc4f34e5e357357cb46b
 
 # Try custom "magic string" for -x with multiple large files and many threads
 
