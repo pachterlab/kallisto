@@ -1207,7 +1207,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
       std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequence" << std::endl << "        which were translated to 'NNN'" << std::endl;
     }
     // reset countNonNN
-    ::countNonNN = 0
+    ::countNonNN = 0;
   }
 
   KmerIterator kit(s), kit_end;
