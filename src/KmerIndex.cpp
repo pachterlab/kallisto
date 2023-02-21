@@ -22,13 +22,14 @@ std::string AA_to_cfc (const std::string aa_string) {
       char aa = aa_string[i];
       aa = ::toupper(aa);
 
+      auto cfc_aa_mapped = cfc_aa_map.find(aa);
       std::string cfc_aa_seq;
       // if AA not found in comma-free map, translate as "NNN"
-      if (cfc_aa_map.count(aa) == 0) {
+      if (cfc_aa_mapped == cfc_aa_map.end()) {
         cfc_aa_seq = "NNN";
         ::countNonAA++;
       } else {
-        cfc_aa_seq = cfc_aa_map.at(aa);
+        cfc_aa_seq = cfc_aa_mapped->second;
       }
 
       // accumulate comma-free sequences into stream
@@ -56,16 +57,17 @@ std::string nn_to_cfc (const char * s) {
       std::string s_str_sub = s_string.substr(i, 3);
 
       if (s_str_sub.size() == 3) {
-        // convert to upper case
-        transform(s_str_sub.begin(), s_str_sub.end(), s_str_sub.begin(), ::toupper);
+        // // convert to upper case (should already be upper case at this point)
+        // transform(s_str_sub.begin(), s_str_sub.end(), s_str_sub.begin(), ::toupper);
 
+        auto cfc_mapped = cfc_map.find(s_str_sub);
         std::string cfc_seq;
         // if nucleotide triplet not found in comma-free map, translate as "NNN"
-        if (cfc_map.count(s_str_sub) == 0) {
+        if (cfc_mapped == cfc_map.end()) {
           cfc_seq = "NNN";
           ::countNonNN++;
         } else {
-          cfc_seq = cfc_map.at(s_str_sub);
+          cfc_seq = cfc_mapped->second;
         }
 
         // accumulate comma-free sequences into stream
@@ -76,8 +78,10 @@ std::string nn_to_cfc (const char * s) {
   // convert stream to new comma-free sequence string s_cfc
   std::string s_cfc = all_stream.str();
 
+  std::cout << s_cfc << std::endl;
+  
   return s_cfc;
-};
+}
 
 // other helper functions
 // pre: u is sorted
@@ -1197,6 +1201,10 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     std::string s_string;
     s_string = nn_to_cfc (s);
     s = s_string.c_str();
+
+    if (countNonNN > 0) {
+      std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequences" << std::endl << "        which were translated to 'NNN'" << std::endl;
+    }
   }
 
   KmerIterator kit(s), kit_end;
