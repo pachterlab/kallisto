@@ -89,7 +89,7 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
   if (r.isEmpty()) {
     return -1;
   }
-  // std::cerr << "Aligned frame: " << winner_frame_idx << endl;
+  std::cerr << "Aligned frame: " << winner_frame_idx << endl;
   return 1;
 }
 
