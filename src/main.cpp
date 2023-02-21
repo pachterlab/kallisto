@@ -521,7 +521,6 @@ void ListSingleCellTechnologies() {
   << endl;
  }
 
-// Laura: Added aa (previously named cfc) argument
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
@@ -668,8 +667,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   
   opt.single_overhang = true;
 
-  // Laura
-  // throw warning when --aa is passed with paired-end arg (paired-end not supported in aa mode, will always switch to single-end)
+  // throw warning when --aa is passed with paired-end arg 
+  // paired-end currently not supported in --aa mode -> will automatically switch to single-end
   if (aa_flag) {
     opt.aa =true;
     opt.single_end = true;
@@ -1996,7 +1995,7 @@ void usageBus() {
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
-       << "    --aa                      Align to an amino acid reference" << endl
+       << "    --aa                      Align to index geenrated from an amino acid reference" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
@@ -2016,6 +2015,7 @@ void usageIndex() {
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
+       << "    --aa                    Generate index from an amino acid reference" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl

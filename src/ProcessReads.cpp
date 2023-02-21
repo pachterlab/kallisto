@@ -1714,7 +1714,7 @@ void BUSProcessor::processBuffer() {
       size_t seqlen7 = strlen(seq7);
       v7.clear();
       index.match(seq7, seqlen7, v7, busopt.aa);
-    
+
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
       int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
