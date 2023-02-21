@@ -8,7 +8,7 @@
 #include "KmerIndex.h"
 #include "SparseVector.hpp"
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 // --aa option helper functions
