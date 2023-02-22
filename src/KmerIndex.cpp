@@ -369,8 +369,6 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   boophf_t* mphf = new boophf_t(minz.size(), std::move(minz), opt.threads, 1.0, false, 0.15);
   out.write((char *)&tmp_size, sizeof(tmp_size));
   mphf->save(out);
-  delete mphf;
-  mphf = nullptr;
   pos1 = out.tellp();
   out.seekp(pos2);
   tmp_size = pos1 - pos2 - sizeof(tmp_size);
