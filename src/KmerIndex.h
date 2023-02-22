@@ -17,7 +17,8 @@
 #include "Node.hpp"
 #include "robin_hood.h"
 
-std::string revcomp(const std::string s);
+std::string AA_to_cfc (const std::string aa_string);
+const char * nn_to_cfc (const char * s, int l);
 
 struct TRInfo {
   uint32_t trid;
@@ -80,7 +81,8 @@ struct KmerIndex {
   ~KmerIndex() {}
 
   std::pair<size_t,size_t> getECInfo() const; // Get max EC size encountered and second element is the number of nodes in which an EC is empty (b/c it was discarded)
-  void match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v) const;
+  void match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v, bool cfc = false) const;
+
 //  bool matchEnd(const char *s, int l, std::vector<std::pair<int, int>>& v, int p) const;
   int mapPair(const char *s1, int l1, const char *s2, int l2) const;
   Roaring intersect(const Roaring& ec, const Roaring& v) const;

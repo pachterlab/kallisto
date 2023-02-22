@@ -48,11 +48,13 @@ bool checkFileExists(std::string fn) {
 void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
+  int aa_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"make-unique", no_argument, &make_unique_flag, 1},
+    {"aa", no_argument, &aa_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -113,6 +115,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (make_unique_flag) {
     opt.make_unique = true;
+  }
+  if (aa_flag) {
+    opt.aa = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -519,7 +524,8 @@ void ListSingleCellTechnologies() {
 void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int gbam_flag = 0;
-  int paired_end_flag = 0;
+  int paired_end_flag = 0;  
+  int aa_flag = 0;
   int strand_FR_flag = 0;
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
@@ -544,6 +550,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
+    {"aa", no_argument, &aa_flag, 1},
     {"inleaved", no_argument, &interleaved_flag, 1},
     {"numReads", required_argument, 0, 'N'},
     {0,0,0,0}
@@ -659,6 +666,16 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   }
   
   opt.single_overhang = true;
+
+  // throw warning when --aa is passed with paired-end arg 
+  // paired-end currently not supported in --aa mode -> will automatically switch to single-end
+  if (aa_flag) {
+    opt.aa =true;
+    opt.single_end = true;
+    if (paired_end_flag) {
+      cerr << "[bus] --paired ignored; --aa only supports single-end reads" << endl;
+    }
+  }
 
   // all other arguments are fast[a/q] files to be read
   for (int i = optind; i < argc; i++) {
@@ -909,7 +926,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
-    if (!opt.num && !(opt.max_num_reads > 0)) {
+    if (!opt.num && !(opt.max_num_reads > 0) && !opt.aa) {
       opt.batch_bus_write = true;
     } else {
       opt.batch_bus = true;
@@ -1064,6 +1081,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.seq.push_back(BUSOptionSubstr(0,0,0));
       busopt.umi.resize(0);
       busopt.bc.resize(0);
+      busopt.aa = opt.aa;
       if (opt.single_end) {
         busopt.nfiles = 1;
         busopt.paired = false;
@@ -1077,6 +1095,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     return ret;
   } else {
     auto& busopt = opt.busOptions;
+    busopt.aa = opt.aa;
 
     if (opt.bam) { // Note: only 10xV2 has been tested
       busopt.nfiles = 1;
@@ -1976,6 +1995,7 @@ void usageBus() {
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
+       << "    --aa                      Align to index geenrated from an amino acid reference" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
@@ -1995,6 +2015,7 @@ void usageIndex() {
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
+       << "    --aa                    Generate index from an amino acid reference" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl

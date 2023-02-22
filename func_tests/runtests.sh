@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ### Setup ###
-
 kallisto="./src/kallisto"
 bustools="bustools"
 test_dir="./func_tests"
@@ -31,7 +30,7 @@ checkcmdoutput() {
 	cmd="$1"
 	correct_md5="$2"
 	printf "$cmd\n"
-	output_md5=$(eval "$cmd"|md5sum|awk '{ print $1 }')
+	output_md5=$(eval "$cmd"|md5sum|awk '{ print $1 }')  # Use 'md5 -r' instead of 'md5sum' on Mac
 	if [ "$output_md5" = "$correct_md5" ]; then
 		printf "^[Output OK]\n"
 	else
@@ -45,6 +44,46 @@ checkcmdoutput() {
 }
 
 ### FASTA files ###
+
+# Test aa: index
+echo ">a1
+ITGDNTKWNENQNPRMFLAMITYITRNQPEWFRNILSMAPIMFSNKMARLGKGYMFESKRMKIRTQIPAEMLASIDLKYF
+>a2
+ATLDLSDASDRVSNELVRTMVARWPYVAWALDASRSRKALVGGKTIRLAKYASMGSALCFPIEAMVFLTMIFVGIQRSLNTPLTRKDVKRLSDSVRVYGDDLIV
+>a3
+VPLDASRFEQSCSEEVLHWEHRRYMKYYPGDKYFKKLLAWQRSNKGHSYCTDGELKFAISGGRGSGDFNTGLGNNMITAKLVGNVMEILSIDNYKFFCDGDDACV
+" > $test_dir/aa_ref.fasta
+
+# Test aa: standard frames
+# Expected mapping: t1 -> a1; t2 -> a2; t3, t4 -> a3
+echo ">t1
+ATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>t2
+GCGACCCTGGATCTGAGCGATGCGAGCGATCGCGTGAGCAACGAACTGGTGCGCACCATGGTGGCGCGCTGGCCGTATGTGGCGTGGGCGCTGGATGCGAGCCGCAGCCGCAAAGCGCTGGTGGGCGGCAAAACCATTCGCCTGGCGAAATATGCGAGCATGGGCAGCGCGCTGTGCTTTCCGATTGAAGCGATGGTGTTTCTGACCATGATTTTTGTGGGCATTCAGCGCAGCCTGAACACCCCGCTGACCCGCAAAGATGTGAAACGCCTGAGCGATAGCGTGCGCGTGTATGGCGATGATCTGATTGTG
+>t3
+GTGCCGCTGGATGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGAAGTGCTGCATTGGGAACATCGCCGCTATATGAAATATTATCCGGGCGATAAATATTTTAAAAAACTGCTGGCGTGGCAGCGCAGCAACAAAGGCCATAGCTATTGCACCGATGGCGAACTGAAATTTGCGATTAGCGGCGGCCGCGGCAGCGGCGATTTTAACACCGGCCTGGGCAACAACATGATTACCGCGAAACTGGTGGGCAACGTGATGGAAATTCTGAGCATTGATAACTATAAATTTTTTTGCGATGGCGATGATGCGTGCGTG
+>t4
+GATGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGAAGTGCTGCATTGGGAACATCGCCGCTATATGAAATATTATCCGGGCGATAAATATTTTAAAAAACTGCTGGCGTGGCAGCGCAGCAACAAAGGCCATAGCTATTGCACCGATGGCGAACTGAAATTTGCGATTAGCGGCGGCCGCGGCAGCGGCGATTTTAACACCGGCCTGGGCAACAACATGATTACCGCGAAACTGGTGGGCAACGTGAT
+" > $test_dir/virus_nn_frame0.fasta
+
+# Test aa: mixed frames
+# Expected mapping: tm1, tm2 -> a1; tm3, tm4, tm5 -> a2;
+# tm1 = t1 frame +1
+# tm2 = t1 frame +2
+# tm3 = t2 rev comp
+# tm4 = t2 rev comp frame +1
+# tm5 = t2 rev comp frame +2
+echo ">tm1
+GATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>tm2
+GGATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>tm3
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGC
+>tm4
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCG
+>tm5
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCGG
+" > $test_dir/virus_nn_mixed_frames.fasta
 
 echo ">t1
 ACGTGATGAGTGAGTCAGT
@@ -94,7 +133,6 @@ cat $test_dir/simple.fasta $test_dir/nonATCG.fasta $test_dir/polyA.fasta $test_d
 	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
 	| gzip > $test_dir/small.fastq.gz
 
-
 cat /dev/null > $test_dir/medium.fastq.gz
 for i in {1..700}; do cat $test_dir/small.fastq.gz >> $test_dir/medium.fastq.gz; done
 
@@ -102,6 +140,15 @@ cat /dev/null > $test_dir/large.fastq.gz
 for i in {1..100}; do cat $test_dir/medium.fastq.gz >> $test_dir/large.fastq.gz; done
 
 rm $test_dir/medium.fastq.gz
+
+# Generate fastq's from virus nucleotide seqs (to test aa/cfc mode)
+cat $test_dir/virus_nn_frame0.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_frame0.fastq.gz
+
+cat $test_dir/virus_nn_mixed_frames.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_mixed_frames.fastq.gz
 
 # Paired-end reads for basic7.idx index
 
@@ -177,6 +224,10 @@ JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ
 ### TEST - kallisto index ###
 
 echo "[INDEX]"
+
+# Test k=7 with --aa
+
+cmdexec "$kallisto index --aa -i $test_dir/basic7_cfc.idx -k 7 $test_dir/aa_ref.fasta"
 
 # Test k=7
 
@@ -260,6 +311,18 @@ then
     echo "Error: bustools could not be found"
     exit 1
 fi
+
+# Try --aa (with comma-free code index)
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_f0 -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_f0/output.s.bus -t 12 $test_dir/bus_aa_f0/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_f0/output.s.bus|cut -f1,2,4" edbc95eff07ccc4f34e5e357357cb46b
+checkcmdoutput "head -n 7 $test_dir/bus_aa_f0/run_info.json " 8a816727bf99304851907e91a9e4238a
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_mixedframes -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_mixedframes/output.s.bus -t 12 $test_dir/bus_aa_mixedframes/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_mixedframes/output.s.bus|cut -f1,2,4" 18a44f27b25053a0bb3db195473717d5
+checkcmdoutput "head -n 7 $test_dir/bus_aa_mixedframes/run_info.json " 49fd334d45490150ed97d231092ab9e4
 
 # Try custom "magic string" for -x with multiple large files and many threads
 

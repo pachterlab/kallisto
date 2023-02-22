@@ -28,7 +28,6 @@
 #include <htslib/sam.h>
 #endif // NO_HTSLIB
 
-
 class MasterProcessor;
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);

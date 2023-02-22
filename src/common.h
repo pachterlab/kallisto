@@ -8,11 +8,16 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
 #include "kseq.h"
 
 #ifdef _WIN64
 typedef unsigned int uint;
 #endif
+
+extern std::unordered_map<char, std::string>cfc_aa_map;
+extern std::unordered_map<std::string, std::string>cfc_map;
+extern std::string revcomp(const std::string s);
 
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
@@ -30,6 +35,7 @@ struct BUSOptions {
   std::vector<BUSOptionSubstr> seq;
 
   bool paired;
+  bool aa;
 
   int getBCLength() const {
     int r =0 ;
@@ -66,6 +72,7 @@ struct BUSOptions {
 
 struct ProgramOptions {
   bool verbose;
+  bool aa;
   int threads;
   std::string index;
   int k;
@@ -160,7 +167,8 @@ ProgramOptions() :
   batch_bus_write(false),
   batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  aa(false)
   {}
 };
 
