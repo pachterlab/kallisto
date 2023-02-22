@@ -410,11 +410,12 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   robin_hood::unordered_set<Kmer, KmerHash> kmers;
   
   auto isInvalidKmer = [](const char* s, const int k) {
-      int count_nonATCG = 2;
-      const int max_count_nonATCG = 0;
+      int count_nonATCG = 0;
+      const int max_count_nonATCG = 3;
       for (int i = 0; i < k; i++) {
         if (s[i] != 'A' && s[i] != 'T' && s[i] != 'C' && s[i] != 'G') {
-          if (++count_nonATCG > max_count_nonATCG) { return true; }
+          ++count_nonATCG;
+          if (count_nonATCG > max_count_nonATCG) { return true; }
         }
       }
       return false;
