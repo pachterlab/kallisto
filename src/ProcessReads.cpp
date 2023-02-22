@@ -368,11 +368,14 @@ void MasterProcessor::processReads() {
         id++;
         assert(id == num_ids);
       } else {
-        for (int i = 0; i < nt; i++,id++) {
+        int initial_id = id;
+        for (int i = 0; i < opt.threads; i++,id++) {
+          if (id >= nt) id = initial_id;
           workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
         }
+        id = initial_id+nt;
         // let the workers do their thing
-        for (int i = 0; i < nt; i++) {
+        for (int i = 0; i < opt.threads; i++) {
           workers[i].join(); //wait for them to finish
         }
       }
