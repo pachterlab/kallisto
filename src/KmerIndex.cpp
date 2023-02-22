@@ -301,6 +301,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   std::cerr << std::endl;
 
   robin_hood::unordered_set<Kmer, KmerHash> kmers;
+  
+  auto isInvalidKmer = [](const char* s, const int k) {
+      int count_nonATCG = 2;
+      const int max_count_nonATCG = 0;
+      for (int i = 0; i < k; i++) {
+        if (s[i] != 'A' && s[i] != 'T' && s[i] != 'C' && s[i] != 'G') {
+          if (++count_nonATCG > max_count_nonATCG) { return true; }
+        }
+      }
+      return false;
+  };
 
   // Main worker thread
   auto worker_function = [&](std::string& seq) {
@@ -319,12 +330,12 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Add leading kmer to set
         if (lb >= 0 && ub >= lb) {
-          kmers_.emplace(seq.substr(lb, k).c_str());
+          if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
         }
 
         // Add trailing kmer to set
         if (ub > lb && ub + k < seq.length()) {
-          kmers_.emplace(seq.substr(ub, k).c_str());
+          if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
         }
 
         lb = -1;
@@ -345,12 +356,12 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
     // Add last leading kmer to set
     if (lb >= 0 && ub >= lb) {
-      kmers_.emplace(seq.substr(lb, k).c_str());
+      if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
     }
 
     // Add last trailing kmer to set
     if (ub > lb && ub + k < seq.length()) {
-        kmers_.emplace(seq.substr(ub, k).c_str());
+        if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
     }
 
     return kmers_;
@@ -365,7 +376,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   size_t n = 0;
   int l = 0;
   size_t rlen = 0;
-  const size_t max_rlen = 1000000;
+  const size_t max_rlen = 640000;
   for (auto& fasta : dlist_fasta_files) {
     std::vector<std::string > seqs_v(max_threads_read, "");
     std::vector<std::thread> workers;
