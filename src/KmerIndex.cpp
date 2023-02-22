@@ -1194,11 +1194,12 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   }
   */
 
+  const char * s_char;
   if (cfc) {
     // translate nucleotide sequence to comma-free code (cfc)
     std::string s_string;
     s_string = nn_to_cfc (s);
-    s = s_string.c_str();
+    s_char = s_string.c_str();
 
     // if (countNonNN > 0) {
     //   std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequence" << std::endl << "           which were translated to 'NNN'" << std::endl;
@@ -1206,8 +1207,11 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     // // reset countNonNN
     // ::countNonNN = 0;
   }
+  else {
+    s_char = s;
+  }
 
-  KmerIterator kit(s), kit_end;
+  KmerIterator kit(s_char), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
   for (int i = 0;  kit != kit_end; ++i,++kit) {
