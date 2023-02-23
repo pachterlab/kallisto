@@ -39,7 +39,7 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) {
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
   Roaring u1 = intersectECs(v1);
   Roaring u3 = intersectECs(v3);
   Roaring u4 = intersectECs(v4);
