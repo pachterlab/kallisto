@@ -982,9 +982,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
         if (sample_id == 1) {
           opt.pseudo_read_files_supplied = true; // Only one sample supplied; use SR instead of batchSR to read
-        } else if (opt.threads > sample_id) {
-          opt.batch_bus = true;
-          opt.batch_bus_write = false;
         }
       }
     } else if (ret) {
@@ -1060,10 +1057,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
             }
             f1.clear();
             f2.clear();
-          }
-          if (opt.threads > opt.batch_ids.size()) {
-            opt.batch_bus = true;
-            opt.batch_bus_write = false;
           }
         }
       }
