@@ -369,8 +369,11 @@ void MasterProcessor::processReads() {
         assert(id == num_ids);
       } else {
         int initial_id = id;
+        std::cout << "A: id=initial_id=" << std::to_string(initial_id) << std::endl;
         for (int i = 0; i < opt.threads; i++,id++) {
+          std::cout << "B: i=" << std::to_string(i) << " id=" << std::to_string(id) << " nt=" << std::to_string(nt) << std::endl;
           if (id-initial_id >= nt) id = initial_id;
+          std::cout << "C: i=" << std::to_string(i) << " id=" << std::to_string(id) << " nt=" << std::to_string(nt) << std::endl;
           workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
         }
         id = initial_id+nt;
