@@ -371,6 +371,7 @@ void MasterProcessor::processReads() {
         int initial_id = id;
         for (int i = 0; i < opt.threads; i++,id++) {
           if (id-initial_id >= nt) id = initial_id;
+          std::cout << "C: i=" << std::to_string(i) << " id=" << std::to_string(id) << " nt=" << std::to_string(nt) << std::endl;
           workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
         }
         id = initial_id+nt;
@@ -581,6 +582,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
   } else {
     if (!opt.umi) {
+      std::cout << "UPDATING: id=" << std::to_string(id) << " local_id=" << std::to_string(local_id) << std::endl;
       auto& bc = tmp_bc[opt.pseudo_read_files_supplied ? 0 : id]; // id = batch (each batch gets its own thread) but pseudo_read_files_supplied means all read files belong to one and only one batch (batch 0)
       for (int i = 0; i < c.size(); i++) {
         bc[i] += c[i];
