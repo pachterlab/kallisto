@@ -147,7 +147,8 @@ void plaintext_aux(
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,
-    const std::string& call) {
+    const std::string& call,
+    const std::string& cardinality_clashes) {
   std::ofstream of;
   of.open( out_name );
 
@@ -184,8 +185,10 @@ void plaintext_aux(
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
     to_json("start_time", start_time, true) << std::endl <<
-    to_json("call", call, true, false) << std::endl <<
-    "}" << std::endl;
+    to_json("call", call, true, false) << std::endl;
+    if (cardinality_clashes != "")
+    of <<  to_json("n_frame_clashes", cardinality_clashes, false) << std::endl;
+    of << "}" << std::endl;
 
   of.close();
 }

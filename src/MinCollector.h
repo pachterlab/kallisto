@@ -28,7 +28,8 @@ struct MinCollector {
       mean_fl(0.0),
       has_mean_fl(false),
       mean_fl_trunc(MAX_FRAG_LEN, 0.0),
-      has_mean_fl_trunc(false)
+      has_mean_fl_trunc(false),
+      cardinality_clashes(0)
       // eff_len_cache(MAX_FRAG_LEN, 0.0)
        {
          if (opt.fld != 0.0) {
@@ -96,6 +97,8 @@ struct MinCollector {
 
   std::vector<double> mean_fl_trunc;
   bool has_mean_fl_trunc;
+
+  int cardinality_clashes;
 };
 
 std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y);

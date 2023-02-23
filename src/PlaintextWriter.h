@@ -43,7 +43,8 @@ void plaintext_aux(
     const std::string& version,
     const std::string& index_v,
     const std::string& start_time,
-    const std::string& call);
+    const std::string& call,
+    const std::string& cardinality_clashes="");
 
 void writeBatchMatrix(
   const std::string &prefix,

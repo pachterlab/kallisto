@@ -2262,7 +2262,8 @@ int main(int argc, char *argv[]) {
           KALLISTO_VERSION,
           std::string(std::to_string(index.INDEX_VERSION)),
           start_time,
-          call);
+          call,
+          opt.aa ? std::to_string(collection.cardinality_clashes) : "");
 
         cerr << endl;
 
@@ -2430,7 +2431,8 @@ int main(int argc, char *argv[]) {
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
-            call);
+            call,
+            opt.aa ? std::to_string(collection.cardinality_clashes) : "");
 
         if (opt.pseudobam) {
           std::vector<double> fl_means(index.target_lens_.size(),0.0);
@@ -2557,7 +2559,8 @@ int main(int argc, char *argv[]) {
             KALLISTO_VERSION,
             std::string(std::to_string(index.INDEX_VERSION)),
             start_time,
-            call);
+            call,
+            opt.aa ? std::to_string(collection.cardinality_clashes) : "");
 
         plaintext_writer(opt.output + "/abundance.tsv", em.target_names_,
             em.alpha_, em.eff_lens_, index.target_lens_);
