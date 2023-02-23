@@ -184,7 +184,7 @@ void plaintext_aux(
     to_json("p_unique", p_uniq_s, false) << std::endl <<
     to_json("kallisto_version", version, true) << std::endl <<
     to_json("index_version", index_v, false) << std::endl <<
-    to_json("start_time", start_time, true) << std::endl <<;
+    to_json("start_time", start_time, true) << std::endl;
     if (cardinality_clashes != "") {
     of << to_json("call", call, true) << std::endl;
     of <<  to_json("n_frame_clashes", cardinality_clashes, false, false) << std::endl;
