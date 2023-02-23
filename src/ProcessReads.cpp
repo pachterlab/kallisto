@@ -370,7 +370,7 @@ void MasterProcessor::processReads() {
       } else {
         int initial_id = id;
         for (int i = 0; i < opt.threads; i++,id++) {
-          if (id >= nt) id = initial_id;
+          if (id-initial_id >= nt) id = initial_id;
           workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
         }
         id = initial_id+nt;
