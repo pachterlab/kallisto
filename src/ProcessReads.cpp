@@ -1479,7 +1479,7 @@ void BUSProcessor::processBuffer() {
   memset(&umi_len[0], 0, sizeof(umi_len));
 
   const BUSOptions& busopt = mp.opt.busOptions;
-  bool no_technology = mp.opt.technology.empty());
+  bool no_technology = mp.opt.technology.empty();
   bool bulk_like = (mp.opt.batch_bus && no_technology) || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
 
   auto &tcount = mp.tlencount;
