@@ -1140,7 +1140,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           read_first_batch_file_line = true;
           nfiles_per_batch = f.size();
         }
-        if (n_files_per_batch != f.size()) {
+        if (nfiles_per_batch != f.size()) {
           cerr << ERROR_STR << " batch file malformatted" << endl;
           ret = false;
           break;
