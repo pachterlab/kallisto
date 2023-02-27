@@ -1096,11 +1096,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     }
     return ret;
   } else { // User supplied -x (technology option)
+    int nfiles_per_batch = 0;
     if (opt.batch_mode) { // using -x with batch
       cerr << "[bus] will try running read files supplied in batch file" << endl;
-      if (!opt.single_end) {
-        cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
-      }
       if (opt.files.size() != 0) {
         cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
         ret = false;
@@ -1114,7 +1112,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       // open the file, parse and fill the batch_files values
       std::ifstream bfile(opt.batch_file_name);
       std::string line;
-      std::string id,f1,f2;
+      std::string id;
+      std::vector<std::string> f;
       bool read_first_batch_file_line = false;
       while (std::getline(bfile,line)) {
         if (line.size() == 0) {
@@ -1126,50 +1125,27 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           continue;
         }
         opt.batch_ids.push_back(id);
-        ss >> f1 >> f2;
+        std::string s;
+        while (ss >> s) {
+          f.push_back(s);
+          opt.files.push_back(s);
+          intstat = stat(s.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << s << endl;
+            ret = false;
+          }
+        }
+        opt.batch_files.push_back(f);
         if (!read_first_batch_file_line) {
-          if (f2.empty()) {
-            opt.single_end = true;
-          } else {
-            opt.single_end = false;
-          }
           read_first_batch_file_line = true;
+          nfiles_per_batch = f.size();
         }
-        if (opt.single_end) {
-          opt.files.push_back(f1);
-          opt.batch_files.push_back({f1});
-          intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
-          }
-          if (!f2.empty()) {
-            cerr << ERROR_STR << " batch file malformatted" << endl;
-            ret = false;
-            break;
-          }
-        } else {
-          opt.files.push_back(f1);
-          opt.files.push_back(f2);
-          opt.batch_files.push_back({f1, f2});
-          intstat = stat(f1.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f1 << endl;
-            ret = false;
-          }
-          if (f2.empty()) {
-            cerr << ERROR_STR << " batch file malformatted" << endl;
-            ret = false;
-            break;
-          }
-          intstat = stat(f2.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << f2 << endl;
-            ret = false;
-          }
+        if (n_files_per_batch != f.size()) {
+          cerr << ERROR_STR << " batch file malformatted" << endl;
+          ret = false;
+          break;
         }
-        f1.clear();
-        f2.clear();
+        f.clear();
       }
       if (opt.batch_ids.size() < opt.threads && !(opt.num || opt.pseudobam) && !opt.record_batch_bus_barcode) { // If we've saturated num batches in threads and don't actually need batches
         opt.batch_mode = false; // Don't need these; just proceed as normal
@@ -1440,6 +1416,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           ret = false;
         }
       }
+    }
+    if (nfiles_per_batch != 0 && nfiles_per_batch != busopt.nfiles) {
+      cerr << "Wrong number of files per batch for technology: " << opt.technology << endl;
     }
     if (opt.batch_mode) {
       opt.files.clear(); // Don't need these
