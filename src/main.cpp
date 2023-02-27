@@ -918,10 +918,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
            << ", but only " << n << " cores on the machine" << endl;
     }
   }
-  if (!opt.technology.empty() && opt.batch_mode) {
-    cerr << "Error: cannot specify both -x and --batch" << endl;
-    ret = false;
-  }
 
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
@@ -1093,7 +1089,85 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
     }
     return ret;
-  } else {
+  } else { // User supplied -x (technology option)
+    if (opt.batch_mode) { // using -x with batch
+      cerr << "[bus] will try running read files supplied in batch file" << endl;
+      if (!opt.single_end) {
+        cerr << "[bus] --paired ignored; single/paired-end is inferred from number of files supplied" << endl;
+      }
+      if (opt.files.size() != 0) {
+        cerr << ERROR_STR << " cannot specify batch mode and supply read files" << endl;
+        ret = false;
+      }
+      struct stat stFileInfo;
+      auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
+      if (intstat != 0) {
+        cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
+        ret = false;
+      }
+      // open the file, parse and fill the batch_files values
+      std::ifstream bfile(opt.batch_file_name);
+      std::string line;
+      std::string id,f1,f2;
+      bool read_first_batch_file_line = false;
+      while (std::getline(bfile,line)) {
+        if (line.size() == 0) {
+          continue;
+        }
+        std::stringstream ss(line);
+        ss >> id;
+        if (id[0] == '#') {
+          continue;
+        }
+        opt.batch_ids.push_back(id);
+        ss >> f1 >> f2;
+        if (!read_first_batch_file_line) {
+          if (f2.empty()) {
+            opt.single_end = true;
+          } else {
+            opt.single_end = false;
+          }
+          read_first_batch_file_line = true;
+        }
+        if (opt.single_end) {
+          opt.files.push_back(f1);
+          intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+          if (!f2.empty()) {
+            cerr << ERROR_STR << " batch file malformatted" << endl;
+            ret = false;
+            break;
+          }
+        } else {
+          opt.files.push_back(f1);
+          opt.files.push_back(f2);
+          intstat = stat(f1.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f1 << endl;
+            ret = false;
+          }
+          if (f2.empty()) {
+            cerr << ERROR_STR << " batch file malformatted" << endl;
+            ret = false;
+            break;
+          }
+          intstat = stat(f2.c_str(), &stFileInfo);
+          if (intstat != 0) {
+            cerr << ERROR_STR << " file not found " << f2 << endl;
+            ret = false;
+          }
+        }
+        f1.clear();
+        f2.clear();
+      }
+      // TODO: write out supplementary barcodes corresponding to batch
+      // TODO: how to multithread batches without -x?
+      opt.batch_mode = false; // now that files are all entered, process as normal
+    }
+    if (!ret) return false;
     auto& busopt = opt.busOptions;
     busopt.aa = opt.aa;
 
