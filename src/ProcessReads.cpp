@@ -1479,7 +1479,8 @@ void BUSProcessor::processBuffer() {
   memset(&umi_len[0], 0, sizeof(umi_len));
 
   const BUSOptions& busopt = mp.opt.busOptions;
-  bool bulk_like = mp.opt.batch_bus || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
+  bool no_technology = mp.opt.technology.empty());
+  bool bulk_like = (mp.opt.batch_bus && no_technology) || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
 
   auto &tcount = mp.tlencount;
   if (mp.opt.batch_bus) {
@@ -1648,7 +1649,7 @@ void BUSProcessor::processBuffer() {
     if (bad_bc) {
       continue;
     }
-    if (mp.opt.batch_bus) {
+    if (mp.opt.batch_bus && no_technology) {
       ignore_umi = true;
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
       memcpy(bc, binaryToString(id, blen).c_str(), blen); // Create fake barcode that identifies the batch

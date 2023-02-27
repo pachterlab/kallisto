@@ -1131,6 +1131,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
         if (opt.single_end) {
           opt.files.push_back(f1);
+          opt.batch_files.push_back({f1});
           intstat = stat(f1.c_str(), &stFileInfo);
           if (intstat != 0) {
             cerr << ERROR_STR << " file not found " << f1 << endl;
@@ -1144,6 +1145,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         } else {
           opt.files.push_back(f1);
           opt.files.push_back(f2);
+          opt.batch_files.push_back({f1, f2});
           intstat = stat(f1.c_str(), &stFileInfo);
           if (intstat != 0) {
             cerr << ERROR_STR << " file not found " << f1 << endl;
@@ -1163,9 +1165,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         f1.clear();
         f2.clear();
       }
-      // TODO: write out supplementary barcodes corresponding to batch
-      // TODO: how to multithread batches without -x?
-      opt.batch_mode = false; // now that files are all entered, process as normal
+      // TODO: write out supplementary barcodes corresponding to batch (in which case, modify if statement below)
+      if (opt.batch_ids.size() < opt.threads && !(opt.num || opt.pseudobam)) { // If we've saturated num batches in threads and don't actually need batches
+        opt.batch_mode = false; // Don't need these; just proceed as normal
+        opt.batch_files.clear();
+        opt.batch_ids.clear();
+      }
     }
     if (!ret) return false;
     auto& busopt = opt.busOptions;
@@ -1430,6 +1435,10 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           ret = false;
         }
       }
+    }
+    if (opt.batch_mode) {
+      opt.files.clear(); // Don't need these
+      opt.batch_bus = true;
     }
   }
 
