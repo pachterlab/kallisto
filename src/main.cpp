@@ -530,6 +530,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int strand_RF_flag = 0;
   int unstranded_flag = 0;
   int interleaved_flag = 0;
+  int batch_barcodes_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:T:B:N:";
   static struct option long_options[] = {
@@ -553,6 +554,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"aa", no_argument, &aa_flag, 1},
     {"inleaved", no_argument, &interleaved_flag, 1},
     {"numReads", required_argument, 0, 'N'},
+    {"batch-barcodes", no_argument, &batch_barcodes_flag, 1},
     {0,0,0,0}
   };
 
@@ -663,6 +665,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   
   if (interleaved_flag) {
     opt.input_interleaved_nfiles = 1;
+  }
+  
+  if (batch_barcodes_flag) {
+    opt.record_batch_bus_barcode = true;
   }
   
   opt.single_overhang = true;
@@ -1165,8 +1171,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         f1.clear();
         f2.clear();
       }
-      // TODO: write out supplementary barcodes corresponding to batch (in which case, modify if statement below)
-      if (opt.batch_ids.size() < opt.threads && !(opt.num || opt.pseudobam)) { // If we've saturated num batches in threads and don't actually need batches
+      if (opt.batch_ids.size() < opt.threads && !(opt.num || opt.pseudobam) && !opt.record_batch_bus_barcode) { // If we've saturated num batches in threads and don't actually need batches
         opt.batch_mode = false; // Don't need these; just proceed as normal
         opt.batch_files.clear();
         opt.batch_ids.clear();
@@ -2084,6 +2089,7 @@ void usageBus() {
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
        << "                              (optional for --genomebam, but recommended)" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
+       << "    --batch-barcodes          Records both batch and extracted barcode in BUS file" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 }
 
