@@ -2315,7 +2315,7 @@ int main(int argc, char *argv[]) {
         }
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
           transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
@@ -2451,7 +2451,7 @@ int main(int argc, char *argv[]) {
 
         // write transcript names
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
           transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
@@ -2804,7 +2804,7 @@ int main(int argc, char *argv[]) {
         Transcriptome model; // empty model
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
           transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
