@@ -217,8 +217,17 @@ public:
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
 
         if (opt.batch_bus) {
-          writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
-        } else {
+          if (opt.technology.empty()) { // no_technology : No UMIs, no barcodes, so just have batch=barcode
+            writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
+          } else if (opt.record_batch_bus_barcode) { // We want to record batch in barcode
+            if (opt.busOptions.bc[0].fileno != -1) // We want to push batch at front of extracted barcode
+              writeBUSHeader(busf_out, 32, opt.busOptions.getUMILength());
+            else // We don't have an extracted barcode so barcode=batch
+              writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, opt.busOptions.getUMILength());
+          } else { // We don't care about recording batch in barcode, so we follow the default technology specification
+            writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength()));
+          }
+        } else { // No batches, so we follow the default technology specification
           writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
         }
       }
