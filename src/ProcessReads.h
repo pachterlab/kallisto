@@ -225,7 +225,7 @@ public:
             else // We don't have an extracted barcode so barcode=batch
               writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, opt.busOptions.getUMILength());
           } else { // We don't care about recording batch in barcode, so we follow the default technology specification
-            writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength()));
+            writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
           }
         } else { // No batches, so we follow the default technology specification
           writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
