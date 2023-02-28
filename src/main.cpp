@@ -2315,8 +2315,8 @@ int main(int argc, char *argv[]) {
         }
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (const auto &t : index.target_names_) {
-          transout_f << t << "\n";
+        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+          transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
 
@@ -2451,8 +2451,8 @@ int main(int argc, char *argv[]) {
 
         // write transcript names
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (const auto &t : index.target_names_) {
-          transout_f << t << "\n";
+        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+          transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
 
@@ -2804,8 +2804,8 @@ int main(int argc, char *argv[]) {
         Transcriptome model; // empty model
 
         std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (const auto &t : index.target_names_) {
-          transout_f << t << "\n";
+        for (size_t i = 0; i < onlist_sequences.cardinality(); i++) {
+          transout_f << index.target_names_[i] << "\n";
         }
         transout_f.close();
         std::string prefix = opt.output + "/matrix";
