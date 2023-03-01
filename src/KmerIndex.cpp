@@ -155,7 +155,7 @@ std::pair<size_t,size_t> KmerIndex::getECInfo() const {
 
 void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) {
   // read input
-  robin_hood::unordered_set<std::string> unique_names;
+  u_set_<std::string> unique_names;
 
   k = opt.k;
   for (auto& fasta : opt.transfasta) {
@@ -405,7 +405,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   for (std::string s : opt.d_list) std::cerr << " \"" << s << "\""; 
   std::cerr << std::endl;
 
-  robin_hood::unordered_set<Kmer, KmerHash> kmers;
+  u_set_<Kmer, KmerHash> kmers;
   
   auto isInvalidKmer = [](const char* s, const int k) {
       int count_nonATCG = 0;
@@ -426,7 +426,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     int pos = 0;
 
     std::transform(seq.begin(), seq.end(),seq.begin(), ::toupper);
-    robin_hood::unordered_set<Kmer, KmerHash> kmers_;
+    u_set_<Kmer, KmerHash> kmers_;
     const_UnitigMap<Node> um;
     int seqlen = seq.size() - k + 1; // number of k-mers
     while (pos < seqlen) {

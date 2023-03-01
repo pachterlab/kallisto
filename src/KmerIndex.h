@@ -15,7 +15,6 @@
 #include "hash.hpp"
 #include "CompactedDBG.hpp"
 #include "Node.hpp"
-#include "robin_hood.h"
 
 std::string AA_to_cfc (const std::string aa_string);
 const char * nn_to_cfc (const char * s, int l);
@@ -46,7 +45,7 @@ struct RoaringHasher {
     return r;
   }
 };
-typedef robin_hood::unordered_flat_map<Roaring, int32_t, RoaringHasher> EcMapInv;
+typedef u_map_<Roaring, int32_t, RoaringHasher> EcMapInv;
 
 struct KmerEntry {
   int32_t contig; // id of contig

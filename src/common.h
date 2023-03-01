@@ -11,6 +11,22 @@
 #include <unordered_map>
 #include "kseq.h"
 
+#if defined(_MSVC_LANG)
+#    define KALLISTO_CPP_VERSION _MSVC_LANG
+#else
+#    define KALLISTO_CPP_VERSION __cplusplus
+#endif
+#if KALLISTO_CPP_VERSION < 201703L
+#include "robin_hood.h"
+#define u_map_ robin_hood::unordered_flat_map
+#define u_set_ robin_hood::unordered_set
+#else
+#include "unordered_dense.h"
+#define u_map_ ankerl::unordered_dense::map
+#define u_set_ ankerl::unordered_dense::set
+#endif
+
+
 #ifdef _WIN64
 typedef unsigned int uint;
 #endif
