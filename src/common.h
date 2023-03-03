@@ -89,6 +89,7 @@ struct BUSOptions {
 struct ProgramOptions {
   bool verbose;
   bool aa;
+  bool distinguish;
   int threads;
   std::string index;
   int k;
@@ -186,7 +187,8 @@ ProgramOptions() :
   batch_bus(false),
   inspect_thorough(false),
   single_overhang(false),
-  aa(false)
+  aa(false),
+  distinguish(false)
   {}
 };
 

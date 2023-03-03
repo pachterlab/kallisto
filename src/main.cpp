@@ -49,12 +49,14 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int verbose_flag = 0;
   int make_unique_flag = 0;
   int aa_flag = 0;
+  int distinguish_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
     {"make-unique", no_argument, &make_unique_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
+    {"distinguish", no_argument, &distinguish_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -118,6 +120,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (aa_flag) {
     opt.aa = true;
+  }
+  if (distinguish_flag) {
+    opt.distinguish = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -1563,6 +1568,21 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
     cerr << "Error: invalid max ec size " << opt.max_ec_size << endl;
     ret = false;
   }
+  
+  if (opt.distinguish && !opt.d_list.empty()) {
+    cerr << "Error: --distinguish incompatible with --d-list" << endl;
+    ret = false;
+  }
+  
+  if (opt.distinguish && opt.max_ec_size != 0) {
+    cerr << "Error: --distinguish incompatible with setting max ec size" << endl;
+    ret = false;
+  }
+  
+  if (opt.distinguish && opt.transfasta.size() < 2) {
+    cerr << "Error: --distinguish requires at least two FASTA files" << endl;
+    ret = false;
+  }
 
   return ret;
 }
@@ -2084,6 +2104,7 @@ void usageIndex() {
        << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from an amino acid reference" << endl
+       << "    --distinguish           Generate index representing k-mers unique to each FASTA " << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl
@@ -2247,7 +2268,8 @@ int main(int argc, char *argv[]) {
 
         std::ofstream out;
         out.open(opt.index, std::ios::out | std::ios::binary);
-        index.BuildTranscripts(opt, out);
+        if (opt.distinguish) index.BuildDistinguishingGraph(opt);
+        else index.BuildTranscripts(opt, out);
         index.write(out, opt.threads);
 
       }

@@ -10,6 +10,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <string>
+#include "ColoredCDBG.hpp"
 
 // --aa option helper functions
 int countNonAA=0;
@@ -305,6 +306,154 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   BuildEquivalenceClasses(opt, tmp_file);
 
   std::remove(tmp_file.c_str());
+}
+
+void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt) {
+  k = opt.k;
+  std::vector<std::string> tmp_files;
+  for (auto& fasta : opt.transfasta) {
+    std::cerr << "[build] loading fasta file " << fasta
+              << std::endl;
+    tmp_files.push_back(generate_tmp_file(opt.index + fasta));
+  }
+  std::cerr << "[build] k-mer length: " << k << std::endl;
+  
+  std::vector<std::ofstream> ofs;
+  for (auto tmp_file : tmp_files) ofs.emplace_back(std::ofstream{ tmp_file });
+  num_trans = 0;
+  
+  // read fasta file using kseq
+  gzFile fp = 0;
+  kseq_t *seq;
+  int l = 0;
+  std::mt19937 gen(42);
+  int countNonNucl = 0;
+  int countUNuc = 0;
+  
+  int i = 0;
+  for (auto& fasta : opt.transfasta) {
+    fp = gzopen(fasta.c_str(), "r");
+    seq = kseq_init(fp);
+    while (true) {
+      l = kseq_read(seq);
+      if (l <= 0) {
+        break;
+      }
+      std::string str = seq->seq.s;
+      auto n = str.size();
+      for (auto i = 0; i < n; i++) {
+        char c = str[i];
+        c = ::toupper(c);
+        if (c=='U') {
+          str[i] = 'T';
+          countUNuc++;
+        } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
+          countNonNucl++;
+        }
+      }
+      std::transform(str.begin(), str.end(),str.begin(), ::toupper);
+      ofs[i] << ">" << num_trans++ << "\n" << str << std::endl;
+      target_lens_.push_back(seq->seq.l);
+      std::string name(seq->name.s);
+      size_t p = name.find(' ');
+      if (p != std::string::npos) {
+        name = name.substr(0,p);
+      }
+    }
+    
+    gzclose(fp);
+    fp=0;
+    i++;
+  }
+  
+  for (auto& of : ofs) of.close();
+  
+  if (countNonNucl > 0) {
+    std::cerr << "[build] warning: counted " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl;
+  }
+  
+  if (countUNuc > 0) {
+    std::cerr << "[build] warning: replaced " << countUNuc << " U characters with Ts" << std::endl;
+  }
+  
+  CCDBG_Build_opt c_opt;
+  c_opt.k = k;
+  c_opt.nb_threads = opt.threads;
+  c_opt.build = true;
+  c_opt.clipTips = false;
+  c_opt.deleteIsolated = false;
+  c_opt.verbose = true;
+  c_opt.filename_ref_in = tmp_files;
+
+  if (opt.g > 0) { // If minimizer length supplied, override the default
+    c_opt.g = opt.g;
+  } else { // Define minimizer length defaults
+    int g = k-8;
+    if (k <= 15) {
+      g = k-2;
+    } else if (k <= 17) {
+      g = k-4;
+    } else if (k <= 19) {
+      g = k-6;
+    }
+    c_opt.g = g;
+  }
+
+  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
+  std::ofstream of(tmp_file2);
+  ColoredCDBG ccdbg = ColoredCDBG<void>(k, c_opt.g);
+  ccdbg.buildGraph(c_opt);
+  ccdbg.buildColors(c_opt);
+  //u_map_<Kmer, uint8_t> kmer_cnt; // only add to map if the k-mer is monochromatic // error: type 'std::hash<Kmer>' does not provide a call operator
+  std::vector<std::vector<Kmer>> kmer_sets;
+  kmer_sets.resize(tmp_files.size()); // Create one set for each color
+  std::vector<std::vector<Kmer>> final_kmer_sets;
+  final_kmer_sets.resize(tmp_files.size());
+  for (const auto& unitig : ccdbg) {
+    kmer_sets.clear();
+    kmer_sets.resize(tmp_files.size());
+    const UnitigColors* uc = unitig.getData()->getUnitigColors(unitig);
+    UnitigColors::const_iterator it_uc = uc->begin(unitig);
+    UnitigColors::const_iterator it_uc_end = uc->end();
+    // DEBUG:
+    //std::cout << unitig.referenceUnitigToString() << std::endl;
+    for (; it_uc != it_uc_end; ++it_uc) {
+      kmer_sets[it_uc.getColorID()].reserve(4096);
+      kmer_sets[it_uc.getColorID()].emplace_back(unitig.getUnitigKmer(it_uc.getKmerPosition()).rep());
+      // DEBUG:
+      //std::cout << it_uc.getColorID() << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).rep().toString() << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).toString() << " " << it_uc.getKmerPosition() << std::endl;
+    }
+    for (auto &kmer_set : kmer_sets) {
+      std::sort(kmer_set.begin(), kmer_set.end());
+    }
+    for (int i = 0; i < kmer_sets.size(); i++) { // Get color-specific k-mers
+      std::vector<Kmer> monochromatic_kmers;
+      monochromatic_kmers = kmer_sets[i];
+      auto &curr_set = kmer_sets[i];
+      for (int j = 0; j < kmer_sets.size(); j++) {
+        if (j != i) {
+          std::vector<Kmer> tmp_set;
+          auto &other_set = kmer_sets[j];
+          std::set_difference(monochromatic_kmers.begin(), monochromatic_kmers.end(),
+                                        other_set.begin(), other_set.end(),
+                                        std::back_inserter(tmp_set));
+          monochromatic_kmers = std::move(tmp_set);
+        }
+      }
+      final_kmer_sets[i].insert(final_kmer_sets[i].end(), monochromatic_kmers.begin(), monochromatic_kmers.end());
+    }
+  }
+  for (size_t i = 0; i < final_kmer_sets.size(); i++) {
+    const auto& kmer_set = final_kmer_sets[i];
+    // DEBUG:
+    //for (auto x : kmer_set) std::cout << i << " " << x.toString() << std::endl;
+  }
+  
+  for (auto tmp_file : tmp_files) std::remove(tmp_file.c_str());
+  
+  of.close();
+  std::remove(tmp_file2.c_str());
+  exit(0);
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out) {
