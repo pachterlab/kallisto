@@ -2268,7 +2268,7 @@ int main(int argc, char *argv[]) {
 
         std::ofstream out;
         out.open(opt.index, std::ios::out | std::ios::binary);
-        if (opt.distinguish) index.BuildDistinguishingGraph(opt);
+        if (opt.distinguish) index.BuildDistinguishingGraph(opt, out);
         else index.BuildTranscripts(opt, out);
         index.write(out, opt.threads);
 

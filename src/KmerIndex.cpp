@@ -308,7 +308,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   std::remove(tmp_file.c_str());
 }
 
-void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt) {
+void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstream& out) {
   k = opt.k;
   std::vector<std::string> tmp_files;
   for (auto& fasta : opt.transfasta) {
@@ -366,7 +366,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt) {
     i++;
   }
   
-  for (auto& of : ofs) of.close();
+  for (auto& of : ofs) of.close(); // Close files now that we've outputted everything
   
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: counted " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl;
@@ -399,19 +399,17 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt) {
     c_opt.g = g;
   }
 
-  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
-  std::ofstream of(tmp_file2);
+  std::cerr << "[build] Building colored graph" << std::endl;
   ColoredCDBG ccdbg = ColoredCDBG<void>(k, c_opt.g);
   ccdbg.buildGraph(c_opt);
   ccdbg.buildColors(c_opt);
   //u_map_<Kmer, uint8_t> kmer_cnt; // only add to map if the k-mer is monochromatic // error: type 'std::hash<Kmer>' does not provide a call operator
-  std::vector<std::vector<Kmer>> kmer_sets;
-  kmer_sets.resize(tmp_files.size()); // Create one set for each color
   std::vector<std::vector<Kmer>> final_kmer_sets;
-  final_kmer_sets.resize(tmp_files.size());
+  final_kmer_sets.resize(tmp_files.size()); // Create one set for each color
+  std::cerr << "[build] Extracting k-mers from graph" << std::endl;
   for (const auto& unitig : ccdbg) {
-    kmer_sets.clear();
-    kmer_sets.resize(tmp_files.size());
+    std::vector<std::vector<Kmer>> kmer_sets;
+    kmer_sets.resize(tmp_files.size()); // Create one set for each color
     const UnitigColors* uc = unitig.getData()->getUnitigColors(unitig);
     UnitigColors::const_iterator it_uc = uc->begin(unitig);
     UnitigColors::const_iterator it_uc_end = uc->end();
@@ -443,17 +441,67 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt) {
       final_kmer_sets[i].insert(final_kmer_sets[i].end(), monochromatic_kmers.begin(), monochromatic_kmers.end());
     }
   }
+  ccdbg.clear(); // Free memory associated with the colored compact dBG
+  for (auto tmp_file : tmp_files) std::remove(tmp_file.c_str()); // Remove temp files needed to make colored graph
+  std::cerr << "[build] Writing k-mers to temporary file" << std::endl;
+  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
+  std::ofstream of(tmp_file2);
   for (size_t i = 0; i < final_kmer_sets.size(); i++) {
-    const auto& kmer_set = final_kmer_sets[i];
-    // DEBUG:
+    auto& kmer_set = final_kmer_sets[i];
+    for (const auto& kmer : kmer_set) of << ">" << std::to_string(i) << "\n" << kmer.toString() << "\n";
+    of.flush();
+    // DEBUG: 
     //for (auto x : kmer_set) std::cout << i << " " << x.toString() << std::endl;
+    std::vector<Kmer>().swap(kmer_set); // potentially free up memory
+  }
+  of.close();
+  std::vector<std::vector<Kmer> >().swap(final_kmer_sets); // potentially free up memory
+
+  std::cerr << "[build] Building graph from k-mers" << std::endl;
+  BuildDeBruijnGraph(opt, tmp_file2, out);
+
+  std::cerr << "[build] creating equivalence classes ... " << std::endl;
+  
+  std::vector<std::vector<TRInfo> > trinfos(dbg.size());
+  UnitigMap<Node> um;
+  uint32_t sense = 0x80000000, missense = 0;
+  // Prepare some variables:
+  num_trans = tmp_files.size();
+  target_names_.clear();
+  target_lens_.clear();
+  for (size_t i = 0; i < num_trans; i++) {
+    target_names_.push_back(std::to_string(i));
+    target_lens_.push_back(k);
   }
   
-  for (auto tmp_file : tmp_files) std::remove(tmp_file.c_str());
-  
-  of.close();
+  std::ifstream infile(tmp_file2);
+  std::string line;
+  //for (size_t i = 0; i < seqs.size(); ++i) {
+  int current_color = 0;
+  while (std::getline(infile, line)) {
+    if (line[0] == '>') {
+      current_color = std::atoi(line.c_str()+1);
+      continue;
+    }
+    const auto& seq = line;
+    um = dbg.findUnitig(seq.c_str(), 0, seq.size());
+    if (!um.isEmpty) {
+      const Node* n = um.getData();
+      TRInfo tr;
+      tr.trid = current_color;
+      tr.pos = (0) | (!um.strand ? sense : missense);
+      tr.start = um.dist;
+      tr.stop  = um.dist + um.len;
+      trinfos[n->id].push_back(tr);
+    }
+  }
+  infile.close();
   std::remove(tmp_file2.c_str());
-  exit(0);
+  PopulateMosaicECs(trinfos);
+  
+  std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
+  std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
+
 }
 
 void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string& tmp_file, std::ofstream& out) {
