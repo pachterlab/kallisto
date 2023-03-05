@@ -353,12 +353,12 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
       ofs[i] << ">" << num_trans++ << "\n" << str << std::endl;
-      target_lens_.push_back(seq->seq.l);
-      std::string name(seq->name.s);
-      size_t p = name.find(' ');
-      if (p != std::string::npos) {
-        name = name.substr(0,p);
-      }
+      //target_lens_.push_back(seq->seq.l);
+      //std::string name(seq->name.s);
+      //size_t p = name.find(' ');
+      //if (p != std::string::npos) {
+      //  name = name.substr(0,p);
+      //}
     }
     
     gzclose(fp);
@@ -403,7 +403,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   ColoredCDBG ccdbg = ColoredCDBG<void>(k, c_opt.g);
   ccdbg.buildGraph(c_opt);
   ccdbg.buildColors(c_opt);
-  //u_map_<Kmer, uint8_t> kmer_cnt; // only add to map if the k-mer is monochromatic // error: type 'std::hash<Kmer>' does not provide a call operator
   std::vector<std::vector<Kmer>> final_kmer_sets;
   final_kmer_sets.resize(tmp_files.size()); // Create one set for each color
   std::cerr << "[build] Extracting k-mers from graph" << std::endl;
@@ -462,7 +461,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
 
   std::cerr << "[build] creating equivalence classes ... " << std::endl;
   
-  std::vector<std::vector<TRInfo> > trinfos(dbg.size());
+  //std::vector<std::vector<TRInfo> > trinfos(dbg.size());
   UnitigMap<Node> um;
   uint32_t sense = 0x80000000, missense = 0;
   // Prepare some variables:
@@ -486,18 +485,23 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     const auto& seq = line;
     um = dbg.findUnitig(seq.c_str(), 0, seq.size());
     if (!um.isEmpty) {
-      const Node* n = um.getData();
+      Node* n = um.getData();
       TRInfo tr;
       tr.trid = current_color;
       tr.pos = (0) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
-      trinfos[n->id].push_back(tr);
+      //trinfos[n->id].push_back(tr);
+      SparseVector<uint32_t> u(true);
+      u.insert(tr.trid, tr.pos);
+      n->ec.insert(um.dist, um.dist+um.len, std::move(u));
+      // DEBUG:
+      // std::cout << tr.trid << " " << n->id << ": " << um.strand << " " << tr.start << " " << tr.stop << std::endl;
     }
   }
   infile.close();
   std::remove(tmp_file2.c_str());
-  PopulateMosaicECs(trinfos);
+  //PopulateMosaicECs(trinfos);
   
   std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
