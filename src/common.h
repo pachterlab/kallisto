@@ -12,9 +12,9 @@
 #include "kseq.h"
 
 #if defined(_MSVC_LANG)
-#    define KALLISTO_CPP_VERSION _MSVC_LANG
+#define KALLISTO_CPP_VERSION _MSVC_LANG
 #else
-#    define KALLISTO_CPP_VERSION __cplusplus
+#define KALLISTO_CPP_VERSION __cplusplus
 #endif
 #if KALLISTO_CPP_VERSION < 201703L
 #include "robin_hood.h"
