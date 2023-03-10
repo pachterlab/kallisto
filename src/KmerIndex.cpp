@@ -523,7 +523,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
     c_opt.g = opt.g;
   } else { // Define minimizer length defaults
     int g = k-8;
-    if (k <= 15) {
+    if (k <= 13) {
       g = k-2;
     } else if (k <= 17) {
       g = k-4;
