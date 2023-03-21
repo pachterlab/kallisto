@@ -1652,11 +1652,11 @@ void BUSProcessor::processBuffer() {
     if (mp.opt.batch_bus && no_technology) {
       ignore_umi = true;
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
-      memcpy(bc, binaryToString(id, blen).c_str(), blen); // Create fake barcode that identifies the batch
+      memcpy(bc, binaryToString(mp.batch_id_mapping[id], blen).c_str(), blen); // Create fake barcode that identifies the batch
     } else if (mp.opt.batch_bus && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno == -1) {
       // Don't care about barcodes (-x supplied) but still want to record batch ID in barcode
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
-      memcpy(bc, binaryToString(id, blen).c_str(), blen);
+      memcpy(bc, binaryToString(mp.batch_id_mapping[id], blen).c_str(), blen);
     }
     bc[blen] = 0;
 

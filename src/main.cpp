@@ -2369,13 +2369,13 @@ int main(int argc, char *argv[]) {
         writeCellIds(cellnamesfilename, opt.batch_ids);
         if (opt.batch_bus || opt.batch_bus_write) {
           if (opt.batch_bus_write) {
-            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmapinv.size());
+            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmapinv.size(), MP.batch_id_mapping);
           }
           if (!MP.batchCounts.empty()) {
             // Write out fake barcodes that identify each cell
             std::vector<std::string> fake_bcs;
             fake_bcs.reserve(MP.batchCounts.size());
-            for (size_t j = 0; j < MP.batchCounts.size(); j++) {
+            for (size_t j = 0; j < MP.batch_id_mapping.size(); j++) {
               fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
             }
             writeCellIds(busbarcodelistname, fake_bcs);

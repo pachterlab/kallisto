@@ -26,7 +26,7 @@ size_t writeBUSData(std::ofstream &out, const std::vector<BUSData> &bv, MinColle
 }
 
 void writeBUSMatrix(const std::string &filename,
-                    std::vector<std::vector<std::pair<int,int> > > &data, int cols) {
+                    std::vector<std::vector<std::pair<int,int> > > &data, int cols, std::vector<int> mapping) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out | std::ios::binary);
   writeBUSHeader(of, BUSFORMAT_FAKE_BARCODE_LEN, 1);
@@ -36,7 +36,7 @@ void writeBUSMatrix(const std::string &filename,
       for (size_t i = 0; i < v.size(); i++) {
         if (v[i].second != 0 && v[i].first != -1) {
           BUSData b;
-          b.barcode = j;
+          b.barcode = mapping[j];
           b.flags = 0;
           b.UMI = -1;
           b.ec = v[i].first;

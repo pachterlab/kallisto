@@ -203,6 +203,20 @@ public:
         newBatchECumis.resize(opt.batch_ids.size());
         batchUmis.resize(opt.batch_ids.size());
       }
+      if (opt.batch_ids.size() > 0) {
+        std::unordered_map<std::string,int> batch_map;
+        batch_id_mapping.resize(opt.batch_ids.size());
+        int j = 0;
+        for (int i = 0; i < opt.batch_ids.size(); i++) {
+          if (batch_map.find(opt.batch_ids[i]) == batch_map.end()) {
+            batch_id_mapping[i] = j;
+            batch_map.insert(std::make_pair(opt.batch_ids[i], j));
+            j++;
+          } else {
+            batch_id_mapping[i] = batch_map[opt.batch_ids[i]];
+          }
+        }
+      }
       if (opt.fusion) {
         ofusion.open(opt.output + "/fusion.txt");
         ofusion << "TYPE\tNAME1\tSEQ1\tKPOS1\tNAME2\tSEQ2\tKPOS2\tINFO\tPOS1\tPOS2\n";
@@ -290,7 +304,7 @@ public:
   u_map_<Roaring, uint32_t, RoaringHasher> newECcount;
   //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
   u_map_<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
-
+  std::vector<int> batch_id_mapping; // minimal perfect mapping of batch ID
 
   std::ofstream ofusion;
   std::ofstream pseudobatchf_out;
