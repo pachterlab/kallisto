@@ -1666,7 +1666,7 @@ void BUSProcessor::processBuffer() {
     
     if (mp.opt.batch_bus && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno != -1) {
       // If we want to record both batch and extracted barcode (from -x)
-      std::string new_barcode = binaryToString(id, 32-blen);
+      std::string new_barcode = binaryToString(mp.batch_id_mapping[id], 32-blen);
       uint32_t f = 0;
       new_barcode = new_barcode + binaryToString(stringToBinary(bc, blen, f), blen);
       blen = 32;
