@@ -1547,6 +1547,8 @@ void BUSProcessor::processBuffer() {
     const char *seq2 = nullptr;
 
     bool ignore_umi = false;
+    bool getFragLenIfPaired = false;
+    bool doStrandSpecificityIfPossible = true;
 
     // copy the umi
     int ulen = 0;
@@ -1556,6 +1558,7 @@ void BUSProcessor::processBuffer() {
       umi[0] = 'A';
       umi[ulen] = 0;
       ignore_umi = true;
+      getFragLenIfPaired = true;
     } else {
       for (auto &umic : busopt.umi) {
         int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
@@ -1589,6 +1592,8 @@ void BUSProcessor::processBuffer() {
         }
       } else {
         ignore_umi = true; // tag not present, it's not a UMI-read
+        getFragLenIfPaired = true;
+        doStrandSpecificityIfPossible = false;
         umi_binary = -1;
       }
     } else {
@@ -1614,6 +1619,10 @@ void BUSProcessor::processBuffer() {
       seq2 = s[sopt2.fileno] + seqstart2;
       seqlen = cplen1;
       seqlen2 = cplen2;
+      if (!check_tag_sequence) { // We have paired-end reads unrelated to tag
+        getFragLenIfPaired = true;
+        doStrandSpecificityIfPossible = true;
+      }
     } else {
       seqbuffer.clear();
       for (int j = 0; j < busopt.seq.size(); j++) {
@@ -1651,6 +1660,7 @@ void BUSProcessor::processBuffer() {
     }
     if (mp.opt.batch_bus && no_technology) {
       ignore_umi = true;
+      getFragLenIfPaired = true;
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
       memcpy(bc, binaryToString(mp.batch_id_mapping[id], blen).c_str(), blen); // Create fake barcode that identifies the batch
     } else if (mp.opt.batch_bus && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno == -1) {
@@ -1741,7 +1751,7 @@ void BUSProcessor::processBuffer() {
       u &= index.onlist_sequences;
     }
 
-    if ((!ignore_umi || bulk_like) && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
+    if (doStrandSpecificityIfPossible && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
       doStrandSpecificity(u, mp.opt.strand, v, v2);
     }
 
@@ -1760,7 +1770,7 @@ void BUSProcessor::processBuffer() {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
-      if (busopt.paired && ignore_umi) {
+      if (busopt.paired && getFragLenIfPaired) {
         if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
           // try to map the reads
           int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
