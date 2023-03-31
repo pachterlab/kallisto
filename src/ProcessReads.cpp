@@ -3182,7 +3182,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
 
         // open the next one
         for (int i = 0; i < nfiles; i++) {
-          fp[i] = files[0] == "-" && nfiles == 1 && files.size() == 1 ? gzdopen(fileno(stdin), "r") : gzopen(files[current_file+i].c_str(), "r");
+          fp[i] = files[0] == "-" && nfiles == 1 ? gzdopen(fileno(stdin), "r") : gzopen(files[current_file+i].c_str(), "r");
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
 
