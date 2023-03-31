@@ -316,7 +316,7 @@ void MasterProcessor::processReads() {
     }
   } else if (opt.bus_mode) {
     std::vector<std::thread> workers;
-    parallel_bus_read = opt.threads > 4 && opt.files.size() > opt.busOptions.nfiles && !opt.num && !opt.pseudobam && opt.input_interleaved_nfiles == 0;
+    parallel_bus_read = opt.threads > 4 && opt.files.size() > opt.busOptions.nfiles && !opt.num && !opt.pseudobam && opt.files[0] != "-";
     if (parallel_bus_read) {
       delete SR;
       SR = nullptr;
