@@ -63,9 +63,10 @@ class FastqSequenceReader : public SequenceReader {
 public:
 
   FastqSequenceReader(const ProgramOptions& opt) : SequenceReader(opt),
-  current_file(0), paired(!opt.single_end), files(opt.files),
+  current_file(0), paired(!opt.single_end),
   f_umi(new std::ifstream{}) {
     SequenceReader::state = false;
+    files = opt.files;
 
     interleave_nfiles = opt.input_interleaved_nfiles;
     if (opt.bus_mode) {
@@ -73,7 +74,7 @@ public:
     } else {
       nfiles = paired ? 2 : 1;
     }
-    if (interleave_nfiles != 0) nfiles = 1;
+    if (interleave_nfiles != 0) { nfiles = 1; files.clear(); files.push_back(opt.files[0]); }
     reserveNfiles(nfiles);
   }
   FastqSequenceReader() : SequenceReader(),
