@@ -2082,7 +2082,7 @@ void usageBus() {
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
-       << "    --aa                      Align to index geenrated from an amino acid reference" << endl
+       << "    --aa                      Align to index generated from an amino acid reference" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
