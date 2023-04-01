@@ -2082,7 +2082,7 @@ void usageBus() {
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
        << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
-       << "    --aa                      Align to index generated from an amino acid reference" << endl
+       << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "-g, --gtf                     GTF file for transcriptome information" << endl
        << "                              (required for --genomebam)" << endl
        << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
@@ -2103,7 +2103,7 @@ void usageIndex() {
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
-       << "    --aa                    Generate index from an amino acid reference" << endl
+       << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index representing k-mers unique to each FASTA " << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
