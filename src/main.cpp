@@ -109,7 +109,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'Z': {
-      stringstream(optarg) >> opt.distinguishFile;
+      if (optarg) {
+        stringstream(optarg) >> opt.distinguishFile;
+      }
       distinguish_flag = 1;
       break;
     }
