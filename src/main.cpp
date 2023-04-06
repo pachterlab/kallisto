@@ -56,7 +56,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"verbose", no_argument, &verbose_flag, 1},
     {"make-unique", no_argument, &make_unique_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
-    {"distinguish", no_argument, &distinguish_flag, 1},
+    {"distinguish", optional_argument, 0, 'Z'},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -106,6 +106,11 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       while (std::getline(ss, filename, ',')) { 
         opt.d_list.push_back(filename);
       }
+      break;
+    }
+    case 'Z': {
+      stringstream(optarg) >> opt.distinguishFile;
+      distinguish_flag = 1;
       break;
     }
     default: break;

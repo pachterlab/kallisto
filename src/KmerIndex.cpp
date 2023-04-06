@@ -442,8 +442,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   }
   ccdbg.clear(); // Free memory associated with the colored compact dBG
   for (auto tmp_file : tmp_files) std::remove(tmp_file.c_str()); // Remove temp files needed to make colored graph
-  std::cerr << "[build] Writing k-mers to temporary file" << std::endl;
-  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
+  std::cerr << "[build] Writing k-mers to file" << std::endl;
+  std::string tmp_file2 = opt.distinguishFile.empty() ? generate_tmp_file("--" + opt.index) : opt.distinguishFile;
   std::ofstream of(tmp_file2);
   for (size_t i = 0; i < final_kmer_sets.size(); i++) {
     auto& kmer_set = final_kmer_sets[i];
@@ -500,7 +500,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     }
   }
   infile.close();
-  std::remove(tmp_file2.c_str());
+  if (opt.distinguishFile.empty()) std::remove(tmp_file2.c_str());
   //PopulateMosaicECs(trinfos);
   
   std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
