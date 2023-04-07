@@ -485,18 +485,28 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       continue;
     }
     const auto& seq = line;
-    um = dbg.findUnitig(seq.c_str(), 0, seq.size());
-    if (!um.isEmpty) {
-      Node* n = um.getData();
+    if (seq.size() < k) { continue; }
+    int seqlen = seq.size() - k + 1; // number of k-mers
+    size_t proc = 0;
+    while (proc < seqlen) {
+      um = dbg.findUnitig(seq.c_str(), proc, seq.size());
+
+      if (um.isEmpty) {
+        ++proc;
+        continue;
+      }
+
+      proc += um.len;
+      const Node* n = um.getData();
+
       TRInfo tr;
       tr.trid = current_color;
-      tr.pos = (0) | (!um.strand ? sense : missense);
+      tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
+
       trinfos[n->id].push_back(tr);
-      SparseVector<uint32_t> u(true);
-      u.insert(tr.trid, tr.pos);
-      n->ec.insert(um.dist, um.dist+um.len, std::move(u));
+
       // DEBUG:
       // std::cout << tr.trid << " " << n->id << ": " << um.strand << " " << tr.start << " " << tr.stop << " ";
       // std::cout << seq << " " << um.mappedSequenceToString() << " " << um.referenceUnitigToString();
