@@ -2387,8 +2387,10 @@ int main(int argc, char *argv[]) {
             }
             writeCellIds(busbarcodelistname, fake_bcs);
           }
-          // Write out index:
-          index.write((opt.output + "/index.saved"), false, opt.threads);
+          // Write out index if necessary (basically, when no UMIs or when paired-end)
+          if (!opt.single_end || opt.technology.empty() || opt.busOptions.paired || opt.busOptions.umi[0].fileno == -1) {
+            index.write((opt.output + "/index.saved"), false, opt.threads);
+          }
           // Write out fragment length distributions if reads paired-end:
           if (!opt.single_end) {
             std::ofstream flensout_f((opt.output + "/flens.txt"));
