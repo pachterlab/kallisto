@@ -2489,6 +2489,8 @@ int main(int argc, char *argv[]) {
         if (opt.busOptions.paired) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
@@ -2499,9 +2501,10 @@ int main(int argc, char *argv[]) {
           }
           flensout_f << "\n";
           flensout_f.close();
+        } else if (opt.busOptions.umi[0].fileno == -1) {
+          // Write out index:
+          index.write((opt.output + "/index.saved"), false, opt.threads);
         }
-        // Write out index:
-        index.write((opt.output + "/index.saved"), false, opt.threads);
 
         // gather stats
         num_unique = 0;
