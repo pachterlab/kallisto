@@ -368,13 +368,35 @@ void MasterProcessor::processReads() {
         id++;
         assert(id == num_ids);
       } else {
-        for (int i = 0; i < nt; i++,id++) {
-          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
+        std::vector<std::mutex> mutexes(nt);
+        parallel_bus_reader_locks.swap(mutexes); // Number of locks = nt = number of batches we're processing in this iteration
+        int local_id = 0;
+        int start_id = id;
+        auto num_threads = opt.threads;
+
+        for (int i = 0; i < nt; i++) {
+          FastqSequenceReader batchSR;
+          batchSR.files = opt.batch_files[id+i];
+          batchSR.nfiles = opt.batch_files[id+i].size();
+          batchSR.reserveNfiles(opt.batch_files[id+i].size());
+          if (opt.umi) {
+            batchSR.umi_files = {opt.umi_files[id+i]};
+          }
+          batchSR.paired = !opt.single_end;
+          FSRs.push_back(std::move(batchSR));
+        }
+
+        for (int i = 0; i < nt; i++,id++,local_id++) {
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,local_id)));
+        }
+        for (int i = 0; i < num_threads-nt; i++,local_id++) { // Use up remaining threads
+          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, start_id + (i % nt),local_id))); // id will cycle
         }
         // let the workers do their thing
-        for (int i = 0; i < nt; i++) {
+        for (int i = 0; i < num_threads; i++) {
           workers[i].join(); //wait for them to finish
         }
+        FSRs.clear(); // clear the sequence readers
       }
     }
 
@@ -1357,17 +1379,6 @@ BUSProcessor::BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt
    // initialize buffer
    bufsize = mp.bufsize;
    buffer = new char[bufsize];
-   if (opt.batch_mode) {
-     assert(id != -1);
-     batchSR.files = opt.batch_files[id];
-     batchSR.nfiles = opt.batch_files[id].size();
-     batchSR.reserveNfiles(opt.batch_files[id].size());
-     if (opt.umi) {
-       batchSR.umi_files = {opt.umi_files[id]};
-     }
-     batchSR.paired = !opt.single_end;
-   }
-
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
    bv.reserve(1000);
@@ -1415,16 +1426,34 @@ BUSProcessor::~BUSProcessor() {
 
 void BUSProcessor::operator()() {
   uint64_t parallel_bus_read_counter = 0;
+  int initial_id = id;
   std::unordered_set<int> parallel_bus_read_empty;
   while (true) {
     int readbatch_id;
     std::vector<std::string> umis;
     // grab the reader lock
     if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
-      if (batchSR.empty()) {
-        return;
+      int num_ids = mp.opt.batch_ids.size();
+      int offset = initial_id % mp.opt.threads;
+      int start_id = initial_id-offset;
+      int end_id = start_id+std::min(start_id+mp.opt.threads-1, num_ids-1);
+      int nt = (end_id - start_id) + 1;
+      int SRindex = id % mp.opt.threads;
+      std::lock_guard<std::mutex> lock(mp.parallel_bus_reader_locks[SRindex]);
+      if (mp.FSRs[SRindex].empty()) {
+        parallel_bus_read_empty.emplace(id);
+        if (parallel_bus_read_empty.size() == nt) return;
+        for (int i = 0; i < nt; i++) {
+          int j = initial_id+i;
+          if (j > end_id) j = start_id+i-(end_id-initial_id+1);
+          if (!parallel_bus_read_empty.count(j)) {
+            id = j;
+            break;
+          }
+        }
+        continue;
       } else {
-        batchSR.fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
+        mp.FSRs[SRindex].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
       }
     } else if (mp.opt.bus_mode && mp.parallel_bus_read) {
       int nbatches = mp.opt.files.size() / mp.opt.busOptions.nfiles;
