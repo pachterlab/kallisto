@@ -2103,7 +2103,7 @@ int main(int argc, char *argv[]) {
       std::string ecfilename = prefix + ".ec";
       std::string cellnamesfilename = prefix + ".cells";
       std::string genelistname = prefix + ".genelist.txt";
-      std::string busbarcodelistname = prefix + ".barcodes";
+      std::string busbarcodelistname = prefix + ".sample.barcodes";
       bool batch_mode = opt.batch_mode;
       
       if (!batch_mode) {
@@ -2133,6 +2133,14 @@ int main(int argc, char *argv[]) {
       if (batch_mode) {
         num_processed = ProcessBatchReads(MP, opt);
         writeCellIds(cellnamesfilename, opt.batch_ids);
+        // Write out fake barcodes that identify each cell
+        if ((opt.batch_mode && opt.technology.empty()) || opt.record_batch_bus_barcode) {
+          std::vector<std::string> fake_bcs;
+          for (size_t j = 0; j < MP.batch_id_mapping.size(); j++) {
+            fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
+          }                                                       
+          writeCellIds(busbarcodelistname, fake_bcs);
+        }
         // Write out index if necessary (basically, when no UMIs or when paired-end)
         if (!opt.single_end || opt.technology.empty() || opt.busOptions.paired || opt.busOptions.umi[0].fileno == -1) {
           index.write((opt.output + "/index.saved"), false, opt.threads);
