@@ -318,8 +318,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   }
   std::cerr << "[build] k-mer length: " << k << std::endl;
   
-  std::vector<std::ofstream> ofs;
-  for (auto tmp_file : tmp_files) ofs.emplace_back(std::ofstream{ tmp_file });
+  std::vector<std::ofstream*> ofs; // Store pointers to circumvent certain compiler bugs where ofstream is non-movable
+  for (auto tmp_file : tmp_files) ofs.push_back(new std::ofstream(tmp_file));
   num_trans = 0;
   
   // read fasta file using kseq
@@ -352,7 +352,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
         }
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
-      ofs[i] << ">" << num_trans++ << "\n" << str << std::endl;
+      *(ofs[i]) << ">" << num_trans++ << "\n" << str << std::endl;
       //target_lens_.push_back(seq->seq.l);
       //std::string name(seq->name.s);
       //size_t p = name.find(' ');
@@ -366,7 +366,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     i++;
   }
   
-  for (auto& of : ofs) of.close(); // Close files now that we've outputted everything
+  for (auto& of : ofs) (*of).close(); // Close files now that we've outputted everything
+  for (auto& of : ofs) delete of; // Free pointer memory
   
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: counted " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl;
@@ -400,7 +401,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   }
 
   std::cerr << "[build] Building colored graph" << std::endl;
-  ColoredCDBG ccdbg = ColoredCDBG<void>(k, c_opt.g);
+  class PlaceHolderUnitigData : public CCDBG_Data_t<PlaceHolderUnitigData> { }; // Use this instead of void to circumvent errors for certain compilers
+  ColoredCDBG ccdbg = ColoredCDBG<PlaceHolderUnitigData>(k, c_opt.g);
   ccdbg.buildGraph(c_opt);
   ccdbg.buildColors(c_opt);
   std::cerr << "[build] Extracting k-mers from graph" << std::endl;
