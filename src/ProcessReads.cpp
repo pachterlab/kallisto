@@ -376,7 +376,7 @@ void MasterProcessor::processReads() {
         workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, start_id + (i % nt),local_id))); // id will cycle
       }
       // let the workers do their thing
-      for (int i = 0; i < num_threads; i++) {
+      for (int i = 0; i < workers.size(); i++) {
         workers[i].join(); //wait for them to finish
       }
       FSRs.clear(); // clear the sequence readers
@@ -1180,7 +1180,7 @@ void BUSProcessor::operator()() {
       int num_ids = mp.opt.batch_ids.size();
       int offset = initial_id % mp.opt.threads;
       int start_id = initial_id-offset;
-      int end_id = start_id+std::min(start_id+mp.opt.threads-1, num_ids-1);
+      int end_id = std::min(num_ids-1, start_id+mp.opt.threads-1);
       int nt = (end_id - start_id) + 1;
       int SRindex = id % mp.opt.threads;
       std::lock_guard<std::mutex> lock(mp.parallel_bus_reader_locks[SRindex]);
