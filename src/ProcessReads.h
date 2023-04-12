@@ -102,7 +102,6 @@ public:
   std::vector<int> nl;
   bool paired;
   std::vector<std::string> files;
-  std::vector<std::string> umi_files;
   std::unique_ptr<std::ifstream> f_umi;
   int current_file;
   std::vector<kseq_t*> seq;
@@ -193,16 +192,9 @@ public:
       std::vector<std::mutex> mutexes(opt.threads);
       transfer_locks.swap(mutexes);
 
-      if (opt.batch_mode) {
-        batchCounts.assign(opt.batch_ids.size(), {});
+      if (opt.batch_mode) { // Set up recording of lengths individually for each batch
         tlencounts.assign(opt.batch_ids.size(), 0);
         batchFlens.assign(opt.batch_ids.size(), std::vector<uint32_t>(1000,0));
-        /*for (auto &t : batchCounts) {
-          t.resize(tc.counts.size(),0);
-        }*/
-        newBatchECcount.resize(opt.batch_ids.size());
-        newBatchECumis.resize(opt.batch_ids.size());
-        batchUmis.resize(opt.batch_ids.size());
       }
       if (opt.batch_ids.size() > 0) {
         std::unordered_map<std::string,int> batch_map;
@@ -225,12 +217,12 @@ public:
       if (opt.pseudobam) {
         pseudobatchf_out.open(opt.output + "/pseudoaln.bin", std::ios::out | std::ios::binary);
       }
-      if (opt.bus_mode || opt.batch_bus) {
+      if (opt.bus_mode || opt.batch_mode) {
         memset(&bus_bc_len[0],0,sizeof(bus_bc_len));
         memset(&bus_umi_len[0],0,sizeof(bus_umi_len));
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
 
-        if (opt.batch_bus) {
+        if (opt.batch_mode) {
           if (opt.technology.empty()) { // no_technology : No UMIs, no barcodes, so just have batch=barcode
             writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
           } else if (opt.record_batch_bus_barcode) { // We want to record batch in barcode
@@ -299,7 +291,6 @@ public:
   std::vector<int> tlencounts;
   std::atomic<int> biasCount;
   std::vector<std::vector<uint32_t>> batchFlens;
-  std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
   u_map_<Roaring, uint32_t, RoaringHasher> newECcount;
@@ -314,9 +305,6 @@ public:
   std::vector<PseudoAlignmentBatch> pseudobatch_stragglers;
   int last_pseudobatch_id;
   void outputFusion(const std::stringstream &o);
-  std::vector<u_map_<Roaring, int, RoaringHasher>> newBatchECcount;
-  std::vector<std::vector<std::pair<Roaring, std::string>>> batchUmis;
-  std::vector<std::vector<std::pair<Roaring, std::string>>> newBatchECumis;
   void processReads();
   #ifndef NO_HTSLIB
   htsFile *bamfp;

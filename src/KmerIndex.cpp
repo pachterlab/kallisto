@@ -401,8 +401,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   }
 
   std::cerr << "[build] Building colored graph" << std::endl;
-  class PlaceHolderUnitigData : public CCDBG_Data_t<PlaceHolderUnitigData> { }; // Use this instead of void to circumvent errors for certain compilers
-  ColoredCDBG ccdbg = ColoredCDBG<PlaceHolderUnitigData>(k, c_opt.g);
+  ColoredCDBG<void> ccdbg = ColoredCDBG<void>(k, c_opt.g);
   ccdbg.buildGraph(c_opt);
   ccdbg.buildColors(c_opt);
   std::cerr << "[build] Extracting k-mers from graph" << std::endl;

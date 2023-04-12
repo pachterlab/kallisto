@@ -157,11 +157,7 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
-  if (!opt.umi) {
-    std::cerr << std::endl;
-  } else {
-    std::cerr << ", " << pretty_num(MP.num_umi) << " unique UMIs mapped" << std::endl;
-  }
+  std::cerr << std::endl;
 
   return numreads;
 
@@ -350,54 +346,40 @@ void MasterProcessor::processReads() {
     }
     tc.counts.resize(index.ecmapinv.size(), 0);
 
-  } else if (opt.batch_mode && opt.batch_bus) {
+  } else if (opt.batch_mode) {
     std::vector<std::thread> workers;
     int num_ids = opt.batch_ids.size();
     int id =0;
     while (id < num_ids) {
-      // TODO: put in thread pool
+      // TODO: put in thread pool (actually, probably fine now)
       workers.clear();
       int nt = std::min(opt.threads, (num_ids - id));
-      if (opt.pseudo_read_files_supplied) { // pseudo_read_files_supplied: read using SR (no batch identifier) rather than batchSR
-        for (int i = 0; i < opt.threads; i++) {
-          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,i)));
-        }
-        for (int i = 0; i < opt.threads; i++) {
-          workers[i].join();
-        }
-        id++;
-        assert(id == num_ids);
-      } else {
-        std::vector<std::mutex> mutexes(nt);
-        parallel_bus_reader_locks.swap(mutexes); // Number of locks = nt = number of batches we're processing in this iteration
-        int local_id = 0;
-        int start_id = id;
-        auto num_threads = opt.threads;
-
-        for (int i = 0; i < nt; i++) {
-          FastqSequenceReader batchSR;
-          batchSR.files = opt.batch_files[id+i];
-          batchSR.nfiles = opt.batch_files[id+i].size();
-          batchSR.reserveNfiles(opt.batch_files[id+i].size());
-          if (opt.umi) {
-            batchSR.umi_files = {opt.umi_files[id+i]};
-          }
-          batchSR.paired = !opt.single_end;
-          FSRs.push_back(std::move(batchSR));
-        }
-
-        for (int i = 0; i < nt; i++,id++,local_id++) {
-          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,local_id)));
-        }
-        for (int i = 0; i < num_threads-nt; i++,local_id++) { // Use up remaining threads
-          workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, start_id + (i % nt),local_id))); // id will cycle
-        }
-        // let the workers do their thing
-        for (int i = 0; i < num_threads; i++) {
-          workers[i].join(); //wait for them to finish
-        }
-        FSRs.clear(); // clear the sequence readers
+      std::vector<std::mutex> mutexes(nt);
+      parallel_bus_reader_locks.swap(mutexes); // Number of locks = nt = number of batches we're processing in this iteration
+      int local_id = 0;
+      int start_id = id;
+      auto num_threads = opt.threads;
+      
+      for (int i = 0; i < nt; i++) {
+        FastqSequenceReader batchSR;
+        batchSR.files = opt.batch_files[id+i];
+        batchSR.nfiles = opt.batch_files[id+i].size();
+        batchSR.reserveNfiles(opt.batch_files[id+i].size());
+        batchSR.paired = !opt.single_end;
+        FSRs.push_back(std::move(batchSR));
       }
+      
+      for (int i = 0; i < nt; i++,id++,local_id++) {
+        workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, id,local_id)));
+      }
+      for (int i = 0; i < num_threads-nt; i++,local_id++) { // Use up remaining threads
+        workers.emplace_back(std::thread(BUSProcessor(index, opt, tc, *this, start_id + (i % nt),local_id))); // id will cycle
+      }
+      // let the workers do their thing
+      for (int i = 0; i < num_threads; i++) {
+        workers[i].join(); //wait for them to finish
+      }
+      FSRs.clear(); // clear the sequence readers
     }
 
     // now handle the modification of the mincollector
@@ -407,181 +389,12 @@ void MasterProcessor::processReads() {
       index.ecmapinv.insert({u,ec});
     }
     tc.counts.resize(index.ecmapinv.size(), 0);
-  } else if (opt.batch_mode) {
-    std::vector<std::thread> workers;
-    int num_ids = opt.batch_ids.size();
-    int id =0;
-    tmp_bc.assign(opt.threads, {});
-    while (id < num_ids) {
-      // TODO: put in thread pool
-      workers.clear();
-      int nt = std::min(opt.threads, (num_ids - id));
-      int first_id = id;
-      if (opt.pseudo_read_files_supplied) {
-        for (int i = 0; i < opt.threads; i++) {
-          tmp_bc[i].assign(tc.counts.size(), 0);
-          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id, i)));
-        }
-        for (int i = 0; i < opt.threads; i++) {
-          workers[i].join();
-        }
-        id++;
-        assert(id == num_ids);
-      } else {
-        for (int i = 0; i < nt; i++,id++) {
-          tmp_bc[i].assign(tc.counts.size(), 0);
-          workers.emplace_back(std::thread(ReadProcessor(index, opt, tc, *this, id,i)));
-        }
-        for (int i = 0; i < nt; i++) {
-          workers[i].join();
-        }
-      }
-
-      if (!opt.umi) {
-        for (int i = 0; i < nt; i++) {
-          auto &bc = batchCounts[first_id+i];
-          auto &tmp_c = tmp_bc[i];
-          for (int j = 0; j < tmp_c.size(); j++) {
-            if (tmp_c[j] > 0) {
-              bc.push_back({j, tmp_c[j]});
-            }
-          }
-        }
-      } else {
-        std::vector<uint32_t> tmp_counts;
-        tmp_counts.resize(tc.counts.size(), 0);
-        // process the regular EC umi now
-        for (int i = 0; i < nt; i++) {
-          tmp_counts.assign(tmp_counts.size(), 0);
-          int l_id = id - nt + i;
-          auto &r_umis = batchUmis[l_id];
-          std::vector<std::pair<uint32_t, std::string> > umis;
-          umis.reserve(r_umis.size());
-          for (const auto& umi : r_umis) {
-            umis.emplace_back(index.ecmapinv[umi.first], umi.second);
-          }
-          std::sort(umis.begin(), umis.end());
-          size_t sz = umis.size();
-          nummapped += sz;
-          if (sz > 0) {
-            ++tmp_counts[umis[0].first];
-          }
-          for (int j = 1; j < sz; j++) {
-            if (umis[j-1] != umis[j]) {
-              ++tmp_counts[umis[j].first];
-            }
-          }
-          auto &bc = batchCounts[l_id];
-          bc.clear();
-          for (int j = 0; j < tmp_counts.size(); j++) {
-            if (tmp_counts[j] > 0) {
-              bc.push_back({j, tmp_counts[j]});
-            }
-          }
-          umis.clear();
-        }
-      }
-    }
-
-    int num_newEcs = 0;
-    if (!opt.umi) {
-      // for each cell
-      for (int id = 0; id < num_ids; id++) {
-        // for each new ec
-        for (auto &t : newBatchECcount[id]) {
-          // add the ec and count number of new ecs
-          if (t.second <= 0) {
-            continue;
-          }
-          int ecsize = index.ecmapinv.size();
-          int ec = tc.increaseCount(t.first);
-          if (ec != -1 && ecsize < index.ecmapinv.size()) {
-            num_newEcs++;
-          }
-        }
-      }
-      // for each cell
-      std::vector<uint32_t> tmp_counts;
-      tmp_counts.resize(tc.counts.size(), 0);
-      for (int id = 0; id < num_ids; id++) {
-        tmp_counts.assign(tmp_counts.size(), 0);
-        // for each new ec
-        for (auto &t : newBatchECcount[id]) {
-          // count the ec
-          if (t.second <= 0) {
-            continue;
-          }
-
-          auto elem = index.ecmapinv.find(t.first);
-
-          assert(elem->second != -1);
-          tmp_counts[elem->second] += t.second;
-        }
-        auto& bc = batchCounts[id];
-        for (int j = 0; j < tmp_counts.size(); j++) {
-          if (tmp_counts[j] > 0) {
-            bc.push_back({j,tmp_counts[j]});
-          }
-        }
-      }
-    } else {
-      // UMI case
-      // for each cell
-      for (int id = 0; id < num_ids; id++) {
-        // for each new ec
-
-        for (auto &t : newBatchECumis[id]) {
-          // add the new ec
-          int ecsize = index.ecmapinv.size();
-          int ec = tc.increaseCount(t.first);
-          if (ec != -1 && ecsize < index.ecmapinv.size()) {
-            num_newEcs++;
-          }
-        }
-      }
-
-      std::vector<uint32_t> tmp_counts;
-      tmp_counts.resize(tc.counts.size(), 0);
-      // for each cell
-      for (int id = 0; id < num_ids; id++) {
-        tmp_counts.assign(tmp_counts.size(), 0);
-        std::vector<std::pair<uint32_t, std::string> > umis;
-        umis.reserve(newBatchECumis[id].size());
-        // for each new ec
-        for (auto &t : newBatchECumis[id]) {
-          // record the ec,umi
-          umis.push_back({index.ecmapinv[t.first], std::move(t.second)});
-        }
-        // find unique umis per ec
-        std::sort(umis.begin(), umis.end());
-
-        size_t sz = umis.size();
-        if (sz > 0) {
-          ++tmp_counts[umis[0].first];
-        }
-        for (int j = 1; j < sz; j++) {
-          if (umis[j-1] != umis[j]) {
-            ++tmp_counts[umis[j].first];
-          }
-        }
-
-        auto& bc = batchCounts[id];
-        for (int j = 0; j < tmp_counts.size(); j++) {
-          if (tmp_counts[j] > 0) {
-            bc.push_back({j,tmp_counts[j]});
-          }
-        }
-        for (auto x : bc) {
-          num_umi += x.second;
-        }
-      }
-    }
   }
 
   if (opt.pseudobam) {
     pseudobatchf_out.close();
   }
-  if (opt.bus_mode || opt.batch_bus) {
+  if (opt.bus_mode || opt.batch_mode) {
     busf_out.close();
   }
 }
@@ -593,23 +406,9 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
   std::lock_guard<std::mutex> lock(this->writer_lock);
   size_t num_new_ecs = 0;
 
-  if (!opt.batch_mode || opt.batch_bus) {
-    for (int i = 0; i < c.size(); i++) {
-      tc.counts[i] += c[i]; // add up ec counts
-      nummapped += c[i];
-    }
-  } else {
-    if (!opt.umi) {
-      auto& bc = tmp_bc[opt.pseudo_read_files_supplied ? 0 : local_id]; // local_id = batch (each batch gets its own thread) but pseudo_read_files_supplied means all read files belong to one and only one batch (batch 0)
-      for (int i = 0; i < c.size(); i++) {
-        bc[i] += c[i];
-        nummapped += c[i];
-      }
-    } else {
-      for (auto &t : ec_umi) {
-        batchUmis[id].push_back(std::move(t));
-      }
-    }
+  for (int i = 0; i < c.size(); i++) {
+    tc.counts[i] += c[i]; // add up ec counts
+    nummapped += c[i];
   }
 
   auto attempt_transfer_ecs = [&](size_t num_new_ecs_) {
@@ -620,14 +419,14 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       }
       size_t num_new_ecs_actual = 0;
       int curr_max_ec = index.ecmapinv.size()-1;
-      if (opt.bus_mode || opt.batch_bus) {
+      if (opt.bus_mode || opt.batch_mode) {
         num_new_ecs_actual = bus_ecmapinv.size()-(curr_max_ec+1);
         if (num_new_ecs_actual >= transfer_threshold) {
           for (auto &x : bus_ecmapinv) {
             index.ecmapinv.insert({x.first,x.second});
           }
         }
-      } else if (!opt.batch_mode) {
+      } else {
         for (auto &t : newECcount) {
           if (t.second <= 0) {
             continue;
@@ -641,26 +440,6 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
           }
         }
         newECcount.clear();
-      } else if (opt.batch_mode && !opt.umi) {
-        auto &b = newBatchECcount;
-        for (int i = 0; i < b.size(); i++) {
-          for (auto &t : b[i]) {
-            if (t.second <= 0) {
-              continue;
-            }
-            int ec = tc.increaseCount(t.first); // modifies the ecmap
-            if (ec >= tmp_bc[i].size()) {
-              tmp_bc[i].resize(ec+1, 0);
-            }
-            if (ec != -1 && t.second > 0) {
-              tmp_bc[i][ec] += (t.second);
-            }
-            if (ec > curr_max_ec && i == id) {
-              num_new_ecs_actual++;
-            }
-          }
-          b[i].clear();
-        }
       }
       if (num_new_ecs_actual >= transfer_threshold) {
         if (transfer_threshold <= 4) {
@@ -675,31 +454,11 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
   };
 
-  if (!opt.batch_mode || opt.batch_bus) {
-    for(auto &u : newEcs) {
-      ++newECcount[u];
-    }
-  } else {
-    if (!opt.umi) {
-      for(auto &u : newEcs) {
-        ++newBatchECcount[id][u];
-      }
-    } else {
-      for (auto &u : new_ec_umi) {
-        newBatchECumis[id].push_back(std::move(u));
-      }
-    }
+  for(auto &u : newEcs) {
+    ++newECcount[u];
   }
-  if (!opt.umi) {
-    nummapped += newEcs.size();
-    if (opt.batch_mode) {
-      num_new_ecs = newBatchECcount[id].size();
-    } else {
-      num_new_ecs = newECcount.size();
-    }
-  } else {
-    nummapped += new_ec_umi.size();
-  }
+  nummapped += newEcs.size();
+  num_new_ecs = newECcount.size();
 
   if (!flens.empty()) {
     if (opt.batch_mode) {
@@ -751,7 +510,7 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
     }
   }
 
-  if (opt.bus_mode || opt.batch_bus) {
+  if (opt.bus_mode || opt.batch_mode) {
     int bus_bc_sum = 0;
     int bus_umi_sum = 0;
     for (int i = 0; i <= 32; i++) {
@@ -1077,16 +836,10 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
      batchSR.files = opt.batch_files[id];
      batchSR.nfiles = opt.batch_files[id].size();
      batchSR.reserveNfiles(opt.batch_files[id].size());
-     if (opt.umi) {
-       batchSR.umi_files = {opt.umi_files[id]};
-     }
      batchSR.paired = !opt.single_end;
    }
 
    seqs.reserve(bufsize/50);
-   if (opt.umi) {
-    umis.reserve(bufsize/50);
-   }
    newEcs.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
    clear();
@@ -1127,7 +880,7 @@ void ReadProcessor::operator()() {
   while (true) {
     int readbatch_id;
     // grab the reader lock
-    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
+    if (mp.opt.batch_mode) {
       if (batchSR.empty()) {
         return;
       } else {
@@ -1241,7 +994,7 @@ void ReadProcessor::processBuffer() {
 
     // If we have paired end reads where one end maps or single end reads, check if some transcsripts
     // are not compatible with the mean fragment length
-    if (!mp.opt.single_overhang && !mp.opt.umi && !u.isEmpty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
+    if (!mp.opt.single_overhang && !u.isEmpty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
       vtmp = Roaring();
       // inspect the positions
       int fl = (int) tc.get_mean_frag_len();
@@ -1292,25 +1045,16 @@ void ReadProcessor::processBuffer() {
     if (!u.isEmpty()) {
       std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
 
-      if (!mp.opt.umi) {
-        // count the pseudoalignment
-        auto elem = index.ecmapinv.find(u);
-        if (elem == index.ecmapinv.end()) {
-          // something we haven't seen before
-          newEcs.push_back(u);
-        } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
-          newEcs.push_back(u);
-        } else {
-          // add to count vector
-          ++counts[elem->second];
-        }
+      // count the pseudoalignment
+      auto elem = index.ecmapinv.find(u);
+      if (elem == index.ecmapinv.end()) {
+        // something we haven't seen before
+        newEcs.push_back(u);
+      } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
+        newEcs.push_back(u);
       } else {
-        auto elem = index.ecmapinv.find(u);
-        if (elem == index.ecmapinv.end()) {
-          new_ec_umi.emplace_back(u, std::move(umis[i]));
-        } else {
-          ec_umi.emplace_back(u, std::move(umis[i]));
-        }
+        // add to count vector
+        ++counts[elem->second];
       }
 
       /* -- collect extra information -- */
@@ -1432,7 +1176,7 @@ void BUSProcessor::operator()() {
     int readbatch_id;
     std::vector<std::string> umis;
     // grab the reader lock
-    if (mp.opt.batch_mode && !mp.opt.pseudo_read_files_supplied) {
+    if (mp.opt.batch_mode) {
       int num_ids = mp.opt.batch_ids.size();
       int offset = initial_id % mp.opt.threads;
       int start_id = initial_id-offset;
@@ -1509,10 +1253,10 @@ void BUSProcessor::processBuffer() {
 
   const BUSOptions& busopt = mp.opt.busOptions;
   bool no_technology = mp.opt.technology.empty();
-  bool bulk_like = (mp.opt.batch_bus && no_technology) || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
+  bool bulk_like = (mp.opt.batch_mode && no_technology) || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
 
   auto &tcount = mp.tlencount;
-  if (mp.opt.batch_bus) {
+  if (mp.opt.batch_mode) {
     tcount = mp.tlencounts[id];
   }
   bool findFragmentLength = tcount < 10000 && busopt.paired;
@@ -1687,12 +1431,12 @@ void BUSProcessor::processBuffer() {
     if (bad_bc) {
       continue;
     }
-    if (mp.opt.batch_bus && no_technology) {
+    if (mp.opt.batch_mode && no_technology) {
       ignore_umi = true;
       getFragLenIfPaired = true;
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
       memcpy(bc, binaryToString(mp.batch_id_mapping[id], blen).c_str(), blen); // Create fake barcode that identifies the batch
-    } else if (mp.opt.batch_bus && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno == -1) {
+    } else if (mp.opt.batch_mode && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno == -1) {
       // Don't care about barcodes (-x supplied) but still want to record batch ID in barcode
       blen = BUSFORMAT_FAKE_BARCODE_LEN;
       memcpy(bc, binaryToString(mp.batch_id_mapping[id], blen).c_str(), blen);
@@ -1703,7 +1447,7 @@ void BUSProcessor::processBuffer() {
       bc_len[blen]++;
     }
     
-    if (mp.opt.batch_bus && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno != -1) {
+    if (mp.opt.batch_mode && !no_technology && mp.opt.record_batch_bus_barcode && busopt.bc[0].fileno != -1) {
       // If we want to record both batch and extracted barcode (from -x)
       std::string new_barcode = binaryToString(mp.batch_id_mapping[id], 32-blen);
       uint32_t f = 0;
@@ -1879,16 +1623,10 @@ AlnProcessor::AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, Ma
      batchSR.files = opt.batch_files[id];
      batchSR.nfiles = opt.batch_files[id].size();
      batchSR.reserveNfiles(opt.batch_files[id].size());
-     if (opt.umi) {
-       batchSR.umi_files = {opt.umi_files[id]};
-     }
      batchSR.paired = !opt.single_end;
    }
 
    seqs.reserve(bufsize/50);
-   if (opt.umi) {
-     umis.reserve(bufsize/50);
-   }
 
    clear();
 
@@ -3111,15 +2849,8 @@ FastqSequenceReader::~FastqSequenceReader() {
       gzclose(f);
     }
   }
-
   for (auto &s : seq) {
     kseq_destroy(s);
-  }
-
-
-  // check if umi stream is open, then close
-  if (f_umi && f_umi->is_open()) {
-    f_umi->close();
   }
 }
 
@@ -3137,12 +2868,6 @@ void FastqSequenceReader::reset() {
     }
     f = nullptr;
   }
-
-  if (f_umi && f_umi->is_open()) {
-    f_umi->close();
-  }
-
-  f_umi->clear();
 
   for (auto &ll : l) {
     ll = 0;
@@ -3185,9 +2910,6 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
   }
   flags.clear();
 
-  bool usingUMIfiles = !umi_files.empty();
-  int umis_read = 0;
-
   int bufpos = 0;
   int pad = nfiles; //(paired) ? 2 : 1;
   int count = 0; // for interleaving
@@ -3203,11 +2925,6 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
             gzclose(f);
           }
         }
-        // close current umi file
-        if (usingUMIfiles) {
-          // read up the rest of the files
-          f_umi->close();
-        }
 
         // open the next one
         for (int i = 0; i < nfiles; i++) {
@@ -3215,11 +2932,6 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           seq[i] = kseq_init(fp[i]);
           l[i] = kseq_read(seq[i]);
 
-        }
-        if (usingUMIfiles) {
-          // open new umi file
-          f_umi->open(umi_files[current_file]);
-          current_file++;
         }
         current_file+=nfiles;
         state = true;
@@ -3269,14 +2981,6 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           }
         }
 
-        if (usingUMIfiles) {
-          std::stringstream ss;
-          std::getline(*f_umi, line);
-          ss.str(line);
-          ss >> umi;
-          umis.emplace_back(std::move(umi));
-        }
-
         numreads++;
         flags.push_back(numreads-1);
       } else {
@@ -3307,8 +3011,6 @@ FastqSequenceReader::FastqSequenceReader(FastqSequenceReader&& o) :
   nl(std::move(o.nl)),
   paired(o.paired),
   files(std::move(o.files)),
-  umi_files(std::move(o.umi_files)),
-  f_umi(std::move(o.f_umi)),
   current_file(o.current_file),
   interleave_nfiles(o.interleave_nfiles),
   seq(std::move(o.seq)) {

@@ -106,17 +106,14 @@ struct ProgramOptions {
   int max_num_reads;
   std::vector<std::string> transfasta;
   bool batch_mode;
-  bool pseudo_read_files_supplied;
   bool bus_mode;
   BUSOptions busOptions;
-  bool pseudo_quant;
   bool bam;
   bool num;
   std::string batch_file_name;
   std::vector<std::vector<std::string> > batch_files;
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
-  std::vector<std::string> umi_files;
   std::vector<std::string> d_list;
   bool plaintext;
   bool write_index;
@@ -130,9 +127,6 @@ struct ProgramOptions {
   bool fusion;
   enum class StrandType {None, FR, RF};
   StrandType strand;
-  bool umi;
-  bool batch_bus_write;
-  bool batch_bus;
   std::string gfa; // used for inspect
   bool inspect_thorough;
   bool single_overhang;
@@ -167,9 +161,7 @@ ProgramOptions() :
   input_interleaved_nfiles(0),
   record_batch_bus_barcode(false),
   batch_mode(false),
-  pseudo_read_files_supplied(false),
   bus_mode(false),
-  pseudo_quant(false),
   bam(false),
   num(false),
   plaintext(false),
@@ -183,9 +175,6 @@ ProgramOptions() :
   make_unique(false),
   fusion(false),
   strand(StrandType::None),
-  umi(false),
-  batch_bus_write(false),
-  batch_bus(false),
   inspect_thorough(false),
   single_overhang(false),
   aa(false),

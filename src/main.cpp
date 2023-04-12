@@ -345,82 +345,6 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   }
 }
 
-void ParseOptionsEMOnly(int argc, char **argv, ProgramOptions& opt) {
-  int verbose_flag = 0;
-  int plaintext_flag = 0;
-
-  const char *opt_string = "t:s:l:s:o:n:m:d:b:";
-  static struct option long_options[] = {
-    // long args
-    {"verbose", no_argument, &verbose_flag, 1},
-    {"plaintext", no_argument, &plaintext_flag, 1},
-    {"seed", required_argument, 0, 'd'},
-    // short args
-    {"threads", required_argument, 0, 't'},
-    {"fragment-length", required_argument, 0, 'l'},
-    {"sd", required_argument, 0, 's'},
-    {"output-dir", required_argument, 0, 'o'},
-    {"iterations", required_argument, 0, 'n'},
-    {"min-range", required_argument, 0, 'm'},
-    {"bootstrap-samples", required_argument, 0, 'b'},
-    {0,0,0,0}
-  };
-  int c;
-  int option_index = 0;
-  while (true) {
-    c = getopt_long(argc,argv,opt_string, long_options, &option_index);
-
-    if (c == -1) {
-      break;
-    }
-
-    switch (c) {
-    case 0:
-      break;
-    case 't': {
-      stringstream(optarg) >> opt.threads;
-      break;
-    }
-    case 'l': {
-      stringstream(optarg) >> opt.fld;
-      break;
-    }
-    case 's': {
-      stringstream(optarg) >> opt.sd;
-      break;
-    }
-    case 'o': {
-      opt.output = optarg;
-      break;
-    }
-    case 'n': {
-      stringstream(optarg) >> opt.iterations;
-      break;
-    }
-    case 'm': {
-      stringstream(optarg) >> opt.min_range;
-    }
-    case 'b': {
-      stringstream(optarg) >> opt.bootstrap;
-      break;
-    }
-    case 'd': {
-      stringstream(optarg) >> opt.seed;
-      break;
-    }
-    default: break;
-    }
-  }
-
-  if (verbose_flag) {
-    opt.verbose = true;
-  }
-
-  if (plaintext_flag) {
-    opt.plaintext = true;
-  }
-}
-
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
   static struct option long_options[] = {
@@ -940,11 +864,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
   if (opt.technology.empty()) { // kallisto pseudo
-    if (!opt.num && !(opt.max_num_reads > 0) && !opt.aa) {
-      opt.batch_bus_write = true;
-    } else {
-      opt.batch_bus = true;
-    }
     // check for read files
     if (!opt.batch_mode) {
       cerr << "[bus] will try running read files as-is in bulk mode" << endl;
@@ -994,9 +913,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           i++;
           sample_id++;
         }
-        if (sample_id == 1) {
-          opt.pseudo_read_files_supplied = true; // Only one sample supplied; use SR instead of batchSR to read
-        }
       }
     } else if (ret) {
       cerr << "[bus] will try running read files supplied in batch file" << endl;
@@ -1008,70 +924,68 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         ret = false;
       } else {
         // check for batch files
-        if (opt.batch_mode) {
-          struct stat stFileInfo;
-          auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
-          if (intstat != 0) {
-            cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
-            ret = false;
+        struct stat stFileInfo;
+        auto intstat = stat(opt.batch_file_name.c_str(), &stFileInfo);
+        if (intstat != 0) {
+          cerr << ERROR_STR << " file not found " << opt.batch_file_name << endl;
+          ret = false;
+        }
+        // open the file, parse and fill the batch_files values
+        std::ifstream bfile(opt.batch_file_name);
+        std::string line;
+        std::string id,f1,f2;
+        bool read_first_batch_file_line = false;
+        while (std::getline(bfile,line)) {
+          if (line.size() == 0) {
+            continue;
           }
-          // open the file, parse and fill the batch_files values
-          std::ifstream bfile(opt.batch_file_name);
-          std::string line;
-          std::string id,f1,f2;
-          bool read_first_batch_file_line = false;
-          while (std::getline(bfile,line)) {
-            if (line.size() == 0) {
-              continue;
-            }
-            std::stringstream ss(line);
-            ss >> id;
-            if (id[0] == '#') {
-              continue;
-            }
-            opt.batch_ids.push_back(id);
-            ss >> f1 >> f2;
-            if (!read_first_batch_file_line) {
-              if (f2.empty()) {
-                opt.single_end = true;
-              } else {
-                opt.single_end = false;
-              }
-              read_first_batch_file_line = true;
-            }
-            if (opt.single_end) {
-              opt.batch_files.push_back({f1});
-              intstat = stat(f1.c_str(), &stFileInfo);
-              if (intstat != 0) {
-                cerr << ERROR_STR << " file not found " << f1 << endl;
-                ret = false;
-              }
-              if (!f2.empty()) {
-                cerr << ERROR_STR << " batch file malformatted" << endl;
-                ret = false;
-                break;
-              }
+          std::stringstream ss(line);
+          ss >> id;
+          if (id[0] == '#') {
+            continue;
+          }
+          opt.batch_ids.push_back(id);
+          ss >> f1 >> f2;
+          if (!read_first_batch_file_line) {
+            if (f2.empty()) {
+              opt.single_end = true;
             } else {
-              opt.batch_files.push_back({f1,f2});
-              intstat = stat(f1.c_str(), &stFileInfo);
-              if (intstat != 0) {
-                cerr << ERROR_STR << " file not found " << f1 << endl;
-                ret = false;
-              }
-              if (f2.empty()) {
-                cerr << ERROR_STR << " batch file malformatted" << endl;
-                ret = false;
-                break;
-              }
-              intstat = stat(f2.c_str(), &stFileInfo);
-              if (intstat != 0) {
-                cerr << ERROR_STR << " file not found " << f2 << endl;
-                ret = false;
-              }
+              opt.single_end = false;
             }
-            f1.clear();
-            f2.clear();
+            read_first_batch_file_line = true;
           }
+          if (opt.single_end) {
+            opt.batch_files.push_back({f1});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+            if (!f2.empty()) {
+              cerr << ERROR_STR << " batch file malformatted" << endl;
+              ret = false;
+              break;
+            }
+          } else {
+            opt.batch_files.push_back({f1,f2});
+            intstat = stat(f1.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f1 << endl;
+              ret = false;
+            }
+            if (f2.empty()) {
+              cerr << ERROR_STR << " batch file malformatted" << endl;
+              ret = false;
+              break;
+            }
+            intstat = stat(f2.c_str(), &stFileInfo);
+            if (intstat != 0) {
+              cerr << ERROR_STR << " file not found " << f2 << endl;
+              ret = false;
+            }
+          }
+          f1.clear();
+          f2.clear();
         }
       }
     }
@@ -1159,282 +1073,157 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         }
         f.clear();
       }
-      if (opt.batch_ids.size() < opt.threads && !(opt.num || opt.pseudobam) && !opt.record_batch_bus_barcode) { // If we've saturated num batches in threads and don't actually need batches
-        opt.batch_mode = false; // Don't need these; just proceed as normal
-        opt.batch_files.clear();
-        opt.batch_ids.clear();
-      }
     }
     if (!ret) return false;
     auto& busopt = opt.busOptions;
     busopt.aa = opt.aa;
 
-    if (opt.bam) { // Note: only 10xV2 has been tested
-      busopt.nfiles = 1;
-      busopt.paired = false;
-      if (opt.technology == "10XV2") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
-        busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-      } else if (opt.technology == "10XV3") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-//      } else if (opt.technology == "10XV1") {
-
-      } else if (opt.technology == "SURECELL") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,18,26));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,18));
-      } else if (opt.technology == "DROPSEQ") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,12,20));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-      } else if (opt.technology == "INDROPSV1") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,42,48));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(0,30,38));
-      } else if (opt.technology == "INDROPSV2") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,42,48));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(1,30,38));
-      } else if (opt.technology == "INDROPSV3") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
-      } else if (opt.technology == "CELSEQ") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,8,12));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-      } else if (opt.technology == "CELSEQ2") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
-        busopt.bc.push_back(BUSOptionSubstr(0,6,12));
-      } else if (opt.technology == "SPLIT-SEQ") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(1,10,18));
-        busopt.bc.push_back(BUSOptionSubstr(1,48,56));
-        busopt.bc.push_back(BUSOptionSubstr(1,78,86));
-      } else if (opt.technology == "SCRBSEQ") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,6,16));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-      } else if (opt.technology == "INDROPSV3") {
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
-        busopt.bc.push_back(BUSOptionSubstr(0,6,16));
-      } else if (opt.technology == "SMARTSEQ3") {
-        busopt.nfiles = 4;
-        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+    busopt.paired = false;
+    if (opt.bam) busopt.nfiles = 1; // Note: only 10xV2 has been tested
+    if (opt.technology == "10XV2") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
+      busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "10XV3") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,16,28));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "VISIUM") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,16,28));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,16));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "10XV1") {
+      busopt.nfiles = 3;
+      busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,14));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "SURECELL") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,51,59));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+      busopt.bc.push_back(BUSOptionSubstr(0,21,27));
+      busopt.bc.push_back(BUSOptionSubstr(0,42,48));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "DROPSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,12,20));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,12));
+    } else if (opt.technology == "INDROPSV1") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,42,48));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,11));
+      busopt.bc.push_back(BUSOptionSubstr(0,30,38));
+    } else if (opt.technology == "INDROPSV2") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(1,42,48));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,11));
+      busopt.bc.push_back(BUSOptionSubstr(1,30,38));
+    } else if (opt.technology == "INDROPSV3") {
+      busopt.nfiles = 3;
+      busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(1,8,14));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,8));
+    } else if (opt.technology == "CELSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,8,12));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,8));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "CELSEQ2") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,0,6));
+      busopt.bc.push_back(BUSOptionSubstr(0,6,12));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "SPLIT-SEQ"){
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(1,0,10));
+      busopt.bc.push_back(BUSOptionSubstr(1,10,18));
+      busopt.bc.push_back(BUSOptionSubstr(1,48,56));
+      busopt.bc.push_back(BUSOptionSubstr(1,78,86));
+    } else if (opt.technology == "SCRBSEQ") {
+      busopt.nfiles = 2;
+      busopt.seq.push_back(BUSOptionSubstr(1,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(0,6,16));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,6));
+    } else if (opt.technology == "SMARTSEQ3") {
+      busopt.nfiles = 4;
+      busopt.seq.push_back(BUSOptionSubstr(2,22,0));
+      busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(2,0,19));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      busopt.paired = true;
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "BULK") {
+      busopt.nfiles = 3;
+      busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      if (!opt.single_end) {
+        busopt.nfiles++;
         busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(2,0,19));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
         busopt.paired = true;
-      } else if (opt.technology == "BULK") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
-        if (!opt.single_end) {
-          busopt.nfiles++;
-          busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-          busopt.paired = true;
-        }
-      } else if (opt.technology == "BDWTA") {
-        busopt.nfiles = 2;
-        busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
-        // busopt.bc.push_back(BUSOptionSubstr(0,9,9+12)); // linker
-        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12, 9 + 12 + 9)); // bc2 CLS2
-        // busopt.bc.push_back(BUSOptionSubstr(0,9+12+9,9+12+9+13)); // linker
-        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
-        busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
-        busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
-      } else {
-        vector<int> files;
-        vector<BUSOptionSubstr> values;
-        vector<BUSOptionSubstr> bcValues;
-        vector<std::string> errorList;
-        //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
-        bool valid = ParseTechnology(opt.technology, busopt, errorList);
-
-        if (busopt.seq.size() == 2 && !opt.single_end) {
-          busopt.paired = true;
-        }
-
-        if(!valid) {
-          /*
-          busopt.nfiles = files.size();
-          for(int i = 0; i < bcValues.size(); i++) {
-            busopt.bc.push_back(bcValues[i]);
-          }
-          busopt.umi.push_back(values[0]);
-          busopt.seq.push_back(values[1]);
-          */
-        } else {
-          for(int j = 0; j < errorList.size(); j++) {
-            cerr << errorList[j] << endl;
-          }
-          cerr << "Unable to create technology: " << opt.technology << endl;
-          ret = false;
-        }
       }
+    } else if (opt.technology == "BDWTA") {
+      busopt.nfiles = 2;
+      busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
+      // busopt.bc.push_back(BUSOptionSubstr(0,9,9+12)); // linker
+      busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12, 9 + 12 + 9)); // bc2 CLS2
+      // busopt.bc.push_back(BUSOptionSubstr(0,9+12+9,9+12+9+13)); // linker
+      busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
+      busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
+      busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
+      strand = ProgramOptions::StrandType::FR;
     } else {
-      busopt.paired = false;
-      if (opt.technology == "10XV2") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0)); // second file, entire string
-        busopt.umi.push_back(BUSOptionSubstr(0,16,26)); // first file [16:26]
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "10XV3") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "VISIUM") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,16,28));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,16));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "10XV1") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,14));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "SURECELL") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,51,59));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-        busopt.bc.push_back(BUSOptionSubstr(0,21,27));
-        busopt.bc.push_back(BUSOptionSubstr(0,42,48));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "DROPSEQ") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,12,20));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,12));
-      } else if (opt.technology == "INDROPSV1") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,42,48));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(0,30,38));
-      } else if (opt.technology == "INDROPSV2") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,42,48));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,11));
-        busopt.bc.push_back(BUSOptionSubstr(1,30,38));
-      } else if (opt.technology == "INDROPSV3") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,8,14));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,8));
-      } else if (opt.technology == "CELSEQ") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,8,12));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,8));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "CELSEQ2") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,0,6));
-        busopt.bc.push_back(BUSOptionSubstr(0,6,12));
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "SPLIT-SEQ"){
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(0,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(1,0,10));
-        busopt.bc.push_back(BUSOptionSubstr(1,10,18));
-        busopt.bc.push_back(BUSOptionSubstr(1,48,56));
-        busopt.bc.push_back(BUSOptionSubstr(1,78,86));
-      } else if (opt.technology == "SCRBSEQ") {
-        busopt.nfiles = 2;
-        busopt.seq.push_back(BUSOptionSubstr(1,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(0,6,16));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,6));
-      } else if (opt.technology == "SMARTSEQ3") {
-        busopt.nfiles = 4;
-        busopt.seq.push_back(BUSOptionSubstr(2,22,0));
-        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(2,0,19));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      vector<int> files;
+      vector<BUSOptionSubstr> values;
+      vector<BUSOptionSubstr> bcValues;
+      vector<std::string> errorList;
+      //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
+      bool valid = ParseTechnology(opt.technology, busopt, errorList);
+      
+      if (busopt.seq.size() == 2 && !opt.single_end) {
         busopt.paired = true;
-        strand = ProgramOptions::StrandType::FR;
-      } else if (opt.technology == "BULK") {
-        busopt.nfiles = 3;
-        busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-        busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
-        busopt.bc.push_back(BUSOptionSubstr(0,0,0));
-        busopt.bc.push_back(BUSOptionSubstr(1,0,0));
-        if (!opt.single_end) {
-          busopt.nfiles++;
-          busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-          busopt.paired = true;
-        }
-      } else if (opt.technology == "BDWTA") {
-        busopt.nfiles = 2;
-        busopt.bc.push_back(BUSOptionSubstr(0, 0, 9)); // bc1 CLS1
-        // busopt.bc.push_back(BUSOptionSubstr(0,9,9+12)); // linker
-        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12, 9 + 12 + 9)); // bc2 CLS2
-        // busopt.bc.push_back(BUSOptionSubstr(0,9+12+9,9+12+9+13)); // linker
-        busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
-        busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
-        busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
-        strand = ProgramOptions::StrandType::FR;
+      }
+      
+      if(valid) {
+        /*
+         busopt.nfiles = files.size();
+         for(int i = 0; i < bcValues.size(); i++) {
+         busopt.bc.push_back(bcValues[i]);
+         }
+         busopt.umi.push_back(values[0]);
+         busopt.seq.push_back(values[1]);
+         */
       } else {
-        vector<int> files;
-        vector<BUSOptionSubstr> values;
-        vector<BUSOptionSubstr> bcValues;
-        vector<std::string> errorList;
-        //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
-        bool valid = ParseTechnology(opt.technology, busopt, errorList);
-
-        if (busopt.seq.size() == 2 && !opt.single_end) {
-          busopt.paired = true;
+        for(int j = 0; j < errorList.size(); j++) {
+          cerr << errorList[j] << endl;
         }
-
-        if(valid) {
-          /*
-          busopt.nfiles = files.size();
-          for(int i = 0; i < bcValues.size(); i++) {
-            busopt.bc.push_back(bcValues[i]);
-          }
-          busopt.umi.push_back(values[0]);
-          busopt.seq.push_back(values[1]);
-          */
-        } else {
-          for(int j = 0; j < errorList.size(); j++) {
-            cerr << errorList[j] << endl;
-          }
-          cerr << "Unable to create technology: " << opt.technology << endl;
-          ret = false;
-        }
+        cerr << "Unable to create technology: " << opt.technology << endl;
+        ret = false;
       }
     }
+    if (opt.bam) busopt.nfiles = 1; // Make sure it's still one file for BAM
     if (nfiles_per_batch != 0 && nfiles_per_batch != busopt.nfiles) {
       cerr << "Wrong number of files per batch for technology: " << opt.technology << endl;
     }
     if (opt.batch_mode) {
       opt.files.clear(); // Don't need these
-      opt.batch_bus = true;
     }
   }
 
@@ -2305,141 +2094,66 @@ int main(int argc, char *argv[]) {
       if (!CheckOptionsBus(opt)) {
         usageBus();
         exit(1);
-      } else if (opt.batch_mode) { // kallisto pseudo
-        // pseudoalign the reads
-
-        KmerIndex index(opt);
-        index.load(opt);
-
-        MinCollector collection(index, opt);
-        int64_t num_pseudoaligned = 0;
-        int64_t num_unique = 0;
-
-        Transcriptome model; // empty model
-        if (!opt.gtfFile.empty()) {
-          model.parseGTF(opt.gtfFile, index, opt, true);
-        }
-        MasterProcessor MP(index, opt, collection, model);
-        num_processed = ProcessBatchReads(MP,opt);
-
-        std::string call = argv_to_string(argc, argv);
-
-        if (!opt.batch_bus) {
-          for (int id = 0; id < MP.batchCounts.size(); id++) {
-            const auto &cc = MP.batchCounts[id];
-            for (const auto &p : cc) {
-              if (p.first < index.num_trans) {
-                num_unique += p.second;
-              }
-              num_pseudoaligned += p.second;
-            }
-          }
-        } else {
-          for (const auto& elem : index.ecmapinv) {
-            if (elem.first.cardinality() == 1) {
-              num_unique += collection.counts[elem.second];
-            }
-            num_pseudoaligned += collection.counts[elem.second];
-          }
-        }
-
-        std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
-          transout_f << index.target_names_[i] << "\n";
-        }
-        transout_f.close();
-
-        plaintext_aux(
-          opt.output + "/run_info.json",
-          std::string(std::to_string(index.onlist_sequences.cardinality())),
-          std::string(std::to_string(0)), // no bootstraps in pseudo
-          std::string(std::to_string(num_processed)),
-          std::string(std::to_string(num_pseudoaligned)),
-          std::string(std::to_string(num_unique)),
-          KALLISTO_VERSION,
-          std::string(std::to_string(index.INDEX_VERSION)),
-          start_time,
-          call,
-          opt.aa ? std::to_string(collection.cardinality_clashes) : "");
-
-        cerr << endl;
-
-        std::string prefix = opt.output + "/matrix";
-        std::string ecfilename = prefix + ".ec";
-        std::string tccfilename = prefix + ".tcc.mtx";
-        std::string cellnamesfilename = prefix + ".cells";
-        std::string genelistname = prefix + ".genelist.txt";
-        std::string busbarcodelistname = prefix + ".barcodes";
-        std::string busoutputname = opt.output + "/output.bus";
-
-        writeECList(ecfilename, index);
-        writeCellIds(cellnamesfilename, opt.batch_ids);
-        if (opt.batch_bus || opt.batch_bus_write) {
-          if (opt.batch_bus_write) {
-            writeBUSMatrix(busoutputname, MP.batchCounts, index.ecmapinv.size(), MP.batch_id_mapping);
-          }
-          if (!MP.batchCounts.empty()) {
-            // Write out fake barcodes that identify each cell
-            std::vector<std::string> fake_bcs;
-            fake_bcs.reserve(MP.batchCounts.size());
-            for (size_t j = 0; j < MP.batch_id_mapping.size(); j++) {
-              fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
-            }
-            writeCellIds(busbarcodelistname, fake_bcs);
-          }
-          // Write out index if necessary (basically, when no UMIs or when paired-end)
-          if (!opt.single_end || opt.technology.empty() || opt.busOptions.paired || opt.busOptions.umi[0].fileno == -1) {
-            index.write((opt.output + "/index.saved"), false, opt.threads);
-          }
-          // Write out fragment length distributions if reads paired-end:
-          if (!opt.single_end) {
-            std::ofstream flensout_f((opt.output + "/flens.txt"));
-            for (size_t id = 0; id < opt.batch_ids.size(); id++) {
-              std::vector<uint32_t> fld = MP.batchFlens[id];
-              for ( size_t i = 0 ; i < fld.size(); ++i ) {
-                if (i != 0) {
-                  flensout_f << " ";
-                }
-                flensout_f << fld[i];
-              }
-              flensout_f << "\n";
-            }
-            flensout_f.close();
-          }
-        }
-        if (!opt.gtfFile.empty()) {
-          // write out gene info
-          writeGeneList(genelistname, model);
-        }
-      } else { // kallisto bus -x
-        int num_trans, index_version;
-        int64_t num_pseudoaligned = 0;
-        int64_t num_unique = 0;
-
-        opt.bus_mode = true;
+      }
+      int64_t num_pseudoaligned = 0;
+      int64_t num_unique = 0;
+      uint32_t bclen = 0;
+      uint32_t umilen = 0;
+      std::string prefix = opt.output + "/matrix";
+      std::string ecfilename = prefix + ".ec";
+      std::string cellnamesfilename = prefix + ".cells";
+      std::string genelistname = prefix + ".genelist.txt";
+      std::string busbarcodelistname = prefix + ".barcodes";
+      bool batch_mode = opt.batch_mode;
+      
+      if (!batch_mode) {
+        opt.bus_mode = true; // bus_mode = !batch_mode (however, if either is true, means we're writing BUS file)
         opt.single_end = false;
-
-        KmerIndex index(opt);
-        index.load(opt);
-
-        bool guessChromosomes = false;
-        Transcriptome model; // empty
-        if (opt.genomebam) {
-          if (!opt.chromFile.empty()) {
-            model.loadChromosomes(opt.chromFile);
-          } else {
-            guessChromosomes = true;
-          }
-          model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
+      }
+      
+      KmerIndex index(opt);
+      index.load(opt);
+      
+      bool guessChromosomes = true;
+      Transcriptome model; // empty
+      if (opt.genomebam) {
+        if (!opt.chromFile.empty()) {
+          guessChromosomes = false;
+          model.loadChromosomes(opt.chromFile);
+        } else {
+          guessChromosomes = true;
         }
-
-        MinCollector collection(index, opt);
-        MasterProcessor MP(index, opt, collection, model);
+      }
+      if (!opt.gtfFile.empty()) {
+        model.parseGTF(opt.gtfFile, index, opt, guessChromosomes);
+      }
+      
+      MinCollector collection(index, opt);
+      MasterProcessor MP(index, opt, collection, model);
+      if (batch_mode) {
+        num_processed = ProcessBatchReads(MP, opt);
+        writeCellIds(cellnamesfilename, opt.batch_ids);
+        // Write out index if necessary (basically, when no UMIs or when paired-end)
+        if (!opt.single_end || opt.technology.empty() || opt.busOptions.paired || opt.busOptions.umi[0].fileno == -1) {
+          index.write((opt.output + "/index.saved"), false, opt.threads);
+        }
+        // Write out fragment length distributions if reads paired-end:
+        if (!opt.single_end) {
+          std::ofstream flensout_f((opt.output + "/flens.txt"));
+          for (size_t id = 0; id < opt.batch_ids.size(); id++) {
+            std::vector<uint32_t> fld = MP.batchFlens[id];
+            for ( size_t i = 0 ; i < fld.size(); ++i ) {
+              if (i != 0) {
+                flensout_f << " ";
+              }
+              flensout_f << fld[i];
+            }
+            flensout_f << "\n";
+          }
+          flensout_f.close();
+        }
+      } else {
         num_processed = ProcessBUSReads(MP, opt);
-
-        uint32_t bclen = 0;
-        uint32_t umilen = 0;
-
         for (int i = 0; i <= 32; i++) {
           if (MP.bus_bc_len[i] > MP.bus_bc_len[bclen]) {
             bclen = i;
@@ -2448,7 +2162,7 @@ int main(int argc, char *argv[]) {
             umilen = i;
           }
         }
-
+        
         bool write = false;
         // hack, open the bus file and write over the values in there.
         if (opt.busOptions.getBCLength() == 0) {
@@ -2465,7 +2179,7 @@ int main(int argc, char *argv[]) {
         } else {
           umilen = opt.busOptions.getUMILength();
         }
-
+        
         if (write) {
           std::FILE* fp = std::fopen((opt.output + "/output.bus").c_str(), "r+b");
           if (fp != nullptr) {
@@ -2477,16 +2191,6 @@ int main(int argc, char *argv[]) {
             fp = nullptr;
           }
         }
-
-        writeECList(opt.output + "/matrix.ec", index);
-
-        // write transcript names
-        std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
-          transout_f << index.target_names_[i] << "\n";
-        }
-        transout_f.close();
-
         std::vector<uint32_t> fld;
         if (opt.busOptions.paired) {
           fld = collection.flens; // copy
@@ -2507,48 +2211,58 @@ int main(int argc, char *argv[]) {
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
         }
-
-        // gather stats
-        num_unique = 0;
-        num_pseudoaligned = 0;
-        for (const auto& elem : index.ecmapinv) {
-          if (elem.first.cardinality() == 1) {
-            num_unique += collection.counts[elem.second];
-          }
-          num_pseudoaligned += collection.counts[elem.second];
+      }
+      
+      writeECList(ecfilename, index);
+      
+      // write transcript names
+      std::ofstream transout_f((opt.output + "/transcripts.txt"));
+      for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
+        transout_f << index.target_names_[i] << "\n";
+      }
+      transout_f.close();
+      
+      for (const auto& elem : index.ecmapinv) {
+        if (elem.first.cardinality() == 1) {
+          num_unique += collection.counts[elem.second];
         }
-
-        // write json file
-        std::string call = argv_to_string(argc, argv);
-        plaintext_aux(
-            opt.output + "/run_info.json",
-            std::string(std::to_string(index.onlist_sequences.cardinality())),
-            std::string(std::to_string(0)),
-            std::string(std::to_string(num_processed)),
-            std::string(std::to_string(num_pseudoaligned)),
-            std::string(std::to_string(num_unique)),
-            KALLISTO_VERSION,
-            std::string(std::to_string(index.INDEX_VERSION)),
-            start_time,
-            call,
-            opt.aa ? std::to_string(collection.cardinality_clashes) : "");
-
-        if (opt.pseudobam) {
-          std::vector<double> fl_means(index.target_lens_.size(),0.0);
-          EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
-          #ifndef NO_HTSLIB
-          MP.processAln(em, false);
-          #endif
-        }
-
-        cerr << endl;
-        if (num_pseudoaligned == 0) {
-          exit(1); // exit with error
-        }
+        num_pseudoaligned += collection.counts[elem.second];
+      }
+      
+      // write json file
+      std::string call = argv_to_string(argc, argv);
+      plaintext_aux(
+        opt.output + "/run_info.json",
+        std::string(std::to_string(index.onlist_sequences.cardinality())),
+        std::string(std::to_string(0)),
+        std::string(std::to_string(num_processed)),
+        std::string(std::to_string(num_pseudoaligned)),
+        std::string(std::to_string(num_unique)),
+        KALLISTO_VERSION,
+        std::string(std::to_string(index.INDEX_VERSION)),
+        start_time,
+        call,
+        opt.aa ? std::to_string(collection.cardinality_clashes) : "");
+      
+      if (opt.pseudobam) {
+        std::vector<double> fl_means(index.target_lens_.size(),0.0);
+        EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+#ifndef NO_HTSLIB
+        MP.processAln(em, false);
+#endif
+      }
+      
+      cerr << endl;
+      if (!opt.gtfFile.empty()) {
+        // write out gene info
+        writeGeneList(genelistname, model);
       }
       if (opt.max_num_reads != 0 && num_processed < opt.max_num_reads) {
         std::cerr << "Note: Number of reads processed is less than --numReads: " << opt.max_num_reads << ", returning 1" << std::endl;
         return 1;
+      }
+      if (num_pseudoaligned == 0) {
+        exit(1); // exit with error
       }
     } else if (cmd == "merge") {
         cerr << "Deprecated: `kallisto merge` is deprecated. See `kallisto bus`." << endl;
