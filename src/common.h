@@ -45,6 +45,7 @@ struct BUSOptionSubstr {
 
 struct BUSOptions {
   int nfiles;
+  bool keep_fastq_comments;
 
   std::vector<BUSOptionSubstr> umi;
   std::vector<BUSOptionSubstr> bc;

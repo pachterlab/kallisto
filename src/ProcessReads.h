@@ -51,7 +51,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false) = 0;
+                      bool full=false,
+                      bool comments=false) = 0;
 
 
 public:
@@ -92,7 +93,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false);
+                      bool full=false,
+                      bool comments=false);
 
 public:
   int nfiles = 1;
@@ -148,7 +150,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false);
+                      bool full=false,
+                      bool comments=false);
 
 public:
   BGZF *fp;
@@ -380,6 +383,7 @@ public:
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<std::string> umis;
   std::vector<uint32_t> flags;
 
   std::vector<Roaring> newEcs;

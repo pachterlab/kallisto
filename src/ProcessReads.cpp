@@ -1153,7 +1153,8 @@ BUSProcessor::BUSProcessor(BUSProcessor && o) :
   bias5(std::move(o.bias5)),
   bv(std::move(o.bv)),
   batchSR(std::move(o.batchSR)),
-  counts(std::move(o.counts)) {
+  counts(std::move(o.counts)),
+  umis(std::move(o.umis)) {
     memcpy(&bc_len[0], &o.bc_len[0], sizeof(bc_len));
     memcpy(&umi_len[0], &o.umi_len[0], sizeof(umi_len));
     buffer = o.buffer;
@@ -1174,7 +1175,6 @@ void BUSProcessor::operator()() {
   std::unordered_set<int> parallel_bus_read_empty;
   while (true) {
     int readbatch_id;
-    std::vector<std::string> umis;
     // grab the reader lock
     if (mp.opt.batch_mode) {
       int num_ids = mp.opt.batch_ids.size();
@@ -1197,7 +1197,7 @@ void BUSProcessor::operator()() {
         }
         continue;
       } else {
-        mp.FSRs[SRindex].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam );
+        mp.FSRs[SRindex].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam, mp.opt.busOptions.keep_fastq_comments);
       }
     } else if (mp.opt.bus_mode && mp.parallel_bus_read) {
       int nbatches = mp.opt.files.size() / mp.opt.busOptions.nfiles;
@@ -1211,7 +1211,7 @@ void BUSProcessor::operator()() {
         parallel_bus_read_empty.emplace(i);
         continue;
       }
-      mp.FSRs[i].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
+      mp.FSRs[i].fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion, mp.opt.busOptions.keep_fastq_comments);
     } else {
       std::lock_guard<std::mutex> lock(mp.reader_lock);
       if (mp.SR->empty()) {
@@ -1219,7 +1219,7 @@ void BUSProcessor::operator()() {
         return;
       } else {
         // get new sequences
-        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion);
+        mp.SR->fetchSequences(buffer, bufsize, seqs, names, quals, flags, umis, readbatch_id, mp.opt.pseudobam || mp.opt.fusion, mp.opt.busOptions.keep_fastq_comments);
       }
       // release the reader lock
     }
@@ -1254,6 +1254,7 @@ void BUSProcessor::processBuffer() {
   const BUSOptions& busopt = mp.opt.busOptions;
   bool no_technology = mp.opt.technology.empty();
   bool bulk_like = (mp.opt.batch_mode && no_technology) || busopt.umi[0].fileno == -1; // Treat like bulk: no UMI
+  if (busopt.keep_fastq_comments) bulk_like = false; // UMI is actually in FASTQ header
 
   auto &tcount = mp.tlencount;
   if (mp.opt.batch_mode) {
@@ -1332,6 +1333,15 @@ void BUSProcessor::processBuffer() {
       umi[ulen] = 0;
       ignore_umi = true;
       getFragLenIfPaired = true;
+    } else if (busopt.keep_fastq_comments) { // UMI is in SAM tag (RX:Z:)
+      if (umis[i].length() > 0) {
+        // Take the UMI from the first read in the set (i.e. j=0)
+        ulen = umis[i].length() > 32 ? 32 : umis[i].length();
+        memcpy(umi, umis[i].c_str(), ulen);
+        umi[ulen] = 0;
+      } else {
+        bad_umi = true;
+      }
     } else {
       for (auto &umic : busopt.umi) {
         int umilen = (0 == umic.stop) ? l[umic.fileno] - umic.start : umic.stop - umic.start;
@@ -2896,7 +2906,8 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
   std::vector<std::pair<const char *, int> > &quals,
   std::vector<uint32_t>& flags,
   std::vector<std::string> &umis, int& read_id,
-  bool full) {
+  bool full,
+  bool comments) {
 
   std::string line;
   std::string umi;
@@ -2904,6 +2915,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
   read_id = readbatch_id; // copy now because we are inside a lock
   seqs.clear();
   umis.clear();
+  if (comments) full = true; // Auto-set to full if comments is true
   if (full) {
     names.clear();
     quals.clear();
@@ -2948,7 +2960,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
       // fits into the buffer
       if (full) {
         for (int i = 0; i < nfiles; i++) {
-          nl[i] = seq[i]->name.l;
+          nl[i] = seq[i]->name.l + (comments ? seq[i]->comment.l+1 : 0);
           bufadd += l[i] + nl[i]; // includes name and qual
         }
         bufadd += 2*pad;
@@ -2969,7 +2981,7 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
           bufpos += l[i]+1;
           seqs.emplace_back(pi,l[i]);
 
-          if (full) {
+          if (full && !comments) {
             pi = buf + bufpos;
             memcpy(pi, seq[i]->qual.s,l[i]+1);
             bufpos += l[i]+1;
@@ -2978,6 +2990,35 @@ bool FastqSequenceReader::fetchSequences(char *buf, const int limit, std::vector
             memcpy(pi, seq[i]->name.s, nl[i]+1);
             bufpos += nl[i]+1;
             names.emplace_back(pi, nl[i]);
+          } else if (full && comments) {
+            pi = buf + bufpos;
+            memcpy(pi, seq[i]->qual.s,l[i]+1);
+            bufpos += l[i]+1;
+            quals.emplace_back(pi,l[i]);
+            pi = buf + bufpos;
+            memcpy(pi, seq[i]->name.s, (nl[i]-(seq[i]->comment.l+1)));
+            names.emplace_back(pi, (nl[i]-(seq[i]->comment.l+1)));
+            bufpos += (nl[i]-(seq[i]->comment.l+1));
+            pi = buf + bufpos;
+            const char* blank_space = " ";
+            memcpy(pi, blank_space, 1);
+            bufpos += 1;
+            pi = buf + bufpos;
+            memcpy(pi, seq[i]->comment.s, seq[i]->comment.l+1);
+            bufpos += seq[i]->comment.l+1;
+            // Extract UMI:
+            const char* umi_pos = strstr(seq[i]->comment.s, "RX:Z:");
+            if (umi_pos != nullptr) {
+              size_t umi_extra_length = 0;
+              const char* space_pos = strstr(umi_pos, " "); // Check for space
+              if (space_pos != nullptr) {
+                umi_extra_length = space_pos != nullptr ? space_pos-umi_pos-5 : 0;
+              } else {
+                const char* tab_pos = strstr(umi_pos, "\t"); // Check for tab
+                umi_extra_length = tab_pos != nullptr ? tab_pos-umi_pos-5 : 0;
+              }
+              umis.emplace_back(umi_extra_length == 0 ? std::string(umi_pos+5) : std::string(umi_pos+5, umi_extra_length));
+            }
           }
         }
 

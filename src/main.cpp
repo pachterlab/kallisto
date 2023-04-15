@@ -704,7 +704,10 @@ bool ParseTechnology(const std::string &techstr, BUSOptions& busopt, std::vector
   }
   busopt.bc = std::move(v);
 
-  if (!convert_commas_to_vector(umistr, v)) {
+  if (umistr == "RX" || busopt.keep_fastq_comments) {
+    busopt.keep_fastq_comments = true;
+    v.push_back(BUSOptionSubstr(-1,-1,-1));
+  } else if (!convert_commas_to_vector(umistr, v)) {
     return false;
   }
   if (v.empty()) {
@@ -1010,6 +1013,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.umi.resize(0);
       busopt.bc.resize(0);
       busopt.aa = opt.aa;
+      busopt.keep_fastq_comments = false;
       if (opt.single_end) {
         busopt.nfiles = 1;
         busopt.paired = false;
@@ -1079,6 +1083,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     busopt.aa = opt.aa;
 
     busopt.paired = false;
+    busopt.keep_fastq_comments = false;
     if (opt.bam) busopt.nfiles = 1; // Note: only 10xV2 has been tested
     if (opt.technology == "10XV2") {
       busopt.nfiles = 2;
