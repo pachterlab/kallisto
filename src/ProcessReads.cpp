@@ -3095,7 +3095,7 @@ bool BamSequenceReader::fetchSequences(char *buf, const int limit, std::vector<s
   std::vector<std::pair<const char *, int> > &quals,
   std::vector<uint32_t>& flags,
   std::vector<std::string> &umis, int& read_id,
-  bool full) {
+  bool full, bool comments) {
 
   readbatch_id += 1; // increase the batch id
   read_id = readbatch_id; // copy now because we are inside a lock
