@@ -132,6 +132,8 @@ struct ProgramOptions {
   bool inspect_thorough;
   bool single_overhang;
   bool record_batch_bus_barcode;
+  bool matrix_to_files;
+  bool matrix_to_directories;
   int input_interleaved_nfiles;
   std::string gtfFile;
   std::string chromFile;
@@ -161,6 +163,8 @@ ProgramOptions() :
   max_num_reads(0),
   input_interleaved_nfiles(0),
   record_batch_bus_barcode(false),
+  matrix_to_files(false),
+  matrix_to_directories(false),
   batch_mode(false),
   bus_mode(false),
   bam(false),

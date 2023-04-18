@@ -295,6 +295,19 @@ void writeFLD(const std::string &filename, const std::vector<std::pair<double, d
   of.close();
 }
 
+void writeAbundanceFilesFromMatrices(
+    const std::string& out_name,
+    const std::vector<std::vector<std::pair<int32_t, double> > >& Abundance_mat,
+    const std::vector<std::vector<std::pair<int32_t, double> > >& TPM_mat,
+    const std::vector<std::vector<std::pair<int32_t, double> > >& EffLen_mat,
+    const std::vector<std::string>& target_names_,
+    const std::vector<uint32_t>& target_lens_,
+    size_t num_trans,
+    bool separate_directories
+) {
+  
+}
+
 void writeGeneList(const std::string &filename, const Transcriptome& model, bool writeNamesOnly) {
   std::ofstream of;
   of.open(filename.c_str(), std::ios::out);

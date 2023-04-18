@@ -347,7 +347,11 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
+  int matrix_to_files = 0;
+  int matrix_to_directories = 0;
   static struct option long_options[] = {
+    {"matrix-to-files", no_argument, &matrix_to_files, 1},
+    {"matrix-to-directories", no_argument, &matrix_to_directories, 1},
     {"index", required_argument, 0, 'i'},
     {"txnames", required_argument, 0, 'T'},
     {"threads", required_argument, 0, 't'},
@@ -360,6 +364,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"gtf", required_argument, 0, 'G'},
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"seed", required_argument, 0, 'd'},
+    
     {0,0,0,0}
   };
   int c;
@@ -424,6 +429,12 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     default: break;
     }
+  }
+  if (matrix_to_files) {
+    opt.matrix_to_files = true;
+  }
+  if (matrix_to_directories) {
+    opt.matrix_to_directories = true;
   }
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
@@ -1695,6 +1706,11 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
     cerr << ERROR_STR << " invalid value for fragment length standard deviation " << opt.sd << endl;
     ret = false;
   }
+  
+  if (opt.index.empty() && (opt.matrix_to_files || opt.matrix_to_directories)) {
+    cerr << ERROR_STR << " cannot get abundance tsv files unless a kallisto index is provided" << endl;
+    ret = false;
+  }
 
   if (opt.output.empty()) {
     cerr << ERROR_STR << " need to specify output directory " << opt.output << endl;
@@ -2005,6 +2021,8 @@ void usageTCCQuant(bool valid_input = true) {
        << "-G, --gtf=FILE                GTF file for transcriptome information" << endl
        << "                              (can be used instead of --genemap for obtaining gene-level abundances)" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
+       << "    --matrix-to-files         Reorganize matrix output into abundance tsv files" << endl
+       << "    --matrix-to-directories   Reorganize matrix output into abundance tsv files across multiple directories" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl;
 }
 
@@ -2750,13 +2768,13 @@ int main(int argc, char *argv[]) {
             writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
             writeGeneList(genelistname, model, true);
           }
-          /*if (opt.matrix_to_files) { // TODO: Only allow this when index is supplied
-            // writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, index.num_trans);
+          if (opt.matrix_to_files) {
+            writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, num_trans, false);
             // TODO: TSV FILES (just prefix with matrix cell number); do bootstraps too (bs_)
-            // TODO: See if offlist affects index.num_trans: yes it does (maybe should use index.onlist_sequences.cardinality() in stead of index.num_trans if cardinality is nonzero)
+            // TODO: Check if num_trans is correct w/ and w/o offlist
           } else if (opt.matrix_to_directories) {
-            // TODO: TSV FILES
-          }*/
+            writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, num_trans, true);
+          }
         }
         if (calcEffLen) {
           writeFLD(fldfilename, FLD_mat);
