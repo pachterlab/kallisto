@@ -2551,7 +2551,7 @@ int main(int argc, char *argv[]) {
           exit(1);
         }
 
-        std::vector<std::vector<std::pair<int32_t, double> > > Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene;
+        std::vector<std::vector<std::pair<int32_t, double> > > Abundance_mat, Abundance_mat_gene, TPM_mat, TPM_mat_gene, EffLen_mat;
         Abundance_mat.resize(nrow, {});
         Abundance_mat_gene.resize(nrow, {});
         TPM_mat.resize(nrow, {});
@@ -2572,9 +2572,13 @@ int main(int argc, char *argv[]) {
         std::string genelistname = opt.output + "/genes.txt";
         std::string abfilename = prefix + ".abundance.mtx";
         std::string abtpmfilename = prefix + ".abundance.tpm.mtx";
+        std::string efflenmtxfilename = prefix + ".efflens.mtx";
         std::string gene_abfilename = prefix + ".abundance.gene.mtx";
         std::string gene_abtpmfilename = prefix + ".abundance.gene.tpm.mtx";
         std::string fldfilename = prefix + ".fld.tsv";
+        
+        size_t num_trans = index.onlist_sequences.cardinality();
+        if (num_trans == 0) num_trans = index.num_trans; // If we get create an index from a simple list of transcripts (and therefore don't have an on-list)
 
         const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
         if (calcEffLen && !opt.fldFile.empty()) { // Parse supplied fragment length distribution file
@@ -2659,6 +2663,7 @@ int main(int argc, char *argv[]) {
           if (isMatrixFile) { // Update abundances matrix
             auto &ab_m = Abundance_mat[id];
             auto &tpm_m = TPM_mat[id];
+            auto &elen_m = EffLen_mat[id];
             std::vector<double> gc;
             std::vector<double> gc_tpm;
             if (gene_level_counting) {
@@ -2670,6 +2675,9 @@ int main(int argc, char *argv[]) {
               if (em.alpha_[i] > 0.0) {
                 ab_m.push_back({i,em.alpha_[i]});
                 tpm_m.push_back({i,tpm[i]});
+                if (calcEffLen) {
+                  elen_m.push_back({i,em.eff_lens_[i]});
+                }
                 if (gene_level_counting) {
                   int g_id = model.transcripts[i].gene_id;
                   if (g_id != -1) {
@@ -2737,16 +2745,31 @@ int main(int argc, char *argv[]) {
         cerr << endl;
 
         if (isMatrixFile) {
-          writeSparseBatchMatrix(abfilename, Abundance_mat, index.num_trans);
-          writeSparseBatchMatrix(abtpmfilename, TPM_mat, index.num_trans);
+          writeSparseBatchMatrix(abfilename, Abundance_mat, num_trans);
+          writeSparseBatchMatrix(abtpmfilename, TPM_mat, num_trans);
+          if (calcEffLen) {
+            writeSparseBatchMatrix(efflenmtxfilename, EffLen_mat, num_trans);
+          }
           if (gene_level_counting) {
             writeSparseBatchMatrix(gene_abfilename, Abundance_mat_gene, model.genes.size());
             writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
             writeGeneList(genelistname, model, true);
           }
+          /*if (opt.matrix_to_files) { // TODO: Only allow this when index is supplied
+            // writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, index.num_trans);
+            // TODO: TSV FILES (just prefix with matrix cell number); do bootstraps too (bs_)
+            // TODO: See if offlist affects index.num_trans: yes it does (maybe should use index.onlist_sequences.cardinality() in stead of index.num_trans if cardinality is nonzero)
+          } else if (opt.matrix_to_directories) {
+            // TODO: TSV FILES
+          }*/
         }
         if (calcEffLen) {
           writeFLD(fldfilename, FLD_mat);
+          std::ofstream translens_f((opt.output + "/transcript_lengths.txt"));
+          for (size_t i = 0; i < num_trans; i++) {
+            translens_f << index.target_names_[i] << " " << index.target_lens_[i] << "\n";
+          }
+          translens_f.close();
         }
       }
     } else if (cmd == "pseudo") {
