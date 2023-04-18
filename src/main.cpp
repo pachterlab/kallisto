@@ -1370,11 +1370,6 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
     ret = false;
   }
   
-  if (opt.distinguish && !opt.d_list.empty()) {
-    cerr << "Error: --distinguish incompatible with --d-list" << endl;
-    ret = false;
-  }
-  
   if (opt.distinguish && opt.max_ec_size != 0) {
     cerr << "Error: --distinguish incompatible with setting max ec size" << endl;
     ret = false;
