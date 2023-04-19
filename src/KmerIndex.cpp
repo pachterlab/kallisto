@@ -461,15 +461,52 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   
   // Prepare some variables:
   num_trans = tmp_files.size();
+  tmp_files.clear();
+  ofs.clear();
   target_names_.clear();
   target_lens_.clear();
   for (size_t i = 0; i < num_trans; i++) {
     target_names_.push_back(std::to_string(i));
     target_lens_.push_back(k); // dummy length (k-mer size)
+    tmp_files.push_back(generate_tmp_file(std::to_string(i) + "--" + opt.index)); // New tmp files for the colored contigs
   }
-  
+
+  std::cerr << "[build] Collating contigs" << std::endl;
+  for (auto tmp_file : tmp_files) ofs.push_back(new std::ofstream(tmp_file, std::ios::binary));
+  std::ifstream infile(tmp_file2);
+  std::string line;
+  int current_color = 0;
+  std::unordered_set<int> colors_read;
+  while (std::getline(infile, line)) { // String contigs together into new tmp files
+    if (line[0] == '>') {
+      current_color = std::atoi(line.c_str()+1);
+      if (!colors_read.count(current_color)) {
+        *(ofs[current_color]) << ">" << current_color << "\n";
+        colors_read.insert(current_color);
+      }
+      continue;
+    }
+    *(ofs[current_color]) << line << std::string(k-1, 'N'); // spacer
+  }
+  // Close the unprocessed jumbled contigs file
+  infile.close();
+  if (opt.distinguishFile.empty()) std::remove(tmp_file2.c_str());
+  // Aggregate all the tmp processed contig files into a single tmp file
+  for (size_t i = 1; i < tmp_files.size(); i++) {
+    (*(ofs[i])).close();
+    delete ofs[i];
+    std::ifstream if_color_contigs(tmp_files[i], std::ios_base::binary);
+    *(ofs[0]) << if_color_contigs.rdbuf();
+    std::remove(tmp_files[i].c_str());
+  }
+  (*(ofs[0])).close();
+  delete ofs[0];
+  ofs.clear();
+  std::string tmp_file_aggregated = tmp_files[0];
+  tmp_files.clear();
+
   std::cerr << "[build] Building graph from k-mers" << std::endl;
-  BuildDeBruijnGraph(opt, tmp_file2, out);
+  BuildDeBruijnGraph(opt, tmp_file_aggregated, out);
   
   std::cerr << "[build] creating equivalence classes ... " << std::endl;
   
@@ -477,10 +514,9 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   uint32_t sense = 0x80000000, missense = 0;
   
   std::vector<std::vector<TRInfo> > trinfos(dbg.size());
-  std::ifstream infile(tmp_file2);
-  std::string line;
-  int current_color = 0;
-  while (std::getline(infile, line)) {
+  std::ifstream infile_a(tmp_file_aggregated);
+  current_color = 0;
+  while (std::getline(infile_a, line)) {
     if (line[0] == '>') {
       current_color = std::atoi(line.c_str()+1);
       continue;
@@ -514,8 +550,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       // std::cout << std::endl;
     }
   }
-  infile.close();
-  if (opt.distinguishFile.empty()) std::remove(tmp_file2.c_str());
+  infile_a.close();
+  std::remove(tmp_file_aggregated.c_str());
   PopulateMosaicECs(trinfos);
   
   std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
