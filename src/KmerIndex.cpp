@@ -486,7 +486,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       }
       continue;
     }
-    *(ofs[current_color]) << line << std::string(k-1, 'N'); // spacer
+    *(ofs[current_color]) << line;// << std::string(k-1, 'N'); // spacer
   }
   // Close the unprocessed jumbled contigs file
   infile.close();
@@ -499,6 +499,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     *(ofs[0]) <<  "\n" << if_color_contigs.rdbuf();
     std::remove(tmp_files[i].c_str());
   }
+  *(ofs[0]) << "\n";
   (*(ofs[0])).close();
   delete ofs[0];
   ofs.clear();
