@@ -496,7 +496,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     (*(ofs[i])).close();
     delete ofs[i];
     std::ifstream if_color_contigs(tmp_files[i], std::ios_base::binary);
-    *(ofs[0]) <<  "\n" << if_color_contigs.rdbuf() << "\n";
+    *(ofs[0]) <<  "\n" << if_color_contigs.rdbuf();
     std::remove(tmp_files[i].c_str());
   }
   (*(ofs[0])).close();
@@ -517,10 +517,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   std::ifstream infile_a(tmp_file_aggregated);
   current_color = 0;
   while (std::getline(infile_a, line)) {
-    if (line[0] == '>') {
-      current_color = std::atoi(line.c_str()+1);
+    if (line.length() == 0) {
       continue;
-    } else if (line.length() == 0) {
+    } else if (line[0] == '>') {
+      current_color = std::atoi(line.c_str()+1);
       continue;
     }
     const auto& seq = line;
