@@ -461,6 +461,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   
   // Prepare some variables:
   num_trans = tmp_files.size();
+  size_t num_trans_initial = num_trans; // num_trans may be modified by D-listing
   tmp_files.clear();
   ofs.clear();
   target_names_.clear();
@@ -521,7 +522,11 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     if (line.length() == 0) {
       continue;
     } else if (line[0] == '>') {
-      current_color = std::atoi(line.c_str()+1);
+      if (line[1] == 'd') { // D-listed color: d_list.
+        current_color = num_trans_initial+1; // num_trans_initial+1+std::atoi(line.c_str()+7);
+      } else {
+        current_color = std::atoi(line.c_str()+1);
+      }
       continue;
     }
     const auto& seq = line;
