@@ -478,10 +478,12 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int unstranded_flag = 0;
   int interleaved_flag = 0;
   int batch_barcodes_flag = 0;
+  int dfk_onlist_flag = 0;
 
   const char *opt_string = "i:o:x:t:lbng:c:T:B:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
+    {"dfk-onlist", no_argument, &dfk_onlist_flag, 1},
     {"index", required_argument, 0, 'i'},
     {"output-dir", required_argument, 0, 'o'},
     {"technology", required_argument, 0, 'x'},
@@ -616,6 +618,10 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   
   if (batch_barcodes_flag) {
     opt.record_batch_bus_barcode = true;
+  }
+
+  if (dfk_onlist_flag) {
+    opt.dfk_onlist = true;
   }
   
   opt.single_overhang = true;

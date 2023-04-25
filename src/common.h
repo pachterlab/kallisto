@@ -126,6 +126,7 @@ struct ProgramOptions {
   bool genomebam;
   bool make_unique;
   bool fusion;
+  bool dfk_onlist;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   std::string gfa; // used for inspect
@@ -179,6 +180,7 @@ ProgramOptions() :
   genomebam(false),
   make_unique(false),
   fusion(false),
+  dfk_onlist(false),
   strand(StrandType::None),
   inspect_thorough(false),
   single_overhang(false),
