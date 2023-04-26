@@ -91,6 +91,8 @@ struct ProgramOptions {
   bool verbose;
   bool aa;
   bool distinguish;
+  bool distinguish_keep_single_color;
+  bool distinguish_union;
   int threads;
   std::string index;
   int k;
@@ -185,7 +187,9 @@ ProgramOptions() :
   inspect_thorough(false),
   single_overhang(false),
   aa(false),
-  distinguish(false)
+  distinguish(false),
+  distinguish_keep_single_color(false),
+  distinguish_union(false)
   {}
 };
 

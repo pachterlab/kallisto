@@ -419,19 +419,36 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       // std::cout << color << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).rep().toString() << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).toString() << " " << it_uc.getKmerPosition() << " " << unitig.strand << std::endl;
     }
     std::set<int> positions_to_remove;
-    int i_ = 0;
-    for (const auto& k_elem : k_map) {
-      int j_ = 0;
-      for (const auto& k_elem2 : k_map) {
-        if (j_ > i_ && k_elem.first != k_elem2.first) {
-          std::set<int> intersect;
-          std::set_intersection(k_elem.second.begin(), k_elem.second.end(), k_elem2.second.begin(), k_elem2.second.end(), std::inserter(intersect, intersect.begin())); //if (k_elem2.second.count(k_elem1.second)) // check if set intersection with k_elem2
-          std::set_union(positions_to_remove.begin(), positions_to_remove.end(), intersect.begin(), intersect.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+    if (opt.distinguish_keep_single_color) {
+      std::cerr << "[build] Subsetting k-mers to disjoint sets" << std::endl;
+      int i_ = 0;
+      for (const auto& k_elem : k_map) {
+        int j_ = 0;
+        for (const auto& k_elem2 : k_map) {
+          if (j_ > i_ && k_elem.first != k_elem2.first) {
+            std::set<int> intersect;
+            std::set_intersection(k_elem.second.begin(), k_elem.second.end(), k_elem2.second.begin(), k_elem2.second.end(), std::inserter(intersect, intersect.begin())); //if (k_elem2.second.count(k_elem1.second)) // check if set intersection with k_elem2
+            std::set_union(positions_to_remove.begin(), positions_to_remove.end(), intersect.begin(), intersect.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+          }
+          j_++;
         }
-        j_++;
+        i_++;
       }
-      i_++;
+    } else if (!opt.distinguish_union) {
+      std::cerr << "[build] Subsetting k-mers to all-but-one sets" << std::endl;
+      int i_ = 0;
+      for (const auto& k_elem : k_map) {
+        i_++;
+        if (i_ != k_map.size()) {
+          std::set_union(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+        } else {
+          std::set_symmetric_difference(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+        }
+      }
+    } else {
+      std::cerr << "[build] Not subsetting k-mers" << std::endl;
     }
+
     for (const auto& k_elem : k_map) {
       int curr_pos = -1;
       std::string colored_contig = "";
