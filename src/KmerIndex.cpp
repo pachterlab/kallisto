@@ -426,8 +426,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
         for (const auto& k_elem2 : k_map) {
           if (j_ > i_ && k_elem.first != k_elem2.first) {
             std::set<int> intersect;
+            std::set<int> set_result;
             std::set_intersection(k_elem.second.begin(), k_elem.second.end(), k_elem2.second.begin(), k_elem2.second.end(), std::inserter(intersect, intersect.begin())); //if (k_elem2.second.count(k_elem1.second)) // check if set intersection with k_elem2
-            std::set_union(positions_to_remove.begin(), positions_to_remove.end(), intersect.begin(), intersect.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+            std::set_union(positions_to_remove.begin(), positions_to_remove.end(), intersect.begin(), intersect.end(), std::inserter(set_result,set_result.begin()));
+            positions_to_remove = std::move(set_result);
           }
           j_++;
         }
@@ -438,9 +440,13 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       for (const auto& k_elem : k_map) {
         i_++;
         if (i_ != k_map.size()) {
-          std::set_union(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+          std::set<int> set_result;
+          std::set_union(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(set_result,set_result.begin()));
+          positions_to_remove = std::move(set_result);
         } else {
-          std::set_symmetric_difference(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
+          std::set<int> set_result;
+          std::set_symmetric_difference(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(set_result,set_result.begin()));
+          positions_to_remove = std::move(set_result);
         }
       }
     }
