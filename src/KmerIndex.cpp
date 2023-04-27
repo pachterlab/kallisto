@@ -420,7 +420,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     }
     std::set<int> positions_to_remove;
     if (opt.distinguish_keep_single_color) {
-      std::cerr << "[build] Subsetting k-mers to disjoint sets" << std::endl;
       int i_ = 0;
       for (const auto& k_elem : k_map) {
         int j_ = 0;
@@ -435,7 +434,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
         i_++;
       }
     } else if (!opt.distinguish_union) {
-      std::cerr << "[build] Subsetting k-mers to all-but-one sets" << std::endl;
       int i_ = 0;
       for (const auto& k_elem : k_map) {
         i_++;
@@ -445,8 +443,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
           std::set_symmetric_difference(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(positions_to_remove,positions_to_remove.begin()));
         }
       }
-    } else {
-      std::cerr << "[build] Not subsetting k-mers" << std::endl;
     }
 
     for (const auto& k_elem : k_map) {
