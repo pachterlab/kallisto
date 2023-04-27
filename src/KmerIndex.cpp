@@ -1102,7 +1102,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   out.close();
 }
 
-void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
+void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
 
   if (opt.index.empty() && !loadKmerTable) {
     // Make an index from transcript and EC files
@@ -1275,6 +1275,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
     std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
   }
   if (opt.dfk_onlist) {
+    std::cerr << "[index] on-listing the distinguishing flanking k-mers" << std::endl;
     onlist_sequences = Roaring();
     onlist_sequences.addRange(0, num_trans);
   }
@@ -1283,6 +1284,15 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable) {
 
   if (!opt.ecFile.empty()) {
     loadECsFromFile(opt);
+  }
+  
+  if (!loadDlist) { // Destroy the D-list
+    if (num_trans != onlist_sequences.cardinality()) {
+      std::cerr << "[index] not using the distinguishing flanking k-mers" << std::endl;
+      num_trans = onlist_sequences.cardinality();
+      target_names_.resize(num_trans);
+      target_lens_.resize(num_trans);
+    }
   }
 }
 

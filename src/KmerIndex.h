@@ -105,7 +105,7 @@ struct KmerIndex {
 
   // note opt is not const
   // load methods
-  void load(ProgramOptions& opt, bool loadKmerTable = true);
+  void load(ProgramOptions& opt, bool loadKmerTable = true, bool loadDlist = true);
   void loadTranscriptSequences() const;
   void loadECsFromFile(const ProgramOptions& opt);
   void loadTranscriptsFromFile(const ProgramOptions& opt);

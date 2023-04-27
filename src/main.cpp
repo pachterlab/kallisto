@@ -358,7 +358,9 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
   int matrix_to_files = 0;
   int matrix_to_directories = 0;
+  int plaintext_flag = 0;
   static struct option long_options[] = {
+    {"plaintext", no_argument, &plaintext_flag, 1},
     {"matrix-to-files", no_argument, &matrix_to_files, 1},
     {"matrix-to-directories", no_argument, &matrix_to_directories, 1},
     {"index", required_argument, 0, 'i'},
@@ -444,6 +446,9 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   }
   if (matrix_to_directories) {
     opt.matrix_to_directories = true;
+  }
+  if (plaintext_flag) {
+    opt.plaintext = true;
   }
   for (int i = optind; i < argc; i++) {
     opt.files.push_back(argv[i]);
@@ -2039,7 +2044,8 @@ void usageTCCQuant(bool valid_input = true) {
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --matrix-to-files         Reorganize matrix output into abundance tsv files" << endl
        << "    --matrix-to-directories   Reorganize matrix output into abundance tsv files across multiple directories" << endl
-       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl;
+       << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
+       << "    --plaintext               Output plaintext only, not HDF5" << endl;
 }
 
 std::string argv_to_string(int argc, char *argv[]) {
@@ -2387,9 +2393,11 @@ int main(int argc, char *argv[]) {
         #ifdef USE_HDF5
         H5Writer writer;
         if (!opt.plaintext) {
-          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld, preBias, em.post_bias_, 6,
+          std::vector<int> fld_(std::begin(fld), std::end(fld));
+          writer.init(opt.output + "/abundance.h5", opt.bootstrap, num_processed, fld_, preBias, em.post_bias_, 6,
               index.INDEX_VERSION, call, start_time);
-          writer.write_main(em, index.target_names_, index.target_lens_);
+          std::vector<int> lengths_2(std::begin(index.target_lens_), std::end(index.target_lens_));
+          writer.write_main(em, index.target_names_, lengths_2);
         }
         #endif // USE_HDF5
 
@@ -2501,7 +2509,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         KmerIndex index(opt);
-        index.load(opt, false); // skip the k-mer map
+        index.load(opt, false, false); // skip the k-mer map and the D-list
         MinCollector collection(index, opt);
         std::vector<std::vector<std::pair<uint32_t, uint32_t> > > batchCounts; // Stores TCCs
         std::ifstream in((opt.tccFile));
@@ -2587,6 +2595,7 @@ int main(int argc, char *argv[]) {
         TPM_mat_gene.resize(nrow, {});
         std::vector<std::pair<double, double>> FLD_mat;
         FLD_mat.resize(nrow, {});
+        EffLen_mat.resize(nrow, {});
         std::vector<std::vector<uint32_t>> FLDs;
         Transcriptome model; // empty model
 
@@ -2597,6 +2606,9 @@ int main(int argc, char *argv[]) {
         transout_f.close();
         std::string prefix = opt.output + "/matrix";
         std::string abtsvfilename = opt.output + "/abundance.tsv";
+        std::string abtsvprefix = opt.output + "/abundance";
+        std::string abtsvprefixh5 = opt.output + "/abundance";
+        std::string bootstrapprefix = opt.output + "/bs_abundance";
         std::string gene_abtsvfilename = opt.output + "/abundance.gene.tsv";
         std::string genelistname = opt.output + "/genes.txt";
         std::string abfilename = prefix + ".abundance.mtx";
@@ -2605,9 +2617,8 @@ int main(int argc, char *argv[]) {
         std::string gene_abfilename = prefix + ".abundance.gene.mtx";
         std::string gene_abtpmfilename = prefix + ".abundance.gene.tpm.mtx";
         std::string fldfilename = prefix + ".fld.tsv";
-        
-        size_t num_trans = index.onlist_sequences.cardinality();
-        if (num_trans == 0) num_trans = index.num_trans; // If we get create an index from a simple list of transcripts (and therefore don't have an on-list)
+
+        size_t num_trans = index.num_trans;
 
         const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
         if (calcEffLen && !opt.fldFile.empty()) { // Parse supplied fragment length distribution file
@@ -2658,6 +2669,7 @@ int main(int argc, char *argv[]) {
 
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
         auto EM_lambda = [&](int id) {
+          std::cerr << "[quant] Processing sample/cell " << std::to_string(id) << std::endl;
           MinCollector collection(index, opt);
           const auto& bc = batchCounts[id];
           for (const auto &p : bc) {
@@ -2726,7 +2738,88 @@ int main(int argc, char *argv[]) {
                 }
               }
             }
-          } else { // Write plaintext abundances
+            // Write plaintext abundance for current row in matrix
+            if (opt.matrix_to_files) {
+              // TODO: opt.matrix_to_directories
+              
+              std::string output_dir = "";
+              
+              if (opt.matrix_to_directories) {
+                output_dir = opt.output + "abundance_" + std::to_string(i);
+                struct stat stFileInfo;
+                auto intStat = stat(output_dir.c_str(), &stFileInfo);
+                if (intStat == 0) {
+                  // file/dir exits
+                  if (!S_ISDIR(stFileInfo.st_mode)) {
+                    cerr << "Error: file " << output_dir << " exists and is not a directory" << endl;
+                    exit(1);
+                  }
+                } else {
+                  // create directory
+                  if (my_mkdir(output_dir.c_str(), 0777) == -1) {
+                    cerr << "Error: could not create directory " << output_dir << endl;
+                    exit(1);
+                  }
+                }
+                output_dir = output_dir + "/";
+              }
+              std::string id_suffix = (output_dir.empty() ? ("_" + std::to_string(id+1)) : "");
+
+              plaintext_writer(output_dir + abtsvprefix + id_suffix + ".tsv", em.target_names_,
+                               em.alpha_, em.eff_lens_, index.target_lens_);
+#ifdef USE_HDF5
+              H5Writer writer;
+              std::vector<uint32_t> fld_i;
+              if (!opt.plaintext) {
+                fld_i = collection.flens;
+                if (opt.fld != 0.0) {
+                  fld_i = trunc_gaussian_counts(0, MAX_FRAG_LEN, opt.fld, opt.sd, 10000);
+                }
+                std::vector<int> fld_(std::begin(fld_i), std::end(fld_i));
+                std::vector<int32_t> preBias(4096,1);
+                writer.init(output_dir + abtsvprefixh5 + id_suffix + ".h5", opt.bootstrap, 0, fld_, preBias, em.post_bias_, 6,
+                            index.INDEX_VERSION, "", "");
+                std::vector<int> lengths_2(std::begin(index.target_lens_), std::end(index.target_lens_));
+                writer.write_main(em, index.target_names_, lengths_2);
+              }
+#endif // USE_HDF5
+              // Write out bootstraps if requested:
+              if (opt.bootstrap > 0) {
+                if (ab_m.size() == 0) { // No abundances (e.g. nothing aligned), write empty
+                  for (int b = 0; b < opt.bootstrap; b++) {
+                    if (!opt.plaintext) {
+#ifdef USE_HDF5
+                      writer.write_bootstrap(em, b); // em is empty
+#endif // USE_HDF5
+                    } else {
+                      plaintext_writer(output_dir + bootstrapprefix + id_suffix + "_" + std::to_string(b) + ".tsv",
+                                       em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_);
+                    }
+                  }
+                } else {
+                  auto B = opt.bootstrap;
+                  std::mt19937_64 rand;
+                  rand.seed( opt.seed );
+                  std::vector<size_t> seeds;
+                  for (auto s = 0; s < B; ++s) {
+                    seeds.push_back( rand() );
+                  }
+                  for (auto b = 0; b < B; ++b) {
+                    Bootstrap bs(collection.counts, index, collection, em.eff_lens_, seeds[b], fl_means, opt);
+                    auto res = bs.run_em();
+                    if (!opt.plaintext) {
+#ifdef USE_HDF5
+                      writer.write_bootstrap(res, b);
+#endif // USE_HDF5
+                    } else {
+                      plaintext_writer(output_dir + bootstrapprefix + id_suffix + "_" + std::to_string(b) + ".tsv",
+                                       em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+                    }
+                  }
+                }
+              } // End bootstrapping
+            } // End matrix-to-files
+          } else { // Write plaintext abundances (for non-matrix files)
             plaintext_writer(abtsvfilename, em.target_names_,
                              em.alpha_, em.eff_lens_, index.target_lens_);
             if (gene_level_counting) {
@@ -2783,13 +2876,6 @@ int main(int argc, char *argv[]) {
             writeSparseBatchMatrix(gene_abfilename, Abundance_mat_gene, model.genes.size());
             writeSparseBatchMatrix(gene_abtpmfilename, TPM_mat_gene, model.genes.size());
             writeGeneList(genelistname, model, true);
-          }
-          if (opt.matrix_to_files) {
-            writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, num_trans, false);
-            // TODO: TSV FILES (just prefix with matrix cell number); do bootstraps too (bs_)
-            // TODO: Check if num_trans is correct w/ and w/o offlist
-          } else if (opt.matrix_to_directories) {
-            writeAbundanceFilesFromMatrices(opt.output, Abundance_mat, TPM_mat, EffLen_mat, index.target_names_, index.target_lens_, num_trans, true);
           }
         }
         if (calcEffLen) {
