@@ -437,16 +437,16 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       }
     } else if (!opt.distinguish_union) {
       int i_ = 0;
-      for (const auto& k_elem : k_map) {
-        i_++;
-        if (i_ != k_map.size()) {
-          std::set<int> set_result;
-          std::set_union(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(set_result,set_result.begin()));
-          positions_to_remove = std::move(set_result);
-        } else {
-          std::set<int> set_result;
-          std::set_symmetric_difference(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(set_result,set_result.begin()));
-          positions_to_remove = std::move(set_result);
+      if (k_map.size() == tmp_files.size()) {
+        for (const auto& k_elem : k_map) {
+          i_++;
+          if (positions_to_remove.size() == 0) {
+            positions_to_remove = k_elem.second;
+          } else {
+            std::set<int> set_result;
+            std::set_intersection(positions_to_remove.begin(), positions_to_remove.end(), k_elem.second.begin(), k_elem.second.end(), std::inserter(set_result,set_result.begin()));
+            positions_to_remove = std::move(set_result);
+          }
         }
       }
     }
