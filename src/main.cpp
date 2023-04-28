@@ -2531,7 +2531,11 @@ int main(int argc, char *argv[]) {
                 std::cerr << "[tcc] Matrix dimensions: " << pretty_num(nrow) << " x " << pretty_num(ncol) << std::endl;
                 batchCounts.assign(nrow, {});
                 if (opt.bootstrap > 0) {
-                  cerr << "[tcc] Warning: Bootstrap can only be used for non-matrix files; will not be performed" << endl;
+                  if (opt.plaintext) {
+                    cerr << "[tcc] Bootstrapping will be performed and outputted as plaintext" << endl;
+                  } else {
+                    cerr << "[tcc] Bootstrapping will be performed and outputted as HDF5" << endl;
+                  }
                 }
                 continue;
               } else {
