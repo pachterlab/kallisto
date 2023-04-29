@@ -137,6 +137,7 @@ struct ProgramOptions {
   bool record_batch_bus_barcode;
   bool matrix_to_files;
   bool matrix_to_directories;
+  bool ec_set_union;
   int input_interleaved_nfiles;
   std::string gtfFile;
   std::string chromFile;
@@ -189,7 +190,8 @@ ProgramOptions() :
   aa(false),
   distinguish(false),
   distinguish_all_but_one_color(false),
-  distinguish_union(false)
+  distinguish_union(false),
+  ec_set_union(false)
   {}
 };
 

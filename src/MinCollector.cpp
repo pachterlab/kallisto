@@ -96,7 +96,14 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 }
 
 int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r, bool ec_set_union) const {
+  if (ec_set_union) {
+    Roaring u1 = unionECs(v1);
+    Roaring u2 = unionECs(v2);
+    r = u1 | u2;
+    if (r.isEmpty()) return -1;
+    return 1;
+  }
   Roaring u1 = intersectECs(v1);
   Roaring u2 = intersectECs(v2);
 
@@ -189,6 +196,41 @@ struct ComparePairsBySecond {
     return a.second < b.second;
   }
 };
+
+Roaring MinCollector::unionECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+  Roaring r;
+  if (v.empty()) {
+    return r;
+  }
+  sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
+       {
+         if (a.first.isSameReferenceUnitig(b.first) &&
+             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
+           return a.second < b.second;
+         } else {
+           return a.first.getData()->id < b.first.getData()->id;
+         }
+       }); // sort by contig, and then first position
+
+  for (int i = 0; i < v.size(); i++) {
+    r = r | v[i].first.getData()->ec[v[i].first.dist].getIndices();
+  }
+
+  // find the range of support
+  int minpos = std::numeric_limits<int>::max();
+  int maxpos = 0;
+
+  for (auto& x : v) {
+    minpos = std::min(minpos, x.second);
+    maxpos = std::max(maxpos, x.second);
+  }
+
+  if ((maxpos-minpos + k) < min_range) {
+    return {};
+  }
+
+  return r;
+}
 
 Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   Roaring r;
