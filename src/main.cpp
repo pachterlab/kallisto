@@ -445,6 +445,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     opt.matrix_to_files = true;
   }
   if (matrix_to_directories) {
+    opt.matrix_to_files = true; // This must be true if matrix_to_directories is true
     opt.matrix_to_directories = true;
   }
   if (plaintext_flag) {
