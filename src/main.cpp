@@ -51,7 +51,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int aa_flag = 0;
   int distinguish_flag = 0;
   int distinguish_all_flag = 0;
-  int distinguish_disjoint_flag = 0;
+  int distinguish_all_but_one_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
@@ -59,7 +59,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"make-unique", no_argument, &make_unique_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
     {"all", no_argument, &distinguish_all_flag, 1},
-    {"disjoint", no_argument, &distinguish_disjoint_flag, 1},
+    {"all-but-one", no_argument, &distinguish_all_but_one_flag, 1},
     {"distinguish", optional_argument, 0, 'Z'},
     // short args
     {"index", required_argument, 0, 'i'},
@@ -137,8 +137,8 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (distinguish_all_flag) {
     opt.distinguish_union = true;
-  } else if (distinguish_disjoint_flag) {
-    opt.distinguish_keep_single_color = true;
+  } else if (distinguish_all_but_one_flag) {
+    opt.distinguish_all_but_one_color = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -1937,7 +1937,6 @@ void usageIndex() {
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index representing k-mers unique to each FASTA " << endl
-       << "                            (default: all-but-one; other options: --all and --disjoint)" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl

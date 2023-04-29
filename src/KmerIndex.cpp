@@ -419,7 +419,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       // std::cout << color << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).rep().toString() << " " << unitig.getUnitigKmer(it_uc.getKmerPosition()).toString() << " " << it_uc.getKmerPosition() << " " << unitig.strand << std::endl;
     }
     std::set<int> positions_to_remove;
-    if (opt.distinguish_keep_single_color) {
+    if (!opt.distinguish_all_but_one_color && !opt.distinguish_union) {
       int i_ = 0;
       for (const auto& k_elem : k_map) {
         int j_ = 0;
