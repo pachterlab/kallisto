@@ -1526,6 +1526,8 @@ void BUSProcessor::processBuffer() {
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
       int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
+      // Mask out off-listed kmers
+      u &= index.onlist_sequences;
     }
     else {
       // collect the target information
