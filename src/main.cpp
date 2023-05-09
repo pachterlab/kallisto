@@ -2758,7 +2758,7 @@ int main(int argc, char *argv[]) {
               std::string output_dir = "";
               
               if (opt.matrix_to_directories) {
-                output_dir = opt.output + "/abundance_" + std::to_string(i);
+                output_dir = opt.output + "/abundance_" + std::to_string(id+1);
                 struct stat stFileInfo;
                 auto intStat = stat(output_dir.c_str(), &stFileInfo);
                 if (intStat == 0) {
@@ -2777,11 +2777,15 @@ int main(int argc, char *argv[]) {
                 output_dir = output_dir + "/";
                 abtsvprefix = "abundance";
                 abtsvprefixh5 = "abundance";
+                bootstrapprefix = "bs_abundance";
               }
               std::string id_suffix = (output_dir.empty() ? ("_" + std::to_string(id+1)) : "");
 
               plaintext_writer(output_dir + abtsvprefix + id_suffix + ".tsv", em.target_names_,
                                em.alpha_, em.eff_lens_, index.target_lens_);
+              if (gene_level_counting) {
+                plaintext_writer_gene(output_dir + abtsvprefix + ".gene" + id_suffix + ".tsv", em.target_names_, em.alpha_, em.eff_lens_, model);
+              }
 #ifdef USE_HDF5
               H5Writer writer;
               std::vector<uint32_t> fld_i;
@@ -2809,6 +2813,10 @@ int main(int argc, char *argv[]) {
                     } else {
                       plaintext_writer(output_dir + bootstrapprefix + id_suffix + "_" + std::to_string(b) + ".tsv",
                                        em.target_names_, em.alpha_, em.eff_lens_, index.target_lens_);
+                      if (gene_level_counting) {
+                        plaintext_writer_gene(output_dir + bootstrapprefix + ".gene" + id_suffix + "_" + std::to_string(b) + ".tsv",
+                                       em.target_names_, em.alpha_, em.eff_lens_, model);
+                      }
                     }
                   }
                 } else {
@@ -2829,6 +2837,10 @@ int main(int argc, char *argv[]) {
                     } else {
                       plaintext_writer(output_dir + bootstrapprefix + id_suffix + "_" + std::to_string(b) + ".tsv",
                                        em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
+                      if (gene_level_counting) {
+                        plaintext_writer_gene(output_dir + bootstrapprefix + ".gene" + id_suffix + "_" + std::to_string(b) + ".tsv",
+                                       em.target_names_, em.alpha_, em.eff_lens_, model);
+                      }
                     }
                   }
                 }
