@@ -2540,7 +2540,12 @@ int main(int argc, char *argv[]) {
                   if (opt.plaintext) {
                     cerr << "[tcc] Bootstrapping will be performed and outputted as plaintext" << endl;
                   } else {
-                    cerr << "[tcc] Bootstrapping will be performed and outputted as HDF5" << endl;
+#ifdef USE_HDF5
+                    cerr << "[tcc] Bootstrapping will be performed and outputted as HDF5" << endl;                        
+#else
+                    cerr << "[tcc] Bootstrapping will NOT be performed because kallisto was compiled without HDF5 support. ";
+                    cerr << "Bootstrapping can be outputted as plaintext if the --plaintext option is supplied." << endl;                                                                                        
+#endif
                   }
                 }
                 continue;
@@ -2750,12 +2755,10 @@ int main(int argc, char *argv[]) {
             }
             // Write plaintext abundance for current row in matrix
             if (opt.matrix_to_files) {
-              // TODO: opt.matrix_to_directories
-              
               std::string output_dir = "";
               
               if (opt.matrix_to_directories) {
-                output_dir = opt.output + "abundance_" + std::to_string(i);
+                output_dir = opt.output + "/abundance_" + std::to_string(i);
                 struct stat stFileInfo;
                 auto intStat = stat(output_dir.c_str(), &stFileInfo);
                 if (intStat == 0) {
@@ -2772,6 +2775,8 @@ int main(int argc, char *argv[]) {
                   }
                 }
                 output_dir = output_dir + "/";
+                abtsvprefix = "abundance";
+                abtsvprefixh5 = "abundance";
               }
               std::string id_suffix = (output_dir.empty() ? ("_" + std::to_string(id+1)) : "");
 
