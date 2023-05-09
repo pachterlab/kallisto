@@ -2839,7 +2839,7 @@ int main(int argc, char *argv[]) {
                                        em.target_names_, res.alpha_, em.eff_lens_, index.target_lens_);
                       if (gene_level_counting) {
                         plaintext_writer_gene(output_dir + bootstrapprefix + ".gene" + id_suffix + "_" + std::to_string(b) + ".tsv",
-                                       em.target_names_, em.alpha_, em.eff_lens_, model);
+                                       em.target_names_, res.alpha_, em.eff_lens_, model);
                       }
                     }
                   }
