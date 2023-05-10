@@ -30,3 +30,4 @@ ext/bifrost/src/bifrost-stamp/
 ext/zlib-ng/src/
 ext/zlib-ng/build/
 ext/zlib-ng/tmp/
+src/.Rhistory
