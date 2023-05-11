@@ -408,14 +408,14 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   std::string tmp_file2 = opt.distinguishFile.empty() ? generate_tmp_file("--" + opt.index) : opt.distinguishFile;
   std::ofstream of(tmp_file2); // Write color contigs into another (possibly temporary) file
   size_t max_threads_read = opt.threads;
-  std::vector<std::vector<std::pair<const UnitigColors*, const UnitigMap<DataAccessor<void>, DataStorage<void>, false>* > > > unitigs_v(max_threads_read);
+  std::vector<std::vector<std::pair<const UnitigColors*, const UnitigMap<DataAccessor<void>, DataStorage<void>, false> > > > unitigs_v(max_threads_read);
   size_t n = 0;
   const size_t thresh_size = 50000; // Max number of unitigs across all threads
   std::mutex mutex_unitigs; // Lock for multithreading writing output FASTA file
   std::vector<std::thread> workers; // Worker threads
   for (const auto& unitig : ccdbg) {
     const UnitigColors* uc = unitig.getData()->getUnitigColors(unitig);
-    const UnitigMap<DataAccessor<void>, DataStorage<void>, false>* unitig_ = &unitig;
+    const UnitigMap<DataAccessor<void>, DataStorage<void>, false> unitig_ = unitig;
     unitigs_v[n % unitigs_v.size()].push_back(std::make_pair(uc, unitig_));
     n++;
     if (unitigs_v[unitigs_v.size()-1].size() >= thresh_size || n >= ccdbg.size()) {
@@ -425,7 +425,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
             std::ostringstream oss;
             for (auto unitig_x : unitigs_v[u_i]) {
               auto uc = unitig_x.first;
-              auto& unitig = *(unitig_x.second);
+              auto& unitig = (unitig_x.second);
               UnitigColors::const_iterator it_uc = uc->begin(unitig);
               UnitigColors::const_iterator it_uc_end = uc->end();
               std::map<int, std::set<int>> k_map;

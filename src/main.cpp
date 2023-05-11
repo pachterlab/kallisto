@@ -899,6 +899,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     if (n != 0 && n < opt.threads) {
       cerr << "Warning: you asked for " << opt.threads
            << ", but only " << n << " cores on the machine" << endl;
+      opt.threads = n;
     }
   }
 
@@ -1354,6 +1355,18 @@ bool CheckOptionsBus(ProgramOptions& opt) {
 bool CheckOptionsIndex(ProgramOptions& opt) {
 
   bool ret = true;
+  
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+      opt.threads = n;
+    }
+  }
 
   if (opt.k <= 1 || opt.k >= MAX_KMER_SIZE) {
     cerr << "Error: invalid k-mer length " << opt.k << ", minimum is 3 and maximum is " << (MAX_KMER_SIZE -1) << endl;
@@ -1782,6 +1795,19 @@ bool CheckOptionsTCCQuant(ProgramOptions& opt) {
 bool CheckOptionsInspect(ProgramOptions& opt) {
 
   bool ret = true;
+  
+  if (opt.threads <= 0) {
+    cerr << "Error: invalid number of threads " << opt.threads << endl;
+    ret = false;
+  } else {
+    unsigned int n = std::thread::hardware_concurrency();
+    if (n != 0 && n < opt.threads) {
+      cerr << "Warning: you asked for " << opt.threads
+           << ", but only " << n << " cores on the machine" << endl;
+      opt.threads = n;
+    }
+  }
+  
   // check for index
   if (opt.index.empty()) {
     cerr << "Error: kallisto index file missing" << endl;
