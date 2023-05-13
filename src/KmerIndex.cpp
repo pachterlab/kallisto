@@ -372,7 +372,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       str = (trimNonNuclEnd == 0 ? str.substr(trimNonNuclStart) : str.substr(trimNonNuclStart,trimNonNuclEnd+1-trimNonNuclStart));
       countTrim += n - str.length();
       if (str.length() >= k) {
-        ofs[i] << ">" << num_trans++ << "\n" << str << std::endl;
+        *(ofs[i]) << ">" << num_trans++ << "\n" << str << std::endl;
       }
       //target_lens_.push_back(seq->seq.l);
       //std::string name(seq->name.s);
