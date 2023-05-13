@@ -328,6 +328,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   int l = 0;
   std::mt19937 gen(42);
   int countNonNucl = 0;
+  int countTrim = 0;
   int countUNuc = 0;
   
   int i = 0;
@@ -339,6 +340,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       if (l <= 0) {
         break;
       }
+      int trimNonNuclStart = 0;
+      int trimNonNuclEnd = 0;
+      int runningValidNuclLength = 0;
+      bool finishTrimStart = false;
       std::string str = seq->seq.s;
       auto n = str.size();
       for (auto i = 0; i < n; i++) {
@@ -347,12 +352,28 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
         if (c=='U') {
           str[i] = 'T';
           countUNuc++;
-        } else if (c !='A' && c != 'C' && c != 'G' && c != 'T') {
+        }
+        if (c !='A' && c != 'C' && c != 'G' && c != 'T' && c != 'U') {
           countNonNucl++;
+          if (runningValidNuclLength >= k && finishTrimStart) trimNonNuclEnd = i-1; // We trim the sequence end from the last valid k-mer onward
+          runningValidNuclLength = 0;
+        } else { // Valid nucleotide
+          runningValidNuclLength++;
+          if (!finishTrimStart) {
+            if (runningValidNuclLength >= k) {
+              finishTrimStart = true;
+              trimNonNuclStart = i; // We trim the sequence beginning until we encounter k valid nucleotides (first valid k-mer)
+            }
+          }
+          if (runningValidNuclLength >= k && finishTrimStart) trimNonNuclEnd = i; // We trim the sequence end from the last valid k-mer onward
         }
       }
       std::transform(str.begin(), str.end(),str.begin(), ::toupper);
-      *(ofs[i]) << ">" << num_trans++ << "\n" << str << std::endl;
+      str = (trimNonNuclEnd == 0 ? str.substr(trimNonNuclStart) : str.substr(trimNonNuclStart,trimNonNuclEnd+1-trimNonNuclStart));
+      countTrim += n - str.length();
+      if (str.length() >= k) {
+        ofs[i] << ">" << num_trans++ << "\n" << str << std::endl;
+      }
       //target_lens_.push_back(seq->seq.l);
       //std::string name(seq->name.s);
       //size_t p = name.find(' ');
@@ -371,6 +392,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   
   if (countNonNucl > 0) {
     std::cerr << "[build] warning: counted " << countNonNucl << " non-ACGUT characters in the input sequence" << std::endl;
+  }
+  
+  if (countTrim > 0) {
+    std::cerr << "[build] warning: trimmed " << countTrim << " characters from ends of input sequences" << std::endl;
   }
   
   if (countUNuc > 0) {
