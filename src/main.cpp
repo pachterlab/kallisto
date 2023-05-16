@@ -68,6 +68,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
     {"d-list", required_argument, 0, 'd'},
+    {"distinguish-range", required_argument, 0, 'z'},
     {0,0,0,0}
   };
   int c;
@@ -117,6 +118,19 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
         stringstream(optarg) >> opt.distinguishFile;
       }
       distinguish_flag = 1;
+      break;
+    }
+    case 'z': {
+      std::string range_input_str;
+      stringstream(optarg) >> range_input_str;
+      stringstream ss(range_input_str);
+      std::string range_val;
+      int i = 0;
+      while (std::getline(ss, range_val, '-')) { 
+        if (i == 0) opt.distinguish_range_begin = std::atoi(range_val.c_str());
+        if (i == 1) opt.distinguish_range_end = std::atoi(range_val.c_str());
+        i++;
+      }
       break;
     }
     default: break;
@@ -1404,6 +1418,20 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       }
     }
   }
+  
+  // --distinguish options
+  if (opt.distinguish) {
+    if (opt.max_ec_size != 0) {
+      cerr << "Error: --distinguish incompatible with setting max ec size" << endl;
+      ret = false;
+    }
+    if (opt.transfasta.size() == 1) {
+      opt.distinguishUseInput = true; // Use pre-generated FASTA input
+    }
+    
+    return ret;
+  }
+  // end --distinguish options
 
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
@@ -1418,16 +1446,6 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
   }
   if (opt.max_ec_size < 0) {
     cerr << "Error: invalid max ec size " << opt.max_ec_size << endl;
-    ret = false;
-  }
-  
-  if (opt.distinguish && opt.max_ec_size != 0) {
-    cerr << "Error: --distinguish incompatible with setting max ec size" << endl;
-    ret = false;
-  }
-  
-  if (opt.distinguish && opt.transfasta.size() < 2) {
-    cerr << "Error: --distinguish requires at least two FASTA files" << endl;
     ret = false;
   }
 
