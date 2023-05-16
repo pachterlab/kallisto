@@ -126,7 +126,11 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream ss(range_input_str);
       std::string range_val;
       int i = 0;
-      while (std::getline(ss, range_val, '-')) { 
+      char delimeter = '-';
+      if (range_input_str.find(',') < range_input_str.length()) {
+        delimeter = ','; // If string contains commas, use commas as delimeter
+      }
+      while (std::getline(ss, range_val, delimeter)) { 
         if (i == 0) opt.distinguish_range_begin = std::atoi(range_val.c_str());
         if (i == 1) opt.distinguish_range_end = std::atoi(range_val.c_str());
         i++;
