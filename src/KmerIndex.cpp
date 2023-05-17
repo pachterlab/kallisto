@@ -18,7 +18,7 @@ std::string AA_to_cfc (const std::string aa_string) {
   // rev translate AA sequence to comma-free code (cfc)
   std::stringstream all_stream_aa;
   int n = aa_string.size();
-  for (int i = 0; i < n; i ++) {
+  for (int i = 0; i < n; i++) {
       // map amino acid to comma-free code using cfc_aa_map (in common.cpp)
       char aa = aa_string[i];
       aa = ::toupper(aa);
@@ -50,7 +50,8 @@ std::string nn_to_cfc (const char * s) {
 
   // translate sequence string s to comma-free code
   // traverse the sequence string in triplets
-  std::stringstream all_stream;
+  std::string all_stream;
+  all_stream.reserve(1024);
   int incrementer = 3;
   int l = s_string.size();
   for (int i = 0; i < l; i += incrementer) {
@@ -72,12 +73,12 @@ std::string nn_to_cfc (const char * s) {
         }
 
         // accumulate comma-free sequences into stream
-        all_stream << cfc_seq;
+        all_stream += cfc_seq;
       }
   }
 
   // convert stream to new comma-free sequence string s_cfc
-  std::string s_cfc = all_stream.str();
+  const std::string& s_cfc = all_stream;
 
   return s_cfc;
 }
@@ -1540,7 +1541,7 @@ int KmerIndex::mapPair(const char *s1, int l1, const char *s2, int l2) const {
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
-void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v, bool cfc) const{
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMap<Node>, int>>& v, bool partial, bool cfc) const{
   const Node* n;
 
   // TODO:
@@ -1586,6 +1587,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   KmerIterator kit(s), kit_end;
   bool backOff = false;
   int nextPos = 0; // nextPosition to check
+  Roaring rtmp;
   for (int i = 0;  kit != kit_end; ++i,++kit) {
 
     // need to check it
@@ -1595,6 +1597,20 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
     int pos = kit->second;
 
     if (!um.isEmpty) {
+      
+      if (partial) {
+        if (rtmp.isEmpty()) {
+          const auto& rtmp2 = um.getData()->ec[um.dist].getIndices();
+          if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
+        } else {
+          const auto& rtmp2 = um.getData()->ec[um.dist].getIndices();
+          if (!rtmp2.isEmpty()) rtmp &= rtmp2;
+          if (rtmp.isEmpty()) {
+            v.clear();
+            return;
+          }
+        }
+      }
 
       v.push_back({um, kit->second});
 

@@ -971,9 +971,9 @@ void ReadProcessor::processBuffer() {
     u = Roaring();
 
     // process read
-    index.match(s1, l1, v1);
+    index.match(s1, l1, v1, !paired);
     if (paired) {
-      index.match(s2, l2, v2);
+      index.match(s2, l2, v2, !paired);
     }
 
     // collect the target information
@@ -1471,12 +1471,12 @@ void BUSProcessor::processBuffer() {
     v.clear();
     u = Roaring();
 
-    index.match(seq, seqlen, v, busopt.aa);
+    index.match(seq, seqlen, v, !busopt.paired, busopt.aa);
 
     // process 2nd read
     if (busopt.paired) {
       v2.clear();
-      index.match(seq2, seqlen2, v2);
+      index.match(seq2, seqlen2, v2, !busopt.paired);
     }
 
     // process frames for commafree (to do: extend to paired-end reads)
@@ -1493,12 +1493,12 @@ void BUSProcessor::processBuffer() {
       const char * seq3 = seq+1;
       size_t seqlen3 = strlen(seq3);
       v3.clear();
-      index.match(seq3, seqlen3, v3, busopt.aa);
+      index.match(seq3, seqlen3, v3, !busopt.paired, busopt.aa);
 
       const char * seq4 = seq+2;
       size_t seqlen4 = strlen(seq4);
       v4.clear();
-      index.match(seq4, seqlen4, v4, busopt.aa);
+      index.match(seq4, seqlen4, v4, !busopt.paired, busopt.aa);
 
       // get reverse complement of seq
       // const char * to string
@@ -1511,27 +1511,27 @@ void BUSProcessor::processBuffer() {
       // align reverse complement frames using the match function
       size_t seqlen5 = strlen(com_seq_char);
       v5.clear();
-      index.match(com_seq_char, seqlen5, v5, busopt.aa);
+      index.match(com_seq_char, seqlen5, v5, !busopt.paired, busopt.aa);
 
       const char * seq6 = com_seq_char+1;
       size_t seqlen6 = strlen(seq6);
       v6.clear();
-      index.match(seq6, seqlen6, v6, busopt.aa);
+      index.match(seq6, seqlen6, v6, !busopt.paired, busopt.aa);
 
       const char * seq7 = com_seq_char+2;
       size_t seqlen7 = strlen(seq7);
       v7.clear();
-      index.match(seq7, seqlen7, v7, busopt.aa);
+      index.match(seq7, seqlen7, v7, !busopt.paired, busopt.aa);
 
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
       int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
-      // Mask out off-listed kmers
-      u &= index.onlist_sequences;
     }
     else {
       // collect the target information
       int r = tc.intersectKmers(v, v2, !busopt.paired, u, mp.opt.ec_set_union);
+    }
+    if (!u.isEmpty()) {
       // Mask out off-listed kmers
       u &= index.onlist_sequences;
     }
