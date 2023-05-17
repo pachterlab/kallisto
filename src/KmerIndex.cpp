@@ -1686,6 +1686,19 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
                 }
 
                 if (foundMiddle) {
+                  if (partial) {
+                    if (rtmp.isEmpty()) {
+                      const auto& rtmp2 = um3.getData()->ec[um3.dist].getIndices();
+                      if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
+                    } else {
+                      const auto& rtmp2 = um3.getData()->ec[um3.dist].getIndices();
+                      if (!rtmp2.isEmpty()) rtmp &= rtmp2;
+                      if (rtmp.isEmpty()) {
+                        v.clear();
+                        return;
+                      }
+                    }
+                  }
                   v.push_back({um3, found3pos});
                   if (nextPos >= l-k) {
                     break;
@@ -1723,6 +1736,19 @@ donejumping:
           const_UnitigMap<Node> um4 = dbg.find(kit->first);
           if (!um4.isEmpty) {
             // if k-mer found
+            if (partial) {
+              if (rtmp.isEmpty()) {
+                const auto& rtmp2 = um4.getData()->ec[um4.dist].getIndices();
+                if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
+              } else {
+                const auto& rtmp2 = um4.getData()->ec[um4.dist].getIndices();
+                if (!rtmp2.isEmpty()) rtmp &= rtmp2;
+                if (rtmp.isEmpty()) {
+                  v.clear();
+                  return;
+                }
+              }
+            }
             v.push_back({um4, kit->second}); // add equivalence class, and position
           }
         }
