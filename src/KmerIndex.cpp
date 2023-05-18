@@ -536,11 +536,11 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       }
     }
     ccdbg.clear(); // Free memory associated with the colored compact dBG
+    ncolors = tmp_files.size(); // Record the number of "colors"
     for (auto tmp_file : tmp_files) std::remove(tmp_file.c_str()); // Remove temp files needed to make colored graph
     of.close();
     tmp_files.clear();
     ofs.clear();
-    ncolors = tmp_files.size();
   } // End generate colored DBG
 
   bool removeGeneratedFile = opt.distinguishFile.empty(); // Eventually remove the generated (tmp_file2) file if it's not supplied to --distinguish=
