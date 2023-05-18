@@ -52,6 +52,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int distinguish_flag = 0;
   int distinguish_all_flag = 0;
   int distinguish_all_but_one_flag = 0;
+  int skip_index_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
@@ -60,6 +61,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"aa", no_argument, &aa_flag, 1},
     {"all", no_argument, &distinguish_all_flag, 1},
     {"all-but-one", no_argument, &distinguish_all_but_one_flag, 1},
+    {"skip-index", no_argument, &skip_index_flag, 1},
     {"distinguish", optional_argument, 0, 'Z'},
     // short args
     {"index", required_argument, 0, 'i'},
@@ -157,6 +159,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     opt.distinguish_union = true;
   } else if (distinguish_all_but_one_flag) {
     opt.distinguish_all_but_one_color = true;
+  }
+  if (skip_index_flag) {
+    opt.distinguishSkipIndex = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -1431,6 +1436,10 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
     }
     if (opt.transfasta.size() == 1) {
       opt.distinguishUseInput = true; // Use pre-generated FASTA input
+    }
+    if (opt.distinguishFile.empty() && opt.distinguishSkipIndex) {
+      cerr << "Error: A file to --distinguish must be supplied if not generating an index" << endl;
+      ret = false;
     }
     
     return ret;

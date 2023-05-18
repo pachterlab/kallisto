@@ -132,6 +132,7 @@ struct ProgramOptions {
   bool fusion;
   bool dfk_onlist;
   bool distinguishUseInput;
+  bool distinguishSkipIndex;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   std::string gfa; // used for inspect
@@ -197,6 +198,7 @@ ProgramOptions() :
   distinguish_all_but_one_color(false),
   distinguish_union(false),
   distinguishUseInput(false),
+  distinguishSkipIndex(false),
   ec_set_union(false)
   {}
 };

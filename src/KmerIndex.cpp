@@ -544,6 +544,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   } // End generate colored DBG
 
   bool removeGeneratedFile = opt.distinguishFile.empty(); // Eventually remove the generated (tmp_file2) file if it's not supplied to --distinguish=
+  if (opt.distinguishSkipIndex) {
+    assert(!removeGeneratedFile);
+    exit(0); // Should not do anything more; just quit the entirely program prematurely
+  }
   if (opt.distinguishUseInput) { // Use an external input FASTA file (we'll still need to read it to determine number of targets though and we'll still write out a new FASTA file (TODO: optimize this out)
     std::cerr << "[build] Reading in FASTA file" << std::endl;
     std::ofstream of(tmp_file2); // Write external FASTA file into another (possibly temporary) file
