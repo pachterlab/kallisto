@@ -13,6 +13,72 @@
 #include "ColoredCDBG.hpp"
 
 // --aa option helper functions
+// first three letters of nucleotide seq -> comma-free nuc_seq
+constexpr const char * cfc_map(const char * nuc_seq){
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'T' && nuc_seq[2] == 'T') return "ACC";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'T' && nuc_seq[2] == 'C') return "ACC";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'T' && nuc_seq[2] == 'A') return "ACA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'T' && nuc_seq[2] == 'G') return "ACA";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'T' && nuc_seq[2] == 'T') return "ACA";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'T' && nuc_seq[2] == 'C') return "ACA";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'T' && nuc_seq[2] == 'A') return "ACA";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'T' && nuc_seq[2] == 'G') return "ACA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'T' && nuc_seq[2] == 'T') return "ATA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'T' && nuc_seq[2] == 'C') return "ATA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'T' && nuc_seq[2] == 'A') return "ATA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'T' && nuc_seq[2] == 'G') return "ATC";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'T' && nuc_seq[2] == 'T') return "ATT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'T' && nuc_seq[2] == 'C') return "ATT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'T' && nuc_seq[2] == 'A') return "ATT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'T' && nuc_seq[2] == 'G') return "ATT";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'C' && nuc_seq[2] == 'T') return "CTA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'C' && nuc_seq[2] == 'C') return "CTA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'C' && nuc_seq[2] == 'A') return "CTA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'C' && nuc_seq[2] == 'G') return "CTA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'G' && nuc_seq[2] == 'T') return "CTA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'G' && nuc_seq[2] == 'C') return "CTA";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'C' && nuc_seq[2] == 'T') return "CTC";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'C' && nuc_seq[2] == 'C') return "CTC";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'C' && nuc_seq[2] == 'A') return "CTC";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'C' && nuc_seq[2] == 'G') return "CTC";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'C' && nuc_seq[2] == 'T') return "CTT";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'C' && nuc_seq[2] == 'C') return "CTT";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'C' && nuc_seq[2] == 'A') return "CTT";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'C' && nuc_seq[2] == 'G') return "CTT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'C' && nuc_seq[2] == 'T') return "AGA";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'C' && nuc_seq[2] == 'C') return "AGA";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'C' && nuc_seq[2] == 'A') return "AGA";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'C' && nuc_seq[2] == 'G') return "AGA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'A' && nuc_seq[2] == 'T') return "AGC";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'A' && nuc_seq[2] == 'C') return "AGC";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'A' && nuc_seq[2] == 'T') return "AGT";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'A' && nuc_seq[2] == 'C') return "AGT";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'A' && nuc_seq[2] == 'A') return "AGG";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'A' && nuc_seq[2] == 'G') return "AGG";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'A' && nuc_seq[2] == 'T') return "CGA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'A' && nuc_seq[2] == 'C') return "CGA";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'A' && nuc_seq[2] == 'A') return "CGC";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'A' && nuc_seq[2] == 'G') return "CGC";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'A' && nuc_seq[2] == 'T') return "CGT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'A' && nuc_seq[2] == 'C') return "CGT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'A' && nuc_seq[2] == 'A') return "CGG";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'A' && nuc_seq[2] == 'G') return "CGG";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'G' && nuc_seq[2] == 'T') return "TGA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'G' && nuc_seq[2] == 'C') return "TGA";
+  if (nuc_seq[0] == 'T' && nuc_seq[1] == 'G' && nuc_seq[2] == 'G') return "TGC";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'G' && nuc_seq[2] == 'T') return "TGT";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'G' && nuc_seq[2] == 'C') return "TGT";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'G' && nuc_seq[2] == 'A') return "TGT";
+  if (nuc_seq[0] == 'C' && nuc_seq[1] == 'G' && nuc_seq[2] == 'G') return "TGT";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'G' && nuc_seq[2] == 'A') return "TGT";
+  if (nuc_seq[0] == 'A' && nuc_seq[1] == 'G' && nuc_seq[2] == 'G') return "TGT";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'G' && nuc_seq[2] == 'T') return "TGG";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'G' && nuc_seq[2] == 'C') return "TGG";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'G' && nuc_seq[2] == 'A') return "TGG";
+  if (nuc_seq[0] == 'G' && nuc_seq[1] == 'G' && nuc_seq[2] == 'G') return "TGG";
+  return "NNN";
+};
+
 int countNonAA=0;
 std::string AA_to_cfc (const std::string aa_string) {
   // rev translate AA sequence to comma-free code (cfc)
@@ -44,42 +110,20 @@ std::string AA_to_cfc (const std::string aa_string) {
 }
 
 // int countNonNN=0;
-std::string nn_to_cfc (const char * s) {
-  // convert char const* to string
-  std::string s_string(s);
+std::string nn_to_cfc (const char * s, int l) {
+  // translate nucleotide sequence s to comma-free code
 
-  // translate sequence string s to comma-free code
-  // traverse the sequence string in triplets
-  std::string all_stream;
-  all_stream.reserve(1024);
+  // reserve memory for new cfc string
+  std::string s_cfc;
+  s_cfc.reserve(1024);
+  // traverse the sequence in triplets
   int incrementer = 3;
-  int l = s_string.size();
   for (int i = 0; i < l; i += incrementer) {
-      // get nucleotide triplet to map to comma-free code using cfc_map (in common.cpp)
-      std::string s_str_sub = s_string.substr(i, 3);
-
-      if (s_str_sub.size() == 3) {
-        // // convert to upper case (already upper case at this point)
-        // transform(s_str_sub.begin(), s_str_sub.end(), s_str_sub.begin(), ::toupper);
-
-        auto cfc_mapped = cfc_map.find(s_str_sub);
-        std::string cfc_seq;
-        // if nucleotide triplet not found in comma-free map, translate as "NNN"
-        if (cfc_mapped == cfc_map.end()) {
-          cfc_seq = "NNN";
-          // ::countNonNN++;
-        } else {
-          cfc_seq = cfc_mapped->second;
-        }
-
-        // accumulate comma-free sequences into stream
-        all_stream += cfc_seq;
+      if (l - i >= incrementer) {
+        // add comma-free triplet to cfc string
+        s_cfc += cfc_map(s+i);
       }
   }
-
-  // convert stream to new comma-free sequence string s_cfc
-  const std::string& s_cfc = all_stream;
-
   return s_cfc;
 }
 
@@ -1578,7 +1622,7 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
   std::string s_string;
   if (cfc) {
     // translate nucleotide sequence to comma-free code (cfc)
-    s_string = nn_to_cfc (s);
+    s_string = nn_to_cfc(s, l);
     s = s_string.c_str();
 
     // if (countNonNN > 0) {

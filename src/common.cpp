@@ -1,9 +1,10 @@
 #include <algorithm>
 #include <unordered_map>
 #include "common.h"
+#include <iostream>
 
 // Look-up maps for comma-free code
-// amino acid -> comma-free triplet
+// amino acid -> comma-free nuc_seq
 std::unordered_map<char, std::string>cfc_aa_map = {
     {'F', "ACC"},
     {'L', "ACA"},
@@ -29,74 +30,6 @@ std::unordered_map<char, std::string>cfc_aa_map = {
     {'B', "CGT"},  // Represents either N or D - will translate as D here (N is only off by one base)
     {'J', "ACA"},  // Represents either L or I - will translate as L here (I is only off by one base)
     {'Z', "CGG"}   // Represents either E or Q - will translate as E here (Q is only off by one base)
-};
-
-// nucleotide triplet -> comma-free triplet
-std::unordered_map<std::string, std::string>cfc_map = {
-  {"TTT", "ACC"},
-  {"TTC", "ACC"},
-  {"TTA", "ACA"},
-  {"TTG", "ACA"},
-  {"CTT", "ACA"},
-  {"CTC", "ACA"},
-  {"CTA", "ACA"},
-  {"CTG", "ACA"},
-  {"ATT", "ATA"},
-  {"ATC", "ATA"},
-  {"ATA", "ATA"},
-  {"ATG", "ATC"},
-  {"GTT", "ATT"},
-  {"GTC", "ATT"},
-  {"GTA", "ATT"},
-  {"GTG", "ATT"},
-  {"TCT", "CTA"},
-  {"TCC", "CTA"},
-  {"TCA", "CTA"},
-  {"TCG", "CTA"},
-  {"AGT", "CTA"},
-  {"AGC", "CTA"},
-  {"CCT", "CTC"},
-  {"CCC", "CTC"},
-  {"CCA", "CTC"},
-  {"CCG", "CTC"},
-  {"ACT", "CTT"},
-  {"ACC", "CTT"},
-  {"ACA", "CTT"},
-  {"ACG", "CTT"},
-  {"GCT", "AGA"},
-  {"GCC", "AGA"},
-  {"GCA", "AGA"},
-  {"GCG", "AGA"},
-  {"TAT", "AGC"},
-  {"TAC", "AGC"},
-  {"CAT", "AGT"},
-  {"CAC", "AGT"},
-  {"CAA", "AGG"},
-  {"CAG", "AGG"},
-  {"AAT", "CGA"},
-  {"AAC", "CGA"},
-  {"AAA", "CGC"},
-  {"AAG", "CGC"},
-  {"GAT", "CGT"},
-  {"GAC", "CGT"},
-  {"GAA", "CGG"},
-  {"GAG", "CGG"},
-  {"TGT", "TGA"},
-  {"TGC", "TGA"},
-  {"TGG", "TGC"},
-  {"CGT", "TGT"},
-  {"CGC", "TGT"},
-  {"CGA", "TGT"},
-  {"CGG", "TGT"},
-  {"AGA", "TGT"},
-  {"AGG", "TGT"},
-  {"GGT", "TGG"},
-  {"GGC", "TGG"},
-  {"GGA", "TGG"},
-  {"GGG", "TGG"},
-  {"TGA", "NNN"}, // stop codon
-  {"TAA", "NNN"}, // stop codon
-  {"TAG", "NNN"}  // stop codon
 };
 
 // nucleotide seq -> reverse complement

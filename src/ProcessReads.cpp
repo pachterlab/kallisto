@@ -1504,7 +1504,7 @@ void BUSProcessor::processBuffer() {
       // const char * to string
       std::string com_seq(seq);
       // transform comseq to its reverse complement
-      com_seq = revcomp (com_seq);
+      com_seq = revcomp (std::move(com_seq));
       // string to const char *
       const char * com_seq_char = com_seq.c_str();
 

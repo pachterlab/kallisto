@@ -32,7 +32,6 @@ typedef unsigned int uint;
 #endif
 
 extern std::unordered_map<char, std::string>cfc_aa_map;
-extern std::unordered_map<std::string, std::string>cfc_map;
 extern std::string revcomp(const std::string s);
 
 struct BUSOptionSubstr {

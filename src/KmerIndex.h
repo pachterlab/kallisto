@@ -17,7 +17,8 @@
 #include "Node.hpp"
 
 std::string AA_to_cfc (const std::string aa_string);
-const char * nn_to_cfc (const char * s, int l);
+std::string nn_to_cfc (const char * s, int l);
+constexpr const char * cfc_map(const char * nuc_seq);
 
 struct TRInfo {
   uint32_t trid;
