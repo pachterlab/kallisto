@@ -40,8 +40,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+ 
+#ifdef ZLIBNG_VERSION
+#define BGZF_BLOCK_SIZE 58235
+#else
 #define BGZF_BLOCK_SIZE     0xff00 // make sure compressBound(BGZF_BLOCK_SIZE) < BGZF_MAX_BLOCK_SIZE
+#endif
 #define BGZF_MAX_BLOCK_SIZE 0x10000
 
 #define BGZF_ERR_ZLIB   1
