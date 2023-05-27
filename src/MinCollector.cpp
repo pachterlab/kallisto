@@ -35,7 +35,7 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
 }
 
 void includeDList(Roaring& u1, Roaring& u2, const Roaring& onlist_sequences) {
-  if ((u1 & onlist_sequences).cardinality() != u1.cardinality() || (u2 & onlist_sequences) != u2.cardinality()) {
+  if ((u1 & onlist_sequences).cardinality() != u1.cardinality() || (u2 & onlist_sequences).cardinality() != u2.cardinality()) {
     u1.add(onlist_sequences.cardinality());
     u2.add(onlist_sequences.cardinality());
   }
