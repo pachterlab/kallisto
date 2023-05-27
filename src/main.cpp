@@ -888,7 +888,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   if (opt.technology.empty()) { // kallisto pseudo
     // check for read files
     if (!opt.batch_mode) {
-      cerr << "[bus] will try running read files as-is in bulk mode" << endl;
+      if (ret) {
+        cerr << "[bus] will try running read files as-is in bulk mode" << endl;
+      }
       opt.batch_mode = true;
       if (!opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
