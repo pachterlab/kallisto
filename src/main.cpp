@@ -50,8 +50,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int make_unique_flag = 0;
   int aa_flag = 0;
   int distinguish_flag = 0;
-  int distinguish_all_flag = 0;
-  int distinguish_all_but_one_flag = 0;
   int skip_index_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
@@ -59,10 +57,8 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"verbose", no_argument, &verbose_flag, 1},
     {"make-unique", no_argument, &make_unique_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
-    {"all", no_argument, &distinguish_all_flag, 1},
-    {"all-but-one", no_argument, &distinguish_all_but_one_flag, 1},
     {"skip-index", no_argument, &skip_index_flag, 1},
-    {"distinguish", optional_argument, 0, 'Z'},
+    {"distinguish", no_argument, &distinguish_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -70,7 +66,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
     {"d-list", required_argument, 0, 'd'},
-    {"distinguish-range", required_argument, 0, 'z'},
     {0,0,0,0}
   };
   int c;
@@ -115,30 +110,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       }
       break;
     }
-    case 'Z': {
-      if (optarg) {
-        stringstream(optarg) >> opt.distinguishFile;
-      }
-      distinguish_flag = 1;
-      break;
-    }
-    case 'z': {
-      std::string range_input_str;
-      stringstream(optarg) >> range_input_str;
-      stringstream ss(range_input_str);
-      std::string range_val;
-      int i = 0;
-      char delimeter = '-';
-      if (range_input_str.find(',') < range_input_str.length()) {
-        delimeter = ','; // If string contains commas, use commas as delimeter
-      }
-      while (std::getline(ss, range_val, delimeter)) { 
-        if (i == 0) opt.distinguish_range_begin = std::atoi(range_val.c_str());
-        if (i == 1) opt.distinguish_range_end = std::atoi(range_val.c_str());
-        i++;
-      }
-      break;
-    }
     default: break;
     }
   }
@@ -154,14 +125,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (distinguish_flag) {
     opt.distinguish = true;
-  }
-  if (distinguish_all_flag) {
-    opt.distinguish_union = true;
-  } else if (distinguish_all_but_one_flag) {
-    opt.distinguish_all_but_one_color = true;
-  }
-  if (skip_index_flag) {
-    opt.distinguishSkipIndex = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -1415,24 +1378,6 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       }
     }
   }
-  
-  // --distinguish options
-  if (opt.distinguish) {
-    if (opt.max_ec_size != 0) {
-      cerr << "Error: --distinguish incompatible with setting max ec size" << endl;
-      ret = false;
-    }
-    if (opt.transfasta.size() == 1) {
-      opt.distinguishUseInput = true; // Use pre-generated FASTA input
-    }
-    if (opt.distinguishFile.empty() && opt.distinguishSkipIndex) {
-      cerr << "Error: A file to --distinguish must be supplied if not generating an index" << endl;
-      ret = false;
-    }
-    
-    return ret;
-  }
-  // end --distinguish options
 
   if (opt.index.empty()) {
     cerr << "Error: need to specify kallisto index name" << endl;
@@ -1988,7 +1933,7 @@ void usageIndex() {
        << "-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification" << endl
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
-       << "    --distinguish           Generate index representing k-mers unique to each FASTA " << endl
+       << "    --distinguish           Generate index where sequences are distinguished by the sequence name" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl

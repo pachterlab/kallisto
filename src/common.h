@@ -90,10 +90,6 @@ struct ProgramOptions {
   bool verbose;
   bool aa;
   bool distinguish;
-  bool distinguish_all_but_one_color;
-  bool distinguish_union;
-  int distinguish_range_begin;
-  int distinguish_range_end;
   int threads;
   std::string index;
   int k;
@@ -129,8 +125,6 @@ struct ProgramOptions {
   bool genomebam;
   bool make_unique;
   bool fusion;
-  bool distinguishUseInput;
-  bool distinguishSkipIndex;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   std::string gfa; // used for inspect
@@ -150,7 +144,6 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
-  std::string distinguishFile;
 
 ProgramOptions() :
   verbose(false),
@@ -167,8 +160,6 @@ ProgramOptions() :
   bootstrap(0),
   max_num_reads(0),
   input_interleaved_nfiles(0),
-  distinguish_range_begin(0),
-  distinguish_range_end(0),
   record_batch_bus_barcode(false),
   matrix_to_files(false),
   matrix_to_directories(false),
@@ -190,11 +181,7 @@ ProgramOptions() :
   inspect_thorough(false),
   single_overhang(false),
   aa(false),
-  distinguish(false),
-  distinguish_all_but_one_color(false),
-  distinguish_union(false),
-  distinguishUseInput(false),
-  distinguishSkipIndex(false)
+  distinguish(false)
   {}
 };
 
