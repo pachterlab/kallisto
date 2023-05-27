@@ -129,7 +129,6 @@ struct ProgramOptions {
   bool genomebam;
   bool make_unique;
   bool fusion;
-  bool dfk_onlist;
   bool distinguishUseInput;
   bool distinguishSkipIndex;
   enum class StrandType {None, FR, RF};
@@ -187,7 +186,6 @@ ProgramOptions() :
   genomebam(false),
   make_unique(false),
   fusion(false),
-  dfk_onlist(false),
   strand(StrandType::None),
   inspect_thorough(false),
   single_overhang(false),
