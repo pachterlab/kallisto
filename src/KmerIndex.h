@@ -76,6 +76,7 @@ struct KmerIndex {
   KmerIndex(const ProgramOptions& opt) : k(opt.k), num_trans(0), skip(opt.skip), target_seqs_loaded(false) {
     //LoadTranscripts(opt.transfasta);
     load_positional_info = opt.bias || opt.pseudobam || opt.genomebam || !opt.single_overhang;
+    dfk_onlist = opt.dfk_onlist;
   }
 
   ~KmerIndex() {}
@@ -128,6 +129,7 @@ struct KmerIndex {
 
   std::vector<std::string> target_names_;
   std::vector<std::string> target_seqs_; // populated on demand
+  bool dfk_onlist; // If we want to not use D-list in intersecting ECs
   bool target_seqs_loaded;
   bool load_positional_info; // when should we load positional info in addition to strandedness
 

@@ -34,6 +34,13 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
+void includeDList(Roaring& u1, Roaring& u2, const Roaring& onlist_sequences) {
+  if ((u1 & onlist_sequences).cardinality() != u1.cardinality() || (u2 & onlist_sequences) != u2.cardinality()) {
+    u1.add(onlist_sequences.cardinality());
+    u2.add(onlist_sequences.cardinality());
+  }
+}
+
 int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
@@ -118,6 +125,9 @@ int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, in
       return -1;
     }
   } else {
+    if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+      includeDList(u1, u2, index.onlist_sequences);
+    }
     r = u1 & u2;
   }
 
@@ -225,6 +235,9 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
 
       // Don't intersect empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
+        if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+          includeDList(r, ec, index.onlist_sequences);
+        }
         r &= ec;
         if (r.isEmpty()) {
           return r;

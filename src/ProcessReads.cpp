@@ -1470,13 +1470,15 @@ void BUSProcessor::processBuffer() {
     numreads++;
     v.clear();
     u = Roaring();
+    
+    bool match_partial = !busopt.paired && !index.dfk_onlist;
 
-    index.match(seq, seqlen, v, !busopt.paired, busopt.aa);
+    index.match(seq, seqlen, v, match_partial, busopt.aa);
 
     // process 2nd read
     if (busopt.paired) {
       v2.clear();
-      index.match(seq2, seqlen2, v2, !busopt.paired);
+      index.match(seq2, seqlen2, v2, match_partial);
     }
 
     // process frames for commafree (to do: extend to paired-end reads)
@@ -1493,12 +1495,12 @@ void BUSProcessor::processBuffer() {
       const char * seq3 = seq+1;
       size_t seqlen3 = strlen(seq3);
       v3.clear();
-      index.match(seq3, seqlen3, v3, !busopt.paired, busopt.aa);
+      index.match(seq3, seqlen3, v3, match_partial, busopt.aa);
 
       const char * seq4 = seq+2;
       size_t seqlen4 = strlen(seq4);
       v4.clear();
-      index.match(seq4, seqlen4, v4, !busopt.paired, busopt.aa);
+      index.match(seq4, seqlen4, v4, match_partial, busopt.aa);
 
       // get reverse complement of seq
       // const char * to string
@@ -1511,17 +1513,17 @@ void BUSProcessor::processBuffer() {
       // align reverse complement frames using the match function
       size_t seqlen5 = strlen(com_seq_char);
       v5.clear();
-      index.match(com_seq_char, seqlen5, v5, !busopt.paired, busopt.aa);
+      index.match(com_seq_char, seqlen5, v5, match_partial, busopt.aa);
 
       const char * seq6 = com_seq_char+1;
       size_t seqlen6 = strlen(seq6);
       v6.clear();
-      index.match(seq6, seqlen6, v6, !busopt.paired, busopt.aa);
+      index.match(seq6, seqlen6, v6, match_partial, busopt.aa);
 
       const char * seq7 = com_seq_char+2;
       size_t seqlen7 = strlen(seq7);
       v7.clear();
-      index.match(seq7, seqlen7, v7, !busopt.paired, busopt.aa);
+      index.match(seq7, seqlen7, v7, match_partial, busopt.aa);
 
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
@@ -1532,8 +1534,17 @@ void BUSProcessor::processBuffer() {
       int r = tc.intersectKmers(v, v2, !busopt.paired, u);
     }
     if (!u.isEmpty()) {
-      // Mask out off-listed kmers
-      u &= index.onlist_sequences;
+      if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+        auto usize = u.cardinality();
+        u &= index.onlist_sequences;
+        if (u.cardinality() != usize && !(usize > 0 && u.cardinality() == 0)) {
+          // Add if a D-list elem exists but not if ALL elems are D-listed
+          u.add(index.onlist_sequences.cardinality());
+        }
+      } else { // Normal/standard workflow:
+        // Mask out off-listed kmers
+        u &= index.onlist_sequences;
+      }
     }
 
     if (doStrandSpecificityIfPossible && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
