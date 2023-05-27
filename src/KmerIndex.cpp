@@ -1433,11 +1433,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   if (num_trans-onlist_sequences.cardinality() > 0) {
     std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
   }
-  if (opt.dfk_onlist) {
-    std::cerr << "[index] on-listing the distinguishing flanking k-mers" << std::endl;
-    onlist_sequences = Roaring();
-    onlist_sequences.addRange(0, num_trans);
-  }
 
   in.close();
 

@@ -1529,7 +1529,7 @@ void BUSProcessor::processBuffer() {
     }
     else {
       // collect the target information
-      int r = tc.intersectKmers(v, v2, !busopt.paired, u, mp.opt.ec_set_union);
+      int r = tc.intersectKmers(v, v2, !busopt.paired, u);
     }
     if (!u.isEmpty()) {
       // Mask out off-listed kmers
