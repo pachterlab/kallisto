@@ -1047,6 +1047,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   // 2. deserialize dBG
   size_t tmp_size;
   in.read((char *)&tmp_size, sizeof(tmp_size));
+  tmp_size = ((-1ULL >> 1) & tmp_size); // Mask out MSB (in case we want to use it as a toggle in some future implementation)
   if (tmp_size > 0) {
 
     auto pos1 = in.tellg();
