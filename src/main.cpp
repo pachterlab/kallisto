@@ -1918,12 +1918,7 @@ void usageBus() {
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
-       << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
-       << "-g, --gtf                     GTF file for transcriptome information" << endl
-       << "                              (required for --genomebam)" << endl
-       << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
-       << "                              (optional for --genomebam, but recommended)" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --batch-barcodes          Records both batch and extracted barcode in BUS file" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
@@ -1961,9 +1956,7 @@ void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
        << "Usage: kallisto inspect INDEX-file" << endl << endl
        << "Optional arguments:" << endl
-       << "-G, --gfa=STRING        Filename for GFA output of T-DBG" << endl
-       << "-g, --gtf=STRING        Filename for GTF file" << endl
-       << "-b, --bed=STRING        Filename for BED output (default: index + \".bed\")" << endl << endl;
+       << "-t                      Number of threads" << endl << endl;
 }
 
 void usageEM(bool valid_input = true) {
@@ -1979,11 +1972,9 @@ void usageEM(bool valid_input = true) {
        << "                              quantification" << endl
        << "-o, --output-dir=STRING       Directory to write output to" << endl << endl
        << "Optional arguments:" << endl
-       << "    --bias                    Perform sequence based bias correction" << endl
        << "-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)" << endl
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
-       << "    --fusion                  Search for fusions for Pizzly" << endl
        << "    --single                  Quantify single-end reads" << endl
        << "    --single-overhang         Include reads where unobserved rest of fragment is" << endl
        << "                              predicted to lie outside a transcript" << endl
@@ -1994,12 +1985,6 @@ void usageEM(bool valid_input = true) {
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
-       << "    --pseudobam               Save pseudoalignments to transcriptome to BAM file" << endl
-       << "    --genomebam               Project pseudoalignments to genome sorted BAM file" << endl
-       << "-g, --gtf                     GTF file for transcriptome information" << endl
-       << "                              (required for --genomebam)" << endl
-       << "-c, --chromosomes             Tab separated file with chromosome names and lengths" << endl
-       << "                              (optional for --genomebam, but recommended)" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 
 }
