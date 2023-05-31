@@ -1,15 +1,38 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.48.0"
+#define KALLISTO_VERSION "0.49.0"
+
+// NOTE: MAKE SURE THIS FILE GETS INCLUDED FIRST IN ALL OTHER FILES AND BEFORE ANY EXTERNAL LIBRARIES
 
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
+#include "kseq.h"
+
+#if defined(_MSVC_LANG)
+#define KALLISTO_CPP_VERSION _MSVC_LANG
+#else
+#define KALLISTO_CPP_VERSION __cplusplus
+#endif
+#if KALLISTO_CPP_VERSION < 201703L
+#include "robin_hood.h"
+#define u_map_ robin_hood::unordered_flat_map
+#define u_set_ robin_hood::unordered_set
+#else
+#include "unordered_dense.h"
+#define u_map_ ankerl::unordered_dense::map
+#define u_set_ ankerl::unordered_dense::set
+#endif
+
 
 #ifdef _WIN64
 typedef unsigned int uint;
 #endif
+
+extern std::unordered_map<char, std::string>cfc_aa_map;
+extern std::string revcomp(const std::string s);
 
 struct BUSOptionSubstr {
   BUSOptionSubstr() : fileno(-1), start(0), stop(0) {}
@@ -21,12 +44,14 @@ struct BUSOptionSubstr {
 
 struct BUSOptions {
   int nfiles;
-  
+  bool keep_fastq_comments;
+
   std::vector<BUSOptionSubstr> umi;
   std::vector<BUSOptionSubstr> bc;
   std::vector<BUSOptionSubstr> seq;
-  
+
   bool paired;
+  bool aa;
 
   int getBCLength() const {
     int r =0 ;
@@ -63,9 +88,13 @@ struct BUSOptions {
 
 struct ProgramOptions {
   bool verbose;
+  bool aa;
+  bool distinguish;
   int threads;
   std::string index;
   int k;
+  int g;
+  int max_ec_size;
   int iterations;
   std::string output;
   int skip;
@@ -74,19 +103,18 @@ struct ProgramOptions {
   double sd;
   int min_range;
   int bootstrap;
+  int max_num_reads;
   std::vector<std::string> transfasta;
   bool batch_mode;
-  bool pseudo_read_files_supplied;
   bool bus_mode;
   BUSOptions busOptions;
-  bool pseudo_quant;
   bool bam;
   bool num;
   std::string batch_file_name;
-  std::vector<std::vector<std::string>> batch_files;
+  std::vector<std::vector<std::string> > batch_files;
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
-  std::vector<std::string> umi_files;
+  std::vector<std::string> d_list;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -97,14 +125,16 @@ struct ProgramOptions {
   bool genomebam;
   bool make_unique;
   bool fusion;
+  bool dfk_onlist;
   enum class StrandType {None, FR, RF};
   StrandType strand;
-  bool umi;
-  bool batch_bus_write;
-  bool batch_bus;
   std::string gfa; // used for inspect
   bool inspect_thorough;
   bool single_overhang;
+  bool record_batch_bus_barcode;
+  bool matrix_to_files;
+  bool matrix_to_directories;
+  int input_interleaved_nfiles;
   std::string gtfFile;
   std::string chromFile;
   std::string bedFile;
@@ -120,6 +150,8 @@ ProgramOptions() :
   verbose(false),
   threads(1),
   k(31),
+  g(0),
+  max_ec_size(0),
   iterations(500),
   skip(1),
   seed(42),
@@ -127,10 +159,13 @@ ProgramOptions() :
   sd(0.0),
   min_range(1),
   bootstrap(0),
+  max_num_reads(0),
+  input_interleaved_nfiles(0),
+  record_batch_bus_barcode(false),
+  matrix_to_files(false),
+  matrix_to_directories(false),
   batch_mode(false),
-  pseudo_read_files_supplied(false),
   bus_mode(false),
-  pseudo_quant(false),
   bam(false),
   num(false),
   plaintext(false),
@@ -143,12 +178,12 @@ ProgramOptions() :
   genomebam(false),
   make_unique(false),
   fusion(false),
+  dfk_onlist(false),
   strand(StrandType::None),
-  umi(false),
-  batch_bus_write(false),
-  batch_bus(false),
   inspect_thorough(false),
-  single_overhang(false)
+  single_overhang(false),
+  aa(false),
+  distinguish(false)
   {}
 };
 
@@ -157,6 +192,16 @@ std::string pretty_num(int64_t num);
 std::string pretty_num(int num);
 
 
+#ifdef KALLISTO_USE_ZLIB_NG
+#include "zlib-ng/zlib.h"
+#else
+#include <zlib.h>
+#endif
+
+#ifndef KSEQ_INIT_READY
+#define KSEQ_INIT_READY
+KSEQ_INIT(gzFile, gzread)
+#endif
 
 
 #endif // KALLISTO_COMMON_H

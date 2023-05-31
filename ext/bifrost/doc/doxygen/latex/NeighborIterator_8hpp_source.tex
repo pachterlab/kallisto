@@ -1,0 +1,105 @@
+\hypertarget{NeighborIterator_8hpp_source}{}\doxysection{Neighbor\+Iterator.\+hpp}
+\label{NeighborIterator_8hpp_source}\index{src/NeighborIterator.hpp@{src/NeighborIterator.hpp}}
+\mbox{\hyperlink{NeighborIterator_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_NEIGHBOR\_ITERATOR\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_NEIGHBOR\_ITERATOR\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{Kmer_8hpp}{Kmer.hpp}}"{}}}
+\DoxyCodeLine{5 }
+\DoxyCodeLine{11 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G> \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}};}
+\DoxyCodeLine{12 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigMap}{UnitigMap}};}
+\DoxyCodeLine{13 }
+\DoxyCodeLine{33 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{34 \textcolor{keyword}{class }\mbox{\hyperlink{classneighborIterator}{neighborIterator}} : \textcolor{keyword}{public} std::iterator<std::input\_iterator\_tag, UnitigMap<Unitig\_data\_t, Graph\_data\_t, is\_const>, int> \{}
+\DoxyCodeLine{35 }
+\DoxyCodeLine{36     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{37     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39     \textcolor{keyword}{public}:}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41         \textcolor{keyword}{typedef} \textcolor{keyword}{typename} std::conditional<is\_const, const CompactedDBG<U, G>*, \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}*>::type CompactedDBG\_ptr\_t;}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{46         \mbox{\hyperlink{classneighborIterator_ab857cd8f2e6bb98f844d9316c8e8d5b5}{neighborIterator}}();}
+\DoxyCodeLine{47 }
+\DoxyCodeLine{53         \mbox{\hyperlink{classneighborIterator_a3a524d5ee6219ea7ccc3a11f69d80835}{neighborIterator}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um\_, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} is\_forward\_);}
+\DoxyCodeLine{54 }
+\DoxyCodeLine{58         \mbox{\hyperlink{classneighborIterator_ad7ee6efe87e4c4619c96e6c4fae809df}{neighborIterator}}(\textcolor{keyword}{const} \mbox{\hyperlink{classneighborIterator}{neighborIterator}}\& o);}
+\DoxyCodeLine{59 }
+\DoxyCodeLine{63         \mbox{\hyperlink{classneighborIterator}{neighborIterator}}\& \mbox{\hyperlink{classneighborIterator_ae547b91b4ed4ef7bee6d0cf9bca10838}{operator++}}();}
+\DoxyCodeLine{64 }
+\DoxyCodeLine{68         \mbox{\hyperlink{classneighborIterator}{neighborIterator}} \mbox{\hyperlink{classneighborIterator_a508d1dccf8281fed8abd8aaefb145570}{operator++}}(\textcolor{keywordtype}{int});}
+\DoxyCodeLine{69 }
+\DoxyCodeLine{74         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classneighborIterator_a039b30193aefde354eba133a55263b51}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classneighborIterator}{neighborIterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{75 }
+\DoxyCodeLine{80         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classneighborIterator_a95d8840e2114007102d64d9013a7169e}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classneighborIterator}{neighborIterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{81 }
+\DoxyCodeLine{85         \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& \mbox{\hyperlink{classneighborIterator_a67a0d38a9b10901ec21f306be785e16b}{operator*}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{86 }
+\DoxyCodeLine{90         \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}* \mbox{\hyperlink{classneighborIterator_a56ff4797158a97429be40650e54dc2a6}{operator-\/>}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{91 }
+\DoxyCodeLine{92     \textcolor{keyword}{private}:}
+\DoxyCodeLine{93 }
+\DoxyCodeLine{94         \textcolor{keywordtype}{int} i;}
+\DoxyCodeLine{95 }
+\DoxyCodeLine{96         \textcolor{keywordtype}{bool} is\_fw;}
+\DoxyCodeLine{97 }
+\DoxyCodeLine{98         \mbox{\hyperlink{classKmer}{Kmer}} km\_head;}
+\DoxyCodeLine{99         \mbox{\hyperlink{classKmer}{Kmer}} km\_tail;}
+\DoxyCodeLine{100 }
+\DoxyCodeLine{101         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}} um;}
+\DoxyCodeLine{102 }
+\DoxyCodeLine{103         CompactedDBG\_ptr\_t cdbg;}
+\DoxyCodeLine{104 \};}
+\DoxyCodeLine{105 }
+\DoxyCodeLine{115 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{116 \textcolor{keyword}{class }\mbox{\hyperlink{classBackwardCDBG}{BackwardCDBG}} \{}
+\DoxyCodeLine{117 }
+\DoxyCodeLine{118     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{119     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{120 }
+\DoxyCodeLine{121     \textcolor{keyword}{public}:}
+\DoxyCodeLine{122 }
+\DoxyCodeLine{126         \textcolor{keyword}{explicit} \mbox{\hyperlink{classBackwardCDBG_a7535c34878c4ec0acc0543a3814c35b9}{BackwardCDBG}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um\_);}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{131         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classBackwardCDBG_afd32793764f72b23624fc6384d934412}{hasPredecessors}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{132 }
+\DoxyCodeLine{133         \textcolor{keywordtype}{size\_t} cardinality() \textcolor{keyword}{const};}
+\DoxyCodeLine{134 }
+\DoxyCodeLine{140         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} \mbox{\hyperlink{classBackwardCDBG_a2f869bd1b666c2ec9f960102f5dc9652}{begin}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{141 }
+\DoxyCodeLine{145         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} \mbox{\hyperlink{classBackwardCDBG_a1dac75199ce0f4705502843e904af6b0}{end}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{146 }
+\DoxyCodeLine{147     \textcolor{keyword}{private}:}
+\DoxyCodeLine{148 }
+\DoxyCodeLine{149         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}} um;}
+\DoxyCodeLine{150 \};}
+\DoxyCodeLine{151 }
+\DoxyCodeLine{161 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{162 \textcolor{keyword}{class }\mbox{\hyperlink{classForwardCDBG}{ForwardCDBG}} \{}
+\DoxyCodeLine{163 }
+\DoxyCodeLine{164     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{165     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{166 }
+\DoxyCodeLine{167     \textcolor{keyword}{public}:}
+\DoxyCodeLine{168 }
+\DoxyCodeLine{172         \textcolor{keyword}{explicit} \mbox{\hyperlink{classForwardCDBG_ae4cc2b8a705fb9555fba4f31bfcc7bdb}{ForwardCDBG}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um\_);}
+\DoxyCodeLine{173 }
+\DoxyCodeLine{177         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classForwardCDBG_a17b11e73f1754c52ff4bb771bdefca08}{hasSuccessors}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{178 }
+\DoxyCodeLine{179         \textcolor{keywordtype}{size\_t} cardinality() \textcolor{keyword}{const};}
+\DoxyCodeLine{180 }
+\DoxyCodeLine{186         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} \mbox{\hyperlink{classForwardCDBG_af99aee08a11c9ffe2bfc42d52ce0c152}{begin}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{187 }
+\DoxyCodeLine{191         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} \mbox{\hyperlink{classForwardCDBG_a473b3c82b547730564cd4c43e89622c0}{end}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{192 }
+\DoxyCodeLine{193     \textcolor{keyword}{private}:}
+\DoxyCodeLine{194 }
+\DoxyCodeLine{195         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}} um;}
+\DoxyCodeLine{196 \};}
+\DoxyCodeLine{197 }
+\DoxyCodeLine{198 \textcolor{preprocessor}{\#include "{}NeighborIterator.tcc"{}}}
+\DoxyCodeLine{199 }
+\DoxyCodeLine{200 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

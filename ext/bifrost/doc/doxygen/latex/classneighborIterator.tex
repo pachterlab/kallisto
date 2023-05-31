@@ -1,0 +1,198 @@
+\hypertarget{classneighborIterator}{}\section{neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ Class Template Reference}
+\label{classneighborIterator}\index{neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$@{neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}}
+
+
+Iterator for the neighbors (predecessors or successors) of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object.  
+
+
+
+
+Inherits iterator$<$ std\+::input\+\_\+iterator\+\_\+tag, Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$, int $>$.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classneighborIterator_ab857cd8f2e6bb98f844d9316c8e8d5b5}{neighbor\+Iterator} ()
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator_a3a524d5ee6219ea7ccc3a11f69d80835}{neighbor\+Iterator} (const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \&um\+\_\+, const bool is\+\_\+forward\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator_ad7ee6efe87e4c4619c96e6c4fae809df}{neighbor\+Iterator} (const \hyperlink{classneighborIterator}{neighbor\+Iterator} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor. \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator}{neighbor\+Iterator} \& \hyperlink{classneighborIterator_aa84a0c4942e9a9ba2245eb2572205c66}{operator++} ()
+\begin{DoxyCompactList}\small\item\em Prefix increment, iterate over the next neighbor (predecessor or successor). \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator}{neighbor\+Iterator} \hyperlink{classneighborIterator_a508d1dccf8281fed8abd8aaefb145570}{operator++} (int)
+\begin{DoxyCompactList}\small\item\em Postfix increment, iterate over the next neighbor (predecessor or successor). \end{DoxyCompactList}\item 
+bool \hyperlink{classneighborIterator_a039b30193aefde354eba133a55263b51}{operator==} (const \hyperlink{classneighborIterator}{neighbor\+Iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator\+: check if two \hyperlink{classneighborIterator}{neighbor\+Iterator} are the same. \end{DoxyCompactList}\item 
+bool \hyperlink{classneighborIterator_a95d8840e2114007102d64d9013a7169e}{operator!=} (const \hyperlink{classneighborIterator}{neighbor\+Iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator\+: check if two \hyperlink{classneighborIterator}{neighbor\+Iterator} are different. \end{DoxyCompactList}\item 
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \& \hyperlink{classneighborIterator_a4481d0b5d4b31cc0e3f9064f8906f70b}{operator$\ast$} () const
+\begin{DoxyCompactList}\small\item\em Indirection operator. \end{DoxyCompactList}\item 
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ $\ast$ \hyperlink{classneighborIterator_a9626c1843dc3134a53756c7c0c3309da}{operator-\/$>$} () const
+\begin{DoxyCompactList}\small\item\em Dereference operator. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$\newline
+class neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+
+Iterator for the neighbors (predecessors or successors) of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. 
+
+A \hyperlink{classneighborIterator}{neighbor\+Iterator} object has 3 template parameters\+: the type of data associated with the unitigs of the graph, the type of data associated with the graph and a boolean indicating if this is a constant iterator or not. Note that you are supposed to use this class as the iterator of a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} or \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} object, which can be obtained respectively from \hyperlink{classUnitigMap_adfae0ba9c3675fd5612a4b71b46a25c6}{Unitig\+Map\+::get\+Predecessors()} and \hyperlink{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}{Unitig\+Map\+::get\+Successors()}, so you shouldn\textquotesingle{}t have to instantiate an object \hyperlink{classneighborIterator}{neighbor\+Iterator} and its template parameters yourself. The unitig data and graph data types should be the same as the ones used for the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} the iterator is from. No specific order (such as a lexicographic one) is assumed during iteration. 
+\begin{DoxyCode}
+\hyperlink{classCompactedDBG}{CompactedDBG<>} cdbg;
+... \textcolor{comment}{// Some more code, cdbg construction}
+\textcolor{keywordflow}{for} (\textcolor{keyword}{const} \textcolor{keyword}{auto}& unitig : cdbg)\{
+  cout << unitig.toString() << endl; \textcolor{comment}{// unitig is of type UnitigMap}
+  \textcolor{keywordflow}{for} (\textcolor{keyword}{const} \textcolor{keyword}{auto}& pred : unitig.getPredecessors()) cout << pred.toString() << endl;
+  \textcolor{keywordflow}{for} (\textcolor{keyword}{const} \textcolor{keyword}{auto}& succ : unitig.getSuccessors()) cout << succ.toString() << endl;
+\}
+\end{DoxyCode}
+ 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classneighborIterator_ab857cd8f2e6bb98f844d9316c8e8d5b5}\label{classneighborIterator_ab857cd8f2e6bb98f844d9316c8e8d5b5}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{neighbor\+Iterator()}{neighborIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classneighborIterator}{neighbor\+Iterator} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Constructor. 
+
+\begin{DoxyReturn}{Returns}
+an empty \hyperlink{classneighborIterator}{neighbor\+Iterator}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classneighborIterator_a3a524d5ee6219ea7ccc3a11f69d80835}\label{classneighborIterator_a3a524d5ee6219ea7ccc3a11f69d80835}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{neighbor\+Iterator()}{neighborIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classneighborIterator}{neighbor\+Iterator} (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \&}]{um\+\_\+,  }\item[{const bool}]{is\+\_\+forward\+\_\+ }\end{DoxyParamCaption})}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+} & is a \hyperlink{classUnitigMap}{Unitig\+Map} object\+: the constructed \hyperlink{classneighborIterator}{neighbor\+Iterator} will iterate over the neighbors of the \hyperlink{classUnitigMap}{Unitig\+Map} reference unitig \\
+\hline
+{\em is\+\_\+forward\+\_\+} & indicates if the iterator must iterate over the successors (true) or the predecessors (false) \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classneighborIterator}{neighbor\+Iterator}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classneighborIterator_ad7ee6efe87e4c4619c96e6c4fae809df}\label{classneighborIterator_ad7ee6efe87e4c4619c96e6c4fae809df}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\index{neighbor\+Iterator@{neighbor\+Iterator}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{neighbor\+Iterator()}{neighborIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classneighborIterator}{neighbor\+Iterator} (\begin{DoxyParamCaption}\item[{const \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor. 
+
+\begin{DoxyReturn}{Returns}
+a copy of a \hyperlink{classneighborIterator}{neighbor\+Iterator}. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classneighborIterator_a95d8840e2114007102d64d9013a7169e}\label{classneighborIterator_a95d8840e2114007102d64d9013a7169e}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality operator\+: check if two \hyperlink{classneighborIterator}{neighbor\+Iterator} are different. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is another \hyperlink{classneighborIterator}{neighbor\+Iterator}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating whether the two \hyperlink{classneighborIterator}{neighbor\+Iterator} are different. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classneighborIterator_a4481d0b5d4b31cc0e3f9064f8906f70b}\label{classneighborIterator_a4481d0b5d4b31cc0e3f9064f8906f70b}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator$\ast$()}{operator*()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G, is\+\_\+const$>$\& \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator$\ast$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Indirection operator. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map} reference which contains information about the mapped neighbor. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classneighborIterator_aa84a0c4942e9a9ba2245eb2572205c66}\label{classneighborIterator_aa84a0c4942e9a9ba2245eb2572205c66}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}\& \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator++ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Prefix increment, iterate over the next neighbor (predecessor or successor). 
+
+Note that no specific order (such as a lexicographic one) is assumed during iteration. \mbox{\Hypertarget{classneighborIterator_a508d1dccf8281fed8abd8aaefb145570}\label{classneighborIterator_a508d1dccf8281fed8abd8aaefb145570}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator} \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator++ (\begin{DoxyParamCaption}\item[{int}]{ }\end{DoxyParamCaption})}
+
+
+
+Postfix increment, iterate over the next neighbor (predecessor or successor). 
+
+Note that no specific order (such as a lexicographic one) is assumed during iteration. \mbox{\Hypertarget{classneighborIterator_a9626c1843dc3134a53756c7c0c3309da}\label{classneighborIterator_a9626c1843dc3134a53756c7c0c3309da}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator-\/$>$@{operator-\/$>$}}
+\index{operator-\/$>$@{operator-\/$>$}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator-\/$>$()}{operator->()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G, is\+\_\+const$>$$\ast$ \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator-\/$>$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Dereference operator. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map} pointer which contains information about the mapped neighbor. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classneighborIterator_a039b30193aefde354eba133a55263b51}\label{classneighborIterator_a039b30193aefde354eba133a55263b51}} 
+\index{neighbor\+Iterator@{neighbor\+Iterator}!operator==@{operator==}}
+\index{operator==@{operator==}!neighbor\+Iterator@{neighbor\+Iterator}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator\+: check if two \hyperlink{classneighborIterator}{neighbor\+Iterator} are the same. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is another \hyperlink{classneighborIterator}{neighbor\+Iterator}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating whether the two \hyperlink{classneighborIterator}{neighbor\+Iterator} are the same. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{NeighborIterator_8hpp}{Neighbor\+Iterator.\+hpp}\end{DoxyCompactItemize}

@@ -1,0 +1,298 @@
+\hypertarget{ColorSet_8hpp_source}{}\doxysection{Color\+Set.\+hpp}
+\label{ColorSet_8hpp_source}\index{src/ColorSet.hpp@{src/ColorSet.hpp}}
+\mbox{\hyperlink{ColorSet_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_COLORSET\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_COLORSET\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}roaring.hh"{}}}
+\DoxyCodeLine{5 }
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{CompactedDBG_8hpp}{CompactedDBG.hpp}}"{}}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include "{}TinyBitmap.hpp"{}}}
+\DoxyCodeLine{8 }
+\DoxyCodeLine{14 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t> \textcolor{keyword}{class }\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}};}
+\DoxyCodeLine{15 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t> \textcolor{keyword}{class }\mbox{\hyperlink{classDataAccessor}{DataAccessor}};}
+\DoxyCodeLine{16 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t> \textcolor{keyword}{class }\mbox{\hyperlink{classDataStorage}{DataStorage}};}
+\DoxyCodeLine{17 }
+\DoxyCodeLine{21 \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigColors}{UnitigColors}} \{}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{23     \textcolor{comment}{//Ensure that UnitigColors::setPtrBmp is always allocated with an 8 bytes alignment}}
+\DoxyCodeLine{24     \textcolor{keyword}{struct }\textcolor{keyword}{alignas}(8) Bitmap \{ Roaring r; \};}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{26     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classColoredCDBG}{ColoredCDBG}};}
+\DoxyCodeLine{27     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classDataAccessor}{DataAccessor}};}
+\DoxyCodeLine{28     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classDataStorage}{DataStorage}};}
+\DoxyCodeLine{29 }
+\DoxyCodeLine{30     \textcolor{keyword}{public}:}
+\DoxyCodeLine{31 }
+\DoxyCodeLine{32         \textcolor{keyword}{typedef} pair<UnitigColors, size\_t> SharedUnitigColors;}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{37         \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}} : \textcolor{keyword}{public} std::iterator<std::forward\_iterator\_tag, pair<size\_t, size\_t>> \{}
+\DoxyCodeLine{38 }
+\DoxyCodeLine{39             \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigColors}{UnitigColors}};}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41             \textcolor{keyword}{public}:}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{47                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a01ef8ae04a7b535c43a9fea17d9564ab}{UnitigColors\_const\_iterator}}();}
+\DoxyCodeLine{48 }
+\DoxyCodeLine{54                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a879ba744a0fa0bf46f829523c7e28196}{UnitigColors\_const\_iterator}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& o);}
+\DoxyCodeLine{55 }
+\DoxyCodeLine{59                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_ad56df0c744a8f597b987c3952db07b26}{\string~UnitigColors\_const\_iterator}}();}
+\DoxyCodeLine{60 }
+\DoxyCodeLine{66                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_adf6d6b6ef8c953217283c9882ba10568}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& o);}
+\DoxyCodeLine{67 }
+\DoxyCodeLine{73                 \textcolor{keyword}{inline} pair<size\_t, size\_t> \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_ad6bdd4f4aaa785a789bed2d0466c9f38}{operator*}}()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{74 }
+\DoxyCodeLine{75                     \textcolor{keywordflow}{return} make\_pair(ck\_id \% um\_sz, ck\_id / um\_sz);}
+\DoxyCodeLine{76                 \}}
+\DoxyCodeLine{77 }
+\DoxyCodeLine{82                 \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_aac088e18802033a09a5ff1336522fbca}{getKmerPosition}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ck\_id \% um\_sz; \}}
+\DoxyCodeLine{83 }
+\DoxyCodeLine{88                 \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a1274e2d24b65f1b9ed2a473c9bf99302}{getColorID}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ck\_id / um\_sz; \}}
+\DoxyCodeLine{89 }
+\DoxyCodeLine{96                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a8ab4940bd251e29329edb8e0e46483b4}{operator++}}(\textcolor{keywordtype}{int});}
+\DoxyCodeLine{97 }
+\DoxyCodeLine{104                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a40dbbb41ce6d363e862d51190727c687}{operator++}}();}
+\DoxyCodeLine{105 }
+\DoxyCodeLine{110                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a13abe4a7acdf81488a4e28f967b7628f}{nextColor}}();}
+\DoxyCodeLine{111 }
+\DoxyCodeLine{116                 \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_aef7249eb114e7a0401beb84372244306}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{117 }
+\DoxyCodeLine{122                 \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a7d513e7e2947d5cd948ed9bd816ef94f}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{123 }
+\DoxyCodeLine{124             \textcolor{keyword}{private}:}
+\DoxyCodeLine{125 }
+\DoxyCodeLine{126                 \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* cs;}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{128                 \textcolor{keywordtype}{size\_t} flag;}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{130                 \textcolor{keywordtype}{size\_t} it\_setBits;}
+\DoxyCodeLine{131                 \textcolor{keywordtype}{size\_t} cs\_sz;}
+\DoxyCodeLine{132                 \textcolor{keywordtype}{size\_t} um\_sz;}
+\DoxyCodeLine{133 }
+\DoxyCodeLine{134                 \textcolor{keywordtype}{size\_t} start\_pos;}
+\DoxyCodeLine{135                 \textcolor{keywordtype}{size\_t} end\_pos;}
+\DoxyCodeLine{136 }
+\DoxyCodeLine{137                 uint64\_t ck\_id;}
+\DoxyCodeLine{138 }
+\DoxyCodeLine{139                 \textcolor{keyword}{const} Roaring empty\_roar;}
+\DoxyCodeLine{140 }
+\DoxyCodeLine{141                 TinyBitmap t\_bmp;}
+\DoxyCodeLine{142 }
+\DoxyCodeLine{143                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}}* it\_uc;}
+\DoxyCodeLine{144                 Roaring::const\_iterator it\_roar;}
+\DoxyCodeLine{145                 TinyBitmap::const\_iterator it\_t\_bmp;}
+\DoxyCodeLine{146 }
+\DoxyCodeLine{147                 \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a01ef8ae04a7b535c43a9fea17d9564ab}{UnitigColors\_const\_iterator}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* cs\_, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} start\_pos\_, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} end\_pos\_,}
+\DoxyCodeLine{148                                             \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len\_unitig\_km, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} beg);}
+\DoxyCodeLine{149 }
+\DoxyCodeLine{150                 \textcolor{keyword}{inline} uint64\_t get\_ID()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ck\_id; \}}
+\DoxyCodeLine{151 }
+\DoxyCodeLine{152                 \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} isInvalid()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{153 }
+\DoxyCodeLine{154                     \textcolor{keywordflow}{return} ((ck\_id == 0xffffffffffffffff) || (it\_setBits == cs\_sz));}
+\DoxyCodeLine{155                 \}}
+\DoxyCodeLine{156         \};}
+\DoxyCodeLine{157 }
+\DoxyCodeLine{164         \textcolor{keyword}{typedef} \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{UnitigColors\_const\_iterator}} \mbox{\hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\_iterator}};}
+\DoxyCodeLine{165 }
+\DoxyCodeLine{169         \mbox{\hyperlink{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}{UnitigColors}}();}
+\DoxyCodeLine{170 }
+\DoxyCodeLine{176         \mbox{\hyperlink{classUnitigColors_af5accc6ad5fdeab9aeae11bb8af9fd9f}{UnitigColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& o); \textcolor{comment}{// Copy constructor}}
+\DoxyCodeLine{177 }
+\DoxyCodeLine{183         \mbox{\hyperlink{classUnitigColors_a3c8668fa0cb7ea4ff68cf61e2e7fff91}{UnitigColors}}(\mbox{\hyperlink{classUnitigColors}{UnitigColors}}\&\& o); \textcolor{comment}{// Move  constructor}}
+\DoxyCodeLine{184 }
+\DoxyCodeLine{188         \mbox{\hyperlink{classUnitigColors_af0b4c187dcb539a57bc39c924af8de54}{\string~UnitigColors}}();}
+\DoxyCodeLine{189 }
+\DoxyCodeLine{196         \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& \mbox{\hyperlink{classUnitigColors_a281781088ac3ea4a8bd35dd9e22b1a22}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& o);}
+\DoxyCodeLine{197 }
+\DoxyCodeLine{204         \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& \mbox{\hyperlink{classUnitigColors_ad1103b07fc1ed48fb2a2ca61670ca7f1}{operator=}}(\mbox{\hyperlink{classUnitigColors}{UnitigColors}}\&\& o);}
+\DoxyCodeLine{205 }
+\DoxyCodeLine{206         \textcolor{comment}{//bool operator==(const UnitigColors\& o) const;}}
+\DoxyCodeLine{207         \textcolor{comment}{// inline bool operator!=(const UnitigColors\& o) const \{ return !operator==(o);}}
+\DoxyCodeLine{208 }
+\DoxyCodeLine{212         \textcolor{keywordtype}{void} \mbox{\hyperlink{classUnitigColors_a5a2723ca4914c4db05630fef8fa1e665}{clear}}();}
+\DoxyCodeLine{213 }
+\DoxyCodeLine{223         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a242276ed4b9198fd1718f0c2692af9e5}{isEqual}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& o, \textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um\_o) \textcolor{keyword}{const};}
+\DoxyCodeLine{224 }
+\DoxyCodeLine{229         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a8211a4472374f696433df782d30a8ee2}{isEmpty}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} (\mbox{\hyperlink{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}{size}}() == 0); \}}
+\DoxyCodeLine{230 }
+\DoxyCodeLine{237         \textcolor{keywordtype}{void} \mbox{\hyperlink{classUnitigColors_aefd6309649156f4a1035f8381270d225}{add}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id);}
+\DoxyCodeLine{238 }
+\DoxyCodeLine{245         \textcolor{keywordtype}{void} \mbox{\hyperlink{classUnitigColors_a31e28cb0fdb60ba373af28bab79cce40}{remove}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id);}
+\DoxyCodeLine{246 }
+\DoxyCodeLine{255         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a80198f26ea0b2d7c6c0378779c8e1810}{contains}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id) \textcolor{keyword}{const};}
+\DoxyCodeLine{256 }
+\DoxyCodeLine{261         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}{size}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{262 }
+\DoxyCodeLine{269         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_a354c6f26708ddbd2223f1f58d695dc32}{size}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id) \textcolor{keyword}{const};}
+\DoxyCodeLine{270 }
+\DoxyCodeLine{276         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_aa68c4fe9877305f2db67cb998aabe6b6}{colorMax}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{277 }
+\DoxyCodeLine{284         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_adbd2e7d19983b0fc1d4b7a7a65f74689}{write}}(ostream\& stream\_out, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} copy\_UnitigColors = \textcolor{keyword}{true}) \textcolor{keyword}{const};}
+\DoxyCodeLine{285 }
+\DoxyCodeLine{292         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a6bc79eb9e7c5b94dfbf8235033d32af5}{read}}(istream\& stream\_in);}
+\DoxyCodeLine{293 }
+\DoxyCodeLine{298         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_af44f80476c0d1764a8b1c5530cf8f42e}{getSizeInBytes}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{299 }
+\DoxyCodeLine{306         \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{const\_iterator}} \mbox{\hyperlink{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}{begin}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{307 }
+\DoxyCodeLine{314         \mbox{\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{const\_iterator}} \mbox{\hyperlink{classUnitigColors_adf18eea48391e100c5167405a9679b35}{end}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{315 }
+\DoxyCodeLine{322         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a032cc5da8535232251e1c44c9a8d0258}{optimizeFullColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um);}
+\DoxyCodeLine{323 }
+\DoxyCodeLine{324         uint64\_t hash(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} seed = 0) \textcolor{keyword}{const};}
+\DoxyCodeLine{325 }
+\DoxyCodeLine{326     \textcolor{keyword}{private}:}
+\DoxyCodeLine{327 }
+\DoxyCodeLine{328         \mbox{\hyperlink{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}{UnitigColors}}(SharedUnitigColors\& o);}
+\DoxyCodeLine{329         \mbox{\hyperlink{classUnitigColors_aec10fe1eb0e2a6dc50d49e2a104e24cb}{UnitigColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& o, \textcolor{keyword}{const} SharedUnitigColors* old\_ref\_uc, \textcolor{keyword}{const} SharedUnitigColors* new\_ref\_uc);}
+\DoxyCodeLine{330 }
+\DoxyCodeLine{331         \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& \mbox{\hyperlink{classUnitigColors_a281781088ac3ea4a8bd35dd9e22b1a22}{operator=}}(SharedUnitigColors\& o);}
+\DoxyCodeLine{332 }
+\DoxyCodeLine{333         \textcolor{keywordtype}{void} \mbox{\hyperlink{classUnitigColors_aefd6309649156f4a1035f8381270d225}{add}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_id);}
+\DoxyCodeLine{334         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigColors_a80198f26ea0b2d7c6c0378779c8e1810}{contains}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} color\_km\_id) \textcolor{keyword}{const};}
+\DoxyCodeLine{335 }
+\DoxyCodeLine{336         \textcolor{keyword}{inline} \textcolor{keywordtype}{void} releaseMemory()\{}
+\DoxyCodeLine{337 }
+\DoxyCodeLine{338             \textcolor{keyword}{const} uintptr\_t flag = setBits \& flagMask;}
+\DoxyCodeLine{339 }
+\DoxyCodeLine{340             \textcolor{keywordflow}{if} (flag == ptrUnitigColors) \textcolor{keyword}{delete}[] getPtrUnitigColors();}
+\DoxyCodeLine{341             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (flag == ptrBitmap) \textcolor{keyword}{delete} getPtrBitmap();}
+\DoxyCodeLine{342             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (flag == ptrSharedUnitigColors)\{}
+\DoxyCodeLine{343 }
+\DoxyCodeLine{344                 SharedUnitigColors* s\_uc = getPtrSharedUnitigColors();}
+\DoxyCodeLine{345 }
+\DoxyCodeLine{346                 \textcolor{keywordflow}{if} (-\/-\/(s\_uc-\/>second) == 0) s\_uc-\/>first.clear();}
+\DoxyCodeLine{347             \}}
+\DoxyCodeLine{348             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (flag == localTinyBitmap)\{}
+\DoxyCodeLine{349 }
+\DoxyCodeLine{350                 uint16\_t* setPtrTinyBmp = getPtrTinyBitmap();}
+\DoxyCodeLine{351                 TinyBitmap t\_bmp(\&setPtrTinyBmp);}
+\DoxyCodeLine{352 }
+\DoxyCodeLine{353                 t\_bmp.clear();}
+\DoxyCodeLine{354             \}}
+\DoxyCodeLine{355 }
+\DoxyCodeLine{356             setBits = localBitVector;}
+\DoxyCodeLine{357         \}}
+\DoxyCodeLine{358 }
+\DoxyCodeLine{359         \textcolor{keyword}{inline} \textcolor{keywordtype}{void} shrinkSize()\{}
+\DoxyCodeLine{360 }
+\DoxyCodeLine{361             \textcolor{keyword}{const} uintptr\_t flag = setBits \& flagMask;}
+\DoxyCodeLine{362 }
+\DoxyCodeLine{363             \textcolor{keywordflow}{if} (flag == ptrUnitigColors)\{}
+\DoxyCodeLine{364 }
+\DoxyCodeLine{365                 \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* uc = getPtrUnitigColors();}
+\DoxyCodeLine{366 }
+\DoxyCodeLine{367                 uc[0].shrinkSize();}
+\DoxyCodeLine{368                 uc[1].shrinkSize();}
+\DoxyCodeLine{369             \}}
+\DoxyCodeLine{370             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (flag == ptrBitmap) getPtrBitmap()-\/>r.shrinkToFit();}
+\DoxyCodeLine{371             \textcolor{keywordflow}{else} \textcolor{keywordflow}{if} (flag == localTinyBitmap)\{}
+\DoxyCodeLine{372 }
+\DoxyCodeLine{373                 uint16\_t* setPtrTinyBmp = getPtrTinyBitmap();}
+\DoxyCodeLine{374                 TinyBitmap t\_bmp(\&setPtrTinyBmp);}
+\DoxyCodeLine{375 }
+\DoxyCodeLine{376                 t\_bmp.shrinkSize();}
+\DoxyCodeLine{377 }
+\DoxyCodeLine{378                 setBits = (\textcolor{keyword}{reinterpret\_cast<}uintptr\_t\textcolor{keyword}{>}(t\_bmp.detach()) \& pointerMask) | localTinyBitmap;}
+\DoxyCodeLine{379             \}}
+\DoxyCodeLine{380         \}}
+\DoxyCodeLine{381 }
+\DoxyCodeLine{382         \mbox{\hyperlink{classUnitigColors}{UnitigColors}} makeFullColors(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{383         \mbox{\hyperlink{classUnitigColors}{UnitigColors}} getFullColors(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{384         \mbox{\hyperlink{classUnitigColors}{UnitigColors}} getNonFullColors(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& full\_uc) \textcolor{keyword}{const};}
+\DoxyCodeLine{385 }
+\DoxyCodeLine{386         \textcolor{keyword}{inline} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* getFullColorsPtr() \{}
+\DoxyCodeLine{387 }
+\DoxyCodeLine{388             \textcolor{keywordflow}{return} (isUnitigColors() ? getPtrUnitigColors() : \textcolor{keyword}{nullptr});}
+\DoxyCodeLine{389         \}}
+\DoxyCodeLine{390 }
+\DoxyCodeLine{391         \textcolor{keyword}{inline} \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* getFullColorsPtr()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{392 }
+\DoxyCodeLine{393             \textcolor{keywordflow}{return} (isUnitigColors() ? getPtrUnitigColors() : \textcolor{keyword}{nullptr});}
+\DoxyCodeLine{394         \}}
+\DoxyCodeLine{395 }
+\DoxyCodeLine{396         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} isBitmap()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ((setBits \& flagMask) == ptrBitmap); \}}
+\DoxyCodeLine{397         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} isTinyBitmap()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ((setBits \& flagMask) == localTinyBitmap); \}}
+\DoxyCodeLine{398         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} isUnitigColors()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ((setBits \& flagMask) == ptrUnitigColors); \}}
+\DoxyCodeLine{399         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} isSharedUnitigColors()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} ((setBits \& flagMask) == ptrSharedUnitigColors); \}}
+\DoxyCodeLine{400 }
+\DoxyCodeLine{401         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigColors_ad410a06bb105a496951c805c69d65f5f}{size}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{402 }
+\DoxyCodeLine{403         \mbox{\hyperlink{classUnitigColors}{UnitigColors}} reverse(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{404 }
+\DoxyCodeLine{405         \mbox{\hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{const\_iterator}} \mbox{\hyperlink{classUnitigColors_a16c8dcb7d6e1f900cf6a52504896b241}{begin}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} start\_pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} end\_pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len\_km\_sz) \textcolor{keyword}{const};}
+\DoxyCodeLine{406 }
+\DoxyCodeLine{407         \textcolor{keyword}{inline} Bitmap* getPtrBitmap()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{408 }
+\DoxyCodeLine{409             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}Bitmap*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{410         \}}
+\DoxyCodeLine{411 }
+\DoxyCodeLine{412         \textcolor{keyword}{inline} \textcolor{keyword}{const} Bitmap* getConstPtrBitmap()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{413 }
+\DoxyCodeLine{414             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}\textcolor{keyword}{const }Bitmap*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{415         \}}
+\DoxyCodeLine{416 }
+\DoxyCodeLine{417         \textcolor{keyword}{inline} uint16\_t* getPtrTinyBitmap()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{418 }
+\DoxyCodeLine{419             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}uint16\_t*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{420         \}}
+\DoxyCodeLine{421 }
+\DoxyCodeLine{422         \textcolor{keyword}{inline} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* getPtrUnitigColors()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{423 }
+\DoxyCodeLine{424             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}\mbox{\hyperlink{classUnitigColors}{UnitigColors}}*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{425         \}}
+\DoxyCodeLine{426 }
+\DoxyCodeLine{427         \textcolor{keyword}{inline} \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* getConstPtrUnitigColors()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{428 }
+\DoxyCodeLine{429             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}\textcolor{keyword}{const }\mbox{\hyperlink{classUnitigColors}{UnitigColors}}*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{430         \}}
+\DoxyCodeLine{431 }
+\DoxyCodeLine{432         \textcolor{keyword}{inline} SharedUnitigColors* getPtrSharedUnitigColors()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{433 }
+\DoxyCodeLine{434             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}SharedUnitigColors*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{435         \}}
+\DoxyCodeLine{436 }
+\DoxyCodeLine{437         \textcolor{keyword}{inline} \textcolor{keyword}{const} SharedUnitigColors* getConstPtrSharedUnitigColors()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{438 }
+\DoxyCodeLine{439             \textcolor{keywordflow}{return} \textcolor{keyword}{reinterpret\_cast<}\textcolor{keyword}{const }SharedUnitigColors*\textcolor{keyword}{>}(setBits \& pointerMask);}
+\DoxyCodeLine{440         \}}
+\DoxyCodeLine{441 }
+\DoxyCodeLine{442         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} maxBitVectorIDs; \textcolor{comment}{// 64 bits -\/ 3 bits for the color set type = 61}}
+\DoxyCodeLine{443         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} shiftMaskBits; \textcolor{comment}{// 3 bits}}
+\DoxyCodeLine{444 }
+\DoxyCodeLine{445         \textcolor{comment}{// asBits and asPointer represent:}}
+\DoxyCodeLine{446         \textcolor{comment}{// Flag 0 -\/ A TinyBitmap which can contain up to 65488 uint}}
+\DoxyCodeLine{447         \textcolor{comment}{// Flag 1 -\/ A bit vector of 62 bits storing presence/absence of up to 62 integers}}
+\DoxyCodeLine{448         \textcolor{comment}{// Flag 2 -\/ A single integer}}
+\DoxyCodeLine{449         \textcolor{comment}{// Flag 3 -\/ A pointer to a CRoaring compressed bitmap which can contain up to 2\string^32 uint}}
+\DoxyCodeLine{450         \textcolor{comment}{// Flag 4 -\/ A pointer to an array of 2 UnitigColors:}}
+\DoxyCodeLine{451         \textcolor{comment}{//          1 -\/ Contains "{}full"{} colors -\/> color is present on ALL k-\/mers of the unitig}}
+\DoxyCodeLine{452         \textcolor{comment}{//          2 -\/ Contains colors for k-\/mers if NOT full colors}}
+\DoxyCodeLine{453         \textcolor{comment}{// Flag 5 -\/ A pointer to a pair (UnitigColors, size\_t) shared by multiple UnitigColors}}
+\DoxyCodeLine{454 }
+\DoxyCodeLine{455         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t localTinyBitmap; \textcolor{comment}{// Flag 0}}
+\DoxyCodeLine{456         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t localBitVector; \textcolor{comment}{// Flag 1}}
+\DoxyCodeLine{457         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t localSingleInt; \textcolor{comment}{// Flag 2}}
+\DoxyCodeLine{458         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t ptrBitmap; \textcolor{comment}{// Flag 3}}
+\DoxyCodeLine{459         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t ptrUnitigColors; \textcolor{comment}{// Flag 4}}
+\DoxyCodeLine{460         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t ptrSharedUnitigColors; \textcolor{comment}{// Flag 5}}
+\DoxyCodeLine{461 }
+\DoxyCodeLine{462         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t flagMask; \textcolor{comment}{// 0x7 (= 2\string^shiftMaskBits -\/ 1)}}
+\DoxyCodeLine{463         \textcolor{keyword}{static} \textcolor{keyword}{const} uintptr\_t pointerMask; \textcolor{comment}{// 0xfffffffffffffff8 (= 2\string^64 -\/ 1 -\/ flagMask)}}
+\DoxyCodeLine{464 }
+\DoxyCodeLine{465         uintptr\_t setBits;}
+\DoxyCodeLine{466 \};}
+\DoxyCodeLine{467 }
+\DoxyCodeLine{468 \textcolor{keyword}{struct }\mbox{\hyperlink{structUnitigColorsHash}{UnitigColorsHash}} \{}
+\DoxyCodeLine{469 }
+\DoxyCodeLine{470     \textcolor{keywordtype}{size\_t} operator()(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}\& uc)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{471 }
+\DoxyCodeLine{472         \textcolor{keywordflow}{return} uc.hash();}
+\DoxyCodeLine{473     \}}
+\DoxyCodeLine{474 \};}
+\DoxyCodeLine{475 }
+\DoxyCodeLine{476 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

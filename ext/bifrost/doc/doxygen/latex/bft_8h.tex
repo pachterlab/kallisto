@@ -1,0 +1,975 @@
+\hypertarget{bft_8h}{}\section{include/bft.h File Reference}
+\label{bft_8h}\index{include/bft.\+h@{include/bft.\+h}}
+
+
+Interface containing all functions to use a B\+FT.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation}
+\begin{DoxyCompactList}\small\item\em Annotation associated with a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root} \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT}
+\begin{DoxyCompactList}\small\item\em Root vertex of a B\+FT. \end{DoxyCompactList}\item 
+typedef size\+\_\+t($\ast$ \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr}) (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Pointer on function used by \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()} and \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers()}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{Indent}{\bf Annotation functions}\par
+{\em These functions manipulate annotations (color sets). }\begin{DoxyCompactItemize}
+\item 
+uint8\+\_\+t {\bfseries intersection\+\_\+annots} (const uint8\+\_\+t a, const uint8\+\_\+t b)\hypertarget{bft_8h_a31ae9116fb7f9497a1fedfdbb4d85b5c}{}\label{bft_8h_a31ae9116fb7f9497a1fedfdbb4d85b5c}
+
+\item 
+uint8\+\_\+t {\bfseries union\+\_\+annots} (const uint8\+\_\+t a, const uint8\+\_\+t b)\hypertarget{bft_8h_a57517727d6f754a335511ffea3037aea}{}\label{bft_8h_a57517727d6f754a335511ffea3037aea}
+
+\item 
+uint8\+\_\+t {\bfseries sym\+\_\+difference\+\_\+annots} (const uint8\+\_\+t a, const uint8\+\_\+t b)\hypertarget{bft_8h_a90b9faa42161ee553cbd356a850372c4}{}\label{bft_8h_a90b9faa42161ee553cbd356a850372c4}
+
+\item 
+\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$ \hyperlink{bft_8h_a553468d3d32fef3b9573e2822086743e}{create\+\_\+\+B\+F\+T\+\_\+annotation} ()
+\begin{DoxyCompactList}\small\item\em Function creating an empty \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation}. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_af399db7486e5ca6ec2e5c089c946d9f9}{free\+\_\+\+B\+F\+T\+\_\+annotation} (\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$bft\+\_\+annot)
+\begin{DoxyCompactList}\small\item\em Function freeing a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation}. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$ \hyperlink{bft_8h_a77adc497006eb9aeca0987aca66d1f91}{get\+\_\+annotation} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer)
+\begin{DoxyCompactList}\small\item\em Function extracting the annotation (set of colors) associated with a k-\/mer of a B\+FT. \end{DoxyCompactList}\item 
+bool \hyperlink{bft_8h_a373c016bb3d180d9cb77ce3df04e5774}{presence\+\_\+genome} (uint32\+\_\+t id\+\_\+genome, \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$bft\+\_\+annot, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function testing if a k-\/mer occured in a genome. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$ \hyperlink{bft_8h_afa7efdad6e5ee85274d60d74cb9dd982}{intersection\+\_\+annotations} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)
+\begin{DoxyCompactList}\small\item\em Function computing the intersection of a set of annotations. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$ \hyperlink{bft_8h_a3496af65565b70b2381af7315cda9bda}{union\+\_\+annotations} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)
+\begin{DoxyCompactList}\small\item\em Function computing the union of a set of annotations. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$ \hyperlink{bft_8h_af7a212e5c8cc93ff0593f39e62b89e81}{sym\+\_\+difference\+\_\+annotations} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)
+\begin{DoxyCompactList}\small\item\em Function computing the symmetric difference of a set of annotations. \end{DoxyCompactList}\item 
+uint32\+\_\+t $\ast$ \hyperlink{bft_8h_a30fc123ce1cdef3941a5047de3f0689e}{get\+\_\+list\+\_\+id\+\_\+genomes} (\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$bft\+\_\+annot, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function extracting a list of genome identifiers from an annotation. \end{DoxyCompactList}\item 
+uint32\+\_\+t \hyperlink{bft_8h_a1925619b46da07aac7ce2e7d4d0dddab}{get\+\_\+count\+\_\+id\+\_\+genomes} (\hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} $\ast$bft\+\_\+annot, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function counting the number of genome identifiers in an annotation. \end{DoxyCompactList}\item 
+uint32\+\_\+t $\ast$ {\bfseries intersection\+\_\+list\+\_\+id\+\_\+genomes} (uint32\+\_\+t $\ast$list\+\_\+a, uint32\+\_\+t $\ast$list\+\_\+b)\hypertarget{bft_8h_ad09ddf86f70dedc2a20f73fed9c350a7}{}\label{bft_8h_ad09ddf86f70dedc2a20f73fed9c350a7}
+
+\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Graph functions}\par
+{\em These functions manipulate a colored de Bruijn graph stored in a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$ \hyperlink{bft_8h_aa70504eb287a2936e88d4ea36beac9a6}{create\+\_\+cdbg} (int k, int treshold\+\_\+compression)
+\begin{DoxyCompactList}\small\item\em Function creating a colored de Bruijn graph stored in a B\+FT. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_a2bd7d66178b29578107ef6983393af6b}{free\+\_\+cdbg} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Free an allocated colored de Bruijn graph stored in a B\+FT. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Insertion functions}\par
+{\em These functions insert genomes in a colored de Bruijn graph stored in a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bft_8h_a856f1613edf5cf8b62193464c911817d}{insert\+\_\+genomes\+\_\+from\+\_\+files} (int nb\+\_\+files, char $\ast$$\ast$paths, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, char $\ast$prefix\+\_\+bft\+\_\+filename)
+\begin{DoxyCompactList}\small\item\em Function inserting genomes (k-\/mer file) in a B\+FT. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_ab72ebe2b5cb0b720f96a4e883678d076}{insert\+\_\+kmers\+\_\+new\+\_\+genome} (int nb\+\_\+kmers, char $\ast$$\ast$kmers, char $\ast$genome\+\_\+name, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function inserting k-\/mers of a new genome in a B\+FT. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_a4e4b73220989248a6ee1160840f80763}{insert\+\_\+kmers\+\_\+last\+\_\+genome} (int nb\+\_\+kmers, char $\ast$$\ast$kmers, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function inserting k-\/mers of the last inserted genome in a B\+FT. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf K-\/mer functions}\par
+{\em These functions manipulate k-\/mers. }\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_a77d9ca17c70d921a5fcac4330e58e1bd}{create\+\_\+kmer} (const char $\ast$kmer, int k)
+\begin{DoxyCompactList}\small\item\em Function creating a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} object from a k-\/mer encoded as an A\+S\+C\+II string (char$\ast$). \end{DoxyCompactList}\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_aa578ba0f01a0c27f920eef148a0bb3f0}{create\+\_\+empty\+\_\+kmer} ()
+\begin{DoxyCompactList}\small\item\em Function creating an empty \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} object (all its components are N\+U\+LL). \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_a808fac5a22a9885a82901a9afdb15c18}{free\+\_\+\+B\+F\+T\+\_\+kmer} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, int nb\+\_\+bft\+\_\+kmer)
+\begin{DoxyCompactList}\small\item\em Function freeing allocated B\+F\+T\+\_\+kmers. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_ac5c1b6b0b04abfdf205f966299f042fd}{free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, int nb\+\_\+bft\+\_\+kmer)
+\begin{DoxyCompactList}\small\item\em Function freeing the content of allocated B\+F\+T\+\_\+kmers. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_ab9b8daf6a5685786083c258526ef87cb}{extract\+\_\+kmers\+\_\+to\+\_\+disk} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, char $\ast$filename\+\_\+output, bool compressed\+\_\+output)
+\begin{DoxyCompactList}\small\item\em Function extracting the k-\/mers of a B\+FT in a file. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{bft_8h_a76832aa3bffe26b997a562f56ce4fcba}{write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function writing an A\+S\+C\+II k-\/mer in a file. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{bft_8h_a77a802e5edc240a7a6a705ef6593799d}{write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function writing an 2 bits encoded k-\/mer in a file. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Query functions}\par
+{\em These functions query for k-\/mers or sequences. }\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_a67f15f4eeebe6fe620c467f8180e1f31}{get\+\_\+kmer} (const char $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function searching for a k-\/mer in a B\+FT. \end{DoxyCompactList}\item 
+bool \hyperlink{bft_8h_a170137e867f0ba24423badc9e1db872b}{is\+\_\+kmer\+\_\+in\+\_\+cdbg} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer)
+\begin{DoxyCompactList}\small\item\em Function testing if a k-\/mer is in a B\+FT. \end{DoxyCompactList}\item 
+uint32\+\_\+t $\ast$ \hyperlink{bft_8h_aa9806cafe5d6941638f125d59db61fa8}{query\+\_\+sequence} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, char $\ast$sequence, double threshold, bool canonical\+\_\+search)
+\begin{DoxyCompactList}\small\item\em Function querying a B\+FT for a sequence. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Pattern matching functions}\par
+{\em These functions provide pattern matching functionalities over the k-\/mers or paths of a colored de Bruijn graph stored as a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+bool \hyperlink{bft_8h_a6f93be4a2e37c7355c79079e8c38530a}{prefix\+\_\+matching} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, char $\ast$prefix, \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr} f,...)
+\begin{DoxyCompactList}\small\item\em Function for prefix matching over the k-\/mers of a B\+FT. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Marking functions}\par
+{\em These functions allow to mark k-\/mers of a colored de Bruijn graph with flags. }\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bft_8h_ae3c4297d5058193972b3d54219d3f818}{set\+\_\+marking} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function locking and preparing the graph for vertices marking (no insertion can happen before unlocking). \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_a1136ae628a88730d64de12a1807e6b11}{unset\+\_\+marking} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function unlocking and the graph locked for vertices marking. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_aec4a612e2beec69b717be9e972fa16cb}{set\+\_\+flag\+\_\+kmer} (uint8\+\_\+t flag, \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function marking a k-\/mer of a B\+FT with a flag. \end{DoxyCompactList}\item 
+uint8\+\_\+t \hyperlink{bft_8h_a6716b0afd3aa0b22bffd1a5fe8e4058f}{get\+\_\+flag\+\_\+kmer} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function getting a k-\/mer of a B\+FT with a flag. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Traversal functions}\par
+{\em These functions allow to traverse a colored de Bruijn graph stored as a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bft_8h_a7d5fc753178e2a65e4cf84c81a7a8c25}{set\+\_\+neighbors\+\_\+traversal} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function locking the graph for traversal. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_af273f713203ce229496cafc0a5b2806e}{unset\+\_\+neighbors\+\_\+traversal} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function unlocking a locked graph for traversal. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_a2abcf02bdb06a7abff05c76e118e20bf}{get\+\_\+neighbors} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function extracting the neighbors of a k-\/mer. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_a08169f0b2c3c7951b1aa3b2f75a535c3}{get\+\_\+predecessors} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function extracting the predecessors of a k-\/mer. \end{DoxyCompactList}\item 
+\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$ \hyperlink{bft_8h_aeb7859ff27d5bdf0c60aebc088415d57}{get\+\_\+successors} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft)
+\begin{DoxyCompactList}\small\item\em Function extracting the successors of a k-\/mer. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Iteration functions}\par
+{\em These functions iterate over the k-\/mers of a colored de Bruijn graph stored as a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr} f,...)
+\begin{DoxyCompactList}\small\item\em Function iterating over the k-\/mers of a B\+FT. \end{DoxyCompactList}\item 
+void \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr} f, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function iterating over the k-\/mers of a B\+FT. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Disk I/O functions}\par
+{\em These functions write and load a B\+FT from disk. }\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{bft_8h_a51347017832238592f50046c47903aeb}{write\+\_\+\+B\+FT} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$bft, char $\ast$filename, bool compress\+\_\+annotations)
+\begin{DoxyCompactList}\small\item\em Function writing a B\+FT to disk. \end{DoxyCompactList}\item 
+\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$ \hyperlink{bft_8h_aa6bb2c0f8644e81d5f00d888c615fea1}{load\+\_\+\+B\+FT} (char $\ast$filename)
+\begin{DoxyCompactList}\small\item\em Function loading a B\+FT from disk. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+
+
+\subsection{Detailed Description}
+Interface containing all functions to use a B\+FT. 
+
+Code snippets using this interface are provided in \hyperlink{snippets_8h}{snippets.\+h}. 
+
+\subsection{Typedef Documentation}
+\index{bft.\+h@{bft.\+h}!B\+FT@{B\+FT}}
+\index{B\+FT@{B\+FT}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{B\+FT}{BFT}}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf B\+F\+T\+\_\+\+Root} {\bf B\+FT}}\hypertarget{bft_8h_a2db0a80fe662d044625641531e5ce292}{}\label{bft_8h_a2db0a80fe662d044625641531e5ce292}
+
+
+Root vertex of a B\+FT. 
+
+A \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root} contains the k-\/mer size as well as the number and name of the inserted genomes. Other contained structures and variables are for internal use only and must not be modified. \index{bft.\+h@{bft.\+h}!B\+F\+T\+\_\+func\+\_\+ptr@{B\+F\+T\+\_\+func\+\_\+ptr}}
+\index{B\+F\+T\+\_\+func\+\_\+ptr@{B\+F\+T\+\_\+func\+\_\+ptr}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{B\+F\+T\+\_\+func\+\_\+ptr}{BFT_func_ptr}}]{\setlength{\rightskip}{0pt plus 5cm}typedef size\+\_\+t($\ast$ B\+F\+T\+\_\+func\+\_\+ptr) ({\bf B\+F\+T\+\_\+kmer} $\ast$bft\+\_\+kmer, {\bf B\+FT} $\ast$bft, va\+\_\+list args)}\hypertarget{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{}\label{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}
+
+
+Pointer on function used by \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()} and \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers()}. 
+
+Such a function (user written) is called on every k-\/mer of a B\+FT. 
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer from a B\+FT. \\
+\hline
+{\em bft} & is the B\+FT from which bft\+\_\+kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()} / \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers()}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a size\+\_\+t type object. It can be use to return an unsigned integer or a pointer. 
+\end{DoxyReturn}
+
+
+\subsection{Function Documentation}
+\index{bft.\+h@{bft.\+h}!create\+\_\+\+B\+F\+T\+\_\+annotation@{create\+\_\+\+B\+F\+T\+\_\+annotation}}
+\index{create\+\_\+\+B\+F\+T\+\_\+annotation@{create\+\_\+\+B\+F\+T\+\_\+annotation}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{create\+\_\+\+B\+F\+T\+\_\+annotation()}{create_BFT_annotation()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+annotation}$\ast$ create\+\_\+\+B\+F\+T\+\_\+annotation (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily [inline]}}\hypertarget{bft_8h_a553468d3d32fef3b9573e2822086743e}{}\label{bft_8h_a553468d3d32fef3b9573e2822086743e}
+
+
+Function creating an empty \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation}. 
+
+\index{bft.\+h@{bft.\+h}!create\+\_\+cdbg@{create\+\_\+cdbg}}
+\index{create\+\_\+cdbg@{create\+\_\+cdbg}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{create\+\_\+cdbg(int k, int treshold\+\_\+compression)}{create_cdbg(int k, int treshold_compression)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+FT}$\ast$ create\+\_\+cdbg (
+\begin{DoxyParamCaption}
+\item[{int}]{k, }
+\item[{int}]{treshold\+\_\+compression}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aa70504eb287a2936e88d4ea36beac9a6}{}\label{bft_8h_aa70504eb287a2936e88d4ea36beac9a6}
+
+
+Function creating a colored de Bruijn graph stored in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em k} & is the length of k-\/mers. \\
+\hline
+{\em treshold\+\_\+compression} & indicates when the color compression should be triggered (every treshold\+\_\+compression genome inserted). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a B\+FT pointer. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!create\+\_\+empty\+\_\+kmer@{create\+\_\+empty\+\_\+kmer}}
+\index{create\+\_\+empty\+\_\+kmer@{create\+\_\+empty\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{create\+\_\+empty\+\_\+kmer()}{create_empty_kmer()}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ create\+\_\+empty\+\_\+kmer (
+\begin{DoxyParamCaption}
+{}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aa578ba0f01a0c27f920eef148a0bb3f0}{}\label{bft_8h_aa578ba0f01a0c27f920eef148a0bb3f0}
+
+
+Function creating an empty \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} object (all its components are N\+U\+LL). 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} pointer. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!create\+\_\+kmer@{create\+\_\+kmer}}
+\index{create\+\_\+kmer@{create\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{create\+\_\+kmer(const char $\ast$kmer, int k)}{create_kmer(const char *kmer, int k)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ create\+\_\+kmer (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{kmer, }
+\item[{int}]{k}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a77d9ca17c70d921a5fcac4330e58e1bd}{}\label{bft_8h_a77d9ca17c70d921a5fcac4330e58e1bd}
+
+
+Function creating a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} object from a k-\/mer encoded as an A\+S\+C\+II string (char$\ast$). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is an an A\+S\+C\+II encoded k-\/mer string (char$\ast$). \\
+\hline
+{\em k} & is the k-\/mer length. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} pointer. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!extract\+\_\+kmers\+\_\+to\+\_\+disk@{extract\+\_\+kmers\+\_\+to\+\_\+disk}}
+\index{extract\+\_\+kmers\+\_\+to\+\_\+disk@{extract\+\_\+kmers\+\_\+to\+\_\+disk}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+kmers\+\_\+to\+\_\+disk(\+B\+F\+T $\ast$bft, char $\ast$filename\+\_\+output, bool compressed\+\_\+output)}{extract_kmers_to_disk(BFT *bft, char *filename_output, bool compressed_output)}}]{\setlength{\rightskip}{0pt plus 5cm}void extract\+\_\+kmers\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{char $\ast$}]{filename\+\_\+output, }
+\item[{bool}]{compressed\+\_\+output}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_ab9b8daf6a5685786083c258526ef87cb}{}\label{bft_8h_ab9b8daf6a5685786083c258526ef87cb}
+
+
+Function extracting the k-\/mers of a B\+FT in a file. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT containing the k-\/mers to iterate over. \\
+\hline
+{\em filename\+\_\+output} & is the name of a file to which the k-\/mers are written. File is overwritten if it already exists. \\
+\hline
+{\em compressed\+\_\+output} & is a boolean indicating if the k-\/mers should be written in their 2 bits form (true) or A\+S\+C\+II form (false). \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!free\+\_\+\+B\+F\+T\+\_\+annotation@{free\+\_\+\+B\+F\+T\+\_\+annotation}}
+\index{free\+\_\+\+B\+F\+T\+\_\+annotation@{free\+\_\+\+B\+F\+T\+\_\+annotation}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{free\+\_\+\+B\+F\+T\+\_\+annotation(\+B\+F\+T\+\_\+annotation $\ast$bft\+\_\+annot)}{free_BFT_annotation(BFT_annotation *bft_annot)}}]{\setlength{\rightskip}{0pt plus 5cm}void free\+\_\+\+B\+F\+T\+\_\+annotation (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+annotation} $\ast$}]{bft\+\_\+annot}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_af399db7486e5ca6ec2e5c089c946d9f9}{}\label{bft_8h_af399db7486e5ca6ec2e5c089c946d9f9}
+
+
+Function freeing a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+annot} & is a pointer to the \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} to free. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!free\+\_\+\+B\+F\+T\+\_\+kmer@{free\+\_\+\+B\+F\+T\+\_\+kmer}}
+\index{free\+\_\+\+B\+F\+T\+\_\+kmer@{free\+\_\+\+B\+F\+T\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{free\+\_\+\+B\+F\+T\+\_\+kmer(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, int nb\+\_\+bft\+\_\+kmer)}{free_BFT_kmer(BFT_kmer *bft_kmer, int nb_bft_kmer)}}]{\setlength{\rightskip}{0pt plus 5cm}void free\+\_\+\+B\+F\+T\+\_\+kmer (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{int}]{nb\+\_\+bft\+\_\+kmer}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a808fac5a22a9885a82901a9afdb15c18}{}\label{bft_8h_a808fac5a22a9885a82901a9afdb15c18}
+
+
+Function freeing allocated B\+F\+T\+\_\+kmers. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a pointer to an array of at least one \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer}. \\
+\hline
+{\em nb\+\_\+bft\+\_\+kmer} & is the number of \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} in bft\+\_\+kmer. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content@{free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content}}
+\index{free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content@{free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, int nb\+\_\+bft\+\_\+kmer)}{free_BFT_kmer_content(BFT_kmer *bft_kmer, int nb_bft_kmer)}}]{\setlength{\rightskip}{0pt plus 5cm}void free\+\_\+\+B\+F\+T\+\_\+kmer\+\_\+content (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{int}]{nb\+\_\+bft\+\_\+kmer}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_ac5c1b6b0b04abfdf205f966299f042fd}{}\label{bft_8h_ac5c1b6b0b04abfdf205f966299f042fd}
+
+
+Function freeing the content of allocated B\+F\+T\+\_\+kmers. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a pointer to an array of at least one \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer}. \\
+\hline
+{\em nb\+\_\+bft\+\_\+kmer} & is the number of \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} in bft\+\_\+kmer. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!free\+\_\+cdbg@{free\+\_\+cdbg}}
+\index{free\+\_\+cdbg@{free\+\_\+cdbg}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{free\+\_\+cdbg(\+B\+F\+T $\ast$bft)}{free_cdbg(BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void free\+\_\+cdbg (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a2bd7d66178b29578107ef6983393af6b}{}\label{bft_8h_a2bd7d66178b29578107ef6983393af6b}
+
+
+Free an allocated colored de Bruijn graph stored in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is an allocated B\+FT. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!get\+\_\+annotation@{get\+\_\+annotation}}
+\index{get\+\_\+annotation@{get\+\_\+annotation}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+annotation(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer)}{get_annotation(BFT_kmer *bft_kmer)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+annotation}$\ast$ get\+\_\+annotation (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a77adc497006eb9aeca0987aca66d1f91}{}\label{bft_8h_a77adc497006eb9aeca0987aca66d1f91}
+
+
+Function extracting the annotation (set of colors) associated with a k-\/mer of a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search or iteration over a B\+FT (via \hyperlink{bft_8h_a67f15f4eeebe6fe620c467f8180e1f31}{get\+\_\+kmer()} for example). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointer. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+count\+\_\+id\+\_\+genomes@{get\+\_\+count\+\_\+id\+\_\+genomes}}
+\index{get\+\_\+count\+\_\+id\+\_\+genomes@{get\+\_\+count\+\_\+id\+\_\+genomes}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+count\+\_\+id\+\_\+genomes(\+B\+F\+T\+\_\+annotation $\ast$bft\+\_\+annot, B\+F\+T $\ast$bft)}{get_count_id_genomes(BFT_annotation *bft_annot, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}uint32\+\_\+t get\+\_\+count\+\_\+id\+\_\+genomes (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+annotation} $\ast$}]{bft\+\_\+annot, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a1925619b46da07aac7ce2e7d4d0dddab}{}\label{bft_8h_a1925619b46da07aac7ce2e7d4d0dddab}
+
+
+Function counting the number of genome identifiers in an annotation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+annot} & is an annotation. \\
+\hline
+{\em bft} & is a B\+FT from which the annotation was extracted. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a count of genome identifiers. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+flag\+\_\+kmer@{get\+\_\+flag\+\_\+kmer}}
+\index{get\+\_\+flag\+\_\+kmer@{get\+\_\+flag\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+flag\+\_\+kmer(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft)}{get_flag_kmer(BFT_kmer *bft_kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}uint8\+\_\+t get\+\_\+flag\+\_\+kmer (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a6716b0afd3aa0b22bffd1a5fe8e4058f}{}\label{bft_8h_a6716b0afd3aa0b22bffd1a5fe8e4058f}
+
+
+Function getting a k-\/mer of a B\+FT with a flag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search/iteration over a B\+FT for which the function returns the flag. \\
+\hline
+{\em bft} & is a B\+FT locked for vertices marking. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!get\+\_\+kmer@{get\+\_\+kmer}}
+\index{get\+\_\+kmer@{get\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+kmer(const char $\ast$kmer, B\+F\+T $\ast$bft)}{get_kmer(const char *kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ get\+\_\+kmer (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a67f15f4eeebe6fe620c467f8180e1f31}{}\label{bft_8h_a67f15f4eeebe6fe620c467f8180e1f31}
+
+
+Function searching for a k-\/mer in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is an an A\+S\+C\+II encoded k-\/mer string (char$\ast$) to search for in the B\+FT. \\
+\hline
+{\em bft} & is a B\+FT in which k-\/mer is searched \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} pointer. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+list\+\_\+id\+\_\+genomes@{get\+\_\+list\+\_\+id\+\_\+genomes}}
+\index{get\+\_\+list\+\_\+id\+\_\+genomes@{get\+\_\+list\+\_\+id\+\_\+genomes}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+list\+\_\+id\+\_\+genomes(\+B\+F\+T\+\_\+annotation $\ast$bft\+\_\+annot, B\+F\+T $\ast$bft)}{get_list_id_genomes(BFT_annotation *bft_annot, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}uint32\+\_\+t$\ast$ get\+\_\+list\+\_\+id\+\_\+genomes (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+annotation} $\ast$}]{bft\+\_\+annot, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a30fc123ce1cdef3941a5047de3f0689e}{}\label{bft_8h_a30fc123ce1cdef3941a5047de3f0689e}
+
+
+Function extracting a list of genome identifiers from an annotation. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+annot} & is an annotation from which the ids must be extracted. \\
+\hline
+{\em bft} & is a B\+FT from which the annotation was extracted. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to an array of genome identifiers (uint32\+\_\+t). The first element of this array (position 0) indicates how many ids there are in this array. Therefore, the length of the array is array\mbox{[}0\mbox{]} + 1. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+neighbors@{get\+\_\+neighbors}}
+\index{get\+\_\+neighbors@{get\+\_\+neighbors}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+neighbors(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft)}{get_neighbors(BFT_kmer *bft_kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ get\+\_\+neighbors (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a2abcf02bdb06a7abff05c76e118e20bf}{}\label{bft_8h_a2abcf02bdb06a7abff05c76e118e20bf}
+
+
+Function extracting the neighbors of a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search/iteration over a B\+FT. \\
+\hline
+{\em bft} & is a B\+FT from which was extracted bft\+\_\+kmer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to an array of 8 \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer}\+: positions 0 to 3 are the possible predecessors and 4 to 7 the possible successors. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+predecessors@{get\+\_\+predecessors}}
+\index{get\+\_\+predecessors@{get\+\_\+predecessors}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+predecessors(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft)}{get_predecessors(BFT_kmer *bft_kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ get\+\_\+predecessors (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a08169f0b2c3c7951b1aa3b2f75a535c3}{}\label{bft_8h_a08169f0b2c3c7951b1aa3b2f75a535c3}
+
+
+Function extracting the predecessors of a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search/iteration over a B\+FT. \\
+\hline
+{\em bft} & is a B\+FT from which was extracted bft\+\_\+kmer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to an array of 4 \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} that are the possible predecessors. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!get\+\_\+successors@{get\+\_\+successors}}
+\index{get\+\_\+successors@{get\+\_\+successors}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+successors(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft)}{get_successors(BFT_kmer *bft_kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+kmer}$\ast$ get\+\_\+successors (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aeb7859ff27d5bdf0c60aebc088415d57}{}\label{bft_8h_aeb7859ff27d5bdf0c60aebc088415d57}
+
+
+Function extracting the successors of a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search/iteration over a B\+FT. \\
+\hline
+{\em bft} & is a B\+FT from which was extracted bft\+\_\+kmer \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to an array of 4 \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} that are the possible successors. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!insert\+\_\+genomes\+\_\+from\+\_\+files@{insert\+\_\+genomes\+\_\+from\+\_\+files}}
+\index{insert\+\_\+genomes\+\_\+from\+\_\+files@{insert\+\_\+genomes\+\_\+from\+\_\+files}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{insert\+\_\+genomes\+\_\+from\+\_\+files(int nb\+\_\+files, char $\ast$$\ast$paths, B\+F\+T $\ast$bft, char $\ast$prefix\+\_\+bft\+\_\+filename)}{insert_genomes_from_files(int nb_files, char **paths, BFT *bft, char *prefix_bft_filename)}}]{\setlength{\rightskip}{0pt plus 5cm}void insert\+\_\+genomes\+\_\+from\+\_\+files (
+\begin{DoxyParamCaption}
+\item[{int}]{nb\+\_\+files, }
+\item[{char $\ast$$\ast$}]{paths, }
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{char $\ast$}]{prefix\+\_\+bft\+\_\+filename}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a856f1613edf5cf8b62193464c911817d}{}\label{bft_8h_a856f1613edf5cf8b62193464c911817d}
+
+
+Function inserting genomes (k-\/mer file) in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nb\+\_\+files} & is the number of files to insert. \\
+\hline
+{\em paths} & is an nb\+\_\+files size array of strings (char$\ast$). Each string is the name of a file (+ eventually its path) to insert. \\
+\hline
+{\em bft} & is a B\+FT where the genomes are inserted. \\
+\hline
+{\em prefix\+\_\+bft\+\_\+filename} & is a prefix filename (including path) where temporary data can be written to. The prefix must be unique in its directory. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!insert\+\_\+kmers\+\_\+last\+\_\+genome@{insert\+\_\+kmers\+\_\+last\+\_\+genome}}
+\index{insert\+\_\+kmers\+\_\+last\+\_\+genome@{insert\+\_\+kmers\+\_\+last\+\_\+genome}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{insert\+\_\+kmers\+\_\+last\+\_\+genome(int nb\+\_\+kmers, char $\ast$$\ast$kmers, B\+F\+T $\ast$bft)}{insert_kmers_last_genome(int nb_kmers, char **kmers, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void insert\+\_\+kmers\+\_\+last\+\_\+genome (
+\begin{DoxyParamCaption}
+\item[{int}]{nb\+\_\+kmers, }
+\item[{char $\ast$$\ast$}]{kmers, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a4e4b73220989248a6ee1160840f80763}{}\label{bft_8h_a4e4b73220989248a6ee1160840f80763}
+
+
+Function inserting k-\/mers of the last inserted genome in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nb\+\_\+kmers} & is the number of k-\/mers to insert. \\
+\hline
+{\em kmers} & is a pointer to an array of strings (char $\ast$) that are the k-\/mers to insert. The arrayis of length nb\+\_\+kmers. \\
+\hline
+{\em bft} & is a colored de Bruijn graph stored as a B\+FT. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!insert\+\_\+kmers\+\_\+new\+\_\+genome@{insert\+\_\+kmers\+\_\+new\+\_\+genome}}
+\index{insert\+\_\+kmers\+\_\+new\+\_\+genome@{insert\+\_\+kmers\+\_\+new\+\_\+genome}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{insert\+\_\+kmers\+\_\+new\+\_\+genome(int nb\+\_\+kmers, char $\ast$$\ast$kmers, char $\ast$genome\+\_\+name, B\+F\+T $\ast$bft)}{insert_kmers_new_genome(int nb_kmers, char **kmers, char *genome_name, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void insert\+\_\+kmers\+\_\+new\+\_\+genome (
+\begin{DoxyParamCaption}
+\item[{int}]{nb\+\_\+kmers, }
+\item[{char $\ast$$\ast$}]{kmers, }
+\item[{char $\ast$}]{genome\+\_\+name, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_ab72ebe2b5cb0b720f96a4e883678d076}{}\label{bft_8h_ab72ebe2b5cb0b720f96a4e883678d076}
+
+
+Function inserting k-\/mers of a new genome in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em nb\+\_\+kmers} & is the number of k-\/mers to insert. \\
+\hline
+{\em kmers} & is a pointer to an array of strings (char $\ast$) that are the k-\/mers to insert. The array is of length nb\+\_\+kmers. \\
+\hline
+{\em genome\+\_\+name} & is the name of the new genome to which the inserted k-\/mers come from. \\
+\hline
+{\em bft} & is a colored de Bruijn graph stored as a B\+FT. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!intersection\+\_\+annotations@{intersection\+\_\+annotations}}
+\index{intersection\+\_\+annotations@{intersection\+\_\+annotations}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{intersection\+\_\+annotations(\+B\+F\+T $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)}{intersection_annotations(BFT *bft, uint32_t nb_annotations,...)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+annotation}$\ast$ intersection\+\_\+annotations (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{uint32\+\_\+t}]{nb\+\_\+annotations, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_afa7efdad6e5ee85274d60d74cb9dd982}{}\label{bft_8h_afa7efdad6e5ee85274d60d74cb9dd982}
+
+
+Function computing the intersection of a set of annotations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT from which the input annotations are originated. \\
+\hline
+{\em nb\+\_\+annotations} & indicates how many annotations must be included in the intersection. \\
+\hline
+{\em ...} & is a list of nb\+\_\+annotations \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointers of which the intersection is computed. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointer to an annotation which is the intersection of the input annotations. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!is\+\_\+kmer\+\_\+in\+\_\+cdbg@{is\+\_\+kmer\+\_\+in\+\_\+cdbg}}
+\index{is\+\_\+kmer\+\_\+in\+\_\+cdbg@{is\+\_\+kmer\+\_\+in\+\_\+cdbg}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{is\+\_\+kmer\+\_\+in\+\_\+cdbg(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer)}{is_kmer_in_cdbg(BFT_kmer *bft_kmer)}}]{\setlength{\rightskip}{0pt plus 5cm}bool is\+\_\+kmer\+\_\+in\+\_\+cdbg (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a170137e867f0ba24423badc9e1db872b}{}\label{bft_8h_a170137e867f0ba24423badc9e1db872b}
+
+
+Function testing if a k-\/mer is in a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search or iteration over a B\+FT (via \hyperlink{bft_8h_a67f15f4eeebe6fe620c467f8180e1f31}{get\+\_\+kmer()} for example). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating the presence (true) or absence (false) of the k-\/mer in a B\+FT. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!iterate\+\_\+over\+\_\+kmers@{iterate\+\_\+over\+\_\+kmers}}
+\index{iterate\+\_\+over\+\_\+kmers@{iterate\+\_\+over\+\_\+kmers}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{iterate\+\_\+over\+\_\+kmers(\+B\+F\+T $\ast$bft, B\+F\+T\+\_\+func\+\_\+ptr f,...)}{iterate_over_kmers(BFT *bft, BFT_func_ptr f,...)}}]{\setlength{\rightskip}{0pt plus 5cm}void iterate\+\_\+over\+\_\+kmers (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{{\bf B\+F\+T\+\_\+func\+\_\+ptr}}]{f, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{}\label{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}
+
+
+Function iterating over the k-\/mers of a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT containing the k-\/mers to iterate over. \\
+\hline
+{\em f} & is a pointer on function that will be called on each k-\/mer. If f returns 0, the calling function returns. \\
+\hline
+{\em ...} & are the additional arguments that must be transmitted to f. They can be extracted in f via its parameter of type va\+\_\+list. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!load\+\_\+\+B\+FT@{load\+\_\+\+B\+FT}}
+\index{load\+\_\+\+B\+FT@{load\+\_\+\+B\+FT}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{load\+\_\+\+B\+F\+T(char $\ast$filename)}{load_BFT(char *filename)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+FT}$\ast$ load\+\_\+\+B\+FT (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{filename\+\_\+and\+\_\+path}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aa6bb2c0f8644e81d5f00d888c615fea1}{}\label{bft_8h_aa6bb2c0f8644e81d5f00d888c615fea1}
+
+
+Function loading a B\+FT from disk. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename\+\_\+and\+\_\+path} & is the path and name of the file in which the B\+FT to load is be written. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!prefix\+\_\+matching@{prefix\+\_\+matching}}
+\index{prefix\+\_\+matching@{prefix\+\_\+matching}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{prefix\+\_\+matching(\+B\+F\+T $\ast$bft, char $\ast$prefix, B\+F\+T\+\_\+func\+\_\+ptr f,...)}{prefix_matching(BFT *bft, char *prefix, BFT_func_ptr f,...)}}]{\setlength{\rightskip}{0pt plus 5cm}bool prefix\+\_\+matching (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{char $\ast$}]{prefix, }
+\item[{{\bf B\+F\+T\+\_\+func\+\_\+ptr}}]{f, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a6f93be4a2e37c7355c79079e8c38530a}{}\label{bft_8h_a6f93be4a2e37c7355c79079e8c38530a}
+
+
+Function for prefix matching over the k-\/mers of a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT containing the k-\/mers to match. \\
+\hline
+{\em prefix} & is string containing a prefix the k-\/mers must match. \\
+\hline
+{\em f} & is a pointer on function that will be called on each k-\/mer matching the prefix. If f returns 0, the calling function returns. \\
+\hline
+{\em ...} & are the additional arguments that must be transmitted to f. They can be extracted in f via its parameter of type va\+\_\+list. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A boolean indicating whether at least one k-\/mer matched the prefix (true) or not (false). 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!presence\+\_\+genome@{presence\+\_\+genome}}
+\index{presence\+\_\+genome@{presence\+\_\+genome}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{presence\+\_\+genome(uint32\+\_\+t id\+\_\+genome, B\+F\+T\+\_\+annotation $\ast$bft\+\_\+annot, B\+F\+T $\ast$bft)}{presence_genome(uint32_t id_genome, BFT_annotation *bft_annot, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}bool presence\+\_\+genome (
+\begin{DoxyParamCaption}
+\item[{uint32\+\_\+t}]{id\+\_\+genome, }
+\item[{{\bf B\+F\+T\+\_\+annotation} $\ast$}]{bft\+\_\+annot, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a373c016bb3d180d9cb77ce3df04e5774}{}\label{bft_8h_a373c016bb3d180d9cb77ce3df04e5774}
+
+
+Function testing if a k-\/mer occured in a genome. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em id\+\_\+genome} & is the genome identifier. \\
+\hline
+{\em bft\+\_\+annot} & is the annotation of the k-\/mer to test the presence in genome. \\
+\hline
+{\em bft} & is a B\+FT in which the k-\/mer is is stored. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating the presence (true) or absence (false) of the k-\/mer in a the genome. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!query\+\_\+sequence@{query\+\_\+sequence}}
+\index{query\+\_\+sequence@{query\+\_\+sequence}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{query\+\_\+sequence(\+B\+F\+T $\ast$bft, char $\ast$sequence, double threshold, bool canonical\+\_\+search)}{query_sequence(BFT *bft, char *sequence, double threshold, bool canonical_search)}}]{\setlength{\rightskip}{0pt plus 5cm}uint32\+\_\+t$\ast$ query\+\_\+sequence (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{char $\ast$}]{sequence, }
+\item[{double}]{threshold, }
+\item[{bool}]{canonical\+\_\+search}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aa9806cafe5d6941638f125d59db61fa8}{}\label{bft_8h_aa9806cafe5d6941638f125d59db61fa8}
+
+
+Function querying a B\+FT for a sequence. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT to be queried. \\
+\hline
+{\em sequence} & is a string to query. \\
+\hline
+{\em threshold} & is a float (0 $<$ threshold $<$= 1) indicating the minimum percentage of k-\/mers from the queried sequence that must be present in a genome to have the queried sequence reported present in this genome. \\
+\hline
+{\em canonical\+\_\+search} & is a boolean indicating if the searched k-\/mers of the queried sequence must be canonical (lexicographically smaller one between a k-\/mer and its reverse-\/complement) or not. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to a sorted array of genome identifiers in which the queried sequence occurs (according to parameter threshold) or N\+U\+LL if the queried sequence is not present in at least one genome (according to parameter threshold). The first element of the array (position 0) indicates how many ids are in this array. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!set\+\_\+flag\+\_\+kmer@{set\+\_\+flag\+\_\+kmer}}
+\index{set\+\_\+flag\+\_\+kmer@{set\+\_\+flag\+\_\+kmer}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{set\+\_\+flag\+\_\+kmer(uint8\+\_\+t flag, B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft)}{set_flag_kmer(uint8_t flag, BFT_kmer *bft_kmer, BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void set\+\_\+flag\+\_\+kmer (
+\begin{DoxyParamCaption}
+\item[{uint8\+\_\+t}]{flag, }
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aec4a612e2beec69b717be9e972fa16cb}{}\label{bft_8h_aec4a612e2beec69b717be9e972fa16cb}
+
+
+Function marking a k-\/mer of a B\+FT with a flag. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em flag} & is the mark to add to a k-\/mer. It can have value 0, 1, 2 or 3. \\
+\hline
+{\em bft\+\_\+kmer} & is a k-\/mer obtained via search/iteration over a B\+FT that must be marked. \\
+\hline
+{\em bft} & is a B\+FT locked for vertices marking. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!set\+\_\+marking@{set\+\_\+marking}}
+\index{set\+\_\+marking@{set\+\_\+marking}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{set\+\_\+marking(\+B\+F\+T $\ast$bft)}{set_marking(BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void set\+\_\+marking (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_ae3c4297d5058193972b3d54219d3f818}{}\label{bft_8h_ae3c4297d5058193972b3d54219d3f818}
+
+
+Function locking and preparing the graph for vertices marking (no insertion can happen before unlocking). 
+
+By default, all k-\/mers of the graph are initialized with a 0 flag value. 
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT to lock and prepare for vertices marking. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!set\+\_\+neighbors\+\_\+traversal@{set\+\_\+neighbors\+\_\+traversal}}
+\index{set\+\_\+neighbors\+\_\+traversal@{set\+\_\+neighbors\+\_\+traversal}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{set\+\_\+neighbors\+\_\+traversal(\+B\+F\+T $\ast$bft)}{set_neighbors_traversal(BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void set\+\_\+neighbors\+\_\+traversal (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a7d5fc753178e2a65e4cf84c81a7a8c25}{}\label{bft_8h_a7d5fc753178e2a65e4cf84c81a7a8c25}
+
+
+Function locking the graph for traversal. 
+
+It is not necessary to lock the graph for traversal (no insertion can happen during the locking) but traversing a locked graph is faster than traversing an unlocked graph. 
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT to lock for traversal. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!sym\+\_\+difference\+\_\+annotations@{sym\+\_\+difference\+\_\+annotations}}
+\index{sym\+\_\+difference\+\_\+annotations@{sym\+\_\+difference\+\_\+annotations}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{sym\+\_\+difference\+\_\+annotations(\+B\+F\+T $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)}{sym_difference_annotations(BFT *bft, uint32_t nb_annotations,...)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+annotation}$\ast$ sym\+\_\+difference\+\_\+annotations (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{uint32\+\_\+t}]{nb\+\_\+annotations, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_af7a212e5c8cc93ff0593f39e62b89e81}{}\label{bft_8h_af7a212e5c8cc93ff0593f39e62b89e81}
+
+
+Function computing the symmetric difference of a set of annotations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT from which the input annotations are originated. \\
+\hline
+{\em nb\+\_\+annotations} & indicates how many annotations must be included in the symmetric difference. \\
+\hline
+{\em ...} & is a list of nb\+\_\+annotations \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointers of which the symmetric difference is computed. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointer to an annotation which is the symmetric difference of the input annotations. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!union\+\_\+annotations@{union\+\_\+annotations}}
+\index{union\+\_\+annotations@{union\+\_\+annotations}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{union\+\_\+annotations(\+B\+F\+T $\ast$bft, uint32\+\_\+t nb\+\_\+annotations,...)}{union_annotations(BFT *bft, uint32_t nb_annotations,...)}}]{\setlength{\rightskip}{0pt plus 5cm}{\bf B\+F\+T\+\_\+annotation}$\ast$ union\+\_\+annotations (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{uint32\+\_\+t}]{nb\+\_\+annotations, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a3496af65565b70b2381af7315cda9bda}{}\label{bft_8h_a3496af65565b70b2381af7315cda9bda}
+
+
+Function computing the union of a set of annotations. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT from which the input annotations are originated. \\
+\hline
+{\em nb\+\_\+annotations} & indicates how many annotations must be included in the union. \\
+\hline
+{\em ...} & is a list of nb\+\_\+annotations \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointers of which the union is computed. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structBFT__annotation}{B\+F\+T\+\_\+annotation} pointer to an annotation which is the union of the input annotations. 
+\end{DoxyReturn}
+\index{bft.\+h@{bft.\+h}!unset\+\_\+marking@{unset\+\_\+marking}}
+\index{unset\+\_\+marking@{unset\+\_\+marking}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{unset\+\_\+marking(\+B\+F\+T $\ast$bft)}{unset_marking(BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void unset\+\_\+marking (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a1136ae628a88730d64de12a1807e6b11}{}\label{bft_8h_a1136ae628a88730d64de12a1807e6b11}
+
+
+Function unlocking and the graph locked for vertices marking. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT locked for vertices marking. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!unset\+\_\+neighbors\+\_\+traversal@{unset\+\_\+neighbors\+\_\+traversal}}
+\index{unset\+\_\+neighbors\+\_\+traversal@{unset\+\_\+neighbors\+\_\+traversal}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{unset\+\_\+neighbors\+\_\+traversal(\+B\+F\+T $\ast$bft)}{unset_neighbors_traversal(BFT *bft)}}]{\setlength{\rightskip}{0pt plus 5cm}void unset\+\_\+neighbors\+\_\+traversal (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_af273f713203ce229496cafc0a5b2806e}{}\label{bft_8h_af273f713203ce229496cafc0a5b2806e}
+
+
+Function unlocking a locked graph for traversal. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a locked B\+FT for traversal that must be unlocked. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!v\+\_\+iterate\+\_\+over\+\_\+kmers@{v\+\_\+iterate\+\_\+over\+\_\+kmers}}
+\index{v\+\_\+iterate\+\_\+over\+\_\+kmers@{v\+\_\+iterate\+\_\+over\+\_\+kmers}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{v\+\_\+iterate\+\_\+over\+\_\+kmers(\+B\+F\+T $\ast$bft, B\+F\+T\+\_\+func\+\_\+ptr f, va\+\_\+list args)}{v_iterate_over_kmers(BFT *bft, BFT_func_ptr f, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}void v\+\_\+iterate\+\_\+over\+\_\+kmers (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{{\bf B\+F\+T\+\_\+func\+\_\+ptr}}]{f, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_aa616e55874abfd5811c8854586718c35}{}\label{bft_8h_aa616e55874abfd5811c8854586718c35}
+
+
+Function iterating over the k-\/mers of a B\+FT. 
+
+This function should be used only when called from a function with a variable number of arguments. If not, you must use \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()}. 
+\begin{DoxyParams}{Parameters}
+{\em bft} & is a B\+FT containing the k-\/mers to iterate over. \\
+\hline
+{\em f} & is a pointer on function that will be called on each k-\/mer. If f returns 0, the calling function returns. \\
+\hline
+{\em args} & should contain all additional arguments to pass to f. They can be extracted in f via its parameter of type va\+\_\+list. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!write\+\_\+\+B\+FT@{write\+\_\+\+B\+FT}}
+\index{write\+\_\+\+B\+FT@{write\+\_\+\+B\+FT}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{write\+\_\+\+B\+F\+T(\+B\+F\+T $\ast$bft, char $\ast$filename, bool compress\+\_\+annotations)}{write_BFT(BFT *bft, char *filename, bool compress_annotations)}}]{\setlength{\rightskip}{0pt plus 5cm}void write\+\_\+\+B\+FT (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{char $\ast$}]{filename, }
+\item[{bool}]{compress\+\_\+annotations}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a51347017832238592f50046c47903aeb}{}\label{bft_8h_a51347017832238592f50046c47903aeb}
+
+
+Function writing a B\+FT to disk. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em bft} & is the B\+FT to write on disk. \\
+\hline
+{\em filename} & is the name of the file in which bft will be written. \\
+\hline
+{\em compress\+\_\+annotations} & is a boolean indicating if the annotations of the B\+FT must be compressed before writing to disk. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk@{write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk}}
+\index{write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk@{write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft, va\+\_\+list args)}{write_kmer_ascii_to_disk(BFT_kmer *bft_kmer, BFT *bft, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t write\+\_\+kmer\+\_\+ascii\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a76832aa3bffe26b997a562f56ce4fcba}{}\label{bft_8h_a76832aa3bffe26b997a562f56ce4fcba}
+
+
+Function writing an A\+S\+C\+II k-\/mer in a file. 
+
+This function is of type B\+F\+T\+\_\+func\+\_\+ptr and is intended to be a parameter of \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()} or \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers()}. 
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer to write to disk. \\
+\hline
+{\em bft} & is a B\+FT from which bft\+\_\+kmer was extracted. \\
+\hline
+{\em args} & is a variable list of arguments. It contains a pointer to a file where to write bft\+\_\+kmer. \\
+\hline
+\end{DoxyParams}
+\index{bft.\+h@{bft.\+h}!write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk@{write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk}}
+\index{write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk@{write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk}!bft.\+h@{bft.\+h}}
+\subsubsection[{\texorpdfstring{write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk(\+B\+F\+T\+\_\+kmer $\ast$bft\+\_\+kmer, B\+F\+T $\ast$bft, va\+\_\+list args)}{write_kmer_comp_to_disk(BFT_kmer *bft_kmer, BFT *bft, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t write\+\_\+kmer\+\_\+comp\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{bft\+\_\+kmer, }
+\item[{{\bf B\+FT} $\ast$}]{bft, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{bft_8h_a77a802e5edc240a7a6a705ef6593799d}{}\label{bft_8h_a77a802e5edc240a7a6a705ef6593799d}
+
+
+Function writing an 2 bits encoded k-\/mer in a file. 
+
+This function is of type B\+F\+T\+\_\+func\+\_\+ptr and is intended to be a parameter of \hyperlink{bft_8h_af3cb2e5bd87fc7c7f7240986bf7351fe}{iterate\+\_\+over\+\_\+kmers()} or \hyperlink{bft_8h_aa616e55874abfd5811c8854586718c35}{v\+\_\+iterate\+\_\+over\+\_\+kmers()}. 
+\begin{DoxyParams}{Parameters}
+{\em bft\+\_\+kmer} & is a k-\/mer to write to disk. \\
+\hline
+{\em bft} & is a B\+FT from which bft\+\_\+kmer was extracted. \\
+\hline
+{\em args} & is a variable list of arguments. It contains a pointer to a file where to write bft\+\_\+kmer. \\
+\hline
+\end{DoxyParams}

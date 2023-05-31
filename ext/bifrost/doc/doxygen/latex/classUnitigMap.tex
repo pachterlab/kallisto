@@ -1,0 +1,397 @@
+\hypertarget{classUnitigMap}{}\section{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ Class Template Reference}
+\label{classUnitigMap}\index{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$@{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}}
+
+
+Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph.  
+
+
+
+
+Inherits \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base}.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classUnitigMap_a43574c45ceb02111d2bc959e6ed4e717}{Unitig\+Map} (size\+\_\+t length=1, Compacted\+D\+B\+G\+\_\+ptr\+\_\+t cdbg\+\_\+=nullptr)
+\begin{DoxyCompactList}\small\item\em \hyperlink{classUnitigMap}{Unitig\+Map} constructor. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigMap_a4f632adfd48f44d685c6a311a4197a91}{Unitig\+Map} (const size\+\_\+t start, const size\+\_\+t length, const size\+\_\+t unitig\+\_\+sz, const bool \hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand})
+\begin{DoxyCompactList}\small\item\em \hyperlink{classUnitigMap}{Unitig\+Map} constructor. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigMap_a73899498315ff5533c25b1c0fb1ca413}{operator==} (const \hyperlink{classUnitigMap}{Unitig\+Map} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator\+: check if two \hyperlink{classUnitigMap}{Unitig\+Map} are the same. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigMap_a777e853a143be31ff69dd9f54f33d426}{operator!=} (const \hyperlink{classUnitigMap}{Unitig\+Map} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator\+: check if two \hyperlink{classUnitigMap}{Unitig\+Map} are different. \end{DoxyCompactList}\item 
+string \hyperlink{classUnitigMap_a8a90644ef5f8d4326af8ad2f6438e1dd}{mapped\+Sequence\+To\+String} () const
+\begin{DoxyCompactList}\small\item\em Create a string containing the sequence corresponding to the mapping. \end{DoxyCompactList}\item 
+string \hyperlink{classUnitigMap_a90ab8fbec322df04053b9998c68d2070}{reference\+Unitig\+To\+String} () const
+\begin{DoxyCompactList}\small\item\em Create a string containing the sequence of the reference unitig used the mapping. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigMap_a2a80f5a0f55391c57b4f4d83400e30a2}{lcp} (const char $\ast$s, const size\+\_\+t pos\+\_\+s=0, const size\+\_\+t pos\+\_\+um\+\_\+seq=0, const bool um\+\_\+reversed=false) const
+\begin{DoxyCompactList}\small\item\em Compute the length of the longest common prefix between a given sequence and the reference unitig used in the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_a594c471e4d757273feef67cf4358bafd}{get\+Unitig\+Head} () const
+\begin{DoxyCompactList}\small\item\em Get the head k-\/mer of the reference unitig used for the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_a584488d223cb2f5b00d72342305c6d0e}{get\+Unitig\+Tail} () const
+\begin{DoxyCompactList}\small\item\em Get the tail k-\/mer of the reference unitig used for the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_a7c8a9b1e16fa29d716550fc93de9d4d7}{get\+Unitig\+Kmer} (const size\+\_\+t pos) const
+\begin{DoxyCompactList}\small\item\em Get the k-\/mer starting at position pos in the reference unitig used for the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_a18a15516e136f787dc70db5030698548}{get\+Mapped\+Head} () const
+\begin{DoxyCompactList}\small\item\em Get the head k-\/mer of the mapped sequence. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_ab06f79aa91086a8d73ea8200f5cc64d4}{get\+Mapped\+Tail} () const
+\begin{DoxyCompactList}\small\item\em Get the tail k-\/mer of the mapped sequence. \end{DoxyCompactList}\item 
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap_a9ac111e6783b3344f0db407d05f1b966}{get\+Mapped\+Kmer} (const size\+\_\+t pos) const
+\begin{DoxyCompactList}\small\item\em Get the k-\/mer starting at position pos in the mapped sequence. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \hyperlink{classUnitigMap_af12f1d4e121afe7fe8324ddcdc9c6402}{get\+Kmer\+Mapping} (const size\+\_\+t pos) const
+\begin{DoxyCompactList}\small\item\em Create a new \hyperlink{classUnitigMap}{Unitig\+Map} object which is the mapping of a k-\/mer on a reference unitig. \end{DoxyCompactList}\item 
+Unitig\+\_\+data\+\_\+ptr\+\_\+t \hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{get\+Data} () const
+\begin{DoxyCompactList}\small\item\em Get a pointer to the data associated with the reference unitig used in the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classBackwardCDBG}{Unitig\+Map\+\_\+\+BW} \hyperlink{classUnitigMap_adfae0ba9c3675fd5612a4b71b46a25c6}{get\+Predecessors} () const
+\begin{DoxyCompactList}\small\item\em Create a Unitig\+Map\+\_\+\+BW object that can create iterators (through \hyperlink{classBackwardCDBG_a134d64079a7acdcad727637647691897}{Unitig\+Map\+\_\+\+B\+W\+::begin()} and \hyperlink{classBackwardCDBG_a7b8f84da503325c3e3e2b5b024ed6997}{Unitig\+Map\+\_\+\+B\+W\+::end()}) over the predecessors of the reference unitig used in the mapping. \end{DoxyCompactList}\item 
+\hyperlink{classForwardCDBG}{Unitig\+Map\+\_\+\+FW} \hyperlink{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}{get\+Successors} () const
+\begin{DoxyCompactList}\small\item\em Create a Unitig\+Map\+\_\+\+FW object that can create iterators (through \hyperlink{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}{Unitig\+Map\+\_\+\+F\+W\+::begin()} and \hyperlink{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}{Unitig\+Map\+\_\+\+F\+W\+::end()}) over the successors of the reference unitig used in the mapping. \end{DoxyCompactList}\item 
+Compacted\+D\+B\+G\+\_\+ptr\+\_\+t \hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{get\+Graph} () const
+\begin{DoxyCompactList}\small\item\em Get a pointer to the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} containing the reference unitig used in the mapping. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Additional Inherited Members}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$\newline
+class Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+
+Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph. 
+
+A \hyperlink{classUnitigMap}{Unitig\+Map} object has 3 template parameters\+: the type of data associated with the unitigs of the graph, the type of data associated with the graph and a boolean indicating if this is a constant \hyperlink{classUnitigMap}{Unitig\+Map} (const\+\_\+\+Unitig\+Map) or not. A const\+\_\+\+Unitig\+Map can be modified but you can\textquotesingle{}t modify the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} you can access using Unitig\+Map\+::get\+Compacted\+D\+BG. The unitig data and graph data types should be the same as the ones used for the \hyperlink{classCompactedDBG}{Compacted\+D\+BG}. 
+\begin{DoxyCode}
+\hyperlink{classUnitigMap}{UnitigMap<>} um\_1; \textcolor{comment}{// No unitig data, no graph data, NOT constant and its content IS NOT constant}
+\hyperlink{classUnitigMap}{UnitigMap<void, void, false>} um\_2; \textcolor{comment}{// Equivalent to previous notation}
+\textcolor{keyword}{const} \hyperlink{classUnitigMap}{UnitigMap<>} um\_3; \textcolor{comment}{// No unitig data, no graph data, constant BUT its content IS NOT
+       constant}
+\hyperlink{classUnitigMap}{UnitigMap<void, void, true>} um\_4; \textcolor{comment}{// No unitig data, no graph data, NOT constant
+       BUT its content IS constant}
+\textcolor{keyword}{const} \hyperlink{classUnitigMap}{UnitigMap<void, void, true>} um\_5; \textcolor{comment}{// No unitig data, no graph data,
+       constant AND its content IS constant}
+\hyperlink{classUnitigMap}{UnitigMap<myUnitigData, myGraphData>} um\_6; \textcolor{comment}{// Unitig data of type
+       myUnitigData for each unitig, graph data of type myGraphData, not constant}
+
+\hyperlink{classCompactedDBG}{CompactedDBG<>}* cdbg\_ptr\_1 = um\_1.\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG can be
+       modified from the UnitigMap}
+\hyperlink{classCompactedDBG}{CompactedDBG<>}* cdbg\_ptr\_2 = um\_2.\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG can be
+       modified from the UnitigMap}
+\hyperlink{classCompactedDBG}{CompactedDBG<>}* cdbg\_ptr\_3 = um\_3.\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG can be
+       modified from the UnitigMap}
+\textcolor{keyword}{const} \hyperlink{classCompactedDBG}{CompactedDBG<>}* cdbg\_ptr\_4 = um\_4.\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG cannot
+       be modified from the UnitigMap}
+\textcolor{keyword}{const} \hyperlink{classCompactedDBG}{CompactedDBG<>}* cdbg\_ptr\_5 = um\_5.\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG cannot
+       be modified from the UnitigMap}
+\hyperlink{classCompactedDBG}{CompactedDBG<myUnitigData, myGraphData>}* cdbg\_ptr\_6 = um\_6.
+      \hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}(); \textcolor{comment}{// Associated CompactedDBG can be modified from the UnitigMap}
+\end{DoxyCode}
+ 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classUnitigMap_a43574c45ceb02111d2bc959e6ed4e717}\label{classUnitigMap_a43574c45ceb02111d2bc959e6ed4e717}} 
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{Unitig\+Map()}{UnitigMap()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classUnitigMap}{Unitig\+Map} (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{length = {\ttfamily 1},  }\item[{Compacted\+D\+B\+G\+\_\+ptr\+\_\+t}]{cdbg\+\_\+ = {\ttfamily nullptr} }\end{DoxyParamCaption})}
+
+
+
+\hyperlink{classUnitigMap}{Unitig\+Map} constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em length} & is the length of the mapping in k-\/mers (default is 1 k-\/mer). \\
+\hline
+{\em cdbg\+\_\+} & is a pointer to the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} containing the reference unitig used for the mapping (default is nullptr). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an empty \hyperlink{classUnitigMap}{Unitig\+Map}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a4f632adfd48f44d685c6a311a4197a91}\label{classUnitigMap_a4f632adfd48f44d685c6a311a4197a91}} 
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{Unitig\+Map()}{UnitigMap()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classUnitigMap}{Unitig\+Map} (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{start,  }\item[{const size\+\_\+t}]{length,  }\item[{const size\+\_\+t}]{unitig\+\_\+sz,  }\item[{const bool}]{strand }\end{DoxyParamCaption})}
+
+
+
+\hyperlink{classUnitigMap}{Unitig\+Map} constructor. 
+
+This constructor is used to create temporary mappings and must not be used to extract information from the graph. 
+\begin{DoxyParams}{Parameters}
+{\em start} & is the start position of the mapping (0-\/based distance) from the start of the reference unitig. \\
+\hline
+{\em length} & is the length of the mapping in k-\/mers. \\
+\hline
+{\em unitig\+\_\+sz} & is the length of the reference unitig used for the mapping. \\
+\hline
+{\em strand} & indicates if the mapped k-\/mer or sequence matches the forward strand (true) or the reverse-\/complement (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map}. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}\label{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+Unitig\+\_\+data\+\_\+ptr\+\_\+t \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get a pointer to the data associated with the reference unitig used in the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a pointer to the data associated with the reference unitig used in the mapping or a nullptr pointer if\+:
+\begin{DoxyItemize}
+\item there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true)
+\item there is no data associated with the unitigs (U = void). The returned pointer is constant if the \hyperlink{classUnitigMap}{Unitig\+Map} is constant (Unitig\+Map$<$\+U, G, true$>$). 
+\end{DoxyItemize}
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}\label{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Graph@{get\+Graph}}
+\index{get\+Graph@{get\+Graph}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Graph()}{getGraph()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+Compacted\+D\+B\+G\+\_\+ptr\+\_\+t \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Graph (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get a pointer to the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} containing the reference unitig used in the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a pointer to the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} containing the reference unitig used in the mapping. If the mapping is empty, a nullptr pointer is returned. The pointer is a constant pointer if the \hyperlink{classUnitigMap}{Unitig\+Map} is constant (Unitig\+Map$<$\+U, G, true$>$). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_af12f1d4e121afe7fe8324ddcdc9c6402}\label{classUnitigMap_af12f1d4e121afe7fe8324ddcdc9c6402}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Kmer\+Mapping@{get\+Kmer\+Mapping}}
+\index{get\+Kmer\+Mapping@{get\+Kmer\+Mapping}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Kmer\+Mapping()}{getKmerMapping()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G, is\+\_\+const$>$ \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Kmer\+Mapping (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{pos }\end{DoxyParamCaption}) const}
+
+
+
+Create a new \hyperlink{classUnitigMap}{Unitig\+Map} object which is the mapping of a k-\/mer on a reference unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & is the start position of the k-\/mer to map in the reference unitig used for the current mapping. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map} object which is the mapping. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a18a15516e136f787dc70db5030698548}\label{classUnitigMap_a18a15516e136f787dc70db5030698548}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Mapped\+Head@{get\+Mapped\+Head}}
+\index{get\+Mapped\+Head@{get\+Mapped\+Head}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Mapped\+Head()}{getMappedHead()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Mapped\+Head (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the head k-\/mer of the mapped sequence. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the head k-\/mer of the mapped sequence or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a9ac111e6783b3344f0db407d05f1b966}\label{classUnitigMap_a9ac111e6783b3344f0db407d05f1b966}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Mapped\+Kmer@{get\+Mapped\+Kmer}}
+\index{get\+Mapped\+Kmer@{get\+Mapped\+Kmer}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Mapped\+Kmer()}{getMappedKmer()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Mapped\+Kmer (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{pos }\end{DoxyParamCaption}) const}
+
+
+
+Get the k-\/mer starting at position pos in the mapped sequence. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & is the start position of the k-\/mer to extract within the mapped sequence. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the k-\/mer starting at position pos in the mapped sequence or an empty k-\/mer if there is either no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true) or the position is greater than length(unitig)-\/k. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_ab06f79aa91086a8d73ea8200f5cc64d4}\label{classUnitigMap_ab06f79aa91086a8d73ea8200f5cc64d4}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Mapped\+Tail@{get\+Mapped\+Tail}}
+\index{get\+Mapped\+Tail@{get\+Mapped\+Tail}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Mapped\+Tail()}{getMappedTail()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Mapped\+Tail (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the tail k-\/mer of the mapped sequence. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the tail k-\/mer of the mapped sequence or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_adfae0ba9c3675fd5612a4b71b46a25c6}\label{classUnitigMap_adfae0ba9c3675fd5612a4b71b46a25c6}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Predecessors@{get\+Predecessors}}
+\index{get\+Predecessors@{get\+Predecessors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Predecessors()}{getPredecessors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classBackwardCDBG}{Unitig\+Map\+\_\+\+BW} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Predecessors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a Unitig\+Map\+\_\+\+BW object that can create iterators (through \hyperlink{classBackwardCDBG_a134d64079a7acdcad727637647691897}{Unitig\+Map\+\_\+\+B\+W\+::begin()} and \hyperlink{classBackwardCDBG_a7b8f84da503325c3e3e2b5b024ed6997}{Unitig\+Map\+\_\+\+B\+W\+::end()}) over the predecessors of the reference unitig used in the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a Unitig\+Map\+\_\+\+BW object that can create iterators (through \hyperlink{classBackwardCDBG_a134d64079a7acdcad727637647691897}{Unitig\+Map\+\_\+\+B\+W\+::begin()} and \hyperlink{classBackwardCDBG_a7b8f84da503325c3e3e2b5b024ed6997}{Unitig\+Map\+\_\+\+B\+W\+::end()}) over the predecessors of the reference unitig used in the mapping. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}\label{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Successors@{get\+Successors}}
+\index{get\+Successors@{get\+Successors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Successors()}{getSuccessors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classForwardCDBG}{Unitig\+Map\+\_\+\+FW} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Successors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a Unitig\+Map\+\_\+\+FW object that can create iterators (through \hyperlink{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}{Unitig\+Map\+\_\+\+F\+W\+::begin()} and \hyperlink{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}{Unitig\+Map\+\_\+\+F\+W\+::end()}) over the successors of the reference unitig used in the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a Unitig\+Map\+\_\+\+FW object that can create iterators (through \hyperlink{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}{Unitig\+Map\+\_\+\+F\+W\+::begin()} and \hyperlink{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}{Unitig\+Map\+\_\+\+F\+W\+::end()}) over the successors of the reference unitig used in the mapping. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a594c471e4d757273feef67cf4358bafd}\label{classUnitigMap_a594c471e4d757273feef67cf4358bafd}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Unitig\+Head@{get\+Unitig\+Head}}
+\index{get\+Unitig\+Head@{get\+Unitig\+Head}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Unitig\+Head()}{getUnitigHead()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Unitig\+Head (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the head k-\/mer of the reference unitig used for the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the head k-\/mer of the mapped unitig or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a7c8a9b1e16fa29d716550fc93de9d4d7}\label{classUnitigMap_a7c8a9b1e16fa29d716550fc93de9d4d7}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Unitig\+Kmer@{get\+Unitig\+Kmer}}
+\index{get\+Unitig\+Kmer@{get\+Unitig\+Kmer}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Unitig\+Kmer()}{getUnitigKmer()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Unitig\+Kmer (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{pos }\end{DoxyParamCaption}) const}
+
+
+
+Get the k-\/mer starting at position pos in the reference unitig used for the mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & is the start position of the k-\/mer to extract. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the k-\/mer starting at position pos in the mapped unitig or an empty k-\/mer if there is either no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true) or the position is greater than length(unitig)-\/k. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a584488d223cb2f5b00d72342305c6d0e}\label{classUnitigMap_a584488d223cb2f5b00d72342305c6d0e}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Unitig\+Tail@{get\+Unitig\+Tail}}
+\index{get\+Unitig\+Tail@{get\+Unitig\+Tail}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Unitig\+Tail()}{getUnitigTail()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classKmer}{Kmer} \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::get\+Unitig\+Tail (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the tail k-\/mer of the reference unitig used for the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classKmer}{Kmer} object which is either the tail k-\/mer of the mapped unitig or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a2a80f5a0f55391c57b4f4d83400e30a2}\label{classUnitigMap_a2a80f5a0f55391c57b4f4d83400e30a2}} 
+\index{Unitig\+Map@{Unitig\+Map}!lcp@{lcp}}
+\index{lcp@{lcp}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{lcp()}{lcp()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+size\+\_\+t \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::lcp (\begin{DoxyParamCaption}\item[{const char $\ast$}]{s,  }\item[{const size\+\_\+t}]{pos\+\_\+s = {\ttfamily 0},  }\item[{const size\+\_\+t}]{pos\+\_\+um\+\_\+seq = {\ttfamily 0},  }\item[{const bool}]{um\+\_\+reversed = {\ttfamily false} }\end{DoxyParamCaption}) const}
+
+
+
+Compute the length of the longest common prefix between a given sequence and the reference unitig used in the mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em s} & is a pointer to an array of characters representing the sequence from which the length of the longest common prefix must be computed. \\
+\hline
+{\em pos\+\_\+s} & is the start position in s from which the longest common prefix must be computed. \\
+\hline
+{\em pos\+\_\+um\+\_\+seq} & is the start position in the reference unitig of the mapping from which the longest common prefix must be computed. \\
+\hline
+{\em um\+\_\+reversed} & indicates if the longest common prefix must be computed from the reverse-\/complement of the reference unitig used in the mapping (true) or not (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the length of the longest common prefix 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a8a90644ef5f8d4326af8ad2f6438e1dd}\label{classUnitigMap_a8a90644ef5f8d4326af8ad2f6438e1dd}} 
+\index{Unitig\+Map@{Unitig\+Map}!mapped\+Sequence\+To\+String@{mapped\+Sequence\+To\+String}}
+\index{mapped\+Sequence\+To\+String@{mapped\+Sequence\+To\+String}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{mapped\+Sequence\+To\+String()}{mappedSequenceToString()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+string \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::mapped\+Sequence\+To\+String (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a string containing the sequence corresponding to the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a string containing the sequence corresponding to the mapping or an empty string if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a777e853a143be31ff69dd9f54f33d426}\label{classUnitigMap_a777e853a143be31ff69dd9f54f33d426}} 
+\index{Unitig\+Map@{Unitig\+Map}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality operator\+: check if two \hyperlink{classUnitigMap}{Unitig\+Map} are different. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the two \hyperlink{classUnitigMap}{Unitig\+Map} are different. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a73899498315ff5533c25b1c0fb1ca413}\label{classUnitigMap_a73899498315ff5533c25b1c0fb1ca413}} 
+\index{Unitig\+Map@{Unitig\+Map}!operator==@{operator==}}
+\index{operator==@{operator==}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator\+: check if two \hyperlink{classUnitigMap}{Unitig\+Map} are the same. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two \hyperlink{classUnitigMap}{Unitig\+Map} are the same. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigMap_a90ab8fbec322df04053b9998c68d2070}\label{classUnitigMap_a90ab8fbec322df04053b9998c68d2070}} 
+\index{Unitig\+Map@{Unitig\+Map}!reference\+Unitig\+To\+String@{reference\+Unitig\+To\+String}}
+\index{reference\+Unitig\+To\+String@{reference\+Unitig\+To\+String}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{reference\+Unitig\+To\+String()}{referenceUnitigToString()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$ \\
+string \hyperlink{classUnitigMap}{Unitig\+Map}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::reference\+Unitig\+To\+String (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Create a string containing the sequence of the reference unitig used the mapping. 
+
+\begin{DoxyReturn}{Returns}
+a string containing the sequence of the reference unitig used the mapping or an empty string if there is no mapping (\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{Unitig\+Map\+::is\+Empty} = true). 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{NeighborIterator_8hpp}{Neighbor\+Iterator.\+hpp}\item 
+src/\hyperlink{UnitigMap_8hpp}{Unitig\+Map.\+hpp}\end{DoxyCompactItemize}

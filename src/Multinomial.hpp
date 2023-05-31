@@ -6,7 +6,7 @@
 
 class Multinomial {
     public:
-        Multinomial(const std::vector<int>& counts, size_t seed = 42) :
+        Multinomial(const std::vector<uint32_t>& counts, size_t seed = 42) :
             counts_(counts),
             gen_(seed),
             dd_(counts_.begin(), counts_.end()),
@@ -30,12 +30,12 @@ class Multinomial {
          * @return a vector of counts
          *
          */
-        std::vector<int> sample(int nsamp) {
+        std::vector<uint32_t> sample(int nsamp) {
             if (nsamp < 1) {
                 throw std::domain_error("nsamp must be -1 or >=1");
             }
 
-            std::vector<int> samp(counts_.size(), 0.0);
+            std::vector<uint32_t> samp(counts_.size(), 0.0);
             for (auto i = 0; i < nsamp; ++i) {
                 ++samp[dd_(gen_)];
             }
@@ -46,15 +46,15 @@ class Multinomial {
         /**
          * @return a vector of ints with nsamp == n()
          */
-        std::vector<int> sample() {
+        std::vector<uint32_t> sample() {
             return sample(n_);
         }
 
         int n() const { return n_; }
-        const std::vector<int>& counts() { return counts_; }
+        const std::vector<uint32_t>& counts() { return counts_; }
 
     private:
-        const std::vector<int>& counts_;
+        const std::vector<uint32_t>& counts_;
         std::default_random_engine gen_;
         std::discrete_distribution<int> dd_;
         int n_;

@@ -1,0 +1,123 @@
+\hypertarget{structMinimizerHashTable}{}\section{Minimizer\+Hash\+Table$<$ T, Hash $>$ Struct Template Reference}
+\label{structMinimizerHashTable}\index{Minimizer\+Hash\+Table$<$ T, Hash $>$@{Minimizer\+Hash\+Table$<$ T, Hash $>$}}
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+}
+\end{DoxyCompactItemize}
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a1dcb0f9576a874d0912075608f04b483}\label{structMinimizerHashTable_a1dcb0f9576a874d0912075608f04b483}} 
+using {\bfseries value\+\_\+type} = std\+::pair$<$ \hyperlink{classMinimizer}{Minimizer}, T $>$
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a6b9b38164e63bed368db9be22ae6d409}\label{structMinimizerHashTable_a6b9b38164e63bed368db9be22ae6d409}} 
+using {\bfseries key\+\_\+type} = \hyperlink{classMinimizer}{Minimizer}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a1691c424abc4aaa2051784940cb707be}\label{structMinimizerHashTable_a1691c424abc4aaa2051784940cb707be}} 
+using {\bfseries mapped\+\_\+type} = T
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_ae1868662f1bf27cac7bda20bc499a6f5}\label{structMinimizerHashTable_ae1868662f1bf27cac7bda20bc499a6f5}} 
+typedef \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+}$<$ true $>$ {\bfseries const\+\_\+iterator}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a68b2bfaa4aac2dc1d2eb1db2f328871d}\label{structMinimizerHashTable_a68b2bfaa4aac2dc1d2eb1db2f328871d}} 
+typedef \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+}$<$ false $>$ {\bfseries iterator}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_af9c37455160394f2118cec3f7fa31664}\label{structMinimizerHashTable_af9c37455160394f2118cec3f7fa31664}} 
+{\bfseries Minimizer\+Hash\+Table} (const Hash \&h=Hash())
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a435d05ba4726967e962fe725d9e394a0}\label{structMinimizerHashTable_a435d05ba4726967e962fe725d9e394a0}} 
+{\bfseries Minimizer\+Hash\+Table} (size\+\_\+t sz, const Hash \&h=Hash())
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_af54b95a3fc99cf89a5fd445ace588d0e}\label{structMinimizerHashTable_af54b95a3fc99cf89a5fd445ace588d0e}} 
+{\bfseries Minimizer\+Hash\+Table} (\hyperlink{structMinimizerHashTable}{Minimizer\+Hash\+Table} \&\&o)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a796bcc195ed968283fe7ba68aaf4c156}\label{structMinimizerHashTable_a796bcc195ed968283fe7ba68aaf4c156}} 
+\hyperlink{structMinimizerHashTable}{Minimizer\+Hash\+Table} \& {\bfseries operator=} (\hyperlink{structMinimizerHashTable}{Minimizer\+Hash\+Table} \&\&o)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a1ad677532589c8600cf1ed084538b5c0}\label{structMinimizerHashTable_a1ad677532589c8600cf1ed084538b5c0}} 
+void {\bfseries clear\+\_\+table} ()
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a74db0376587b391e4aff0ccbbb70b3b1}\label{structMinimizerHashTable_a74db0376587b391e4aff0ccbbb70b3b1}} 
+size\+\_\+t {\bfseries size} () const
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a877d8a5ce3367393c485a21b6cf5329b}\label{structMinimizerHashTable_a877d8a5ce3367393c485a21b6cf5329b}} 
+bool {\bfseries empty} () const
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_ac775a51cd392cd3d8728f3802543a440}\label{structMinimizerHashTable_ac775a51cd392cd3d8728f3802543a440}} 
+void {\bfseries clear} ()
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a0a64b784d6736c213e5a366d2237c0ed}\label{structMinimizerHashTable_a0a64b784d6736c213e5a366d2237c0ed}} 
+void {\bfseries init\+\_\+table} (size\+\_\+t sz)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_aa999fd8f3b88eedeee01c74b2e1c103c}\label{structMinimizerHashTable_aa999fd8f3b88eedeee01c74b2e1c103c}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator} {\bfseries find} (const \hyperlink{classMinimizer}{Minimizer} \&key)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_ae9ae8d7b0173561f337769b87a367a03}\label{structMinimizerHashTable_ae9ae8d7b0173561f337769b87a367a03}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{const\+\_\+iterator} {\bfseries find} (const \hyperlink{classMinimizer}{Minimizer} \&key) const
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a3f65dcc66fdd39e0373a52b3d77e695d}\label{structMinimizerHashTable_a3f65dcc66fdd39e0373a52b3d77e695d}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator} {\bfseries find} (const size\+\_\+t h)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a88aa8fef6d21f5d9b808e9ee72c5bbb6}\label{structMinimizerHashTable_a88aa8fef6d21f5d9b808e9ee72c5bbb6}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{const\+\_\+iterator} {\bfseries find} (const size\+\_\+t h) const
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_af33e0d0b1c3c6d12291a8e85c74cb3a3}\label{structMinimizerHashTable_af33e0d0b1c3c6d12291a8e85c74cb3a3}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator} {\bfseries erase} (\hyperlink{classMinimizerHashTable_1_1iterator__}{const\+\_\+iterator} pos)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a35746a7c03a5ce7378d8331b8866972e}\label{structMinimizerHashTable_a35746a7c03a5ce7378d8331b8866972e}} 
+size\+\_\+t {\bfseries erase} (const \hyperlink{classMinimizer}{Minimizer} \&minz)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a832fdc391e6886640161e729e70b2d03}\label{structMinimizerHashTable_a832fdc391e6886640161e729e70b2d03}} 
+std\+::pair$<$ \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator}, bool $>$ {\bfseries insert} (const value\+\_\+type \&val)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a6b2255bd55751fd9dec66e203b6ab9cc}\label{structMinimizerHashTable_a6b2255bd55751fd9dec66e203b6ab9cc}} 
+void {\bfseries reserve} (size\+\_\+t sz)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_aac556150f2c561aae749287433e0ce65}\label{structMinimizerHashTable_aac556150f2c561aae749287433e0ce65}} 
+size\+\_\+t {\bfseries rndup} (size\+\_\+t v)
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_aead9d9443c95c51a2ff73837c7b377c6}\label{structMinimizerHashTable_aead9d9443c95c51a2ff73837c7b377c6}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator} {\bfseries begin} ()
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a9148b505a3fa3d024b0de65d12d50a5e}\label{structMinimizerHashTable_a9148b505a3fa3d024b0de65d12d50a5e}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{const\+\_\+iterator} {\bfseries begin} () const
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a308fbaf3a6c1ccdd5413da03adef063d}\label{structMinimizerHashTable_a308fbaf3a6c1ccdd5413da03adef063d}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator} {\bfseries end} ()
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a10e045513caf5536499ce92fc7013bba}\label{structMinimizerHashTable_a10e045513caf5536499ce92fc7013bba}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{const\+\_\+iterator} {\bfseries end} () const
+\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_ad44b0cc90187dcf36892bbdf24c92e4b}\label{structMinimizerHashTable_ad44b0cc90187dcf36892bbdf24c92e4b}} 
+Hash {\bfseries hasher}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a2f54442c8de626a3bc4b6e15a561f6a7}\label{structMinimizerHashTable_a2f54442c8de626a3bc4b6e15a561f6a7}} 
+size\+\_\+t {\bfseries size\+\_\+}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a176ce98e9dfb6b119fd1a7ffcffb254c}\label{structMinimizerHashTable_a176ce98e9dfb6b119fd1a7ffcffb254c}} 
+size\+\_\+t {\bfseries pop}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a0eabee5835d87c6151def614c6bf9480}\label{structMinimizerHashTable_a0eabee5835d87c6151def614c6bf9480}} 
+size\+\_\+t {\bfseries num\+\_\+empty}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a331d8fde584fbf7d5dbd8c6f051f0294}\label{structMinimizerHashTable_a331d8fde584fbf7d5dbd8c6f051f0294}} 
+value\+\_\+type $\ast$ {\bfseries table}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_a0cd75d5270f758564ef3dedefa7ebc12}\label{structMinimizerHashTable_a0cd75d5270f758564ef3dedefa7ebc12}} 
+value\+\_\+type {\bfseries empty\+\_\+val}
+\item 
+\mbox{\Hypertarget{structMinimizerHashTable_ae033d368c3551cdb579c732c30b8eaea}\label{structMinimizerHashTable_ae033d368c3551cdb579c732c30b8eaea}} 
+value\+\_\+type {\bfseries deleted}
+\end{DoxyCompactItemize}
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/Kmer\+Hash\+Table.\+h\end{DoxyCompactItemize}

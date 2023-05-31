@@ -1,0 +1,254 @@
+\hypertarget{classDataAccessor}{}\section{Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$ Class Template Reference}
+\label{classDataAccessor}\index{Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$@{Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$}}
+
+
+Interface to access the colors and the data associated with a unitig of a \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}.  
+
+
+
+
+Inherits \hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$, Data\+Storage$<$ Unitig\+\_\+data\+\_\+t $>$ $>$}.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classDataAccessor_a0c30e8dfb40ff350083dd0822082dd66}\label{classDataAccessor_a0c30e8dfb40ff350083dd0822082dd66}} 
+\hyperlink{classDataAccessor_a0c30e8dfb40ff350083dd0822082dd66}{Data\+Accessor} (const uint8\+\_\+t id=0)
+\begin{DoxyCompactList}\small\item\em Constructor (set up an empty \hyperlink{classDataAccessor}{Data\+Accessor}). \end{DoxyCompactList}\item 
+void \hyperlink{classDataAccessor_a8a0c9cd4d31f8c7b08dcb06e420ad202}{clear} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um)
+\begin{DoxyCompactList}\small\item\em Clear the colors and data associated with a colored unitig. \end{DoxyCompactList}\item 
+const U $\ast$ \hyperlink{classDataAccessor_af72510548faff435e7241d4dacd63549}{get\+Data} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Get the unitig data. \end{DoxyCompactList}\item 
+U $\ast$ \hyperlink{classDataAccessor_ab7993cfaba89b72b52acfebf5c6133ea}{get\+Data} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Get the unitig data. \end{DoxyCompactList}\item 
+const \hyperlink{classUnitigColors}{Unitig\+Colors} $\ast$ \hyperlink{classDataAccessor_a8aec5f2dc2b59701c7e0ee29f7c320e5}{get\+Unitig\+Colors} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Get the colors of the reference unitig. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors}{Unitig\+Colors} $\ast$ \hyperlink{classDataAccessor_a1bfa8894d99ff518a628d4985f9598ae}{get\+Unitig\+Colors} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Get the colors of the reference unitig. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors}{Unitig\+Colors} \hyperlink{classDataAccessor_aec000525e0b4fee736de1acc0630370b}{get\+Sub\+Unitig\+Colors} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Create a new \hyperlink{classUnitigColors}{Unitig\+Colors} object for a unitig B corresponding to a unitig mapping to a reference unitig A, i.\+e, B = A\mbox{[}um.\+dist..um.\+dist + um.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um.\+dist..um.\+dist + um.\+len + k -\/ 1\mbox{]}) if um.\+strand == false. \end{DoxyCompactList}\item 
+vector$<$ string $>$ \hyperlink{classDataAccessor_aedfbec507c081058102923cfe0fb5724}{get\+Sub\+Unitig\+Color\+Names} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um) const
+\begin{DoxyCompactList}\small\item\em Obtain the name of the colors present on AT L\+E\+A\+ST one k-\/mer of a unitig mapping. \end{DoxyCompactList}\item 
+void \hyperlink{classDataAccessor_a42b319c9eb802a3a9276227c00f69665}{concat} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+dest, const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Join data and colors of two colored unitigs which are going to be concatenated. \end{DoxyCompactList}\item 
+void \hyperlink{classDataAccessor_a662c0fa811a55a750f32fbb7db3bef5c}{merge} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+dest, const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src)
+\begin{DoxyCompactList}\small\item\em Merge the data and colors of a sub-\/unitig B to the data and colors of a sub-\/unitig A. \end{DoxyCompactList}\item 
+void \hyperlink{classDataAccessor_ad329606e200210ed14a2db858d1cb5ac}{extract} (const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src, const bool last\+\_\+extraction)
+\begin{DoxyCompactList}\small\item\em Extract data and colors corresponding to a sub-\/unitig of a unitig A. \end{DoxyCompactList}\item 
+string \hyperlink{classDataAccessor_aae08bdd0b2c5d077672be826f112cfe1}{serialize} (const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&um\+\_\+src) const
+\begin{DoxyCompactList}\small\item\em Serialize the data to a G\+F\+A-\/formatted string. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void$>$\newline
+class Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$}
+
+Interface to access the colors and the data associated with a unitig of a \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}. 
+
+The class as one template parameter\+: the type of data associated with the unitigs of the graph. 
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classDataAccessor_a8a0c9cd4d31f8c7b08dcb06e420ad202}\label{classDataAccessor_a8a0c9cd4d31f8c7b08dcb06e420ad202}} 
+\index{Data\+Accessor@{Data\+Accessor}!clear@{clear}}
+\index{clear@{clear}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+void \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::clear (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption})}
+
+
+
+Clear the colors and data associated with a colored unitig. 
+
+This function clears the k-\/mer color sets (of type \hyperlink{classUnitigColors}{Unitig\+Colors}) associated with the reference unitig of the input parameter um (of type Unitig\+Color\+Map). It also clears the associated data if there are some. \mbox{\Hypertarget{classDataAccessor_a42b319c9eb802a3a9276227c00f69665}\label{classDataAccessor_a42b319c9eb802a3a9276227c00f69665}} 
+\index{Data\+Accessor@{Data\+Accessor}!concat@{concat}}
+\index{concat@{concat}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{concat()}{concat()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+void \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::concat (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+dest,  }\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption})}
+
+
+
+Join data and colors of two colored unitigs which are going to be concatenated. 
+
+Specifically, if A is the reference unitig of the Unitig\+Color\+Map um\+\_\+dest and B is the reference unitig of the Unitig\+Color\+Map um\+\_\+src, then after the call to this function, unitigs A and B will be removed and a unitig C = AB will be added to the graph. If um\+\_\+dest.\+strand = false, then the reverse-\/complement of A is going to be used in the concatenation. Reciprocally, if um\+\_\+src.\+strand = false, then the reverse-\/complement of B is going to be used in the concatenation. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+dest} & is a Unitig\+Color\+Map object representing a unitig (the reference sequence of the mapping) to which another unitig is going to be appended. \\
+\hline
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing a unitig (and its data) that will be appended at the end of the unitig represented by parameter um\+\_\+dest. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classDataAccessor_ad329606e200210ed14a2db858d1cb5ac}\label{classDataAccessor_ad329606e200210ed14a2db858d1cb5ac}} 
+\index{Data\+Accessor@{Data\+Accessor}!extract@{extract}}
+\index{extract@{extract}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{extract()}{extract()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+void \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::extract (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src,  }\item[{const bool}]{last\+\_\+extraction }\end{DoxyParamCaption})}
+
+
+
+Extract data and colors corresponding to a sub-\/unitig of a unitig A. 
+
+The extracted sub-\/unitig, called B in the following, is defined as a mapping to A given by the input Unitig\+Color\+Map object um\+\_\+src. Hence, B = A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]}) if um\+\_\+src.\+strand == false (B is reverse-\/complemented). After this function returns, unitig A is deleted from the graph and B is inserted in the graph (along with their data and colors) IF the input parameter last\+\_\+extraction == true. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing the mapping to a colored unitig A from which a new colored unitig B will be extracted, i.\+e, B = A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um\+\_\+src.\+dist, um\+\_\+src.\+dist + um\+\_\+src.\+len + k -\/ 1\mbox{]}) if um\+\_\+src.\+strand == false. \\
+\hline
+{\em last\+\_\+extraction} & is a boolean indicating if this is the last call to this function on the reference unitig A used for the mapping given by um\+\_\+src. If last\+\_\+extraction is true, the reference unitig A of um\+\_\+src will be removed from the graph right after this function returns. Also, all unitigs B extracted from the reference unitig A, along with their data and colors, will be inserted in the graph. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classDataAccessor_af72510548faff435e7241d4dacd63549}\label{classDataAccessor_af72510548faff435e7241d4dacd63549}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+const U$\ast$ \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Data (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the unitig data. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a const\+\_\+\+Unitig\+Color\+Map object for which the reference unitig used in the mapping is associated to the current \hyperlink{classDataAccessor}{Data\+Accessor} object. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a constant pointer to the unitig data. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_ab7993cfaba89b72b52acfebf5c6133ea}\label{classDataAccessor_ab7993cfaba89b72b52acfebf5c6133ea}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+U$\ast$ \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Data (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the unitig data. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a Unitig\+Color\+Map object for which the reference unitig used in the mapping is associated to the current \hyperlink{classDataAccessor}{Data\+Accessor} object. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to the unitig data. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_aedfbec507c081058102923cfe0fb5724}\label{classDataAccessor_aedfbec507c081058102923cfe0fb5724}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Sub\+Unitig\+Color\+Names@{get\+Sub\+Unitig\+Color\+Names}}
+\index{get\+Sub\+Unitig\+Color\+Names@{get\+Sub\+Unitig\+Color\+Names}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Sub\+Unitig\+Color\+Names()}{getSubUnitigColorNames()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+vector$<$string$>$ \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Sub\+Unitig\+Color\+Names (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Obtain the name of the colors present on AT L\+E\+A\+ST one k-\/mer of a unitig mapping. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a const\+\_\+\+Unitig\+Color\+Map object which is a unitig mapping. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a vector of string, each string is the name of a color. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_aec000525e0b4fee736de1acc0630370b}\label{classDataAccessor_aec000525e0b4fee736de1acc0630370b}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Sub\+Unitig\+Colors@{get\+Sub\+Unitig\+Colors}}
+\index{get\+Sub\+Unitig\+Colors@{get\+Sub\+Unitig\+Colors}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Sub\+Unitig\+Colors()}{getSubUnitigColors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+\hyperlink{classUnitigColors}{Unitig\+Colors} \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Sub\+Unitig\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Create a new \hyperlink{classUnitigColors}{Unitig\+Colors} object for a unitig B corresponding to a unitig mapping to a reference unitig A, i.\+e, B = A\mbox{[}um.\+dist..um.\+dist + um.\+len + k -\/ 1\mbox{]} or B = rev(A\mbox{[}um.\+dist..um.\+dist + um.\+len + k -\/ 1\mbox{]}) if um.\+strand == false. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a const\+\_\+\+Unitig\+Color\+Map object which is a unitig mapping from which we want to obtain a new \hyperlink{classUnitigColors}{Unitig\+Colors} object. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigColors}{Unitig\+Colors} object for which the k-\/mers and colors match the input unitig mapping. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_a8aec5f2dc2b59701c7e0ee29f7c320e5}\label{classDataAccessor_a8aec5f2dc2b59701c7e0ee29f7c320e5}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Unitig\+Colors@{get\+Unitig\+Colors}}
+\index{get\+Unitig\+Colors@{get\+Unitig\+Colors}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Unitig\+Colors()}{getUnitigColors()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+const \hyperlink{classUnitigColors}{Unitig\+Colors}$\ast$ \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Unitig\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the colors of the reference unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a const\+\_\+\+Unitig\+Color\+Map object for which the colors of the reference unitig used in the mapping must be obtained. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a constant pointer to a \hyperlink{classUnitigColors}{Unitig\+Colors} object representing the colors of the reference unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_a1bfa8894d99ff518a628d4985f9598ae}\label{classDataAccessor_a1bfa8894d99ff518a628d4985f9598ae}} 
+\index{Data\+Accessor@{Data\+Accessor}!get\+Unitig\+Colors@{get\+Unitig\+Colors}}
+\index{get\+Unitig\+Colors@{get\+Unitig\+Colors}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{get\+Unitig\+Colors()}{getUnitigColors()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+\hyperlink{classUnitigColors}{Unitig\+Colors}$\ast$ \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Unitig\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um }\end{DoxyParamCaption}) const}
+
+
+
+Get the colors of the reference unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a constant reference to a const\+\_\+\+Unitig\+Color\+Map object for which the colors of the reference unitig used in the mapping must be obtained. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a pointer to a \hyperlink{classUnitigColors}{Unitig\+Colors} object representing the colors of the reference unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classDataAccessor_a662c0fa811a55a750f32fbb7db3bef5c}\label{classDataAccessor_a662c0fa811a55a750f32fbb7db3bef5c}} 
+\index{Data\+Accessor@{Data\+Accessor}!merge@{merge}}
+\index{merge@{merge}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{merge()}{merge()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+void \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+dest,  }\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption})}
+
+
+
+Merge the data and colors of a sub-\/unitig B to the data and colors of a sub-\/unitig A. 
+
+The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. The two unitigs A and B are N\+OT guaranteed to be from the same graph. The data of each unitig can be accessed through the \hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{Unitig\+Map\+::get\+Data}. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+dest} & is a Unitig\+Color\+Map object representing a sub-\/unitig (the mapped sequence of the mapping) A. The object calling this function represents the data associated with the reference unitig of um\+\_\+dest. \\
+\hline
+{\em um\+\_\+src} & is a Unitig\+Color\+Map object representing a sub-\/unitig (the mapped sequence of the mapping) for which the data must be merged with the data of sub-\/unitig B (given by parameter um\+\_\+dest). \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classDataAccessor_aae08bdd0b2c5d077672be826f112cfe1}\label{classDataAccessor_aae08bdd0b2c5d077672be826f112cfe1}} 
+\index{Data\+Accessor@{Data\+Accessor}!serialize@{serialize}}
+\index{serialize@{serialize}!Data\+Accessor@{Data\+Accessor}}
+\subsubsection{\texorpdfstring{serialize()}{serialize()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void$>$ \\
+string \hyperlink{classDataAccessor}{Data\+Accessor}$<$ Unitig\+\_\+data\+\_\+t $>$\+::serialize (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{const\+\_\+\+Unitig\+Color\+Map}$<$ U $>$ \&}]{um\+\_\+src }\end{DoxyParamCaption}) const}
+
+
+
+Serialize the data to a G\+F\+A-\/formatted string. 
+
+This function is used when the graph is written to disk in G\+FA format. If the returned string is not empty, the string is appended as an optional field to the Segment line matching the unitig to which this data is associated. Note that it is your responsability to add G\+F\+A-\/compatible tags matching your data in the string. 
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+src} & is a const\+\_\+\+Unitig\+Color\+Map object representing the (reference) unitig to which the data to serialize is associated. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a G\+F\+A-\/formatted string which is the serialization of the data. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColorSet_8hpp}{Color\+Set.\+hpp}\item 
+src/\hyperlink{DataAccessor_8hpp}{Data\+Accessor.\+hpp}\end{DoxyCompactItemize}

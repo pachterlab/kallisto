@@ -1,0 +1,50 @@
+\hypertarget{structBFT__kmer}{}\section{B\+F\+T\+\_\+kmer Struct Reference}
+\label{structBFT__kmer}\index{B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}}
+
+
+K-\/mer stored in a \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root}.  
+
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+char $\ast$ \hyperlink{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{kmer}
+\begin{DoxyCompactList}\small\item\em A\+S\+C\+II null-\/terminated k-\/mer. \end{DoxyCompactList}\item 
+uint8\+\_\+t $\ast$ \hyperlink{structBFT__kmer_a9935a78617deffcf7a24fcca0143962c}{kmer\+\_\+comp}
+\begin{DoxyCompactList}\small\item\em 2 bits encoded form of \hyperlink{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{B\+F\+T\+\_\+kmer\+::kmer}. \end{DoxyCompactList}\item 
+result\+Presence $\ast$ \hyperlink{structBFT__kmer_aab6ab4e17d069ebb9e5c467d8fee5002}{res}
+\begin{DoxyCompactList}\small\item\em Contains information about the location of \hyperlink{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{B\+F\+T\+\_\+kmer\+::kmer} in a \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+K-\/mer stored in a \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root}. 
+
+A \hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} contains the k-\/mer in its A\+S\+C\+II form and 2 bits encoded form, as well as information about its location in a \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root}. 
+
+\subsection{Field Documentation}
+\index{B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}!kmer@{kmer}}
+\index{kmer@{kmer}!B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}}
+\subsubsection[{\texorpdfstring{kmer}{kmer}}]{\setlength{\rightskip}{0pt plus 5cm}char$\ast$ B\+F\+T\+\_\+kmer\+::kmer}\hypertarget{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{}\label{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}
+
+
+A\+S\+C\+II null-\/terminated k-\/mer. 
+
+\index{B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}!kmer\+\_\+comp@{kmer\+\_\+comp}}
+\index{kmer\+\_\+comp@{kmer\+\_\+comp}!B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}}
+\subsubsection[{\texorpdfstring{kmer\+\_\+comp}{kmer_comp}}]{\setlength{\rightskip}{0pt plus 5cm}uint8\+\_\+t$\ast$ B\+F\+T\+\_\+kmer\+::kmer\+\_\+comp}\hypertarget{structBFT__kmer_a9935a78617deffcf7a24fcca0143962c}{}\label{structBFT__kmer_a9935a78617deffcf7a24fcca0143962c}
+
+
+2 bits encoded form of \hyperlink{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{B\+F\+T\+\_\+kmer\+::kmer}. 
+
+\index{B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}!res@{res}}
+\index{res@{res}!B\+F\+T\+\_\+kmer@{B\+F\+T\+\_\+kmer}}
+\subsubsection[{\texorpdfstring{res}{res}}]{\setlength{\rightskip}{0pt plus 5cm}result\+Presence$\ast$ B\+F\+T\+\_\+kmer\+::res}\hypertarget{structBFT__kmer_aab6ab4e17d069ebb9e5c467d8fee5002}{}\label{structBFT__kmer_aab6ab4e17d069ebb9e5c467d8fee5002}
+
+
+Contains information about the location of \hyperlink{structBFT__kmer_ae4cf6766f01ebfa54fe51d0e60bec942}{B\+F\+T\+\_\+kmer\+::kmer} in a \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root}. 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/Node.\+h\end{DoxyCompactItemize}

@@ -1,0 +1,89 @@
+\hypertarget{classCompressedSequence}{}\section{Compressed\+Sequence Class Reference}
+\label{classCompressedSequence}\index{Compressed\+Sequence@{Compressed\+Sequence}}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCompressedSequence_abb7105433e78676641927001eb89d240}\label{classCompressedSequence_abb7105433e78676641927001eb89d240}} 
+{\bfseries Compressed\+Sequence} (const \hyperlink{classCompressedSequence}{Compressed\+Sequence} \&o)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a5b7be26a9b096a566b0fea156e78c653}\label{classCompressedSequence_a5b7be26a9b096a566b0fea156e78c653}} 
+\hyperlink{classCompressedSequence}{Compressed\+Sequence} \& {\bfseries operator=} (const \hyperlink{classCompressedSequence}{Compressed\+Sequence} \&o)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_af6313899fcd39cfd1d40ee3d7bfc73a9}\label{classCompressedSequence_af6313899fcd39cfd1d40ee3d7bfc73a9}} 
+{\bfseries Compressed\+Sequence} (\hyperlink{classCompressedSequence}{Compressed\+Sequence} \&\&o)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a82633e57a2a1eecda9b84f75c27f61ca}\label{classCompressedSequence_a82633e57a2a1eecda9b84f75c27f61ca}} 
+\hyperlink{classCompressedSequence}{Compressed\+Sequence} \& {\bfseries operator=} (\hyperlink{classCompressedSequence}{Compressed\+Sequence} \&\&o)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_acdf2958731e990847e51b3cc21373fb1}\label{classCompressedSequence_acdf2958731e990847e51b3cc21373fb1}} 
+{\bfseries Compressed\+Sequence} (const char $\ast$s)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a600618735a32901f9ebc0304884340ed}\label{classCompressedSequence_a600618735a32901f9ebc0304884340ed}} 
+{\bfseries Compressed\+Sequence} (const string \&s)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a5816bb2279e70797e807fc0113d0ac04}\label{classCompressedSequence_a5816bb2279e70797e807fc0113d0ac04}} 
+{\bfseries Compressed\+Sequence} (const \hyperlink{classKmer}{Kmer} \&km)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_aa108e2be676ba175d2c700df652b26ba}\label{classCompressedSequence_aa108e2be676ba175d2c700df652b26ba}} 
+const char {\bfseries operator\mbox{[}$\,$\mbox{]}} (size\+\_\+t index) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a392eefa95a8ead20c8379edebacadcd4}\label{classCompressedSequence_a392eefa95a8ead20c8379edebacadcd4}} 
+void {\bfseries clear} ()
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a81353e1469985324c10438cd5aa824a1}\label{classCompressedSequence_a81353e1469985324c10438cd5aa824a1}} 
+size\+\_\+t {\bfseries size} () const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a96efc15beda1265703efa608e71bed23}\label{classCompressedSequence_a96efc15beda1265703efa608e71bed23}} 
+void {\bfseries to\+String} (char $\ast$s, const size\+\_\+t offset, const size\+\_\+t length) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a02b58973e8d06659b9a9ee27fb9ccb2b}\label{classCompressedSequence_a02b58973e8d06659b9a9ee27fb9ccb2b}} 
+string {\bfseries to\+String} (const size\+\_\+t offset, const size\+\_\+t length) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a6ecc7f92f66754aa08b024515071e2f4}\label{classCompressedSequence_a6ecc7f92f66754aa08b024515071e2f4}} 
+string {\bfseries to\+String} () const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_ab38d1a69f890b612e33060ff67f29010}\label{classCompressedSequence_ab38d1a69f890b612e33060ff67f29010}} 
+void {\bfseries to\+String} (char $\ast$s) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_aea4c71bbf92b993bd64af17caf544930}\label{classCompressedSequence_aea4c71bbf92b993bd64af17caf544930}} 
+\hyperlink{classKmer}{Kmer} {\bfseries get\+Kmer} (size\+\_\+t offset) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a8e158ef4ef153106342c4fcc7a210043}\label{classCompressedSequence_a8e158ef4ef153106342c4fcc7a210043}} 
+bool {\bfseries compare\+Kmer} (const size\+\_\+t offset, const \hyperlink{classKmer}{Kmer} \&km) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a63a07166d1470472aa2f6eaecddb31bb}\label{classCompressedSequence_a63a07166d1470472aa2f6eaecddb31bb}} 
+void {\bfseries set\+Sequence} (const \hyperlink{classCompressedSequence}{Compressed\+Sequence} \&o, const size\+\_\+t start, const size\+\_\+t length, const size\+\_\+t offset=0, const bool reversed=false)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_ac1a4f5c74c826791b7c98ccd4b7d3ac1}\label{classCompressedSequence_ac1a4f5c74c826791b7c98ccd4b7d3ac1}} 
+void {\bfseries set\+Sequence} (const char $\ast$s, const size\+\_\+t length, const size\+\_\+t offset=0, const bool reversed=false)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_abba3d57bcbf5b1c84c785c48433116a7}\label{classCompressedSequence_abba3d57bcbf5b1c84c785c48433116a7}} 
+void {\bfseries set\+Sequence} (const string \&s, const size\+\_\+t length, const size\+\_\+t offset=0, const bool reversed=false)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_af94fc23d0afeb70385bca42d173a3014}\label{classCompressedSequence_af94fc23d0afeb70385bca42d173a3014}} 
+void {\bfseries set\+Sequence} (const \hyperlink{classKmer}{Kmer} \&km, const size\+\_\+t length, const size\+\_\+t offset=0, const bool reversed=false)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a29f5262826fbcfdadbd43cc8a780dfe7}\label{classCompressedSequence_a29f5262826fbcfdadbd43cc8a780dfe7}} 
+void {\bfseries reserve\+Length} (const size\+\_\+t new\+\_\+length)
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a28670dcb0eeecc8829e0ec0c6df14942}\label{classCompressedSequence_a28670dcb0eeecc8829e0ec0c6df14942}} 
+\hyperlink{classCompressedSequence}{Compressed\+Sequence} {\bfseries rev} () const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a7cb50e4df8826874ef455e404d5a46ce}\label{classCompressedSequence_a7cb50e4df8826874ef455e404d5a46ce}} 
+size\+\_\+t {\bfseries jump} (const char $\ast$s, const size\+\_\+t i, int pos, const bool reversed) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a5ca12a7bec7e3e58694992c703a22d0d}\label{classCompressedSequence_a5ca12a7bec7e3e58694992c703a22d0d}} 
+size\+\_\+t {\bfseries bw\+\_\+jump} (const char $\ast$s, const size\+\_\+t i, int pos, const bool reversed) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a3ecb83ffa1873cad562bf20dd6f2a073}\label{classCompressedSequence_a3ecb83ffa1873cad562bf20dd6f2a073}} 
+int64\+\_\+t {\bfseries find\+Kmer} (const \hyperlink{classKmer}{Kmer} \&km) const
+\item 
+\mbox{\Hypertarget{classCompressedSequence_a06733cc54a355dd3ff2adb53c50620f1}\label{classCompressedSequence_a06733cc54a355dd3ff2adb53c50620f1}} 
+bool {\bfseries is\+Short} () const
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/Compressed\+Sequence.\+hpp\item 
+src/Compressed\+Sequence.\+cpp\end{DoxyCompactItemize}

@@ -1,0 +1,295 @@
+\hypertarget{classColorSet}{}\section{Color\+Set Class Reference}
+\label{classColorSet}\index{Color\+Set@{Color\+Set}}
+
+
+Represent a color set for a unitig.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classColorSet_1_1ColorSet__const__iterator}{Color\+Set\+\_\+const\+\_\+iterator}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classColorSet_a68ce91b51db079f9810e57ebc8067ba8}{Color\+Set} ()
+\begin{DoxyCompactList}\small\item\em Color set constructor (set up an empty color set). \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classColorSet_ade46d97a4de22b854354257b07eedbb0}\label{classColorSet_ade46d97a4de22b854354257b07eedbb0}} 
+\hyperlink{classColorSet_ade46d97a4de22b854354257b07eedbb0}{$\sim$\+Color\+Set} ()
+\begin{DoxyCompactList}\small\item\em Color set destructor. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet_ae5b1a35d8a19794a4d1abe7bad8b3b7b}{Color\+Set} (const \hyperlink{classColorSet}{Color\+Set} \&o)
+\begin{DoxyCompactList}\small\item\em Color set copy constructor. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet_ae449ca6e75962c644c2c38fc4687cee8}{Color\+Set} (\hyperlink{classColorSet}{Color\+Set} \&\&o)
+\begin{DoxyCompactList}\small\item\em Color set move constructor. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet}{Color\+Set} \& \hyperlink{classColorSet_ab90fee025c639c2950632f995c0eac0a}{operator=} (const \hyperlink{classColorSet}{Color\+Set} \&o)
+\begin{DoxyCompactList}\small\item\em Color set copy assignment operator. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet}{Color\+Set} \& \hyperlink{classColorSet_a9196bc31bdb43e0df980d294458b7c29}{operator=} (\hyperlink{classColorSet}{Color\+Set} \&\&o)
+\begin{DoxyCompactList}\small\item\em Color set move assignment operator. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classColorSet_a868a3bba016715b814d673064652759d}\label{classColorSet_a868a3bba016715b814d673064652759d}} 
+void \hyperlink{classColorSet_a868a3bba016715b814d673064652759d}{empty} ()
+\begin{DoxyCompactList}\small\item\em Empty a color set. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classColorSet_af9d12aacae9a58f49a6b4cd7b4be8aca}\label{classColorSet_af9d12aacae9a58f49a6b4cd7b4be8aca}} 
+void \hyperlink{classColorSet_af9d12aacae9a58f49a6b4cd7b4be8aca}{set\+Unoccupied} ()
+\begin{DoxyCompactList}\small\item\em Empty a color set and set it as \char`\"{}unoccupied\char`\"{}\+: the color set is \char`\"{}free\char`\"{} to be used, it is not associated with any unitig. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classColorSet_a74aaaf3dcd059834e2034fd5917db800}\label{classColorSet_a74aaaf3dcd059834e2034fd5917db800}} 
+void \hyperlink{classColorSet_a74aaaf3dcd059834e2034fd5917db800}{set\+Occupied} ()
+\begin{DoxyCompactList}\small\item\em Set the color set as \char`\"{}occupied\char`\"{}\+: the color set is N\+OT \char`\"{}free\char`\"{} to be used, it is now associated with a unitig. \end{DoxyCompactList}\item 
+bool \hyperlink{classColorSet_ab8acebbbf6d701ff007fa608432611ef}{is\+Unoccupied} () const
+\begin{DoxyCompactList}\small\item\em Get if the color set as \char`\"{}unoccupied\char`\"{} (N\+OT associated with a unitig). \end{DoxyCompactList}\item 
+bool \hyperlink{classColorSet_a509c260d1561a341600783c08ff7692e}{is\+Occupied} () const
+\begin{DoxyCompactList}\small\item\em Get if the color set as \char`\"{}occupied\char`\"{} (associated with a unitig). \end{DoxyCompactList}\item 
+void \hyperlink{classColorSet_a6493a6a007a961aa6ad07ef351792d4d}{add} (const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ Hash\+ID $>$ \&um, const size\+\_\+t color\+\_\+id)
+\begin{DoxyCompactList}\small\item\em Add a color in the current color set for a unitig or a sub-\/unitig. \end{DoxyCompactList}\item 
+bool \hyperlink{classColorSet_a192f572f4bffc3edff720045b4a8f41f}{contains} (const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ Hash\+ID $>$ \&um, const size\+\_\+t color\+\_\+id) const
+\begin{DoxyCompactList}\small\item\em Check if a color is present on a unitig or a sub-\/unitig. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet}{Color\+Set} \hyperlink{classColorSet_a706df07e45b58415b09388035f1fd035}{reverse} (const size\+\_\+t len\+\_\+unitig) const
+\begin{DoxyCompactList}\small\item\em Reverse the order of the colors. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classColorSet_a9b987d139b85a1c53bb5a5ba4ee10a75}{size} () const
+\begin{DoxyCompactList}\small\item\em Get the number of colors (total number of colors associated with a unitig). \end{DoxyCompactList}\item 
+\hyperlink{classColorSet_1_1ColorSet__const__iterator}{const\+\_\+iterator} \hyperlink{classColorSet_a39bcc44bcf47c9e31a27a5b4fd4c75d8}{begin} () const
+\begin{DoxyCompactList}\small\item\em Create a constant iterator to the first color of the color set. \end{DoxyCompactList}\item 
+\hyperlink{classColorSet_1_1ColorSet__const__iterator}{const\+\_\+iterator} \hyperlink{classColorSet_a1cbf01ea772e3318644c95a6d95348fd}{end} () const
+\begin{DoxyCompactList}\small\item\em Create a constant iterator to the the \char`\"{}past-\/the-\/last\char`\"{} color of the color set. \end{DoxyCompactList}\item 
+bool \hyperlink{classColorSet_a74e1df482946158e01659d15b5b71375}{write} (ostream \&stream\+\_\+out) const
+\begin{DoxyCompactList}\small\item\em Write a color set. \end{DoxyCompactList}\item 
+void \hyperlink{classColorSet_a5b0ee00180757bccb3395e449b99f789}{optimize} ()
+\begin{DoxyCompactList}\small\item\em Optimize the memory of a color set. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Represent a color set for a unitig. 
+
+The number of colors in such a set , i.\+e number of k-\/mers in unitig $\ast$ number of color per k-\/mer, can\textquotesingle{}t exceed 2$^\wedge$32 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classColorSet_a68ce91b51db079f9810e57ebc8067ba8}\label{classColorSet_a68ce91b51db079f9810e57ebc8067ba8}} 
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{Color\+Set()}{ColorSet()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily Color\+Set\+::\+Color\+Set (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Color set constructor (set up an empty color set). 
+
+The color set is initialized as \char`\"{}unoccupied\char`\"{}\+: the color set is \char`\"{}free\char`\"{} to be used, it is not associated with any unitig. \mbox{\Hypertarget{classColorSet_ae5b1a35d8a19794a4d1abe7bad8b3b7b}\label{classColorSet_ae5b1a35d8a19794a4d1abe7bad8b3b7b}} 
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{Color\+Set()}{ColorSet()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily Color\+Set\+::\+Color\+Set (\begin{DoxyParamCaption}\item[{const \hyperlink{classColorSet}{Color\+Set} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Color set copy constructor. 
+
+After the call to this constructor, the same color set exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to copy. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classColorSet_ae449ca6e75962c644c2c38fc4687cee8}\label{classColorSet_ae449ca6e75962c644c2c38fc4687cee8}} 
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\index{Color\+Set@{Color\+Set}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{Color\+Set()}{ColorSet()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily Color\+Set\+::\+Color\+Set (\begin{DoxyParamCaption}\item[{\hyperlink{classColorSet}{Color\+Set} \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Color set move constructor. 
+
+After the call to this constructor, the color set to move is empty, its content has been transfered (moved) to the new color set. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to move. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classColorSet_a6493a6a007a961aa6ad07ef351792d4d}\label{classColorSet_a6493a6a007a961aa6ad07ef351792d4d}} 
+\index{Color\+Set@{Color\+Set}!add@{add}}
+\index{add@{add}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{add()}{add()}}
+{\footnotesize\ttfamily void Color\+Set\+::add (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ Hash\+ID $>$ \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption})}
+
+
+
+Add a color in the current color set for a unitig or a sub-\/unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMap}{Unitig\+Map} representing the mapping of a unitig for which the color must be added. The color will be added only for the sub-\/unitig mapped, i.\+e, unitig\mbox{[}um.\+dist..um.\+dist+um.len+k-\/1\mbox{]} \\
+\hline
+{\em color\+\_\+id} & is the ID of the color to add. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classColorSet_a39bcc44bcf47c9e31a27a5b4fd4c75d8}\label{classColorSet_a39bcc44bcf47c9e31a27a5b4fd4c75d8}} 
+\index{Color\+Set@{Color\+Set}!begin@{begin}}
+\index{begin@{begin}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily \hyperlink{classColorSet_1_1ColorSet__const__iterator}{const\+\_\+iterator} Color\+Set\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create a constant iterator to the first color of the color set. 
+
+\begin{DoxyReturn}{Returns}
+a constant iterator to the first color of the color set. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a192f572f4bffc3edff720045b4a8f41f}\label{classColorSet_a192f572f4bffc3edff720045b4a8f41f}} 
+\index{Color\+Set@{Color\+Set}!contains@{contains}}
+\index{contains@{contains}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{contains()}{contains()}}
+{\footnotesize\ttfamily bool Color\+Set\+::contains (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ Hash\+ID $>$ \&}]{um,  }\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption}) const}
+
+
+
+Check if a color is present on a unitig or a sub-\/unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um} & is a \hyperlink{structUnitigMap}{Unitig\+Map} representing the mapping of a unitig for which the color presence must be checked. The color will be checked only for the sub-\/unitig mapped, i.\+e, unitig\mbox{[}um.\+dist..um.\+dist+um.len+k-\/1\mbox{]} \\
+\hline
+{\em color\+\_\+id} & is the ID of the color to check. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classColorSet_a1cbf01ea772e3318644c95a6d95348fd}\label{classColorSet_a1cbf01ea772e3318644c95a6d95348fd}} 
+\index{Color\+Set@{Color\+Set}!end@{end}}
+\index{end@{end}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{end()}{end()}}
+{\footnotesize\ttfamily \hyperlink{classColorSet_1_1ColorSet__const__iterator}{const\+\_\+iterator} Color\+Set\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Create a constant iterator to the the \char`\"{}past-\/the-\/last\char`\"{} color of the color set. 
+
+\begin{DoxyReturn}{Returns}
+a constant iterator to the first the \char`\"{}past-\/the-\/last\char`\"{} of the color set. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a509c260d1561a341600783c08ff7692e}\label{classColorSet_a509c260d1561a341600783c08ff7692e}} 
+\index{Color\+Set@{Color\+Set}!is\+Occupied@{is\+Occupied}}
+\index{is\+Occupied@{is\+Occupied}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{is\+Occupied()}{isOccupied()}}
+{\footnotesize\ttfamily bool Color\+Set\+::is\+Occupied (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get if the color set as \char`\"{}occupied\char`\"{} (associated with a unitig). 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the color set is \char`\"{}occupied\char`\"{} (true) or not (false). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_ab8acebbbf6d701ff007fa608432611ef}\label{classColorSet_ab8acebbbf6d701ff007fa608432611ef}} 
+\index{Color\+Set@{Color\+Set}!is\+Unoccupied@{is\+Unoccupied}}
+\index{is\+Unoccupied@{is\+Unoccupied}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{is\+Unoccupied()}{isUnoccupied()}}
+{\footnotesize\ttfamily bool Color\+Set\+::is\+Unoccupied (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get if the color set as \char`\"{}unoccupied\char`\"{} (N\+OT associated with a unitig). 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the color set is \char`\"{}unoccupied\char`\"{} (true) or not (false). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_ab90fee025c639c2950632f995c0eac0a}\label{classColorSet_ab90fee025c639c2950632f995c0eac0a}} 
+\index{Color\+Set@{Color\+Set}!operator=@{operator=}}
+\index{operator=@{operator=}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \hyperlink{classColorSet}{Color\+Set} \& Color\+Set\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classColorSet}{Color\+Set} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Color set copy assignment operator. 
+
+After the call to this operator, the same color set exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current color set being a copy of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a9196bc31bdb43e0df980d294458b7c29}\label{classColorSet_a9196bc31bdb43e0df980d294458b7c29}} 
+\index{Color\+Set@{Color\+Set}!operator=@{operator=}}
+\index{operator=@{operator=}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \hyperlink{classColorSet}{Color\+Set} \& Color\+Set\+::operator= (\begin{DoxyParamCaption}\item[{\hyperlink{classColorSet}{Color\+Set} \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Color set move assignment operator. 
+
+After the call to this operator, the color set to move is empty, its content has been transfered (moved) to another color set. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is the color set to move. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current color set having (owning) the content of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a5b0ee00180757bccb3395e449b99f789}\label{classColorSet_a5b0ee00180757bccb3395e449b99f789}} 
+\index{Color\+Set@{Color\+Set}!optimize@{optimize}}
+\index{optimize@{optimize}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{optimize()}{optimize()}}
+{\footnotesize\ttfamily void Color\+Set\+::optimize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Optimize the memory of a color set. 
+
+Useful in case one or more sub-\/unitig share the same color. \mbox{\Hypertarget{classColorSet_a706df07e45b58415b09388035f1fd035}\label{classColorSet_a706df07e45b58415b09388035f1fd035}} 
+\index{Color\+Set@{Color\+Set}!reverse@{reverse}}
+\index{reverse@{reverse}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{reverse()}{reverse()}}
+{\footnotesize\ttfamily \hyperlink{classColorSet}{Color\+Set} Color\+Set\+::reverse (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{len\+\_\+unitig }\end{DoxyParamCaption}) const}
+
+
+
+Reverse the order of the colors. 
+
+This function must be used if a unitig is reverse-\/complemented. 
+\begin{DoxyParams}{Parameters}
+{\em len\+\_\+unitig} & is the length of the unitig to which this color set is associated. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a new color set which is the reverse of the current one. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a9b987d139b85a1c53bb5a5ba4ee10a75}\label{classColorSet_a9b987d139b85a1c53bb5a5ba4ee10a75}} 
+\index{Color\+Set@{Color\+Set}!size@{size}}
+\index{size@{size}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{size()}{size()}}
+{\footnotesize\ttfamily size\+\_\+t Color\+Set\+::size (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the number of colors (total number of colors associated with a unitig). 
+
+\begin{DoxyReturn}{Returns}
+number of colors (total number of colors associated with a unitig) in this color set. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColorSet_a74e1df482946158e01659d15b5b71375}\label{classColorSet_a74e1df482946158e01659d15b5b71375}} 
+\index{Color\+Set@{Color\+Set}!write@{write}}
+\index{write@{write}!Color\+Set@{Color\+Set}}
+\subsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily bool Color\+Set\+::write (\begin{DoxyParamCaption}\item[{ostream \&}]{stream\+\_\+out }\end{DoxyParamCaption}) const}
+
+
+
+Write a color set. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em stream\+\_\+out} & is an out stream to which the color set will be written. It must be opened prior to the call of this function and it won\textquotesingle{}t be closed by this function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the write was successful. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColorSet_8hpp}{Color\+Set.\+hpp}\item 
+src/Color\+Set.\+cpp\end{DoxyCompactItemize}

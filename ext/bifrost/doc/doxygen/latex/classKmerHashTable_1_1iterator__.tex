@@ -1,0 +1,77 @@
+\hypertarget{classKmerHashTable_1_1iterator__}{}\section{Kmer\+Hash\+Table$<$ T, Hash $>$\+:\+:iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$ Class Template Reference}
+\label{classKmerHashTable_1_1iterator__}\index{Kmer\+Hash\+Table$<$ T, Hash $>$\+::iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$@{Kmer\+Hash\+Table$<$ T, Hash $>$\+::iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$}}
+
+
+Inherits iterator$<$ std\+::forward\+\_\+iterator\+\_\+tag, value\+\_\+type $>$.
+
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a7a106512e7a59438235a4b17fae5a214}\label{classKmerHashTable_1_1iterator___a7a106512e7a59438235a4b17fae5a214}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const \hyperlink{structKmerHashTable}{Kmer\+Hash\+Table} $\ast$, \hyperlink{structKmerHashTable}{Kmer\+Hash\+Table} $\ast$ $>$\+::type {\bfseries Data\+Structure\+Pointer\+Type}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a693428ff381c67a3d1becf382362d044}\label{classKmerHashTable_1_1iterator___a693428ff381c67a3d1becf382362d044}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const value\+\_\+type \&, value\+\_\+type \& $>$\+::type {\bfseries Value\+Reference\+Type}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___ae9defeb6c7553af322913522c417edc1}\label{classKmerHashTable_1_1iterator___ae9defeb6c7553af322913522c417edc1}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const value\+\_\+type $\ast$, value\+\_\+type $\ast$ $>$\+::type {\bfseries Value\+Pointer\+Type}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a6d829f925a05ca37fcf448acac14281b}\label{classKmerHashTable_1_1iterator___a6d829f925a05ca37fcf448acac14281b}} 
+{\bfseries iterator\+\_\+} (Data\+Structure\+Pointer\+Type ht\+\_\+)
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a08459e65a0911bd8a8373b0424590954}\label{classKmerHashTable_1_1iterator___a08459e65a0911bd8a8373b0424590954}} 
+{\bfseries iterator\+\_\+} (Data\+Structure\+Pointer\+Type ht\+\_\+, size\+\_\+t h\+\_\+)
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___af9dcc07b19a5db25b47c2c2662918a31}\label{classKmerHashTable_1_1iterator___af9dcc07b19a5db25b47c2c2662918a31}} 
+{\bfseries iterator\+\_\+} (const \hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+}$<$ false $>$ \&o)
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a59043e2d2a40bce5159eff5f26f134af}\label{classKmerHashTable_1_1iterator___a59043e2d2a40bce5159eff5f26f134af}} 
+\hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} \& {\bfseries operator=} (const \hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} \&o)
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a68477ca0a4c1a9f04ea1ffb1e091edf2}\label{classKmerHashTable_1_1iterator___a68477ca0a4c1a9f04ea1ffb1e091edf2}} 
+Value\+Reference\+Type {\bfseries operator$\ast$} () const
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a648465985ce12907fe78e7b1f6f21b66}\label{classKmerHashTable_1_1iterator___a648465985ce12907fe78e7b1f6f21b66}} 
+Value\+Pointer\+Type {\bfseries operator-\/$>$} () const
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a9a296cb28925af4121950bc42d6c451d}\label{classKmerHashTable_1_1iterator___a9a296cb28925af4121950bc42d6c451d}} 
+size\+\_\+t {\bfseries get\+Hash} () const
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a5a99e680e2c433dd2965a1b585d27b9f}\label{classKmerHashTable_1_1iterator___a5a99e680e2c433dd2965a1b585d27b9f}} 
+void {\bfseries find\+\_\+first} ()
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a3b81b3b0988cba9a4fd1fb4758b155ed}\label{classKmerHashTable_1_1iterator___a3b81b3b0988cba9a4fd1fb4758b155ed}} 
+\hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} {\bfseries operator++} (int)
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___af44261fb35b49bcb6058c0c29770fe3e}\label{classKmerHashTable_1_1iterator___af44261fb35b49bcb6058c0c29770fe3e}} 
+\hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} \& {\bfseries operator++} ()
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a1c0b16af8aa50254a85982640e012779}\label{classKmerHashTable_1_1iterator___a1c0b16af8aa50254a85982640e012779}} 
+bool {\bfseries operator==} (const \hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} \&o) const
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a8f9bfbd3ae15c15e8e2b8b301c989689}\label{classKmerHashTable_1_1iterator___a8f9bfbd3ae15c15e8e2b8b301c989689}} 
+bool {\bfseries operator!=} (const \hyperlink{classKmerHashTable_1_1iterator__}{iterator\+\_\+} \&o) const
+\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___af84ec4b18382c9ae6186b98434c0f444}\label{classKmerHashTable_1_1iterator___af84ec4b18382c9ae6186b98434c0f444}} 
+Data\+Structure\+Pointer\+Type {\bfseries ht}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___adf60099b2b2301251702ba0a3aacf972}\label{classKmerHashTable_1_1iterator___adf60099b2b2301251702ba0a3aacf972}} 
+size\+\_\+t {\bfseries h}
+\end{DoxyCompactItemize}
+\subsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classKmerHashTable_1_1iterator___a97892b3c6f1f1c933ebed425135d20cb}\label{classKmerHashTable_1_1iterator___a97892b3c6f1f1c933ebed425135d20cb}} 
+class {\bfseries iterator\+\_\+$<$ true $>$}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/Kmer\+Hash\+Table.\+h\end{DoxyCompactItemize}

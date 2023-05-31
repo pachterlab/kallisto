@@ -4,7 +4,7 @@
 
 const double MIN_ALPHA = 1e-8;
 
-std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
+std::vector<double> get_frag_len_means(const std::vector<uint32_t>& lengths,
     const std::vector<double>& mean_frag_len_trunc) {
 
   std::vector<double> frag_len_means;
@@ -28,7 +28,7 @@ std::vector<double> get_frag_len_means(const std::vector<int>& lengths,
 }
 
 // XXX: DEPRECATED
-std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
+std::vector<double> calc_eff_lens(const std::vector<uint32_t>& lengths, double mean)
 {
   // for now do the total naive thing and subtract mean frag length
   std::vector<double> eff_lens;
@@ -55,7 +55,7 @@ std::vector<double> calc_eff_lens(const std::vector<int>& lengths, double mean)
   return eff_lens;
 }
 
-std::vector<double> calc_eff_lens(const std::vector<int>& lengths,
+std::vector<double> calc_eff_lens(const std::vector<uint32_t>& lengths,
     const std::vector<double>& means) {
   std::vector<double> eff_lens;
   eff_lens.reserve( lengths.size() );
@@ -118,10 +118,10 @@ std::vector<double> update_eff_lens(
   dbias5.resize(num6mers, 0.0); // clear the bias
 
   index.loadTranscriptSequences();
-  
+
 
   for (int i = 0; i < index.num_trans; i++) {
-    if (index.target_lens_[i] < means[i]) {
+    if ((int)index.target_lens_[i] < means[i]) {
       // this should never happen.. but I'll sleep better at night with this
       // condition -HP
       continue;
@@ -144,7 +144,7 @@ std::vector<double> update_eff_lens(
       for (int j = 0; j < fwlimit; j++) {
         dbias5[hex] += contrib;
         hex = update_hexamer(hex,*(cs+j+6),false);
-      } 
+      }
     }
 
     if (!opt.strand_specific || (opt.strand == ProgramOptions::StrandType::RF)) {
@@ -167,7 +167,7 @@ std::vector<double> update_eff_lens(
 
   for (int i = 0; i < index.num_trans; i++) {
     double efflen = 0.0;
-    if (index.target_lens_[i] >= means[i] && alpha[i] >= MIN_ALPHA) {
+    if ((int)index.target_lens_[i] >= means[i] && alpha[i] >= MIN_ALPHA) {
 
       int seqlen = index.target_seqs_[i].size();
       const char* cs = index.target_seqs_[i].c_str();
@@ -193,8 +193,8 @@ std::vector<double> update_eff_lens(
           }
         }
       }
-      
-      
+
+
       if (!opt.strand_specific) {
         efflen *= 0.5*biasAlphaNorm/biasDataNorm;
       } else {
@@ -218,8 +218,8 @@ std::vector<double> update_eff_lens(
 }
 
 WeightMap calc_weights(
-  const std::vector<int>& counts,
-  const EcMap& ecmap,
+  const std::vector<uint32_t>& counts,
+  const EcMapInv& ecmapinv,
   const std::vector<double>& eff_lens)
 {
 
@@ -227,22 +227,20 @@ WeightMap calc_weights(
   // and ec map are correct... as well as eff_lens size is reasonable
 
   // weights are stored _exactly_ in the same orientation as the ec map
-  WeightMap weights(ecmap.size());
+  WeightMap weights(ecmapinv.size());
 
-  for (size_t ec = 0; ec < ecmap.size(); ec++) {
-    auto& v = ecmap[ec];
-    //std::cout << ec;
+  for (const auto& it : ecmapinv) {
+    auto& v = it.first;
+
     std::vector<double> trans_weights;
-    trans_weights.reserve(v.size());
+    trans_weights.reserve(v.cardinality());
 
-    for (auto& trans_id : v) {
-      trans_weights.push_back( static_cast<double>(counts[ec]) /
-                               eff_lens[trans_id] );
+    for (uint32_t tr : v) {
+      trans_weights.push_back(static_cast<double>(counts[it.second]) / eff_lens[tr]);
     }
 
-    weights[ec] = trans_weights;
+    weights[it.second] = trans_weights;
   }
-
 
   return weights;
 }
@@ -272,10 +270,10 @@ std::vector<double> trunc_gaussian_fld(int start, int stop, double mean,
   return mean_fl;
 }
 
-std::vector<int> trunc_gaussian_counts(int start, int stop, double mean,
+std::vector<uint32_t> trunc_gaussian_counts(int start, int stop, double mean,
     double sd, int total_count) {
   size_t n = stop - start;
-  std::vector<int> obs_fl(n, 0);
+  std::vector<uint32_t> obs_fl(n, 0);
 
   double total_mass = 0.0;
 

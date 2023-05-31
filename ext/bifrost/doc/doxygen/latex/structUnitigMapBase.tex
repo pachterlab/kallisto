@@ -1,0 +1,124 @@
+\hypertarget{structUnitigMapBase}{}\section{Unitig\+Map\+Base Class Reference}
+\label{structUnitigMapBase}\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+
+
+Structure containing the basic information of a unitig mapping.  
+
+
+
+
+Inherited by \hyperlink{classUnitigMap}{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}, and \hyperlink{classUnitigMap}{Unitig\+Map$<$ U, G, is\+\_\+const $>$}.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structUnitigMapBase_a080e546f9f6a9027490501332b656473}{Unitig\+Map\+Base} (const size\+\_\+t length=1)
+\begin{DoxyCompactList}\small\item\em \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} constructor (is\+Empty = true). \end{DoxyCompactList}\item 
+\hyperlink{structUnitigMapBase_a04975745bfe61f5d067acb13940d2975}{Unitig\+Map\+Base} (const size\+\_\+t start, const size\+\_\+t length, const size\+\_\+t unitig\+\_\+sz, const bool \hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand})
+\begin{DoxyCompactList}\small\item\em \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} constructor (is\+Empty = false). \end{DoxyCompactList}\item 
+bool \hyperlink{structUnitigMapBase_ac6965f7af0564e4cfa1e6a77595231c7}{operator==} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator\+: check if two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are the same. \end{DoxyCompactList}\item 
+bool \hyperlink{structUnitigMapBase_aa493ccbb29c318a081c4c58544f6461e}{operator!=} (const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator\+: check if two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are different. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}\label{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}} 
+size\+\_\+t \hyperlink{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}{dist}
+\begin{DoxyCompactList}\small\item\em Start position of the mapping (0-\/based distance) from the start of the reference unitig. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}\label{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}} 
+size\+\_\+t \hyperlink{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}{len}
+\begin{DoxyCompactList}\small\item\em Length of the mapping on the reference unitig, in k-\/mers. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}\label{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}} 
+size\+\_\+t \hyperlink{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}{size}
+\begin{DoxyCompactList}\small\item\em Length of the reference unitig. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}\label{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}} 
+bool \hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}
+\begin{DoxyCompactList}\small\item\em True if the mapped k-\/mer or sequence matches the forward strand, false if it matches its reverse-\/complement. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}\label{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}} 
+bool \hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{is\+Empty}
+\begin{DoxyCompactList}\small\item\em True if there is no mapping. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Structure containing the basic information of a unitig mapping. 
+
+This structure is independent from the graph. It is the base class for the class \hyperlink{classUnitigMap}{Unitig\+Map}. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{structUnitigMapBase_a080e546f9f6a9027490501332b656473}\label{structUnitigMapBase_a080e546f9f6a9027490501332b656473}} 
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\subsubsection{\texorpdfstring{Unitig\+Map\+Base()}{UnitigMapBase()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Unitig\+Map\+Base\+::\+Unitig\+Map\+Base (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{length = {\ttfamily 1} }\end{DoxyParamCaption})}
+
+
+
+\hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} constructor (is\+Empty = true). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em length} & is the length of the mapping in k-\/mers (default is 1 k-\/mer). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an empty \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMapBase_a04975745bfe61f5d067acb13940d2975}\label{structUnitigMapBase_a04975745bfe61f5d067acb13940d2975}} 
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\subsubsection{\texorpdfstring{Unitig\+Map\+Base()}{UnitigMapBase()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Unitig\+Map\+Base\+::\+Unitig\+Map\+Base (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{start,  }\item[{const size\+\_\+t}]{length,  }\item[{const size\+\_\+t}]{unitig\+\_\+sz,  }\item[{const bool}]{strand }\end{DoxyParamCaption})}
+
+
+
+\hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} constructor (is\+Empty = false). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em start} & is the start position of the mapping (0-\/based distance) from the start of the reference unitig. \\
+\hline
+{\em length} & is the length of the mapping in k-\/mers. \\
+\hline
+{\em unitig\+\_\+sz} & is the length of the reference unitig used for the mapping. \\
+\hline
+{\em strand} & indicates if the mapped k-\/mer or sequence matches the forward strand (true) or the reverse-\/complement (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base}. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{structUnitigMapBase_aa493ccbb29c318a081c4c58544f6461e}\label{structUnitigMapBase_aa493ccbb29c318a081c4c58544f6461e}} 
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily bool Unitig\+Map\+Base\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality operator\+: check if two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are different. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are different. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMapBase_ac6965f7af0564e4cfa1e6a77595231c7}\label{structUnitigMapBase_ac6965f7af0564e4cfa1e6a77595231c7}} 
+\index{Unitig\+Map\+Base@{Unitig\+Map\+Base}!operator==@{operator==}}
+\index{operator==@{operator==}!Unitig\+Map\+Base@{Unitig\+Map\+Base}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily bool Unitig\+Map\+Base\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator\+: check if two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are the same. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base} are the same. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{UnitigMap_8hpp}{Unitig\+Map.\+hpp}\end{DoxyCompactItemize}

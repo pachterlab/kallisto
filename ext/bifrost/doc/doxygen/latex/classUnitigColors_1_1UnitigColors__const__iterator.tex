@@ -1,0 +1,203 @@
+\hypertarget{classUnitigColors_1_1UnitigColors__const__iterator}{}\section{Unitig\+Colors\+:\+:Unitig\+Colors\+\_\+const\+\_\+iterator Class Reference}
+\label{classUnitigColors_1_1UnitigColors__const__iterator}\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+
+
+See \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{Unitig\+Colors\+::const\+\_\+iterator}.  
+
+
+
+
+Inherits iterator$<$ std\+::forward\+\_\+iterator\+\_\+tag, pair$<$ size\+\_\+t, size\+\_\+t $>$ $>$.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a01ef8ae04a7b535c43a9fea17d9564ab}{Unitig\+Colors\+\_\+const\+\_\+iterator} ()
+\begin{DoxyCompactList}\small\item\em Constructor of an empty iterator. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a879ba744a0fa0bf46f829523c7e28196}{Unitig\+Colors\+\_\+const\+\_\+iterator} (const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_ad56df0c744a8f597b987c3952db07b26}\label{classUnitigColors_1_1UnitigColors__const__iterator_ad56df0c744a8f597b987c3952db07b26}} 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_ad56df0c744a8f597b987c3952db07b26}{$\sim$\+Unitig\+Colors\+\_\+const\+\_\+iterator} ()
+\begin{DoxyCompactList}\small\item\em Destructor. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \& \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_af31737d4940cba427c48b3ac09553eee}{operator=} (const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&o)
+\begin{DoxyCompactList}\small\item\em Copy assignment operator. \end{DoxyCompactList}\item 
+pair$<$ size\+\_\+t, size\+\_\+t $>$ \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_acbeaf566652c50221b59da6c81d940ea}{operator$\ast$} () const
+\begin{DoxyCompactList}\small\item\em Indirection operator. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_aac088e18802033a09a5ff1336522fbca}{get\+Kmer\+Position} () const
+\begin{DoxyCompactList}\small\item\em Get the k-\/mer position of the k-\/mer visited by the iterator. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a1274e2d24b65f1b9ed2a473c9bf99302}{get\+Color\+ID} () const
+\begin{DoxyCompactList}\small\item\em Get the color of the k-\/mer visited by the iterator. \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a8ab4940bd251e29329edb8e0e46483b4}{operator++} (int)
+\begin{DoxyCompactList}\small\item\em Postfix increment operator\+: it iterates over the next k-\/mer of the unitig having the current color or the first k-\/mer having the next color (if all k-\/mers having the current color have already been visited by this iterator). \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \& \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_acf6c4cff3345fa23053dbd9be046974f}{operator++} ()
+\begin{DoxyCompactList}\small\item\em Prefix increment operator\+: it iterates over the next k-\/mer of the unitig having the current color or the first k-\/mer having the next color (if all k-\/mers having the current color have already been visited by this iterator). \end{DoxyCompactList}\item 
+\hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \& \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_ae7c489b968f06a0b713bd7244d75aeca}{next\+Color} ()
+\begin{DoxyCompactList}\small\item\em Color increment operator\+: it iterates over the first k-\/mer position of the next color. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_aef7249eb114e7a0401beb84372244306}{operator==} (const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator. \end{DoxyCompactList}\item 
+bool \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator_a7d513e7e2947d5cd948ed9bd816ef94f}{operator!=} (const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+See \hyperlink{classUnitigColors_ad4d35f8af18dfd9cad99e92ca2328fee}{Unitig\+Colors\+::const\+\_\+iterator}. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_a01ef8ae04a7b535c43a9fea17d9564ab}\label{classUnitigColors_1_1UnitigColors__const__iterator_a01ef8ae04a7b535c43a9fea17d9564ab}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\index{Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+\_\+const\+\_\+iterator}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{Unitig\+Colors\+\_\+const\+\_\+iterator()}{UnitigColors\_const\_iterator()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Constructor of an empty iterator. 
+
+The resulting iterator cannott be used as it is because it is not associated with any \hyperlink{classUnitigColors}{Unitig\+Colors}. \mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_a879ba744a0fa0bf46f829523c7e28196}\label{classUnitigColors_1_1UnitigColors__const__iterator_a879ba744a0fa0bf46f829523c7e28196}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\index{Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+\_\+const\+\_\+iterator}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{Unitig\+Colors\+\_\+const\+\_\+iterator()}{UnitigColors\_const\_iterator()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor. 
+
+After the call to this function, the same iterator exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the const\+\_\+iterator to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the const\+\_\+iterator copy. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_a1274e2d24b65f1b9ed2a473c9bf99302}\label{classUnitigColors_1_1UnitigColors__const__iterator_a1274e2d24b65f1b9ed2a473c9bf99302}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!get\+Color\+ID@{get\+Color\+ID}}
+\index{get\+Color\+ID@{get\+Color\+ID}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{get\+Color\+I\+D()}{getColorID()}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::get\+Color\+ID (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the color of the k-\/mer visited by the iterator. 
+
+It is equal to ($\ast$it).second. \begin{DoxyReturn}{Returns}
+the color of the k-\/mer visited by the iterator. It is equal to ($\ast$it).second. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_aac088e18802033a09a5ff1336522fbca}\label{classUnitigColors_1_1UnitigColors__const__iterator_aac088e18802033a09a5ff1336522fbca}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!get\+Kmer\+Position@{get\+Kmer\+Position}}
+\index{get\+Kmer\+Position@{get\+Kmer\+Position}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{get\+Kmer\+Position()}{getKmerPosition()}}
+{\footnotesize\ttfamily size\+\_\+t Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::get\+Kmer\+Position (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the k-\/mer position of the k-\/mer visited by the iterator. 
+
+It is equal to ($\ast$it).first. \begin{DoxyReturn}{Returns}
+the k-\/mer position of the k-\/mer visited by the iterator. It is equal to ($\ast$it).first. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_ae7c489b968f06a0b713bd7244d75aeca}\label{classUnitigColors_1_1UnitigColors__const__iterator_ae7c489b968f06a0b713bd7244d75aeca}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!next\+Color@{next\+Color}}
+\index{next\+Color@{next\+Color}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{next\+Color()}{nextColor()}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator}\& Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::next\+Color (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Color increment operator\+: it iterates over the first k-\/mer position of the next color. 
+
+\begin{DoxyReturn}{Returns}
+a reference to the current iterator. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_a7d513e7e2947d5cd948ed9bd816ef94f}\label{classUnitigColors_1_1UnitigColors__const__iterator_a7d513e7e2947d5cd948ed9bd816ef94f}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two iterators are different (true) or not (false). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_acbeaf566652c50221b59da6c81d940ea}\label{classUnitigColors_1_1UnitigColors__const__iterator_acbeaf566652c50221b59da6c81d940ea}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator$\ast$()}{operator*()}}
+{\footnotesize\ttfamily pair$<$size\+\_\+t, size\+\_\+t$>$ Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator$\ast$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Indirection operator. 
+
+\begin{DoxyReturn}{Returns}
+a pair p of integers representing the position of a k-\/mer in the unitig (p.\+first) and the ID of the color associated with the k-\/mer at the given position (p.\+second). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_a8ab4940bd251e29329edb8e0e46483b4}\label{classUnitigColors_1_1UnitigColors__const__iterator_a8ab4940bd251e29329edb8e0e46483b4}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator++ (\begin{DoxyParamCaption}\item[{int}]{ }\end{DoxyParamCaption})}
+
+
+
+Postfix increment operator\+: it iterates over the next k-\/mer of the unitig having the current color or the first k-\/mer having the next color (if all k-\/mers having the current color have already been visited by this iterator). 
+
+\begin{DoxyReturn}{Returns}
+a copy of the iterator before the call to this operator. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_acf6c4cff3345fa23053dbd9be046974f}\label{classUnitigColors_1_1UnitigColors__const__iterator_acf6c4cff3345fa23053dbd9be046974f}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator}\& Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator++ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Prefix increment operator\+: it iterates over the next k-\/mer of the unitig having the current color or the first k-\/mer having the next color (if all k-\/mers having the current color have already been visited by this iterator). 
+
+\begin{DoxyReturn}{Returns}
+a reference to the current iterator. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_af31737d4940cba427c48b3ac09553eee}\label{classUnitigColors_1_1UnitigColors__const__iterator_af31737d4940cba427c48b3ac09553eee}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator=@{operator=}}
+\index{operator=@{operator=}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator}\& Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy assignment operator. 
+
+After the call to this function, the same iterator exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the const\+\_\+iterator to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the const\+\_\+iterator copy. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classUnitigColors_1_1UnitigColors__const__iterator_aef7249eb114e7a0401beb84372244306}\label{classUnitigColors_1_1UnitigColors__const__iterator_aef7249eb114e7a0401beb84372244306}} 
+\index{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}!operator==@{operator==}}
+\index{operator==@{operator==}!Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator@{Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily bool Unitig\+Colors\+::\+Unitig\+Colors\+\_\+const\+\_\+iterator\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigColors_1_1UnitigColors__const__iterator}{Unitig\+Colors\+\_\+const\+\_\+iterator} \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two iterators are the same (true) or not (false). 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColorSet_8hpp}{Color\+Set.\+hpp}\end{DoxyCompactItemize}

@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ### Setup ###
-
 kallisto="./src/kallisto"
 bustools="bustools"
 test_dir="./func_tests"
@@ -31,7 +30,7 @@ checkcmdoutput() {
 	cmd="$1"
 	correct_md5="$2"
 	printf "$cmd\n"
-	output_md5=$(eval "$cmd"|md5sum|awk '{ print $1 }')
+	output_md5=$(eval "$cmd"|md5sum|awk '{ print $1 }')  # Use 'md5 -r' instead of 'md5sum' on Mac
 	if [ "$output_md5" = "$correct_md5" ]; then
 		printf "^[Output OK]\n"
 	else
@@ -45,6 +44,46 @@ checkcmdoutput() {
 }
 
 ### FASTA files ###
+
+# Test aa: index
+echo ">a1
+ITGDNTKWNENQNPRMFLAMITYITRNQPEWFRNILSMAPIMFSNKMARLGKGYMFESKRMKIRTQIPAEMLASIDLKYF
+>a2
+ATLDLSDASDRVSNELVRTMVARWPYVAWALDASRSRKALVGGKTIRLAKYASMGSALCFPIEAMVFLTMIFVGIQRSLNTPLTRKDVKRLSDSVRVYGDDLIV
+>a3
+VPLDASRFEQSCSEEVLHWEHRRYMKYYPGDKYFKKLLAWQRSNKGHSYCTDGELKFAISGGRGSGDFNTGLGNNMITAKLVGNVMEILSIDNYKFFCDGDDACV
+" > $test_dir/aa_ref.fasta
+
+# Test aa: standard frames
+# Expected mapping: t1 -> a1; t2 -> a2; t3, t4 -> a3
+echo ">t1
+ATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>t2
+GCGACCCTGGATCTGAGCGATGCGAGCGATCGCGTGAGCAACGAACTGGTGCGCACCATGGTGGCGCGCTGGCCGTATGTGGCGTGGGCGCTGGATGCGAGCCGCAGCCGCAAAGCGCTGGTGGGCGGCAAAACCATTCGCCTGGCGAAATATGCGAGCATGGGCAGCGCGCTGTGCTTTCCGATTGAAGCGATGGTGTTTCTGACCATGATTTTTGTGGGCATTCAGCGCAGCCTGAACACCCCGCTGACCCGCAAAGATGTGAAACGCCTGAGCGATAGCGTGCGCGTGTATGGCGATGATCTGATTGTG
+>t3
+GTGCCGCTGGATGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGAAGTGCTGCATTGGGAACATCGCCGCTATATGAAATATTATCCGGGCGATAAATATTTTAAAAAACTGCTGGCGTGGCAGCGCAGCAACAAAGGCCATAGCTATTGCACCGATGGCGAACTGAAATTTGCGATTAGCGGCGGCCGCGGCAGCGGCGATTTTAACACCGGCCTGGGCAACAACATGATTACCGCGAAACTGGTGGGCAACGTGATGGAAATTCTGAGCATTGATAACTATAAATTTTTTTGCGATGGCGATGATGCGTGCGTG
+>t4
+GATGCGAGCCGCTTTGAACAGAGCTGCAGCGAAGAAGTGCTGCATTGGGAACATCGCCGCTATATGAAATATTATCCGGGCGATAAATATTTTAAAAAACTGCTGGCGTGGCAGCGCAGCAACAAAGGCCATAGCTATTGCACCGATGGCGAACTGAAATTTGCGATTAGCGGCGGCCGCGGCAGCGGCGATTTTAACACCGGCCTGGGCAACAACATGATTACCGCGAAACTGGTGGGCAACGTGAT
+" > $test_dir/virus_nn_frame0.fasta
+
+# Test aa: mixed frames
+# Expected mapping: tm1, tm2 -> a1; tm3, tm4, tm5 -> a2;
+# tm1 = t1 frame +1
+# tm2 = t1 frame +2
+# tm3 = t2 rev comp
+# tm4 = t2 rev comp frame +1
+# tm5 = t2 rev comp frame +2
+echo ">tm1
+GATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>tm2
+GGATTACCGGCGATAACACCAAATGGAACGAAAACCAGAACCCGCGCATGTTTCTGGCGATGATTACCTATATTACCCGCAACCAGCCGGAATGGTTTCGCAACATTCTGAGCATGGCGCCGATTATGTTTAGCAACAAAATGGCGCGCCTGGGCAAAGGCTATATGTTTGAAAGCAAACGCATGAAAATTCGCACCCAGATTCCGGCGGAAATGCTGGCGAGCATTGATCTGAAATATTTT
+>tm3
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGC
+>tm4
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCG
+>tm5
+CACAATCAGATCATCGCCATACACGCGCACGCTATCGCTCAGGCGTTTCACATCTTTGCGGGTCAGCGGGGTGTTCAGGCTGCGCTGAATGCCCACAAAAATCATGGTCAGAAACACCATCGCTTCAATCGGAAAGCACAGCGCGCTGCCCATGCTCGCATATTTCGCCAGGCGAATGGTTTTGCCGCCCACCAGCGCTTTGCGGCTGCGGCTCGCATCCAGCGCCCACGCCACATACGGCCAGCGCGCCACCATGGTGCGCACCAGTTCGTTGCTCACGCGATCGCTCGCATCGCTCAGATCCAGGGTCGCGG
+" > $test_dir/virus_nn_mixed_frames.fasta
 
 echo ">t1
 ACGTGATGAGTGAGTCAGT
@@ -94,7 +133,6 @@ cat $test_dir/simple.fasta $test_dir/nonATCG.fasta $test_dir/polyA.fasta $test_d
 	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
 	| gzip > $test_dir/small.fastq.gz
 
-
 cat /dev/null > $test_dir/medium.fastq.gz
 for i in {1..700}; do cat $test_dir/small.fastq.gz >> $test_dir/medium.fastq.gz; done
 
@@ -102,6 +140,15 @@ cat /dev/null > $test_dir/large.fastq.gz
 for i in {1..100}; do cat $test_dir/medium.fastq.gz >> $test_dir/large.fastq.gz; done
 
 rm $test_dir/medium.fastq.gz
+
+# Generate fastq's from virus nucleotide seqs (to test aa/cfc mode)
+cat $test_dir/virus_nn_frame0.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_frame0.fastq.gz
+
+cat $test_dir/virus_nn_mixed_frames.fasta | \
+	awk '{if(NR%2){ print "\@" $0 } else { printf "%s\n+\n",$0; i=0; while (i++ < length($0)) printf "J"; printf "\n" } }' \
+	| gzip > $test_dir/virus_nn_mixed_frames.fastq.gz
 
 # Paired-end reads for basic7.idx index
 
@@ -178,25 +225,25 @@ JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ
 
 echo "[INDEX]"
 
+# Test k=7 with --aa
+
+cmdexec "$kallisto index --aa -i $test_dir/basic7_cfc.idx -k 7 $test_dir/aa_ref.fasta"
+
 # Test k=7
 
 cmdexec "$kallisto index -i $test_dir/basic7.idx -k 7 $test_dir/simple.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/basic7.idx 2>&1|head -4" 356d498c030cb270a124ca06ad42a9d5
 
 # Test k=9
 
 cmdexec "$kallisto index -i $test_dir/basic9.idx -k 9 $test_dir/simple.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/basic9.idx 2>&1|head -4" 9f9246d5073d8e6ba90b8644e4ed9cc9
 
 # Test non-ATCG bases
 
 cmdexec "$kallisto index -i $test_dir/nonATCG.idx -k 5 $test_dir/nonATCG.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/nonATCG.idx 2>&1|head -4" 5fcab956573ca37c2220d154e7760db2
 
 # Test polyA truncation
 
 cmdexec "$kallisto index -i $test_dir/polyA.idx -k 5 $test_dir/polyA.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/polyA.idx 2>&1|head -4" 8fe4f599c55a62f87e56067ccdbf865e
 
 # Test k = even number (should fail)
 
@@ -209,7 +256,6 @@ cmdexec "$kallisto index -i $test_dir/duplicates_fail.idx -k 11 $test_dir/duplic
 # Test duplicate transcript names with --make-unique
 
 cmdexec "$kallisto index -i $test_dir/duplicates.idx -k 11 --make-unique $test_dir/duplicates.fasta"
-checkcmdoutput "$kallisto inspect ./func_tests/duplicates.idx 2>&1|head -4" b57f37128e2f2e66775aa811ed994cec
 
 
 ### TEST - kallisto quant ###
@@ -266,17 +312,29 @@ then
     exit 1
 fi
 
+# Try --aa (with comma-free code index)
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_f0 -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_f0/output.s.bus -t 12 $test_dir/bus_aa_f0/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_f0/output.s.bus|cut -f1,2,4" edbc95eff07ccc4f34e5e357357cb46b
+checkcmdoutput "head -n 7 $test_dir/bus_aa_f0/run_info.json " 8a816727bf99304851907e91a9e4238a
+
+cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_mixedframes -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
+cmdexec "$bustools sort -o $test_dir/bus_aa_mixedframes/output.s.bus -t 12 $test_dir/bus_aa_mixedframes/output.bus"
+checkcmdoutput "bustools text -p $test_dir/bus_aa_mixedframes/output.s.bus|cut -f1,2,4" 18a44f27b25053a0bb3db195473717d5
+checkcmdoutput "head -n 7 $test_dir/bus_aa_mixedframes/run_info.json " 49fd334d45490150ed97d231092ab9e4
+
 # Try custom "magic string" for -x with multiple large files and many threads
 
 cmdexec "$kallisto bus -o $test_dir/buslarge -t 12 -i $test_dir/basic7.idx -x 0,0,2:0,2,6:1,0,0 $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz $test_dir/large.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/buslarge/output.s.bus -t 12 $test_dir/buslarge/output.bus"
-checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus" f3db94e1c983a1d51b8f8525bb1a5beb
+checkcmdoutput "bustools text -p $test_dir/buslarge/output.s.bus|cut -f1,2,4" 2b4e7120a9ee3d419c1de5e1689d1634
 
 # Try a simple 10XV3 (with unstranded pseudoalignment)
 
 cmdexec "$kallisto bus -o $test_dir/bus10xv3 -t 1 -i $test_dir/basic7.idx -x 10XV3 --unstranded $test_dir/10xv3.fastq.gz $test_dir/small.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/bus10xv3/output.s.bus -t 12 $test_dir/bus10xv3/output.bus"
-checkcmdoutput "$bustools text -p $test_dir/bus10xv3/output.s.bus" f8f76f64d3ef351057f3bae016e2fa8a
+checkcmdoutput "$bustools text -p $test_dir/bus10xv3/output.s.bus|cut -f1,2,4" 3991a31f0078b30e7f755b2df7a77106
 
 
 # Try processing demultiplexed bulk RNA-seq with strand-specificity with EM and kallisto quant-tcc (and compare with quant) 

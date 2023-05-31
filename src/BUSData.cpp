@@ -28,8 +28,8 @@ uint64_t stringToBinary(const char* s, const size_t len, uint32_t &flag) {
   }
   if (numN>0) {
     if (numN > 3) {
-      numN = 3;      
-    }    
+      numN = 3;
+    }
     flag = (numN & 3) | (posN & 31) << 2;
   }
   return r;
@@ -59,7 +59,7 @@ int hamming(uint64_t a, uint64_t b, size_t len) {
   for (size_t i = 0; i < len; ++i) {
     if (((df>>(2*sh)) & 0x03ULL) != 0) {
       d++;
-    }    
+    }
     sh--;
   }
   return d;

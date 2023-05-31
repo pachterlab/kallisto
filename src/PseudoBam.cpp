@@ -1,6 +1,7 @@
-
-#include <htslib/sam.h>
+#include "common.h"
 #include "PseudoBam.h"
+
+#ifndef NO_HTSLIB
 
 
 bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
@@ -23,7 +24,7 @@ bam_hdr_t* createPseudoBamHeaderTrans(const KmerIndex& index)  {
 
 bam_hdr_t* createPseudoBamHeaderGenome(const Transcriptome& model)  {
   bam_hdr_t *h = bam_hdr_init();
-  
+
   std::string text = "@HD\tVN:1.0\n@PG\tID:kallisto\tPN:kallisto\tVN:";
   text += KALLISTO_VERSION;
   text += "\n";
@@ -38,7 +39,7 @@ bam_hdr_t* createPseudoBamHeaderGenome(const Transcriptome& model)  {
   }
   h->text = strdup(text.c_str());
   h->l_text = (uint32_t) strlen(h->text);
-  
+
 
   return h;
 }
@@ -54,9 +55,9 @@ void createBamRecord(const KmerIndex, const KmerIndex &index, const std::vector<
 
 
 
-void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
-    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<KmerEntry,int>>& v1,
-    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<KmerEntry,int>>& v2,
+void outputPseudoBam(const KmerIndex &index, const Roaring& u,
+    const char *s1, const char *n1, const char *q1, int slen1, int nlen1, const std::vector<std::pair<const_UnitigMap<Node>&, int>>& v1,
+    const char *s2, const char *n2, const char *q2, int slen2, int nlen2, const std::vector<std::pair<const_UnitigMap<Node>&, int>>& v2,
     bool paired, bam_hdr_t *h, samFile *fp) {
 
   static char buf1[32768];
@@ -79,20 +80,20 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
   /*
   b1.l_data = fillBamRecord(b1, &buf1[0], s1,n1,q1,slen1,nlen1);
   b1.data = (uint8_t*)buf1;
-  
+
   if (paired) {
     b2.l_data = fillBamRecord(b2, &buf2[0], s2,n2,q2,slen2,nlen2);
     b2.data = (uint8_t*) buf2;
   }
   */
-  if (u.empty()) {
+  if (u.isEmpty()) {
     // no mapping
     if (paired) {
       b1.core.tid = -1;
       b1.core.pos = -1;
       b1.core.bin = 4680; // magic bin for unmapped reads
       b1.core.qual = 0;
-      b1.core.flag = BAM_FPAIRED | BAM_FREAD1 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b1.core.flag = BAM_FPAIRED | BAM_FREAD1 | BAM_FUNMAP | BAM_FMUNMAP;
       b1.core.mtid = -1;
       b1.core.mpos = -1;
       b1.core.isize = 0;
@@ -101,7 +102,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       b2.core.pos = -1;
       b2.core.bin = 4680; // magic bin for unmapped reads
       b2.core.qual = 0;
-      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;      
+      b2.core.flag = BAM_FPAIRED | BAM_FREAD2 | BAM_FUNMAP | BAM_FMUNMAP;
       b2.core.mtid = -1;
       b2.core.mpos = -1;
       b2.core.isize = 0;
@@ -117,7 +118,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       b1.core.pos = -1;
       b1.core.bin = 4680; // magic bin for unmapped reads
       b1.core.qual = 0;
-      b1.core.flag = BAM_FUNMAP ;      
+      b1.core.flag = BAM_FUNMAP ;
       b1.core.mtid = -1;
       b1.core.mpos = -1;
       //printf("%s\t4\t*\t0\t0\t*\t*\t0\t0\t%s\t%s\n", n1,s1,q1);
@@ -153,16 +154,16 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
 
       int p1 = -1, p2 = -1;
-      KmerEntry val1, val2;
-      int nmap = u.size();//index.ecmap[ec].size();
+      const_UnitigMap<Node> um1, um2;
+      int nmap = u.cardinality();
       Kmer km1, km2;
 
       if (!v1.empty()) {
-        val1 = v1[0].first;
+        um1 = v1[0].first;
         p1 = v1[0].second;
         for (auto &x : v1) {
           if (x.second < p1) {
-            val1 = x.first;
+            um1 = x.first;
             p1 = x.second;
           }
         }
@@ -170,11 +171,11 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       }
 
       if (!v2.empty()) {
-        val2 = v2[0].first;
+        um2 = v2[0].first;
         p2 = v2[0].second;
         for (auto &x : v2) {
           if (x.second < p2) {
-            val2 = x.first;
+            um2 = x.first;
             p2 = x.second;
           }
         }
@@ -191,7 +192,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
+          x1 = index.findPosition(tr, km1, um1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -207,7 +208,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           f1 += 0x100; // secondary alignment
         }
         if (p2 != -1) {
-          x2 = index.findPosition(tr, km2 , val2, p2);
+          x2 = index.findPosition(tr, km2 , um2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -246,7 +247,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
         std::pair<int, bool> x1 {-1,true};
         std::pair<int, bool> x2 {-1,true};
         if (p1 != -1) {
-          x1 = index.findPosition(tr, km1, val1, p1);
+          x1 = index.findPosition(tr, km1, um1, p1);
           if (p2 == -1) {
             x2 = {x1.first,!x1.second};
           }
@@ -255,7 +256,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
           }
         }
         if (p2 != -1) {
-          x2 = index.findPosition(tr, km2, val2, p2);
+          x2 = index.findPosition(tr, km2, um2, p2);
           if (p1 == -1) {
             x1 = {x2.first, !x2.second};
           }
@@ -297,12 +298,12 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
 
     } else {
       // single end
-      int nmap = (int) u.size();
-      KmerEntry val1 = v1[0].first;
+      int nmap = (int) u.cardinality();
+      const_UnitigMap<Node> um = v1[0].first;
       int p1 = v1[0].second;
       for (auto &x : v1) {
         if (x.second < p1) {
-          val1 = x.first;
+          um = x.first;
           p1 = x.second;
         }
       }
@@ -312,7 +313,7 @@ void outputPseudoBam(const KmerIndex &index, const std::vector<int> &u,
       bool firstTr = true;
       for (auto tr : u) {
         int f1 = 0;
-        auto x1 = index.findPosition(tr, km1, val1, p1);
+        auto x1 = index.findPosition(tr, km1, um, p1);
 
         if (!x1.second) {
           f1 += 0x10;
@@ -385,12 +386,12 @@ void getCIGARandSoftClip(char* cig, bool strand, bool mapped, int &posread, int 
   }
 }
 
+#endif // NO_HTSLIB
 
 /** -- pseudoalignment info methods -- **/
 
-
-
 void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& batch) {
+
   of.write("BATCH=",6);
   of.write((char*)&(batch.batch_id), sizeof(int32_t));
   uint32_t bsz = batch.aln.size();
@@ -406,17 +407,12 @@ void writePseudoAlignmentBatch(std::ofstream& of, const PseudoAlignmentBatch& ba
     uint8_t k2 = (0 <= x.k2pos && x.k2pos < 255) ? x.k2pos : 255;
     of.write((char*)&k1, 1);
     of.write((char*)&k2, 1);
-    of.write((char*)&x.ec_id,sizeof(int32_t));
+    char* buffer = new char[x.ec.getSizeInBytes()];
+    size_t roaring_size = x.ec.write(buffer);
+    of.write((char*)&roaring_size, sizeof(roaring_size));
+    of.write(buffer, roaring_size);
     of.write((char*)&x.barcode, sizeof(uint64_t));
     of.write((char*)&x.UMI, sizeof(uint64_t));
-    if (x.ec_id == -1) {
-      // exceptional case, no ec_id, yet, but need to write the v vector
-      uint32_t sz = x.u.size();
-      of.write((char*)&sz, sizeof(uint32_t));
-      for (int i = 0; i < sz; i++) {
-        of.write((char*)&x.u[i], sizeof(int32_t));
-      }
-    }
     of.put(0); // mark the end of record
   }
 }
@@ -446,23 +442,21 @@ void readPseudoAlignmentBatch(std::ifstream& in, PseudoAlignmentBatch& batch) {
     in.read((char*)&k2,1);
     info.k1pos = (k1 == 255) ? -1 : k1;
     info.k2pos = (k2 == 255) ? -1 : k2;
-    in.read((char*)&info.ec_id, sizeof(int32_t));
+    size_t roaring_size;
+    in.read((char*)&roaring_size, sizeof(roaring_size));
+
+    char* buffer = new char[roaring_size];
+    in.read(buffer, roaring_size);
+    info.ec = info.ec.read(buffer);
+    delete[] buffer;
+    buffer = nullptr;
+
     in.read((char*)&info.barcode, sizeof(uint64_t));
     in.read((char*)&info.UMI, sizeof(uint64_t));
-    if (info.ec_id == -1) {
-      uint32_t sz;
-      in.read((char*)&sz, sizeof(uint32_t));
-      info.u.reserve(sz);
-      int32_t tmp;
-      for (int i = 0; i < sz; i++) {
-        in.read((char*)&tmp, sizeof(tmp));
-        info.u.push_back(tmp);
-      }
-    }
+
     mark0 = in.get();
     assert(mark0 == '\0');
     batch.aln.push_back(std::move(info));
   }
-  
 }
 

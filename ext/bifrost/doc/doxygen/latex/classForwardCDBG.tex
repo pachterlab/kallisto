@@ -1,0 +1,95 @@
+\hypertarget{classForwardCDBG}{}\section{Forward\+C\+D\+BG$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ Class Template Reference}
+\label{classForwardCDBG}\index{Forward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$@{Forward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}}
+
+
+Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object.  
+
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classForwardCDBG_ae4cc2b8a705fb9555fba4f31bfcc7bdb}{Forward\+C\+D\+BG} (const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \&um\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+bool \hyperlink{classForwardCDBG_a17b11e73f1754c52ff4bb771bdefca08}{has\+Successors} () const
+\begin{DoxyCompactList}\small\item\em Check if the unitig has at least one successor. \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ U, G, is\+\_\+const $>$ \hyperlink{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}{begin} () const
+\begin{DoxyCompactList}\small\item\em Return an iterator over the successors of a reference unitig. \end{DoxyCompactList}\item 
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$ U, G, is\+\_\+const $>$ \hyperlink{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}{end} () const
+\begin{DoxyCompactList}\small\item\em Return an iterator over the past-\/the-\/last successor of a reference unitig. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$\newline
+class Forward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+
+Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. 
+
+A \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} object has 3 template parameters\+: the type of data associated with the unitigs of the graph, the type of data associated with the graph and a boolean indicating if this is a constant \hyperlink{classneighborIterator}{neighbor\+Iterator} or not. Note that you are supposed to obtain an instance of this class from \hyperlink{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}{Unitig\+Map\+::get\+Successors()} so you shouldn\textquotesingle{}t have to instantiate an object \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} and its template parameters yourself. The unitig data and graph data types should be the same as the ones used for the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} the iterator is from. No specific order (such as a lexicographic one) is assumed during iteration. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classForwardCDBG_ae4cc2b8a705fb9555fba4f31bfcc7bdb}\label{classForwardCDBG_ae4cc2b8a705fb9555fba4f31bfcc7bdb}} 
+\index{Forward\+C\+D\+BG@{Forward\+C\+D\+BG}!Forward\+C\+D\+BG@{Forward\+C\+D\+BG}}
+\index{Forward\+C\+D\+BG@{Forward\+C\+D\+BG}!Forward\+C\+D\+BG@{Forward\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{Forward\+C\+D\+B\+G()}{ForwardCDBG()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} (\begin{DoxyParamCaption}\item[{const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \&}]{um\+\_\+ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em um\+\_\+} & is a \hyperlink{classUnitigMap}{Unitig\+Map} object\+: the wrapper will provide an iterator over the successors of the \hyperlink{classUnitigMap}{Unitig\+Map} reference unitig \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}\label{classForwardCDBG_a18fd34268b50793eabde303c3e9ed5db}} 
+\index{Forward\+C\+D\+BG@{Forward\+C\+D\+BG}!begin@{begin}}
+\index{begin@{begin}!Forward\+C\+D\+BG@{Forward\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{begin()}{begin()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$U, G, is\+\_\+const$>$ \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::begin (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return an iterator over the successors of a reference unitig. 
+
+The returned iterator is initialized over the first such successor, if there is one. \begin{DoxyReturn}{Returns}
+an iterator over the successors of a reference unitig. It is initialized over the first such successor, if there is one. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}\label{classForwardCDBG_a83c2f8b929022aa77289177ec5ce7869}} 
+\index{Forward\+C\+D\+BG@{Forward\+C\+D\+BG}!end@{end}}
+\index{end@{end}!Forward\+C\+D\+BG@{Forward\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{end()}{end()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classneighborIterator}{neighbor\+Iterator}$<$U, G, is\+\_\+const$>$ \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::end (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return an iterator over the past-\/the-\/last successor of a reference unitig. 
+
+\begin{DoxyReturn}{Returns}
+an iterator over the past-\/the-\/last successor of a reference unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classForwardCDBG_a17b11e73f1754c52ff4bb771bdefca08}\label{classForwardCDBG_a17b11e73f1754c52ff4bb771bdefca08}} 
+\index{Forward\+C\+D\+BG@{Forward\+C\+D\+BG}!has\+Successors@{has\+Successors}}
+\index{has\+Successors@{has\+Successors}!Forward\+C\+D\+BG@{Forward\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{has\+Successors()}{hasSuccessors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::has\+Successors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Check if the unitig has at least one successor. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the unitig has at least one successor (true) or not (false). 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{NeighborIterator_8hpp}{Neighbor\+Iterator.\+hpp}\end{DoxyCompactItemize}

@@ -1,8 +1,6 @@
 #ifndef KALLISTO_PROCESSREADS_H
 #define KALLISTO_PROCESSREADS_H
 
-#include <zlib.h>
-#include "kseq.h"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -15,28 +13,26 @@
 #include <atomic>
 #include <condition_variable>
 
+#include "common.h"
 #include "MinCollector.h"
 #include "KmerIndex.h"
-#include "common.h"
 #include "PseudoBam.h"
 #include "EMAlgorithm.h"
 #include "GeneModel.h"
 #include "BUSData.h"
 #include "BUSTools.h"
+
+#ifndef NO_HTSLIB
+#include <htslib/kstring.h>
 #include <htslib/sam.h>
-
-
-#ifndef KSEQ_INIT_READY
-#define KSEQ_INIT_READY
-KSEQ_INIT(gzFile, gzread)
-#endif
+#endif // NO_HTSLIB
 
 class MasterProcessor;
 
 int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt);
 int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt);
 int64_t ProcessBUSReads(MasterProcessor& MP, const ProgramOptions& opt);
-int findFirstMappingKmer(const std::vector<std::pair<KmerEntry,int>> &v,KmerEntry &val);
+int findFirstMappingKmer(const std::vector<std::pair<UnitigMap<Node>&, int>> &v, UnitigMap<Node>& um);
 
 class SequenceReader {
 public:
@@ -46,7 +42,7 @@ public:
   SequenceReader() : state(false), readbatch_id(-1) {};
   virtual ~SequenceReader() {}
 //  SequenceReader(SequenceReader&& o);
-  
+
   virtual bool empty() = 0;
   virtual void reset();
   virtual void reserveNfiles(int n) = 0;
@@ -55,7 +51,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false) = 0;
+                      bool full=false,
+                      bool comments=false) = 0;
 
 
 public:
@@ -67,25 +64,28 @@ class FastqSequenceReader : public SequenceReader {
 public:
 
   FastqSequenceReader(const ProgramOptions& opt) : SequenceReader(opt),
-  current_file(0), paired(!opt.single_end), files(opt.files),
+  current_file(0), paired(!opt.single_end),
   f_umi(new std::ifstream{}) {
     SequenceReader::state = false;
+    files = opt.files;
 
+    interleave_nfiles = opt.input_interleaved_nfiles;
     if (opt.bus_mode) {
-      nfiles = opt.busOptions.nfiles;      
+      nfiles = opt.busOptions.nfiles;
     } else {
       nfiles = paired ? 2 : 1;
     }
+    if (interleave_nfiles != 0) { nfiles = 1; files.clear(); files.push_back(opt.files[0]); }
     reserveNfiles(nfiles);
   }
-  FastqSequenceReader() : SequenceReader(), 
-  paired(false), 
+  FastqSequenceReader() : SequenceReader(),
+  paired(false),
   f_umi(new std::ifstream{}),
-  current_file(0) {};
+  current_file(0), interleave_nfiles(0) {};
   FastqSequenceReader(FastqSequenceReader &&o);
   ~FastqSequenceReader();
 
-  bool empty();  
+  bool empty();
   void reset();
   void reserveNfiles(int n);
   bool fetchSequences(char *buf, const int limit, std::vector<std::pair<const char*, int>>& seqs,
@@ -93,7 +93,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false);
+                      bool full=false,
+                      bool comments=false);
 
 public:
   int nfiles = 1;
@@ -103,12 +104,13 @@ public:
   std::vector<int> nl;
   bool paired;
   std::vector<std::string> files;
-  std::vector<std::string> umi_files;
   std::unique_ptr<std::ifstream> f_umi;
   int current_file;
   std::vector<kseq_t*> seq;
+  int interleave_nfiles;
 };
 
+#ifndef NO_HTSLIB
 class BamSequenceReader : public SequenceReader {
 public:
 
@@ -119,7 +121,7 @@ public:
     fp = bgzf_open(opt.files[0].c_str(), "rb");
     head = bam_hdr_read(fp);
     rec = bam_init1();
-    
+
     err = bam_read1(fp, rec);
     eseq = bam_get_seq(rec);
     l_seq = rec->core.l_qseq;
@@ -139,7 +141,7 @@ public:
   BamSequenceReader() : SequenceReader() {};
   BamSequenceReader(BamSequenceReader &&o);
   ~BamSequenceReader();
-  
+
   bool empty();
   void reset();
   void reserveNfiles(int n);
@@ -148,7 +150,8 @@ public:
                       std::vector<std::pair<const char*, int>>& quals,
                       std::vector<uint32_t>& flags,
                       std::vector<std::string>& umis, int &readbatch_id,
-                      bool full=false);
+                      bool full=false,
+                      bool comments=false);
 
 public:
   BGZF *fp;
@@ -161,33 +164,54 @@ public:
   char *umi;
   int l_umi;
   int err;
-  
-  
+
+
 private:
   static const std::string seq_enc;
 };
+#endif
 
 class MasterProcessor {
 public:
   MasterProcessor (KmerIndex &index, const ProgramOptions& opt, MinCollector &tc, const Transcriptome& model)
-    : tc(tc), index(index), model(model), bamfp(nullptr), bamfps(nullptr), bamh(nullptr), opt(opt), numreads(0)
-    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) { 
+    : tc(tc), index(index), model(model), opt(opt), numreads(0), transfer_threshold(1), counter(0)
+    ,nummapped(0), num_umi(0), bufsize(1ULL<<23), tlencount(0), biasCount(0), maxBiasCount((opt.bias) ? 1000000 : 0), last_pseudobatch_id (-1) {
+
+      #ifndef NO_HTSLIB
+      bamfp = nullptr;
+      bamfps = nullptr;
+      bamh = nullptr;
+      #endif // NO_HTSLIB
       if (opt.bam) {
+        #ifndef NO_HTSLIB
         SR = new BamSequenceReader(opt);
+        #else
+        throw std::runtime_error("HTSLIB required for bam reading but not included");
+        #endif // NO_HTSLIB
       } else {
         SR = new FastqSequenceReader(opt);
       }
+      
+      std::vector<std::mutex> mutexes(opt.threads);
+      transfer_locks.swap(mutexes);
 
-      if (opt.batch_mode) {
-        batchCounts.assign(opt.batch_ids.size(), {});
+      if (opt.batch_mode) { // Set up recording of lengths individually for each batch
         tlencounts.assign(opt.batch_ids.size(), 0);
-        batchFlens.assign(opt.batch_ids.size(), std::vector<int>(1000,0));
-        /*for (auto &t : batchCounts) {
-          t.resize(tc.counts.size(),0);
-        }*/
-        newBatchECcount.resize(opt.batch_ids.size());
-        newBatchECumis.resize(opt.batch_ids.size());
-        batchUmis.resize(opt.batch_ids.size());
+        batchFlens.assign(opt.batch_ids.size(), std::vector<uint32_t>(1000,0));
+      }
+      if (opt.batch_ids.size() > 0) {
+        std::unordered_map<std::string,int> batch_map;
+        batch_id_mapping.resize(opt.batch_ids.size());
+        int j = 0;
+        for (int i = 0; i < opt.batch_ids.size(); i++) {
+          if (batch_map.find(opt.batch_ids[i]) == batch_map.end()) {
+            batch_id_mapping[i] = j;
+            batch_map.insert(std::make_pair(opt.batch_ids[i], j));
+            j++;
+          } else {
+            batch_id_mapping[i] = batch_map[opt.batch_ids[i]];
+          }
+        }
       }
       if (opt.fusion) {
         ofusion.open(opt.output + "/fusion.txt");
@@ -196,20 +220,30 @@ public:
       if (opt.pseudobam) {
         pseudobatchf_out.open(opt.output + "/pseudoaln.bin", std::ios::out | std::ios::binary);
       }
-      if (opt.bus_mode || opt.batch_bus) {
+      if (opt.bus_mode || opt.batch_mode) {
         memset(&bus_bc_len[0],0,sizeof(bus_bc_len));
         memset(&bus_umi_len[0],0,sizeof(bus_umi_len));
         busf_out.open(opt.output + "/output.bus", std::ios::out | std::ios::binary);
-        
-        if (opt.batch_bus) {
-          writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
-        } else {
+
+        if (opt.batch_mode) {
+          if (opt.technology.empty()) { // no_technology : No UMIs, no barcodes, so just have batch=barcode
+            writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, 1);
+          } else if (opt.record_batch_bus_barcode) { // We want to record batch in barcode
+            if (opt.busOptions.bc[0].fileno != -1) // We want to push batch at front of extracted barcode
+              writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
+            else // We don't have an extracted barcode so barcode=batch
+              writeBUSHeader(busf_out, BUSFORMAT_FAKE_BARCODE_LEN, opt.busOptions.getUMILength());
+          } else { // We don't care about recording batch in barcode, so we follow the default technology specification
+            writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
+          }
+        } else { // No batches, so we follow the default technology specification
           writeBUSHeader(busf_out, opt.busOptions.getBCLength(), opt.busOptions.getUMILength());
         }
       }
     }
 
   ~MasterProcessor() {
+    #ifndef NO_HTSLIB
     if (bamfp) {
       hts_close(bamfp);
       bamfp = nullptr;
@@ -220,13 +254,14 @@ public:
           hts_close(bamfps[i]);
           bamfps[i] = nullptr;
         }
-      } 
+      }
       bamfps = nullptr;
     }
     if (bamh) {
       bam_hdr_destroy(bamh);
       bamh = nullptr;
-    }    
+    }
+    #endif // NO_HTSLIB
     delete SR;
   }
 
@@ -234,6 +269,8 @@ public:
   std::vector<std::mutex> parallel_bus_reader_locks;
   bool parallel_bus_read;
   std::mutex writer_lock;
+  std::vector<std::mutex> transfer_locks; // one mutex per thread; for locking each thread's access to index.ecmapinv
+  size_t transfer_threshold;
 
 
   SequenceReader *SR;
@@ -241,15 +278,13 @@ public:
   MinCollector& tc;
   KmerIndex& index;
   const Transcriptome& model;
-  htsFile *bamfp;
   const int numSortFiles = 32;
-  htsFile **bamfps;
 
-  bam_hdr_t *bamh;
   const ProgramOptions& opt;
   int64_t numreads;
   int64_t nummapped;
   int64_t num_umi;
+  int64_t counter;
   size_t bufsize;
 
   int bus_bc_len[33];
@@ -258,15 +293,13 @@ public:
   std::atomic<int> tlencount;
   std::vector<int> tlencounts;
   std::atomic<int> biasCount;
-  std::vector<std::vector<int>> batchFlens;
-  std::vector<std::vector<std::pair<int32_t, int32_t>>> batchCounts;
+  std::vector<std::vector<uint32_t>> batchFlens;
   std::vector<std::vector<int32_t>> tmp_bc;
   const int maxBiasCount;
-  std::unordered_map<std::vector<int>, int, SortedVectorHasher> newECcount;
-  //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;  
-  EcMap bus_ecmap;
-  std::unordered_map<std::vector<int>, int, SortedVectorHasher> bus_ecmapinv;
-
+  u_map_<Roaring, uint32_t, RoaringHasher> newECcount;
+  //  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
+  u_map_<Roaring, int32_t, RoaringHasher> bus_ecmapinv;
+  std::vector<int> batch_id_mapping; // minimal perfect mapping of batch ID
 
   std::ofstream ofusion;
   std::ofstream pseudobatchf_out;
@@ -275,15 +308,17 @@ public:
   std::vector<PseudoAlignmentBatch> pseudobatch_stragglers;
   int last_pseudobatch_id;
   void outputFusion(const std::stringstream &o);
-  std::vector<std::unordered_map<std::vector<int>, int, SortedVectorHasher>> newBatchECcount;
-  std::vector<std::vector<std::pair<int, std::string>>> batchUmis;
-  std::vector<std::vector<std::pair<std::vector<int>, std::string>>> newBatchECumis;
   void processReads();
+  #ifndef NO_HTSLIB
+  htsFile *bamfp;
+  htsFile **bamfps;
+  bam_hdr_t *bamh;
   void processAln(const EMAlgorithm& em, bool useEM);
   void writePseudoBam(const std::vector<bam1_t> &bv);
   void writeSortedPseudobam(const std::vector<std::vector<bam1_t>> &bvv);
+  #endif
   std::vector<uint64_t> breakpoints;
-  void update(const std::vector<int>& c, const std::vector<std::vector<int>>& newEcs, std::vector<std::pair<int, std::string>>& ec_umi, std::vector<std::pair<std::vector<int>, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, std::vector<int32_t>>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);  
+  void update(const std::vector<uint32_t>& c, const std::vector<Roaring>& newEcs, std::vector<std::pair<Roaring, std::string>>& ec_umi, std::vector<std::pair<Roaring, std::string>> &new_ec_umi, int n, std::vector<int>& flens, std::vector<int> &bias, const PseudoAlignmentBatch& pseudobatch, std::vector<BUSData> &bv, std::vector<std::pair<BUSData, Roaring>> newB, int *bc_len, int *umi_len,   int id = -1, int local_id = -1);
 };
 
 class ReadProcessor {
@@ -292,12 +327,12 @@ public:
   ReadProcessor(ReadProcessor && o);
   ~ReadProcessor();
   char *buffer;
-  
+
   size_t bufsize;
   bool paired;
   const MinCollector& tc;
-  std::vector<std::pair<int, std::string>> ec_umi;
-  std::vector<std::pair<std::vector<int>, std::string>> new_ec_umi;
+  std::vector<std::pair<Roaring, std::string>> ec_umi;
+  std::vector<std::pair<Roaring, std::string>> new_ec_umi;
   const KmerIndex& index;
   MasterProcessor& mp;
   FastqSequenceReader batchSR;
@@ -305,32 +340,30 @@ public:
   int id;
   int local_id;
   PseudoAlignmentBatch pseudobatch;
-  
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
   std::vector<uint32_t> flags;
   std::vector<std::string> umis;
-  std::vector<std::vector<int>> newEcs;
+  std::vector<Roaring> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;
 
-  std::vector<int> counts;
+  std::vector<uint32_t> counts;
 
   void operator()();
   void processBuffer();
   void clear();
 };
 
-
 class BUSProcessor {
 public:
-  BUSProcessor(const KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
+  BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt, const MinCollector& tc, MasterProcessor& mp, int id = -1, int local_id = -1);
   BUSProcessor(BUSProcessor && o);
   ~BUSProcessor();
   char *buffer;
-  
+
   size_t bufsize;
   bool paired;
   bool bam;
@@ -346,26 +379,26 @@ public:
 
   int bc_len[33];
   int umi_len[33];
-  
 
   std::vector<std::pair<const char*, int>> seqs;
   std::vector<std::pair<const char*, int>> names;
   std::vector<std::pair<const char*, int>> quals;
+  std::vector<std::string> umis;
   std::vector<uint32_t> flags;
 
-  std::vector<std::vector<int>> newEcs;
+  std::vector<Roaring> newEcs;
   std::vector<int> flens;
   std::vector<int> bias5;
-  std::vector<int> counts;
+  std::vector<uint32_t> counts;
   std::vector<BUSData> bv;
-  std::vector<std::pair<BUSData, std::vector<int32_t>>> newB;
+  std::vector<std::pair<BUSData, Roaring>> newB;
 
   void operator()();
   void processBuffer();
   void clear();
 };
 
-
+#ifndef NO_HTSLIB
 class AlnProcessor {
 public:
   AlnProcessor(const KmerIndex& index, const ProgramOptions& opt, MasterProcessor& mp, const EMAlgorithm& em, const Transcriptome& model, bool useEM, int id = -1);
@@ -386,7 +419,7 @@ public:
   PseudoAlignmentBatch pseudobatch;
   const Transcriptome& model;
   bool useEM;
-  
+
 
 
   std::vector<std::pair<const char*, int>> seqs;
@@ -406,5 +439,6 @@ int fillBamRecord(bam1_t &b, uint8_t* buf, const char *seq, const char *name, co
 void fixCigarStringTrans(bam1_t &b, int rlen, int softclip, int overhang);
 void fixCigarStringGenome(bam1_t &b, const TranscriptAlignment& tra);
 void reverseComplementSeqInData(bam1_t &b);
+#endif // NO_HTSLIB
 
 #endif // KALLISTO_PROCESSREADS_H

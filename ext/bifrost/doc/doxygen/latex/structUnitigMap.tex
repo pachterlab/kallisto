@@ -1,0 +1,321 @@
+\hypertarget{structUnitigMap}{}\section{Unitig\+Map$<$ T $>$ Struct Template Reference}
+\label{structUnitigMap}\index{Unitig\+Map$<$ T $>$@{Unitig\+Map$<$ T $>$}}
+
+
+Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph.  
+
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structUnitigMap_a92f76aa50f372b1f251850509958cc55}{Unitig\+Map} (size\+\_\+t l=1)
+\begin{DoxyCompactList}\small\item\em \hyperlink{structUnitigMap}{Unitig\+Map} constructor. \end{DoxyCompactList}\item 
+bool \hyperlink{structUnitigMap_af225db3c123c331f906de6cba96e4d07}{operator==} (const \hyperlink{structUnitigMap}{Unitig\+Map} \&o)
+\begin{DoxyCompactList}\small\item\em Check if two Unitig\+Maps are the same. \end{DoxyCompactList}\item 
+bool \hyperlink{structUnitigMap_af662157cd6f019189170270637dc9ea1}{operator!=} (const \hyperlink{structUnitigMap}{Unitig\+Map} \&o)
+\begin{DoxyCompactList}\small\item\em Check if two Unitig\+Maps are different. \end{DoxyCompactList}\item 
+string \hyperlink{structUnitigMap_a398ca4dd0e422ba08eaad9a11f15a3e3}{to\+String} () const
+\begin{DoxyCompactList}\small\item\em Return a string containing the sequence of the mapped unitig. \end{DoxyCompactList}\item 
+string \hyperlink{structUnitigMap_a3c9fb88f7da7250f361d972678d5a17e}{reverse\+To\+String} () const
+\begin{DoxyCompactList}\small\item\em Return a string containing the reverse-\/complement sequence of the mapped unitig. \end{DoxyCompactList}\item 
+Kmer \hyperlink{structUnitigMap_a0abb8766ed68fdade6aa6d9d5ea201f3}{get\+Head} () const
+\begin{DoxyCompactList}\small\item\em Return the head k-\/mer of the mapped unitig. \end{DoxyCompactList}\item 
+Kmer \hyperlink{structUnitigMap_a1254c81e7d2541c5aa9cfd4e2ba9f021}{get\+Tail} () const
+\begin{DoxyCompactList}\small\item\em Return the tail k-\/mer of the mapped unitig. \end{DoxyCompactList}\item 
+Kmer \hyperlink{structUnitigMap_a90042b7d8610cd1726b19c3a49e7be26}{get\+Kmer} (const size\+\_\+t pos) const
+\begin{DoxyCompactList}\small\item\em Return the k-\/mer starting at position pos in the mapped unitig. \end{DoxyCompactList}\item 
+const T $\ast$ \hyperlink{structUnitigMap_a35643b0843f2b0ff5da8c2a40612c8fc}{get\+Data} () const
+\begin{DoxyCompactList}\small\item\em Return a pointer to the data associated with the mapped unitig. \end{DoxyCompactList}\item 
+void \hyperlink{structUnitigMap_a1a300d64047cfab14783746c407fe41c}{set\+Data} (const T $\ast$const data) const
+\begin{DoxyCompactList}\small\item\em Set the data associated with a mapped unitig. \end{DoxyCompactList}\item 
+void \hyperlink{structUnitigMap_ade45565864206eece29f34415347c2f9}{merge\+Data} (const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$ \&um)
+\begin{DoxyCompactList}\small\item\em Merge the data of the mapped unitig with the data of another mapped unitig. \end{DoxyCompactList}\item 
+\hyperlink{classUnitig}{Unitig}$<$ T $>$ \hyperlink{structUnitigMap_a3b3699727329217e346fadf2d8a987a6}{split\+Data} (const bool last\+\_\+split)
+\begin{DoxyCompactList}\small\item\em Create new data to associate with a new unitig which is a sub-\/unitig of the current mapped unitig. \end{DoxyCompactList}\item 
+\hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG}$<$ T, true $>$ \hyperlink{structUnitigMap_aed2e39718b72838f4cc813577898a926}{get\+Predecessors} () const
+\begin{DoxyCompactList}\small\item\em Return a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. \end{DoxyCompactList}\item 
+\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ T, true $>$ \hyperlink{structUnitigMap_a88005a00159b310711230733e16e2ae7}{get\+Successors} () const
+\begin{DoxyCompactList}\small\item\em Return a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. \end{DoxyCompactList}\item 
+\hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG}$<$ T, false $>$ \hyperlink{structUnitigMap_af2bb9574c7a55bb0e8a564e89a1aa7c6}{get\+Predecessors} ()
+\begin{DoxyCompactList}\small\item\em Return a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. \end{DoxyCompactList}\item 
+\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ T, false $>$ \hyperlink{structUnitigMap_a4892fdd7f02c0b132b0164460159df9e}{get\+Successors} ()
+\begin{DoxyCompactList}\small\item\em Return a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{structUnitigMap_a5496174e14b080e15d67f90ad59aed08}\label{structUnitigMap_a5496174e14b080e15d67f90ad59aed08}} 
+size\+\_\+t \hyperlink{structUnitigMap_a5496174e14b080e15d67f90ad59aed08}{dist}
+\begin{DoxyCompactList}\small\item\em 0-\/based distance of the match from start of the unitig \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMap_a748e7e2bc835494c2894d8a88d954043}\label{structUnitigMap_a748e7e2bc835494c2894d8a88d954043}} 
+size\+\_\+t \hyperlink{structUnitigMap_a748e7e2bc835494c2894d8a88d954043}{len}
+\begin{DoxyCompactList}\small\item\em Length of the match on the unitig (in k-\/mers) \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMap_ae324a32571bed565f8161c9b482d3d4a}\label{structUnitigMap_ae324a32571bed565f8161c9b482d3d4a}} 
+size\+\_\+t \hyperlink{structUnitigMap_ae324a32571bed565f8161c9b482d3d4a}{size}
+\begin{DoxyCompactList}\small\item\em Length of the unitig. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMap_a19c25f9971430e1d6640a70d0028016f}\label{structUnitigMap_a19c25f9971430e1d6640a70d0028016f}} 
+bool \hyperlink{structUnitigMap_a19c25f9971430e1d6640a70d0028016f}{strand}
+\begin{DoxyCompactList}\small\item\em True if the k-\/mer or sequence matches the forward strand, false if it matches its reverse-\/complement. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}\label{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}} 
+bool \hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{is\+Empty}
+\begin{DoxyCompactList}\small\item\em True if the k-\/mer or sequence does not match a unitig of the graph, false otherwise. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{structUnitigMap_ad0fc74561ca34122241b422b10509c34}\label{structUnitigMap_ad0fc74561ca34122241b422b10509c34}} 
+\hyperlink{classCompactedDBG}{Compacted\+D\+BG}$<$ T $>$ $\ast$ \hyperlink{structUnitigMap_ad0fc74561ca34122241b422b10509c34}{cdbg}
+\begin{DoxyCompactList}\small\item\em Compacted de Bruijn graph containing the unitig associated with the mapping. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename T = void$>$\newline
+struct Unitig\+Map$<$ T $>$}
+
+Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph. 
+
+Its template parameter indicates the type of data associated with the unitig and should be the same as the one specified for \hyperlink{classCompactedDBG}{Compacted\+D\+BG}. An example of using such a structure is shown in src/snippets.\+hpp. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{structUnitigMap_a92f76aa50f372b1f251850509958cc55}\label{structUnitigMap_a92f76aa50f372b1f251850509958cc55}} 
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\index{Unitig\+Map@{Unitig\+Map}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{Unitig\+Map()}{UnitigMap()}}
+{\footnotesize\ttfamily template$<$typename T$>$ \\
+\hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::\hyperlink{structUnitigMap}{Unitig\+Map} (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{l = {\ttfamily 1} }\end{DoxyParamCaption})}
+
+
+
+\hyperlink{structUnitigMap}{Unitig\+Map} constructor. 
+
+\begin{DoxyReturn}{Returns}
+an empty \hyperlink{structUnitigMap}{Unitig\+Map}. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{structUnitigMap_a35643b0843f2b0ff5da8c2a40612c8fc}\label{structUnitigMap_a35643b0843f2b0ff5da8c2a40612c8fc}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Data@{get\+Data}}
+\index{get\+Data@{get\+Data}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Data()}{getData()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+const T $\ast$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Data (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return a pointer to the data associated with the mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a constant pointer to the data associated with the mapped unitig or a constant null pointer if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true) or no data associated with the unitigs (T = void). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a0abb8766ed68fdade6aa6d9d5ea201f3}\label{structUnitigMap_a0abb8766ed68fdade6aa6d9d5ea201f3}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Head@{get\+Head}}
+\index{get\+Head@{get\+Head}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Head()}{getHead()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+Kmer \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Head (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return the head k-\/mer of the mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a Kmer object which is either the head k-\/mer of the mapped unitig or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a90042b7d8610cd1726b19c3a49e7be26}\label{structUnitigMap_a90042b7d8610cd1726b19c3a49e7be26}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Kmer@{get\+Kmer}}
+\index{get\+Kmer@{get\+Kmer}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Kmer()}{getKmer()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+Kmer \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Kmer (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{pos }\end{DoxyParamCaption}) const}
+
+
+
+Return the k-\/mer starting at position pos in the mapped unitig. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pos} & is the start position of the k-\/mer to extract. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a Kmer object which is either the k-\/mer starting at position pos in the mapped unitig or an empty k-\/mer if there is either no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true) or the position is greater than length(unitig)-\/k. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_aed2e39718b72838f4cc813577898a926}\label{structUnitigMap_aed2e39718b72838f4cc813577898a926}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Predecessors@{get\+Predecessors}}
+\index{get\+Predecessors@{get\+Predecessors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Predecessors()}{getPredecessors()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG}$<$ T, true $>$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Predecessors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_af2bb9574c7a55bb0e8a564e89a1aa7c6}\label{structUnitigMap_af2bb9574c7a55bb0e8a564e89a1aa7c6}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Predecessors@{get\+Predecessors}}
+\index{get\+Predecessors@{get\+Predecessors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Predecessors()}{getPredecessors()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG}$<$ T, false $>$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Predecessors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Return a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the predecessors of the current mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a88005a00159b310711230733e16e2ae7}\label{structUnitigMap_a88005a00159b310711230733e16e2ae7}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Successors@{get\+Successors}}
+\index{get\+Successors@{get\+Successors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Successors()}{getSuccessors()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ T, true $>$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Successors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a constant \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a4892fdd7f02c0b132b0164460159df9e}\label{structUnitigMap_a4892fdd7f02c0b132b0164460159df9e}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Successors@{get\+Successors}}
+\index{get\+Successors@{get\+Successors}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Successors()}{getSuccessors()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\hyperlink{classForwardCDBG}{Forward\+C\+D\+BG}$<$ T, false $>$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Successors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Return a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} object that can create iterators (through \hyperlink{classBackwardCDBG_ae7da438db925caebd02493ac7b1c01ab}{Backward\+C\+D\+B\+G\+::begin()} and \hyperlink{classBackwardCDBG_a898f45d400da7b0153644b5417b07657}{Backward\+C\+D\+B\+G\+::end()}) over the successors of the current mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a1254c81e7d2541c5aa9cfd4e2ba9f021}\label{structUnitigMap_a1254c81e7d2541c5aa9cfd4e2ba9f021}} 
+\index{Unitig\+Map@{Unitig\+Map}!get\+Tail@{get\+Tail}}
+\index{get\+Tail@{get\+Tail}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{get\+Tail()}{getTail()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+Kmer \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::get\+Tail (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return the tail k-\/mer of the mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a Kmer object which is either the tail k-\/mer of the mapped unitig or an empty k-\/mer if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_ade45565864206eece29f34415347c2f9}\label{structUnitigMap_ade45565864206eece29f34415347c2f9}} 
+\index{Unitig\+Map@{Unitig\+Map}!merge\+Data@{merge\+Data}}
+\index{merge\+Data@{merge\+Data}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{merge\+Data()}{mergeData()}}
+{\footnotesize\ttfamily template$<$typename T$>$ \\
+void \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::merge\+Data (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$ \&}]{um }\end{DoxyParamCaption})}
+
+
+
+Merge the data of the mapped unitig with the data of another mapped unitig. 
+
+This function calls the function \hyperlink{classCDBG__Data__t_a1145c8c72d30b6da3f84b360959cf509}{C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+T$>$\+::join} but it does not set anything if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true) or no data associated with the unitigs (T = void). 
+\begin{DoxyParams}{Parameters}
+{\em um} & is a reference to a mapped unitig that will be merged with the current mapped unitig. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{structUnitigMap_af662157cd6f019189170270637dc9ea1}\label{structUnitigMap_af662157cd6f019189170270637dc9ea1}} 
+\index{Unitig\+Map@{Unitig\+Map}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+bool \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Check if two Unitig\+Maps are different. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the two Unitig\+Maps are different. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_af225db3c123c331f906de6cba96e4d07}\label{structUnitigMap_af225db3c123c331f906de6cba96e4d07}} 
+\index{Unitig\+Map@{Unitig\+Map}!operator==@{operator==}}
+\index{operator==@{operator==}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+bool \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Check if two Unitig\+Maps are the same. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the two Unitig\+Maps are the same. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a3c9fb88f7da7250f361d972678d5a17e}\label{structUnitigMap_a3c9fb88f7da7250f361d972678d5a17e}} 
+\index{Unitig\+Map@{Unitig\+Map}!reverse\+To\+String@{reverse\+To\+String}}
+\index{reverse\+To\+String@{reverse\+To\+String}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{reverse\+To\+String()}{reverseToString()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+string \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::reverse\+To\+String (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return a string containing the reverse-\/complement sequence of the mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a string containing the reverse-\/complement sequence of the mapped unitig or an empty string if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a1a300d64047cfab14783746c407fe41c}\label{structUnitigMap_a1a300d64047cfab14783746c407fe41c}} 
+\index{Unitig\+Map@{Unitig\+Map}!set\+Data@{set\+Data}}
+\index{set\+Data@{set\+Data}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{set\+Data()}{setData()}}
+{\footnotesize\ttfamily template$<$typename T$>$ \\
+void \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::set\+Data (\begin{DoxyParamCaption}\item[{const T $\ast$const}]{data }\end{DoxyParamCaption}) const}
+
+
+
+Set the data associated with a mapped unitig. 
+
+The function does not set anything if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true) or no data associated with the unitigs (T = void). 
+\begin{DoxyParams}{Parameters}
+{\em data} & is a pointer to the data that will be copied to the data associated with the mapped unitig. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{structUnitigMap_a3b3699727329217e346fadf2d8a987a6}\label{structUnitigMap_a3b3699727329217e346fadf2d8a987a6}} 
+\index{Unitig\+Map@{Unitig\+Map}!split\+Data@{split\+Data}}
+\index{split\+Data@{split\+Data}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{split\+Data()}{splitData()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+\hyperlink{classUnitig}{Unitig}$<$ T $>$ \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::split\+Data (\begin{DoxyParamCaption}\item[{const bool}]{last\+\_\+split }\end{DoxyParamCaption})}
+
+
+
+Create new data to associate with a new unitig which is a sub-\/unitig of the current mapped unitig. 
+
+Does not do anything if no data are associated with the unitigs (T = void). 
+\begin{DoxyParams}{Parameters}
+{\em last\+\_\+split} & is a boolean indicating this is the last call to \hyperlink{structUnitigMap_a3b3699727329217e346fadf2d8a987a6}{Unitig\+Map$<$\+T$>$\+::split\+Data} (true) on the current unitig mapped (this) or not (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitig}{Unitig} object containing the new data. The unitig sequence and coverage are not set, only the data (if there are some). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{structUnitigMap_a398ca4dd0e422ba08eaad9a11f15a3e3}\label{structUnitigMap_a398ca4dd0e422ba08eaad9a11f15a3e3}} 
+\index{Unitig\+Map@{Unitig\+Map}!to\+String@{to\+String}}
+\index{to\+String@{to\+String}!Unitig\+Map@{Unitig\+Map}}
+\subsubsection{\texorpdfstring{to\+String()}{toString()}}
+{\footnotesize\ttfamily template$<$typename T $>$ \\
+string \hyperlink{structUnitigMap}{Unitig\+Map}$<$ T $>$\+::to\+String (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Return a string containing the sequence of the mapped unitig. 
+
+\begin{DoxyReturn}{Returns}
+a string containing the sequence of the mapped unitig or an empty string if there is no mapping (\hyperlink{structUnitigMap_a152c942911cb2ccf57d4c4c1e3f40178}{Unitig\+Map$<$\+T$>$\+::is\+Empty} = true). 
+\end{DoxyReturn}
+
+
+The documentation for this struct was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{UnitigMap_8hpp}{Unitig\+Map.\+hpp}\item 
+src/Unitig\+Map.\+tpp\end{DoxyCompactItemize}

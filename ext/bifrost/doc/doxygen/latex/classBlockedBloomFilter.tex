@@ -1,0 +1,49 @@
+\hypertarget{classBlockedBloomFilter}{}\section{Blocked\+Bloom\+Filter Class Reference}
+\label{classBlockedBloomFilter}\index{Blocked\+Bloom\+Filter@{Blocked\+Bloom\+Filter}}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a053e0a34e9046e60f5d465e5b6def59d}\label{classBlockedBloomFilter_a053e0a34e9046e60f5d465e5b6def59d}} 
+{\bfseries Blocked\+Bloom\+Filter} (size\+\_\+t nb\+\_\+elem, size\+\_\+t bits\+\_\+per\+\_\+elem)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a2ee58380b0e689bc767885aa3a88c491}\label{classBlockedBloomFilter_a2ee58380b0e689bc767885aa3a88c491}} 
+std\+::pair$<$ uint64\+\_\+t $\ast$, uint64\+\_\+t $\ast$ $>$ {\bfseries get\+Block} (uint64\+\_\+t min\+\_\+hash) const
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a8fc65fe2e25ca923423c356466d462db}\label{classBlockedBloomFilter_a8fc65fe2e25ca923423c356466d462db}} 
+bool {\bfseries contains} (uint64\+\_\+t kmer\+\_\+hash, const uint64\+\_\+t min\+\_\+hash) const
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a342e3093eb7e8861f9e046bfac2bcff2}\label{classBlockedBloomFilter_a342e3093eb7e8861f9e046bfac2bcff2}} 
+bool {\bfseries contains} (uint64\+\_\+t kmer\+\_\+hash, const std\+::pair$<$ uint64\+\_\+t $\ast$, uint64\+\_\+t $\ast$$>$ block\+\_\+ptr) const
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_ac15d8745064be9d7514cff242ce7d750}\label{classBlockedBloomFilter_ac15d8745064be9d7514cff242ce7d750}} 
+size\+\_\+t {\bfseries contains\+\_\+block} (uint64\+\_\+t kmer\+\_\+hash, const std\+::pair$<$ const uint64\+\_\+t $\ast$const, const uint64\+\_\+t $\ast$const $>$ block\+\_\+ptr) const
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a7b592390c0708aa445ace6c28afd83b3}\label{classBlockedBloomFilter_a7b592390c0708aa445ace6c28afd83b3}} 
+bool {\bfseries search\+\_\+and\+\_\+insert} (uint64\+\_\+t kmer\+\_\+hash, const uint64\+\_\+t min\+\_\+hash, const bool multi\+\_\+threaded=false)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a2f65d60d2e402efb879f129c30a8d82a}\label{classBlockedBloomFilter_a2f65d60d2e402efb879f129c30a8d82a}} 
+void {\bfseries insert} (uint64\+\_\+t kmer\+\_\+hash, const uint64\+\_\+t min\+\_\+hash)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_ab6fe55da2a68bada2a43b5d50eab7335}\label{classBlockedBloomFilter_ab6fe55da2a68bada2a43b5d50eab7335}} 
+bool {\bfseries Write\+Bloom\+Filter} (F\+I\+LE $\ast$fp)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_acd68f1739687e48d55539bf043242250}\label{classBlockedBloomFilter_acd68f1739687e48d55539bf043242250}} 
+bool {\bfseries Read\+Bloom\+Filter} (F\+I\+LE $\ast$fp)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a4eb912a8e2aef9a73bae5ec14fa6d96f}\label{classBlockedBloomFilter_a4eb912a8e2aef9a73bae5ec14fa6d96f}} 
+void {\bfseries clear} ()
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_af33c56efcff1fb3eb95f9f686b73d37b}\label{classBlockedBloomFilter_af33c56efcff1fb3eb95f9f686b73d37b}} 
+void {\bfseries get} (\hyperlink{classBlockedBloomFilter}{Blocked\+Bloom\+Filter} \&bf)
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_a83384a6d7370ed4367d3b6c4a99b3cdf}\label{classBlockedBloomFilter_a83384a6d7370ed4367d3b6c4a99b3cdf}} 
+uint64\+\_\+t {\bfseries get\+Nb\+Blocks} () const
+\item 
+\mbox{\Hypertarget{classBlockedBloomFilter_aabcce9b05961f768002e7c4fe7fa9acb}\label{classBlockedBloomFilter_aabcce9b05961f768002e7c4fe7fa9acb}} 
+const uint64\+\_\+t $\ast$ {\bfseries get\+Table\+\_\+ptr} () const
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/Blocked\+Bloom\+Filter.\+hpp\end{DoxyCompactItemize}

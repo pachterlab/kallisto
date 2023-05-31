@@ -1,0 +1,450 @@
+\hypertarget{snippets_8h}{}\section{include/snippets.h File Reference}
+\label{snippets_8h}\index{include/snippets.\+h@{include/snippets.\+h}}
+
+
+Code snippets using a B\+FT.  
+
+
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{snippets_8h_abeb188df21ec971c69153463711c533b}{V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED}~0
+\begin{DoxyCompactList}\small\item\em Flag for marked vertices indicating the vertex has not been visited before. \end{DoxyCompactList}\item 
+\#define \hyperlink{snippets_8h_aaaef815ed6556662f874b106601e7343}{V\+\_\+\+V\+I\+S\+I\+T\+ED}~1
+\begin{DoxyCompactList}\small\item\em Flag for marked vertices indicating the vertex has been visited before. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{Indent}{\bf K-\/mer extraction functions}\par
+{\em These functions extract k-\/mers stored in a B\+FT to disk.
+
+The last argument of \hyperlink{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk()} is of type B\+F\+T\+\_\+func\+\_\+ptr, you can use \hyperlink{snippets_8h_ae4b980179cbfacc3a110de78b8d401a9}{extract\+\_\+core\+\_\+kmers()}, \hyperlink{snippets_8h_a9966b1f0c27a512aa3f27d811906be78}{extract\+\_\+dispensable\+\_\+kmers()} or \hyperlink{snippets_8h_aeaa91fe987a5724ffaf8089b8927474e}{extract\+\_\+singleton\+\_\+kmers()} to extract core, dispensable or singleton k-\/mers. }\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \hyperlink{snippets_8h_ae4b980179cbfacc3a110de78b8d401a9}{extract\+\_\+core\+\_\+kmers} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a core k-\/mer to disk. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_a9966b1f0c27a512aa3f27d811906be78}{extract\+\_\+dispensable\+\_\+kmers} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a dispensable k-\/mer to disk. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_aeaa91fe987a5724ffaf8089b8927474e}{extract\+\_\+singleton\+\_\+kmers} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a singleton k-\/mer to disk. \end{DoxyCompactList}\item 
+void \hyperlink{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, char $\ast$filename\+\_\+output, \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr} f)
+\begin{DoxyCompactList}\small\item\em Function extracting pan-\/genome (core/dispensable/singleton) k-\/mers from a B\+FT to disk. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Path extraction functions}\par
+{\em These functions extract simple (non branching) paths of k-\/mers stored in a B\+FT to disk. }\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \hyperlink{snippets_8h_a8068a236c9a0559e078b44a3b6381180}{extract\+\_\+simple\+\_\+paths} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting from a non-\/branching k-\/mer the simple (non branching) path in which it is. \end{DoxyCompactList}\item 
+void \hyperlink{snippets_8h_ac13451da7da5cf908fa38b781f24ab7f}{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, char $\ast$filename\+\_\+output)
+\begin{DoxyCompactList}\small\item\em Function extracting from a colored de Bruijn graph stored as a B\+FT all simple (non branching) paths. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_a662c94e8e8a222268807cd4cd207ff34}{extract\+\_\+core\+\_\+simple\+\_\+paths} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting from a non-\/branching core k-\/mer the simple (non branching) path in which it is. \end{DoxyCompactList}\item 
+void \hyperlink{snippets_8h_a0da3b5767ecdb4e988af764739313e0a}{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, double core\+\_\+ratio, char $\ast$filename\+\_\+output)
+\begin{DoxyCompactList}\small\item\em Function extracting from a colored de Bruijn graph stored as a B\+FT all simple (non branching) core paths. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\begin{Indent}{\bf Graph traversal functions}\par
+{\em These functions iterate over a colored de Bruijn graph stored as a B\+FT. }\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \hyperlink{snippets_8h_a779a1c7c7f4c236a2da64b8a18970b01}{B\+FS} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Breadth-\/\+First Search traversal from a k-\/mer. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_a8ad89b6e2e3d031a693f83922b9ad6e1}{B\+F\+S\+\_\+subgraph} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Breadth-\/\+First Search traversal from a k-\/mer that is part of a subgraph. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_a81bd0dcd92628563b61c855e26b12cc4}{D\+FS} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Depth-\/\+First Search traversal from a k-\/mer. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_ae751661ce6ad13867dd4b56d311573dc}{D\+F\+S\+\_\+subgraph} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Depth-\/\+First Search traversal from a k-\/mer that is part of a subgraph. \end{DoxyCompactList}\item 
+bool \hyperlink{snippets_8h_ae3ea127efe630db3f15cd239e15713a8}{is\+\_\+in\+\_\+subgraph} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, int nb\+\_\+id\+\_\+genomes, const va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function computing if a k-\/mer is part of a subgraph. \end{DoxyCompactList}\item 
+void \hyperlink{snippets_8h_a53366d800519c7b8dcb527ec99470654}{cdbg\+\_\+traversal} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, \hyperlink{bft_8h_aac9ee38523fda7ab4f8eb1238e98d315}{B\+F\+T\+\_\+func\+\_\+ptr} f,...)
+\begin{DoxyCompactList}\small\item\em Function traversing a colored de Bruijn graph stored as a B\+FT. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{snippets_8h_a9e84035e77676c83842320d1e0888457}{nb\+\_\+connected\+\_\+components} (\hyperlink{structBFT__kmer}{B\+F\+T\+\_\+kmer} $\ast$kmer, \hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph, va\+\_\+list args)
+\begin{DoxyCompactList}\small\item\em Function of type B\+F\+T\+\_\+func\+\_\+ptr calling a traversal method (D\+F\+S/\+B\+FS, D\+F\+S\+\_\+subgraph/\+B\+F\+S\+\_\+subgraph) on a k-\/mer to determine if it is in a new connected component. \end{DoxyCompactList}\item 
+void \hyperlink{snippets_8h_a95f78bc79f2acd976cca694413c5a452}{get\+\_\+nb\+\_\+connected\+\_\+component} (\hyperlink{bft_8h_a2db0a80fe662d044625641531e5ce292}{B\+FT} $\ast$graph,...)
+\begin{DoxyCompactList}\small\item\em Compute the number of connected components in a colored de-\/\+Bruijn graph. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+
+
+\subsection{Detailed Description}
+Code snippets using a B\+FT. 
+
+The purpose of this file is to give examples of how to use the functions of the B\+FT A\+PI (\hyperlink{bft_8h}{bft.\+h}). 
+
+\subsection{Macro Definition Documentation}
+\index{snippets.\+h@{snippets.\+h}!V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED@{V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED}}
+\index{V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED@{V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED}{V_NOT_VISITED}}]{\setlength{\rightskip}{0pt plus 5cm}\#define V\+\_\+\+N\+O\+T\+\_\+\+V\+I\+S\+I\+T\+ED~0}\hypertarget{snippets_8h_abeb188df21ec971c69153463711c533b}{}\label{snippets_8h_abeb188df21ec971c69153463711c533b}
+
+
+Flag for marked vertices indicating the vertex has not been visited before. 
+
+\index{snippets.\+h@{snippets.\+h}!V\+\_\+\+V\+I\+S\+I\+T\+ED@{V\+\_\+\+V\+I\+S\+I\+T\+ED}}
+\index{V\+\_\+\+V\+I\+S\+I\+T\+ED@{V\+\_\+\+V\+I\+S\+I\+T\+ED}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{V\+\_\+\+V\+I\+S\+I\+T\+ED}{V_VISITED}}]{\setlength{\rightskip}{0pt plus 5cm}\#define V\+\_\+\+V\+I\+S\+I\+T\+ED~1}\hypertarget{snippets_8h_aaaef815ed6556662f874b106601e7343}{}\label{snippets_8h_aaaef815ed6556662f874b106601e7343}
+
+
+Flag for marked vertices indicating the vertex has been visited before. 
+
+
+
+\subsection{Function Documentation}
+\index{snippets.\+h@{snippets.\+h}!B\+FS@{B\+FS}}
+\index{B\+FS@{B\+FS}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{B\+F\+S(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{BFS(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t B\+FS (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a779a1c7c7f4c236a2da64b8a18970b01}{}\label{snippets_8h_a779a1c7c7f4c236a2da64b8a18970b01}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Breadth-\/\+First Search traversal from a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains additional parameters given to the calling function (here none). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if it is a new connected component, else false. 
+\end{DoxyReturn}
+\index{snippets.\+h@{snippets.\+h}!B\+F\+S\+\_\+subgraph@{B\+F\+S\+\_\+subgraph}}
+\index{B\+F\+S\+\_\+subgraph@{B\+F\+S\+\_\+subgraph}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{B\+F\+S\+\_\+subgraph(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{BFS_subgraph(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t B\+F\+S\+\_\+subgraph (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a8ad89b6e2e3d031a693f83922b9ad6e1}{}\label{snippets_8h_a8ad89b6e2e3d031a693f83922b9ad6e1}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Breadth-\/\+First Search traversal from a k-\/mer that is part of a subgraph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains additional parameters given to the calling function. Here, it contains a number of genome ids, followed by the genome ids, that a k-\/mer must contain to be considered part of the subgraph. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if it is a new connected component, else false. 
+\end{DoxyReturn}
+\index{snippets.\+h@{snippets.\+h}!cdbg\+\_\+traversal@{cdbg\+\_\+traversal}}
+\index{cdbg\+\_\+traversal@{cdbg\+\_\+traversal}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{cdbg\+\_\+traversal(\+B\+F\+T $\ast$graph, B\+F\+T\+\_\+func\+\_\+ptr f,...)}{cdbg_traversal(BFT *graph, BFT_func_ptr f,...)}}]{\setlength{\rightskip}{0pt plus 5cm}void cdbg\+\_\+traversal (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{{\bf B\+F\+T\+\_\+func\+\_\+ptr}}]{f, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a53366d800519c7b8dcb527ec99470654}{}\label{snippets_8h_a53366d800519c7b8dcb527ec99470654}
+
+
+Function traversing a colored de Bruijn graph stored as a B\+FT. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em graph} & is a B\+FT representing a colored de Bruijn graph. \\
+\hline
+{\em f} & is the traversal function (D\+F\+S/\+B\+FS, D\+F\+S\+\_\+subgraph/\+B\+F\+S\+\_\+subgraph) to use. \\
+\hline
+{\em ...} & is the additional arguments to transfer to f() (if there are some). \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!D\+FS@{D\+FS}}
+\index{D\+FS@{D\+FS}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{D\+F\+S(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{DFS(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t D\+FS (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a81bd0dcd92628563b61c855e26b12cc4}{}\label{snippets_8h_a81bd0dcd92628563b61c855e26b12cc4}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Depth-\/\+First Search traversal from a k-\/mer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains additional parameters given to the calling function (here none). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if it is a new connected component, else false. 
+\end{DoxyReturn}
+\index{snippets.\+h@{snippets.\+h}!D\+F\+S\+\_\+subgraph@{D\+F\+S\+\_\+subgraph}}
+\index{D\+F\+S\+\_\+subgraph@{D\+F\+S\+\_\+subgraph}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{D\+F\+S\+\_\+subgraph(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{DFS_subgraph(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t D\+F\+S\+\_\+subgraph (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_ae751661ce6ad13867dd4b56d311573dc}{}\label{snippets_8h_ae751661ce6ad13867dd4b56d311573dc}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr starting a Depth-\/\+First Search traversal from a k-\/mer that is part of a subgraph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains additional parameters given to the calling function. Here, it contains a number of genome ids, followed by the genome ids, that a k-\/mer must contain to be considered part of the subgraph. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if it is a new connected component, else false. 
+\end{DoxyReturn}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+core\+\_\+kmers@{extract\+\_\+core\+\_\+kmers}}
+\index{extract\+\_\+core\+\_\+kmers@{extract\+\_\+core\+\_\+kmers}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+core\+\_\+kmers(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{extract_core_kmers(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t extract\+\_\+core\+\_\+kmers (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_ae4b980179cbfacc3a110de78b8d401a9}{}\label{snippets_8h_ae4b980179cbfacc3a110de78b8d401a9}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a core k-\/mer to disk. 
+
+A core k-\/mer contains in its annotation all genome ids inserted in the graph. 
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk()}\+: A pointer to a file where to write the k-\/mer and a pointer to the current number of k-\/mers written. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+core\+\_\+simple\+\_\+paths@{extract\+\_\+core\+\_\+simple\+\_\+paths}}
+\index{extract\+\_\+core\+\_\+simple\+\_\+paths@{extract\+\_\+core\+\_\+simple\+\_\+paths}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+core\+\_\+simple\+\_\+paths(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{extract_core_simple_paths(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t extract\+\_\+core\+\_\+simple\+\_\+paths (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a662c94e8e8a222268807cd4cd207ff34}{}\label{snippets_8h_a662c94e8e8a222268807cd4cd207ff34}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting from a non-\/branching core k-\/mer the simple (non branching) path in which it is. 
+
+args contains as argument a core\+\_\+ratio float (between 0 to 1) indicating the ratio of genome ids (compared to the total number of genome ids) that a k-\/mer annotation must contain to be considered being part of a core simple path. 
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{snippets_8h_a0da3b5767ecdb4e988af764739313e0a}{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk()}\+: A pointer to a file where to write paths and a pointer to the current max. size of a path written in the file. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+dispensable\+\_\+kmers@{extract\+\_\+dispensable\+\_\+kmers}}
+\index{extract\+\_\+dispensable\+\_\+kmers@{extract\+\_\+dispensable\+\_\+kmers}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+dispensable\+\_\+kmers(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{extract_dispensable_kmers(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t extract\+\_\+dispensable\+\_\+kmers (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a9966b1f0c27a512aa3f27d811906be78}{}\label{snippets_8h_a9966b1f0c27a512aa3f27d811906be78}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a dispensable k-\/mer to disk. 
+
+A dispensable k-\/mer contains in its annotation less than all genome ids inserted in the graph. 
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk()}\+: A pointer to a file where to write the k-\/mer and a pointer to the current number of k-\/mers written. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk@{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk}}
+\index{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk@{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk(\+B\+F\+T $\ast$graph, char $\ast$filename\+\_\+output, B\+F\+T\+\_\+func\+\_\+ptr f)}{extract_pangenome_kmers_to_disk(BFT *graph, char *filename_output, BFT_func_ptr f)}}]{\setlength{\rightskip}{0pt plus 5cm}void extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{char $\ast$}]{filename\+\_\+output, }
+\item[{{\bf B\+F\+T\+\_\+func\+\_\+ptr}}]{f}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{}\label{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}
+
+
+Function extracting pan-\/genome (core/dispensable/singleton) k-\/mers from a B\+FT to disk. 
+
+A core k-\/mer contains in its annotation all genome ids inserted in the graph. A dispensable k-\/mer contains in its annotation less than all genome ids inserted in the graph. A singleton k-\/mer contains in its annotation one genome id inserted in the graph. 
+\begin{DoxyParams}{Parameters}
+{\em graph} & is a B\+FT from which k-\/mers must be extracted. \\
+\hline
+{\em filename\+\_\+output} & is the name of the file where to write the k-\/mers. \\
+\hline
+{\em f} & is a function of type B\+F\+T\+\_\+func\+\_\+ptr (like \hyperlink{snippets_8h_ae4b980179cbfacc3a110de78b8d401a9}{extract\+\_\+core\+\_\+kmers()}, \hyperlink{snippets_8h_a9966b1f0c27a512aa3f27d811906be78}{extract\+\_\+dispensable\+\_\+kmers()}, and \hyperlink{snippets_8h_aeaa91fe987a5724ffaf8089b8927474e}{extract\+\_\+singleton\+\_\+kmers()}) which write a pan-\/genome k-\/mer to disk. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk@{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk}}
+\index{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk@{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk(\+B\+F\+T $\ast$graph, double core\+\_\+ratio, char $\ast$filename\+\_\+output)}{extract_simple_core_paths_to_disk(BFT *graph, double core_ratio, char *filename_output)}}]{\setlength{\rightskip}{0pt plus 5cm}void extract\+\_\+simple\+\_\+core\+\_\+paths\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{double}]{core\+\_\+ratio, }
+\item[{char $\ast$}]{filename\+\_\+output}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a0da3b5767ecdb4e988af764739313e0a}{}\label{snippets_8h_a0da3b5767ecdb4e988af764739313e0a}
+
+
+Function extracting from a colored de Bruijn graph stored as a B\+FT all simple (non branching) core paths. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em graph} & is a colored de Bruijn graph stored as a B\+FT. \\
+\hline
+{\em core\+\_\+ratio} & is a float (between 0 to 1) indicating the ratio of genome ids (compared to the total number of genome ids inserted in graph) that a k-\/mer annotation must contain to be considered being part of a core simple path. \\
+\hline
+{\em filename\+\_\+output} & is the name of the file where to write the simple core paths. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+simple\+\_\+paths@{extract\+\_\+simple\+\_\+paths}}
+\index{extract\+\_\+simple\+\_\+paths@{extract\+\_\+simple\+\_\+paths}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+simple\+\_\+paths(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{extract_simple_paths(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t extract\+\_\+simple\+\_\+paths (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a8068a236c9a0559e078b44a3b6381180}{}\label{snippets_8h_a8068a236c9a0559e078b44a3b6381180}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting from a non-\/branching k-\/mer the simple (non branching) path in which it is. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{snippets_8h_ac13451da7da5cf908fa38b781f24ab7f}{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk()}\+: A pointer to a file where to write paths and a pointer to the current max. size of a path written in the file. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk@{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk}}
+\index{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk@{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk(\+B\+F\+T $\ast$graph, char $\ast$filename\+\_\+output)}{extract_simple_paths_to_disk(BFT *graph, char *filename_output)}}]{\setlength{\rightskip}{0pt plus 5cm}void extract\+\_\+simple\+\_\+paths\+\_\+to\+\_\+disk (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{char $\ast$}]{filename\+\_\+output}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_ac13451da7da5cf908fa38b781f24ab7f}{}\label{snippets_8h_ac13451da7da5cf908fa38b781f24ab7f}
+
+
+Function extracting from a colored de Bruijn graph stored as a B\+FT all simple (non branching) paths. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em graph} & is a colored de Bruijn graph stored as a B\+FT. \\
+\hline
+{\em filename\+\_\+output} & is the name of the file where to write the simple paths. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!extract\+\_\+singleton\+\_\+kmers@{extract\+\_\+singleton\+\_\+kmers}}
+\index{extract\+\_\+singleton\+\_\+kmers@{extract\+\_\+singleton\+\_\+kmers}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{extract\+\_\+singleton\+\_\+kmers(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{extract_singleton_kmers(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t extract\+\_\+singleton\+\_\+kmers (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_aeaa91fe987a5724ffaf8089b8927474e}{}\label{snippets_8h_aeaa91fe987a5724ffaf8089b8927474e}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr extracting a singleton k-\/mer to disk. 
+
+Singleton k-\/mer contains in its annotation one genome id inserted in the graph. 
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains all additional parameters given to \hyperlink{snippets_8h_a174cb48bca3f18405fc4521bd727b23a}{extract\+\_\+pangenome\+\_\+kmers\+\_\+to\+\_\+disk()}\+: A pointer to a file where to write the k-\/mer and a pointer to the current number of k-\/mers written. \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!get\+\_\+nb\+\_\+connected\+\_\+component@{get\+\_\+nb\+\_\+connected\+\_\+component}}
+\index{get\+\_\+nb\+\_\+connected\+\_\+component@{get\+\_\+nb\+\_\+connected\+\_\+component}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{get\+\_\+nb\+\_\+connected\+\_\+component(\+B\+F\+T $\ast$graph,...)}{get_nb_connected_component(BFT *graph,...)}}]{\setlength{\rightskip}{0pt plus 5cm}void get\+\_\+nb\+\_\+connected\+\_\+component (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{}]{...}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a95f78bc79f2acd976cca694413c5a452}{}\label{snippets_8h_a95f78bc79f2acd976cca694413c5a452}
+
+
+Compute the number of connected components in a colored de-\/\+Bruijn graph. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em graph} & is a B\+FT representing a colored de Bruijn graph. \\
+\hline
+{\em ...} & is the additional arguments to transfer to \hyperlink{snippets_8h_a9e84035e77676c83842320d1e0888457}{nb\+\_\+connected\+\_\+components()} (traversal method and additional arguments if there are some). \\
+\hline
+\end{DoxyParams}
+\index{snippets.\+h@{snippets.\+h}!is\+\_\+in\+\_\+subgraph@{is\+\_\+in\+\_\+subgraph}}
+\index{is\+\_\+in\+\_\+subgraph@{is\+\_\+in\+\_\+subgraph}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{is\+\_\+in\+\_\+subgraph(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, int nb\+\_\+id\+\_\+genomes, const va\+\_\+list args)}{is_in_subgraph(BFT_kmer *kmer, BFT *graph, int nb_id_genomes, const va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}bool is\+\_\+in\+\_\+subgraph (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{int}]{nb\+\_\+id\+\_\+genomes, }
+\item[{const va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_ae3ea127efe630db3f15cd239e15713a8}{}\label{snippets_8h_ae3ea127efe630db3f15cd239e15713a8}
+
+
+Function computing if a k-\/mer is part of a subgraph. 
+
+A subgraph is determined by k-\/mers having in their annotation specific genome ids. 
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em nb\+\_\+id\+\_\+genomes} & is the number of genome ids that a k-\/mer must contain to be considered part of the subgraph. \\
+\hline
+{\em args} & contains additional parameters given to the calling function. Here, it contains the genome ids that a k-\/mer must contain to be considered part of the subgraph. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if it is a new connected component, else false. 
+\end{DoxyReturn}
+\index{snippets.\+h@{snippets.\+h}!nb\+\_\+connected\+\_\+components@{nb\+\_\+connected\+\_\+components}}
+\index{nb\+\_\+connected\+\_\+components@{nb\+\_\+connected\+\_\+components}!snippets.\+h@{snippets.\+h}}
+\subsubsection[{\texorpdfstring{nb\+\_\+connected\+\_\+components(\+B\+F\+T\+\_\+kmer $\ast$kmer, B\+F\+T $\ast$graph, va\+\_\+list args)}{nb_connected_components(BFT_kmer *kmer, BFT *graph, va_list args)}}]{\setlength{\rightskip}{0pt plus 5cm}size\+\_\+t nb\+\_\+connected\+\_\+components (
+\begin{DoxyParamCaption}
+\item[{{\bf B\+F\+T\+\_\+kmer} $\ast$}]{kmer, }
+\item[{{\bf B\+FT} $\ast$}]{graph, }
+\item[{va\+\_\+list}]{args}
+\end{DoxyParamCaption}
+)}\hypertarget{snippets_8h_a9e84035e77676c83842320d1e0888457}{}\label{snippets_8h_a9e84035e77676c83842320d1e0888457}
+
+
+Function of type B\+F\+T\+\_\+func\+\_\+ptr calling a traversal method (D\+F\+S/\+B\+FS, D\+F\+S\+\_\+subgraph/\+B\+F\+S\+\_\+subgraph) on a k-\/mer to determine if it is in a new connected component. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer} & is a k-\/mer from the B\+FT graph. \\
+\hline
+{\em graph} & is the B\+FT from which kmer is from. \\
+\hline
+{\em args} & contains additional parameters given to the calling function. Here, it contains the traversal method to call and its additional arguments. \\
+\hline
+\end{DoxyParams}

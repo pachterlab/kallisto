@@ -1,0 +1,198 @@
+\hypertarget{classunitigIterator}{}\section{unitig\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ Class Template Reference}
+\label{classunitigIterator}\index{unitig\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$@{unitig\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}}
+
+
+Iterator for the unitigs of a Compacted de Bruijn graph.  
+
+
+
+
+Inherits iterator$<$ std\+::input\+\_\+iterator\+\_\+tag, Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$, int $>$.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classunitigIterator_a1bd469cfd276720b53c56ba810fccea5}{unitig\+Iterator} ()
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classunitigIterator_a3a1d4af1f86c340ef92197cd11baa80a}{unitig\+Iterator} (Compacted\+D\+B\+G\+\_\+ptr\+\_\+t cdbg\+\_\+)
+\begin{DoxyCompactList}\small\item\em Constructor. \end{DoxyCompactList}\item 
+\hyperlink{classunitigIterator_af9a7540eb106197afa5b3befd7bf3ac9}{unitig\+Iterator} (const \hyperlink{classunitigIterator}{unitig\+Iterator} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor. \end{DoxyCompactList}\item 
+\hyperlink{classunitigIterator}{unitig\+Iterator} \& \hyperlink{classunitigIterator_a9ef74119d337be7ba4b32a8d61318605}{operator++} ()
+\begin{DoxyCompactList}\small\item\em Prefix increment, iterate over the next unitig. \end{DoxyCompactList}\item 
+\hyperlink{classunitigIterator}{unitig\+Iterator} \hyperlink{classunitigIterator_aafb3c6c0095f40975ada699e738654ff}{operator++} (int)
+\begin{DoxyCompactList}\small\item\em Postfix increment, iterate over the next unitig. \end{DoxyCompactList}\item 
+bool \hyperlink{classunitigIterator_a5c2d4c59d6024f71a8512e0cbae036fa}{operator==} (const \hyperlink{classunitigIterator}{unitig\+Iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator\+: check if two \hyperlink{classunitigIterator}{unitig\+Iterator} are the same. \end{DoxyCompactList}\item 
+bool \hyperlink{classunitigIterator_aead3edb7b33bdcbe9f5dd0e69714991e}{operator!=} (const \hyperlink{classunitigIterator}{unitig\+Iterator} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator\+: check if two \hyperlink{classunitigIterator}{unitig\+Iterator} are different. \end{DoxyCompactList}\item 
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ \& \hyperlink{classunitigIterator_a6af9150a527c60d1bf81ed4352875372}{operator$\ast$} () const
+\begin{DoxyCompactList}\small\item\em Indirection operator. \end{DoxyCompactList}\item 
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, is\+\_\+const $>$ $\ast$ \hyperlink{classunitigIterator_a5067c731a37401bb0a4fdedc31389d36}{operator-\/$>$} () const
+\begin{DoxyCompactList}\small\item\em Dereference operator. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void, typename Graph\+\_\+data\+\_\+t = void, bool is\+\_\+const = false$>$\newline
+class unitig\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+
+Iterator for the unitigs of a Compacted de Bruijn graph. 
+
+A \hyperlink{classunitigIterator}{unitig\+Iterator} object has 3 template parameters\+: the type of data associated with the unitigs of the graph, the type of data associated with the graph and a boolean indicating if this is a constant iterator or not. Note that you are supposed to use this class as the iterator of the class \hyperlink{classCompactedDBG}{Compacted\+D\+BG} (\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{Compacted\+D\+B\+G\+::iterator} and \hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{Compacted\+D\+B\+G\+::const\+\_\+iterator}) so you shouldn\textquotesingle{}t have to instantiate an object \hyperlink{classunitigIterator}{unitig\+Iterator} and its template parameters yourself. The unitig data and graph data types should be the same as the ones used for the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} the iterator is from. No specific order (such as a lexicographic one) is assumed during iteration. 
+\begin{DoxyCode}
+\hyperlink{classCompactedDBG}{CompactedDBG<>} cdbg;
+... \textcolor{comment}{// Some more code, cdbg construction}
+\textcolor{keywordflow}{for} (\textcolor{keyword}{const} \textcolor{keyword}{auto}& unitig : cdbg)\{
+  cout << unitig.toString() << endl; \textcolor{comment}{// unitig is of type UnitigMap}
+\}
+\textcolor{keywordflow}{for} (\hyperlink{classunitigIterator}{CompactedDBG<>::const\_iterator} it = cdbg.begin(); it != cdbg.end(); ++it
+      )\{
+  cout << it.toString() << endl;
+\}
+\end{DoxyCode}
+ 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classunitigIterator_a1bd469cfd276720b53c56ba810fccea5}\label{classunitigIterator_a1bd469cfd276720b53c56ba810fccea5}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{unitig\+Iterator()}{unitigIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classunitigIterator}{unitig\+Iterator} (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Constructor. 
+
+\begin{DoxyReturn}{Returns}
+an empty \hyperlink{classunitigIterator}{unitig\+Iterator}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classunitigIterator_a3a1d4af1f86c340ef92197cd11baa80a}\label{classunitigIterator_a3a1d4af1f86c340ef92197cd11baa80a}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{unitig\+Iterator()}{unitigIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classunitigIterator}{unitig\+Iterator} (\begin{DoxyParamCaption}\item[{Compacted\+D\+B\+G\+\_\+ptr\+\_\+t}]{cdbg\+\_\+ }\end{DoxyParamCaption})}
+
+
+
+Constructor. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em cdbg\+\_\+} & is a pointer to a Compacted de Bruijn graph. The \hyperlink{classunitigIterator}{unitig\+Iterator} will iterate over the unitigs of this graph. If the \hyperlink{classunitigIterator}{unitig\+Iterator} is a constant, the \hyperlink{classCompactedDBG}{Compacted\+D\+BG} pointer is a constant pointer and the accessed unitigs can\textquotesingle{}t be modified. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classunitigIterator}{unitig\+Iterator}. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classunitigIterator_af9a7540eb106197afa5b3befd7bf3ac9}\label{classunitigIterator_af9a7540eb106197afa5b3befd7bf3ac9}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\index{unitig\+Iterator@{unitig\+Iterator}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{unitig\+Iterator()}{unitigIterator()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::\hyperlink{classunitigIterator}{unitig\+Iterator} (\begin{DoxyParamCaption}\item[{const \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor. 
+
+\begin{DoxyReturn}{Returns}
+a copy of a \hyperlink{classunitigIterator}{unitig\+Iterator}. 
+\end{DoxyReturn}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classunitigIterator_aead3edb7b33bdcbe9f5dd0e69714991e}\label{classunitigIterator_aead3edb7b33bdcbe9f5dd0e69714991e}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Inequality operator\+: check if two \hyperlink{classunitigIterator}{unitig\+Iterator} are different. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is another \hyperlink{classunitigIterator}{unitig\+Iterator}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating whether the two \hyperlink{classunitigIterator}{unitig\+Iterator} are different. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classunitigIterator_a6af9150a527c60d1bf81ed4352875372}\label{classunitigIterator_a6af9150a527c60d1bf81ed4352875372}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator$\ast$@{operator$\ast$}}
+\index{operator$\ast$@{operator$\ast$}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator$\ast$()}{operator*()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G, is\+\_\+const$>$\& \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator$\ast$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Indirection operator. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map} object reference which contains information about the mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classunitigIterator_a9ef74119d337be7ba4b32a8d61318605}\label{classunitigIterator_a9ef74119d337be7ba4b32a8d61318605}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classunitigIterator}{unitig\+Iterator}\& \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator++ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Prefix increment, iterate over the next unitig. 
+
+Note that no specific order (such as a lexicographic one) is assumed during iteration. \mbox{\Hypertarget{classunitigIterator_aafb3c6c0095f40975ada699e738654ff}\label{classunitigIterator_aafb3c6c0095f40975ada699e738654ff}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator++@{operator++}}
+\index{operator++@{operator++}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator++()}{operator++()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+\hyperlink{classunitigIterator}{unitig\+Iterator} \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator++ (\begin{DoxyParamCaption}\item[{int}]{ }\end{DoxyParamCaption})}
+
+
+
+Postfix increment, iterate over the next unitig. 
+
+Note that no specific order (such as a lexicographic one) is assumed during iteration. \mbox{\Hypertarget{classunitigIterator_a5067c731a37401bb0a4fdedc31389d36}\label{classunitigIterator_a5067c731a37401bb0a4fdedc31389d36}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator-\/$>$@{operator-\/$>$}}
+\index{operator-\/$>$@{operator-\/$>$}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator-\/$>$()}{operator->()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+const \hyperlink{classUnitigMap}{Unitig\+Map}$<$U, G, is\+\_\+const$>$$\ast$ \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator-\/$>$ (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Dereference operator. 
+
+\begin{DoxyReturn}{Returns}
+a \hyperlink{classUnitigMap}{Unitig\+Map} object pointer which contains information about the mapped unitig. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classunitigIterator_a5c2d4c59d6024f71a8512e0cbae036fa}\label{classunitigIterator_a5c2d4c59d6024f71a8512e0cbae036fa}} 
+\index{unitig\+Iterator@{unitig\+Iterator}!operator==@{operator==}}
+\index{operator==@{operator==}!unitig\+Iterator@{unitig\+Iterator}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t  = void, typename Graph\+\_\+data\+\_\+t  = void, bool is\+\_\+const = false$>$ \\
+bool \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classunitigIterator}{unitig\+Iterator}$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator\+: check if two \hyperlink{classunitigIterator}{unitig\+Iterator} are the same. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & is another \hyperlink{classunitigIterator}{unitig\+Iterator}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating whether the two \hyperlink{classunitigIterator}{unitig\+Iterator} are the same. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{UnitigIterator_8hpp}{Unitig\+Iterator.\+hpp}\end{DoxyCompactItemize}

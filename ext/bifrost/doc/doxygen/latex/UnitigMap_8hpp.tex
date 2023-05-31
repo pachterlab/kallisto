@@ -1,0 +1,32 @@
+\hypertarget{UnitigMap_8hpp}{}\section{src/\+Unitig\+Map.hpp File Reference}
+\label{UnitigMap_8hpp}\index{src/\+Unitig\+Map.\+hpp@{src/\+Unitig\+Map.\+hpp}}
+
+
+\hyperlink{classUnitigMap}{Unitig\+Map} type interface.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classUnitig}{Unitig$<$ T $>$}
+\begin{DoxyCompactList}\small\item\em Represent a unitig which is a vertex of the Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+class \hyperlink{classCompactedDBG}{Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}
+\begin{DoxyCompactList}\small\item\em Represent a Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+class \hyperlink{classBackwardCDBG}{Backward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\item 
+class \hyperlink{classForwardCDBG}{Forward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\item 
+class \hyperlink{classneighborIterator}{neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Iterator for the neighbors (predecessors or successors) of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\item 
+class \hyperlink{structUnitigMapBase}{Unitig\+Map\+Base}
+\begin{DoxyCompactList}\small\item\em Structure containing the basic information of a unitig mapping. \end{DoxyCompactList}\item 
+class \hyperlink{classUnitigMap}{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+struct \hyperlink{structUnitigMapHash}{Unitig\+Map\+Hash$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\hyperlink{classUnitigMap}{Unitig\+Map} type interface. 
+
+Code snippets using this interface are provided in snippets/test.\+cpp. 

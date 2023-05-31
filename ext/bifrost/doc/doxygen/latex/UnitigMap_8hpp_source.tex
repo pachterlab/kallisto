@@ -1,0 +1,177 @@
+\hypertarget{UnitigMap_8hpp_source}{}\doxysection{Unitig\+Map.\+hpp}
+\label{UnitigMap_8hpp_source}\index{src/UnitigMap.hpp@{src/UnitigMap.hpp}}
+\mbox{\hyperlink{UnitigMap_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_UNITIGMAP\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_UNITIGMAP\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include "{}Common.hpp"{}}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{Kmer_8hpp}{Kmer.hpp}}"{}}}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{13 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{class }\mbox{\hyperlink{classUnitig}{Unitig}};}
+\DoxyCodeLine{14 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G> \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}};}
+\DoxyCodeLine{15 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{class }\mbox{\hyperlink{classBackwardCDBG}{BackwardCDBG}};}
+\DoxyCodeLine{16 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{class }\mbox{\hyperlink{classForwardCDBG}{ForwardCDBG}};}
+\DoxyCodeLine{17 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{class }\mbox{\hyperlink{classneighborIterator}{neighborIterator}};}
+\DoxyCodeLine{18 }
+\DoxyCodeLine{33 \textcolor{keyword}{struct }\mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}} \{}
+\DoxyCodeLine{34 }
+\DoxyCodeLine{39     \mbox{\hyperlink{structUnitigMapBase_a080e546f9f6a9027490501332b656473}{UnitigMapBase}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} length = 1);}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{48     \mbox{\hyperlink{structUnitigMapBase_a04975745bfe61f5d067acb13940d2975}{UnitigMapBase}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} start, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} length, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} unitig\_sz, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}});}
+\DoxyCodeLine{49 }
+\DoxyCodeLine{53     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_ac6965f7af0564e4cfa1e6a77595231c7}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{54 }
+\DoxyCodeLine{58     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_aa493ccbb29c318a081c4c58544f6461e}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{59 }
+\DoxyCodeLine{60     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}{dist}};}
+\DoxyCodeLine{61     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}{len}};}
+\DoxyCodeLine{62     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}{size}};}
+\DoxyCodeLine{63 }
+\DoxyCodeLine{64     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}};}
+\DoxyCodeLine{65     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{isEmpty}};}
+\DoxyCodeLine{66 \};}
+\DoxyCodeLine{67 }
+\DoxyCodeLine{91 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{92 \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigMap}{UnitigMap}} : \textcolor{keyword}{public} \mbox{\hyperlink{structUnitigMapBase}{UnitigMapBase}} \{}
+\DoxyCodeLine{93 }
+\DoxyCodeLine{94     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{95     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{96 }
+\DoxyCodeLine{97     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}};}
+\DoxyCodeLine{98     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} C> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classBackwardCDBG}{BackwardCDBG}};}
+\DoxyCodeLine{99     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} C> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classForwardCDBG}{ForwardCDBG}};}
+\DoxyCodeLine{100     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} C> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classunitigIterator}{unitigIterator}};}
+\DoxyCodeLine{101     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} C> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigMap}{UnitigMap}};}
+\DoxyCodeLine{102 }
+\DoxyCodeLine{103     \textcolor{keyword}{typedef} \textcolor{keyword}{typename} std::conditional<is\_const, const CompactedDBG<U, G>*, \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}*>::type CompactedDBG\_ptr\_t;}
+\DoxyCodeLine{104     \textcolor{keyword}{typedef} \textcolor{keyword}{typename} std::conditional<is\_const, const U*, U*>::type Unitig\_data\_ptr\_t;}
+\DoxyCodeLine{105 }
+\DoxyCodeLine{106     \textcolor{keyword}{public}:}
+\DoxyCodeLine{107 }
+\DoxyCodeLine{108         \textcolor{keyword}{typedef} \mbox{\hyperlink{classBackwardCDBG}{BackwardCDBG<U, G, is\_const>}} \mbox{\hyperlink{classBackwardCDBG}{UnitigMap\_BW}};}
+\DoxyCodeLine{109         \textcolor{keyword}{typedef} \mbox{\hyperlink{classForwardCDBG}{ForwardCDBG<U, G, is\_const>}} \mbox{\hyperlink{classForwardCDBG}{UnitigMap\_FW}};}
+\DoxyCodeLine{110 }
+\DoxyCodeLine{116         \mbox{\hyperlink{classUnitigMap_a43574c45ceb02111d2bc959e6ed4e717}{UnitigMap}}(\textcolor{keywordtype}{size\_t} length = 1, CompactedDBG\_ptr\_t cdbg\_ = \textcolor{keyword}{nullptr});}
+\DoxyCodeLine{117 }
+\DoxyCodeLine{126         \mbox{\hyperlink{classUnitigMap_a4f632adfd48f44d685c6a311a4197a91}{UnitigMap}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} start, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} length, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} unitig\_sz, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} \mbox{\hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}});}
+\DoxyCodeLine{127 }
+\DoxyCodeLine{131         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigMap_a73899498315ff5533c25b1c0fb1ca413}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{132 }
+\DoxyCodeLine{136         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigMap_a777e853a143be31ff69dd9f54f33d426}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{137 }
+\DoxyCodeLine{141         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classUnitigMap_a99f771f58cbdc82509cc2f37206e0731}{isSameReferenceUnitig}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{142 }
+\DoxyCodeLine{147         \textcolor{keywordtype}{string} \mbox{\hyperlink{classUnitigMap_a8a90644ef5f8d4326af8ad2f6438e1dd}{mappedSequenceToString}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{148 }
+\DoxyCodeLine{153         \textcolor{keywordtype}{string} \mbox{\hyperlink{classUnitigMap_a90ab8fbec322df04053b9998c68d2070}{referenceUnitigToString}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{154 }
+\DoxyCodeLine{167         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classUnitigMap_a2a80f5a0f55391c57b4f4d83400e30a2}{lcp}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos\_s = 0, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos\_um\_seq = 0, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} um\_reversed = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{168 }
+\DoxyCodeLine{173         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_a594c471e4d757273feef67cf4358bafd}{getUnitigHead}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{174 }
+\DoxyCodeLine{179         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_a584488d223cb2f5b00d72342305c6d0e}{getUnitigTail}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{180 }
+\DoxyCodeLine{187         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_a7c8a9b1e16fa29d716550fc93de9d4d7}{getUnitigKmer}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos) \textcolor{keyword}{const};}
+\DoxyCodeLine{188 }
+\DoxyCodeLine{193         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_a18a15516e136f787dc70db5030698548}{getMappedHead}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{194 }
+\DoxyCodeLine{199         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_ab06f79aa91086a8d73ea8200f5cc64d4}{getMappedTail}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{200 }
+\DoxyCodeLine{207         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classUnitigMap_a9ac111e6783b3344f0db407d05f1b966}{getMappedKmer}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos) \textcolor{keyword}{const};}
+\DoxyCodeLine{208 }
+\DoxyCodeLine{213         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}} \mbox{\hyperlink{classUnitigMap_aaaedf38011b13955567a4688b5b16fcb}{getKmerMapping}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos) \textcolor{keyword}{const};}
+\DoxyCodeLine{214 }
+\DoxyCodeLine{222         Unitig\_data\_ptr\_t \mbox{\hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{getData}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{223 }
+\DoxyCodeLine{229         \mbox{\hyperlink{classBackwardCDBG}{UnitigMap\_BW}} \mbox{\hyperlink{classUnitigMap_adfae0ba9c3675fd5612a4b71b46a25c6}{getPredecessors}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{230 }
+\DoxyCodeLine{236         \mbox{\hyperlink{classForwardCDBG}{UnitigMap\_FW}} \mbox{\hyperlink{classUnitigMap_a5b2894e0f78e6b003d06a03a49904b59}{getSuccessors}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{237 }
+\DoxyCodeLine{243         \textcolor{keyword}{inline} CompactedDBG\_ptr\_t \mbox{\hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{getGraph}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} cdbg; \}}
+\DoxyCodeLine{244 }
+\DoxyCodeLine{245         \textcolor{keyword}{operator} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, true>}}()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{246 }
+\DoxyCodeLine{247             \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, true>}} um(pos\_unitig, \mbox{\hyperlink{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}{dist}}, \mbox{\hyperlink{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}{len}}, \mbox{\hyperlink{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}{size}}, isShort, isAbundant, \mbox{\hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}}, cdbg);}
+\DoxyCodeLine{248 }
+\DoxyCodeLine{249             um.isEmpty = \mbox{\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{isEmpty}};}
+\DoxyCodeLine{250 }
+\DoxyCodeLine{251             \textcolor{keywordflow}{return} um;}
+\DoxyCodeLine{252         \}}
+\DoxyCodeLine{253 }
+\DoxyCodeLine{254         \textcolor{keywordtype}{void} setFullCoverage() \textcolor{keyword}{const};}
+\DoxyCodeLine{255         \textcolor{keywordtype}{void} increaseCoverage() \textcolor{keyword}{const};}
+\DoxyCodeLine{256         \textcolor{keywordtype}{void} decreaseCoverage() \textcolor{keyword}{const};}
+\DoxyCodeLine{257 }
+\DoxyCodeLine{258         \textcolor{keywordtype}{bool} isCoverageFull() \textcolor{keyword}{const};}
+\DoxyCodeLine{259         \textcolor{keywordtype}{size\_t} getCoverage(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos) \textcolor{keyword}{const};}
+\DoxyCodeLine{260 }
+\DoxyCodeLine{261     \textcolor{keyword}{private}:}
+\DoxyCodeLine{262 }
+\DoxyCodeLine{263         \mbox{\hyperlink{classUnitigMap}{UnitigMap}}(\textcolor{keywordtype}{size\_t} p\_unitig, \textcolor{keywordtype}{size\_t} i, \textcolor{keywordtype}{size\_t} l, \textcolor{keywordtype}{size\_t} sz, \textcolor{keywordtype}{bool} short\_, \textcolor{keywordtype}{bool} abundance, \textcolor{keywordtype}{bool} strd, CompactedDBG\_ptr\_t cdbg\_);}
+\DoxyCodeLine{264 }
+\DoxyCodeLine{265         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} bw\_begin() \textcolor{keyword}{const};}
+\DoxyCodeLine{266         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} bw\_end() \textcolor{keyword}{const};}
+\DoxyCodeLine{267 }
+\DoxyCodeLine{268         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} fw\_begin() \textcolor{keyword}{const};}
+\DoxyCodeLine{269         \mbox{\hyperlink{classneighborIterator}{neighborIterator<U, G, is\_const>}} fw\_end() \textcolor{keyword}{const};}
+\DoxyCodeLine{270 }
+\DoxyCodeLine{271         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}> \textcolor{keyword}{typename} std::enable\_if<!is\_void, Unitig<U>>::type splitData\_(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} last\_split) \textcolor{keyword}{const};}
+\DoxyCodeLine{272         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}> \textcolor{keyword}{typename} std::enable\_if<is\_void, Unitig<U>>::type splitData\_(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} last\_split) \textcolor{keyword}{const};}
+\DoxyCodeLine{273 }
+\DoxyCodeLine{274         \mbox{\hyperlink{classUnitig}{Unitig<U>}} splitData(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} last\_split) \textcolor{keyword}{const};}
+\DoxyCodeLine{275 }
+\DoxyCodeLine{276         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}> \textcolor{keyword}{typename} std::enable\_if<!is\_void, Unitig\_data\_ptr\_t>::type getData\_() \textcolor{keyword}{const};}
+\DoxyCodeLine{277         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}> \textcolor{keyword}{typename} std::enable\_if<is\_void, Unitig\_data\_ptr\_t>::type getData\_() \textcolor{keyword}{const};}
+\DoxyCodeLine{278 }
+\DoxyCodeLine{279         \textcolor{keywordtype}{void} partialCopy(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um);}
+\DoxyCodeLine{280 }
+\DoxyCodeLine{281         \textcolor{keywordtype}{size\_t} pos\_unitig; \textcolor{comment}{// unitig pos. in v\_unitigs or km\_unitigs or h\_kmers}}
+\DoxyCodeLine{282 }
+\DoxyCodeLine{283         \textcolor{keywordtype}{bool} isShort; \textcolor{comment}{// true if the unitig has length k}}
+\DoxyCodeLine{284         \textcolor{keywordtype}{bool} isAbundant; \textcolor{comment}{// true if the unitig has length k and has an abundant minimizer}}
+\DoxyCodeLine{285 }
+\DoxyCodeLine{286         CompactedDBG\_ptr\_t cdbg;}
+\DoxyCodeLine{287 \};}
+\DoxyCodeLine{288 }
+\DoxyCodeLine{289 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{290 \textcolor{keyword}{struct }\mbox{\hyperlink{structUnitigMapHash}{UnitigMapHash}} \{}
+\DoxyCodeLine{291 }
+\DoxyCodeLine{292     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{293     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{294 }
+\DoxyCodeLine{295     \textcolor{keywordtype}{size\_t} operator()(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{296 }
+\DoxyCodeLine{297         \textcolor{keyword}{struct }UnitigMapTMP \{}
+\DoxyCodeLine{298 }
+\DoxyCodeLine{299             \textcolor{keywordtype}{size\_t} pos\_unitig; \textcolor{comment}{// unitig pos. in v\_unitigs or km\_unitigs or h\_kmers}}
+\DoxyCodeLine{300             \textcolor{keywordtype}{size\_t} dist;}
+\DoxyCodeLine{301             \textcolor{keywordtype}{size\_t} len;}
+\DoxyCodeLine{302             \textcolor{keywordtype}{size\_t} size;}
+\DoxyCodeLine{303 }
+\DoxyCodeLine{304             \textcolor{keywordtype}{bool} strand;}
+\DoxyCodeLine{305             \textcolor{keywordtype}{bool} isEmpty;}
+\DoxyCodeLine{306 }
+\DoxyCodeLine{307             \textcolor{keywordtype}{bool} isShort; \textcolor{comment}{// true if the unitig has length k}}
+\DoxyCodeLine{308             \textcolor{keywordtype}{bool} isAbundant; \textcolor{comment}{// true if the unitig has length k and has an abundant minimizer}}
+\DoxyCodeLine{309 }
+\DoxyCodeLine{310             \textcolor{keyword}{const} \textcolor{keywordtype}{void}* cdbg;}
+\DoxyCodeLine{311 }
+\DoxyCodeLine{312             UnitigMapTMP(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& um) : pos\_unitig(um.pos\_unitig), dist(um.\mbox{\hyperlink{structUnitigMapBase_a5c53f906934df35588b34fc42a89a4a0}{dist}}), len(um.\mbox{\hyperlink{structUnitigMapBase_a06a9beaf07e8ae56aa6578b922c2b7c0}{len}}), size(um.\mbox{\hyperlink{structUnitigMapBase_adf6bc2dfe176302491c81142fc2e84cc}{size}}),}
+\DoxyCodeLine{313                                                                 strand(um.\mbox{\hyperlink{structUnitigMapBase_a6de6f4a1ccef220e84d097bc3ef0fb3f}{strand}}), isEmpty(um.\mbox{\hyperlink{structUnitigMapBase_ade629940b2611494dbf233cb1144da80}{isEmpty}}), isShort(um.isShort),}
+\DoxyCodeLine{314                                                                 isAbundant(um.isAbundant), cdbg(\textcolor{keyword}{static\_cast<}\textcolor{keyword}{const }\textcolor{keywordtype}{void}*\textcolor{keyword}{>}(um.cdbg)) \{\};}
+\DoxyCodeLine{315         \};}
+\DoxyCodeLine{316 }
+\DoxyCodeLine{317         UnitigMapTMP tmp(um);}
+\DoxyCodeLine{318 }
+\DoxyCodeLine{319         \textcolor{comment}{//return static\_cast<size\_t>(XXH64(static\_cast<const void*>(\&tmp), sizeof(UnitigMapTMP), 0));}}
+\DoxyCodeLine{320         \textcolor{keywordflow}{return} \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{size\_t}\textcolor{keyword}{>}(wyhash(\&tmp, \textcolor{keyword}{sizeof}(UnitigMapTMP), 0, \_wyp));}
+\DoxyCodeLine{321     \}}
+\DoxyCodeLine{322 \};}
+\DoxyCodeLine{323 }
+\DoxyCodeLine{324 \textcolor{preprocessor}{\#include "{}UnitigMap.tcc"{}}}
+\DoxyCodeLine{325 }
+\DoxyCodeLine{326 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

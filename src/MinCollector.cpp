@@ -34,41 +34,112 @@ void MinCollector::init_mean_fl_trunc(double mean, double sd) {
   has_mean_fl_trunc = true;
 }
 
-int MinCollector::intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const {
-  std::vector<int> u1 = intersectECs(v1);
-  std::vector<int> u2 = intersectECs(v2);
+void includeDList(Roaring& u1, Roaring& u2, const Roaring& onlist_sequences) {
+  if ((u1 & onlist_sequences).cardinality() != u1.cardinality() || (u2 & onlist_sequences).cardinality() != u2.cardinality()) {
+    u1.add(onlist_sequences.cardinality());
+    u2.add(onlist_sequences.cardinality());
+  }
+}
 
-  if (u1.empty() && u2.empty()) {
+int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+  Roaring u1 = intersectECs(v1);
+  Roaring u3 = intersectECs(v3);
+  Roaring u4 = intersectECs(v4);
+  Roaring u5 = intersectECs(v5);
+  Roaring u6 = intersectECs(v6);
+  Roaring u7 = intersectECs(v7);
+
+  if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
+    return -1;
+  }
+
+  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
+
+  // non-strict intersection
+  // to-do: currently the different frames are treated as if they were paired reads
+  // this might not be the best way to handle them
+  //bool found_non_empty = false;
+  //for (const auto& u_ : u_vector) {
+  //    if (!found_non_empty) {
+  //      r = u_;
+  //      if (!r.isEmpty()) {
+  //          found_non_empty = true;
+  //      }
+  //    } else if (!u_.isEmpty()) {
+  //        r &= u_;
+  //    }
+  //}
+
+  // find best match (smallest non-zero roaring)
+  // to-do/note: if two reads have the same roaring, we will use the first one (even though the second is just as valid)
+  uint32_t smallest_t=-1;
+  int frame_idx=0;
+  int winner_frame_idx=-1;
+  for (const auto& u_ : u_vector) {
+    if (u_.cardinality() > 0 && u_.cardinality() < smallest_t) {
+      r = u_;
+      smallest_t = u_.cardinality();
+      winner_frame_idx = frame_idx;
+    }
+    // Throw warning if new frame is as good as the current winning match
+    else if (u_.cardinality() > 0 && u_.cardinality() == smallest_t) {
+      // std::cerr << "[warning] Frame " << frame_idx << " has same equivalence class cardinality as winning frame, but will be dismissed." << endl;
+      cardinality_clashes++;
+    }
+    frame_idx++;
+  }
+
+  if (r.isEmpty()) {
+    return -1;
+  }
+
+  // std::cerr << "Aligned frame: " << winner_frame_idx << endl;
+  return 1;
+}
+
+int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
+  Roaring u1 = intersectECs(v1);
+  Roaring u2 = intersectECs(v2);
+
+  if (u1.isEmpty() && u2.isEmpty()) {
     return -1;
   }
 
   // non-strict intersection.
-  if (u1.empty()) {
+  if (u1.isEmpty()) {
     if (v1.empty()) {
-      u = u2;
+      r = u2;
     } else {
       return -1;
     }
-  } else if (u2.empty()) {
+  } else if (u2.isEmpty()) {
     if (v2.empty()) {
-      u = u1;
+      r = u1;
     } else {
       return -1;
     }
   } else {
-    u = intersect(u1,u2);
+    if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+      includeDList(u1, u2, index.onlist_sequences);
+    }
+    r = u1 & u2;
   }
 
-  if (u.empty()) {
+  if (r.isEmpty()) {
     return -1;
   }
   return 1;
 }
 
-int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
-                          std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired) {
-  std::vector<int> u;
+int MinCollector::collect(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int>>& v2, bool nonpaired) {
+  Roaring u;
   int r = intersectKmers(v1, v2, nonpaired, u);
   if (r != -1) {
     return increaseCount(u);
@@ -77,14 +148,19 @@ int MinCollector::collect(std::vector<std::pair<KmerEntry,int>>& v1,
   }
 }
 
-int MinCollector::findEC(const std::vector<int>& u) const {
+int MinCollector::findEC(const std::vector<int32_t>& u) const {
   if (u.empty()) {
     return -1;
   }
   if (u.size() == 1) {
     return u[0];
   }
-  auto search = index.ecmapinv.find(u);
+
+  Roaring r;
+  for (int32_t i : u) {
+    r.add(i);
+  }
+  auto search = index.ecmapinv.find(r);
   if (search != index.ecmapinv.end()) {
     return search ->second;
   } else {
@@ -92,50 +168,28 @@ int MinCollector::findEC(const std::vector<int>& u) const {
   }
 }
 
-int MinCollector::increaseCount(const std::vector<int>& u) {
-  int ec = findEC(u);
+int MinCollector::increaseCount(const Roaring& r) {
 
-  if (u.empty()) {
+  int ret = 0;
+  if (r.isEmpty()) {
     return -1;
   } else {
-    if (ec != -1) {
-      ++counts[ec];
-      return ec;
+    auto elem = index.ecmapinv.find(r);
+    if (elem != index.ecmapinv.end()) {
+      ++counts[elem->second];
+      ret = elem->second;
     } else {
-      auto necs = counts.size();
-      //index.ecmap.insert({necs,u});
-      index.ecmap.push_back(u);
-      index.ecmapinv.insert({u,necs});
+      size_t n_elems = index.ecmapinv.size();
+      index.ecmapinv.insert({r, n_elems});
       counts.push_back(1);
-      return necs;
+      ret = n_elems;
     }
   }
-
-  /* -- removable
-  if (u.size() == 1) {
-    int ec = u[0];
-    ++counts[ec];
-    return ec;
-  }
-  auto search = index.ecmapinv.find(u);
-  if (search != index.ecmapinv.end()) {
-    // ec class already exists, update count
-    ++counts[search->second];
-    return search->second;
-  } else {
-    // new ec class, update the index and count
-    auto necs = counts.size();
-    //index.ecmap.insert({necs,u});
-    index.ecmap.push_back(u);
-    index.ecmapinv.insert({u,necs});
-    counts.push_back(1);
-    return necs;
-  }
-  */
+  return ret;
 }
 
 int MinCollector::decreaseCount(const int ec) {
-  assert(ec >= 0 && ec <= index.ecmap.size());
+  assert(ec >= 0);
   --counts[ec];
   return ec;
 }
@@ -146,50 +200,52 @@ struct ComparePairsBySecond {
   }
 };
 
-std::vector<int> MinCollector::intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const {
+Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+  Roaring r;
   if (v.empty()) {
-    return {};
+    return r;
   }
-  sort(v.begin(), v.end(), [&](std::pair<KmerEntry, int> a, std::pair<KmerEntry, int> b)
+  sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
-         if (a.first.contig==b.first.contig) {
+         if (a.first.isSameReferenceUnitig(b.first) &&
+             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
            return a.second < b.second;
          } else {
-           return a.first.contig < b.first.contig;
+           return a.first.getData()->id < b.first.getData()->id;
          }
        }); // sort by contig, and then first position
 
-
-  int ec = index.dbGraph.ecs[v[0].first.contig];
-  int lastEC = ec;
-  std::vector<int> u = index.ecmap[ec];
+  r = v[0].first.getData()->ec[v[0].first.dist].getIndices();
+  bool found_nonempty = !r.isEmpty();
+  Roaring lastEC = r;
+  Roaring ec;
 
   for (int i = 1; i < v.size(); i++) {
-    if (v[i].first.contig != v[i-1].first.contig) {
-      ec = index.dbGraph.ecs[v[i].first.contig];
-      if (ec != lastEC) {
-        u = index.intersect(ec, u);
-        lastEC = ec;
-        if (u.empty()) {
-          return u;
+
+    // Find a non-empty EC before we start taking the intersection
+    if (!found_nonempty) {
+      r = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+      found_nonempty = !r.isEmpty();
+    }
+
+    if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
+        !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
+
+      ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+
+      // Don't intersect empty EC (because of thresholding)
+      if (!(ec == lastEC) && !ec.isEmpty()) {
+        if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+          includeDList(r, ec, index.onlist_sequences);
         }
+        r &= ec;
+        if (r.isEmpty()) {
+          return r;
+        }
+        lastEC = std::move(ec);
       }
     }
   }
-
-  /*for (auto &x : vp) {
-    //tmp = index.intersect(x.first,u);
-    u = index.intersect(x.first,u);
-    //if (!tmp.empty()) {
-     // u = tmp;
-      //count++; // increase the count
-     // }
-  }*/
-
-  // if u is empty do nothing
-  /*if (u.empty()) {
-    return u;
-    }*/
 
   // find the range of support
   int minpos = std::numeric_limits<int>::max();
@@ -204,7 +260,7 @@ std::vector<int> MinCollector::intersectECs(std::vector<std::pair<KmerEntry,int>
     return {};
   }
 
-  return u;
+  return r;
 }
 
 
@@ -240,37 +296,6 @@ void MinCollector::loadCounts(ProgramOptions& opt) {
 
   }
 
-}
-
-void MinCollector::write(const std::string& pseudoprefix) const {
-  std::string ecfilename = pseudoprefix + ".ec";
-  std::string countsfilename = pseudoprefix + ".tsv";
-
-  std::ofstream ecof, countsof;
-  ecof.open(ecfilename.c_str(), std::ios::out);
-  // output equivalence classes in the form "EC TXLIST";
-  for (int i = 0; i < index.ecmap.size(); i++) {
-    ecof << i << "\t";
-    // output the rest of the class
-    const auto &v = index.ecmap[i];
-    bool first = true;
-    for (auto x : v) {
-      if (!first) {
-        ecof << ",";
-      } else {
-        first = false;
-      }
-      ecof << x;
-    }
-    ecof << "\n";
-  }
-  ecof.close();
-
-  countsof.open(countsfilename.c_str(), std::ios::out);
-  for (int i = 0; i < counts.size(); i++) {
-    countsof << i << "\t" << counts[i] << "\n";
-  }
-  countsof.close();
 }
 
 double MinCollector::get_mean_frag_len(bool lenient) const {
@@ -309,7 +334,7 @@ double MinCollector::get_sd_frag_len() const {
 
   size_t total_counts = 0;
   double total_mass = 0.0;
-  
+
   for (size_t i = 0; i < flens.size(); ++i) {
     total_counts += flens[i];
     total_mass += flens[i]*(i-m)*(i-m);
@@ -318,8 +343,6 @@ double MinCollector::get_sd_frag_len() const {
   double sd_fl = std::sqrt(total_mass/total_counts);
   return sd_fl;
 }
-
-
 
 void MinCollector::compute_mean_frag_lens_trunc(bool verbose)  {
 
@@ -335,7 +358,6 @@ void MinCollector::compute_mean_frag_lens_trunc(bool verbose)  {
     if (counts[i] > 0) {
       mean_fl_trunc[i] = mass[i] / static_cast<double>(counts[i]);
     }
-    // std::cerr << "--- " << i << '\t' << mean_fl_trunc[i] << std::endl;
   }
 
   has_mean_fl_trunc = true;
@@ -373,11 +395,11 @@ int hexamerToInt(const char *s, bool revcomp) {
   return hex;
 }
 
-bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired) {
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired) {
   return countBias(s1,s2,v1,v2,paired,bias5);
 }
 
-bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const {
+bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired, std::vector<int>& biasOut) const {
 
   const int pre = 2, post = 4;
 
@@ -385,24 +407,29 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
     return false;
   }
 
-  
-
-  auto getPreSeq = [&](const char *s, Kmer km, bool fw, bool csense,  KmerEntry val, int p) -> int {
+  auto getPreSeq = [&](const char *s, const_UnitigMap<Node> um, int p) -> int {
     if (s==0) {
       return -1;
     }
-    if ((csense && val.getPos() - p >= pre) || (!csense && (val.contig_length - 1 - val.getPos() - p) >= pre )) {
-      const Contig &c = index.dbGraph.contigs[val.contig];
-      bool sense = c.transcripts[0].sense;
+
+    size_t contig_start = 0, contig_length = um.size - um.getGraph()->getK() + 1;
+    const Node* n = um.getData();
+    auto mc_bounds = n->get_mc_contig(um.dist);
+    contig_start += mc_bounds.first;
+    contig_length = mc_bounds.second - contig_start;
+
+    size_t pos = um.dist - contig_start;
+    if (( um.strand && ((int64_t)(pos - p) >= (int64_t)pre)) ||
+        (!um.strand && ((int64_t)(contig_length - 1 - pos - p) >= (int64_t)pre))) {
 
       int hex = -1;
       //std::cout << "  " << s << "\n";
-      if (csense) {
-        hex = hexamerToInt(c.seq.c_str() + (val.getPos()-p - pre), true);
+      if (um.strand) {
+        hex = hexamerToInt(um.referenceUnitigToString().c_str() + (contig_start + pos - p - pre), true);
         //std::cout << c.seq.substr(val.getPos()- p - pre,6) << "\n";
       } else {
-        int pos = (val.getPos() + p) + k - post;
-        hex = hexamerToInt(c.seq.c_str() + (pos), false);
+        int pos_ = (pos + p) + k - post;
+        hex = hexamerToInt(um.referenceUnitigToString().c_str() + (contig_start + pos_), false);
         //std::cout << revcomp(c.seq.substr(pos,6)) << "\n";
       }
       return hex;
@@ -412,20 +439,18 @@ bool MinCollector::countBias(const char *s1, const char *s2, const std::vector<s
   };
 
   // find first contig of read
-  KmerEntry val1 = v1[0].first;
+  const_UnitigMap<Node> um1 = v1[0].first;
   int p1 = v1[0].second;
   for (auto &x : v1) {
     if (x.second < p1) {
-      val1 = x.first;
+      um1 = x.first;
       p1 = x.second;
     }
   }
 
-  Kmer km1 = Kmer((s1+p1));
-  bool fw1 = (km1==km1.rep());
-  bool csense1 = (fw1 == val1.isFw()); // is this in the direction of the contig?
+  bool csense1 = um1.strand; // is this in the direction of the contig?
 
-  int hex5 = getPreSeq(s1, km1, fw1, csense1, val1, p1);
+  int hex5 = getPreSeq(s1, um1, p1);
 
   /*
   int hex3 = -1;

@@ -1,0 +1,391 @@
+\hypertarget{CompactedDBG_8hpp_source}{}\doxysection{Compacted\+DBG.\+hpp}
+\label{CompactedDBG_8hpp_source}\index{src/CompactedDBG.hpp@{src/CompactedDBG.hpp}}
+\mbox{\hyperlink{CompactedDBG_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_COMPACTED\_DBG\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_COMPACTED\_DBG\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include <cmath>}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include <cstdlib>}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <cstring>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <ctime>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <cstdio>}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <climits>}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#include <functional>}}
+\DoxyCodeLine{11 \textcolor{preprocessor}{\#include <getopt.h>}}
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include <iostream>}}
+\DoxyCodeLine{13 \textcolor{preprocessor}{\#include <map>}}
+\DoxyCodeLine{14 \textcolor{preprocessor}{\#include <set>}}
+\DoxyCodeLine{15 \textcolor{preprocessor}{\#include <sstream>}}
+\DoxyCodeLine{16 \textcolor{preprocessor}{\#include <stdint.h>}}
+\DoxyCodeLine{17 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{18 \textcolor{preprocessor}{\#include <unordered\_map>}}
+\DoxyCodeLine{19 \textcolor{preprocessor}{\#include <unordered\_set>}}
+\DoxyCodeLine{20 \textcolor{preprocessor}{\#include <vector>}}
+\DoxyCodeLine{21 }
+\DoxyCodeLine{22 \textcolor{preprocessor}{\#include <thread>}}
+\DoxyCodeLine{23 \textcolor{preprocessor}{\#include <atomic>}}
+\DoxyCodeLine{24 \textcolor{preprocessor}{\#include <mutex>}}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{26 \textcolor{preprocessor}{\#include "{}BlockedBloomFilter.hpp"{}}}
+\DoxyCodeLine{27 \textcolor{preprocessor}{\#include "{}Common.hpp"{}}}
+\DoxyCodeLine{28 \textcolor{preprocessor}{\#include "{}File\_Parser.hpp"{}}}
+\DoxyCodeLine{29 \textcolor{preprocessor}{\#include "{}FASTX\_Parser.hpp"{}}}
+\DoxyCodeLine{30 \textcolor{preprocessor}{\#include "{}GFA\_Parser.hpp"{}}}
+\DoxyCodeLine{31 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{Kmer_8hpp}{Kmer.hpp}}"{}}}
+\DoxyCodeLine{32 \textcolor{preprocessor}{\#include "{}KmerCovIndex.hpp"{}}}
+\DoxyCodeLine{33 \textcolor{preprocessor}{\#include "{}KmerHashTable.hpp"{}}}
+\DoxyCodeLine{34 \textcolor{preprocessor}{\#include "{}KmerIterator.hpp"{}}}
+\DoxyCodeLine{35 \textcolor{preprocessor}{\#include "{}KmerStream.hpp"{}}}
+\DoxyCodeLine{36 \textcolor{preprocessor}{\#include "{}Lock.hpp"{}}}
+\DoxyCodeLine{37 \textcolor{preprocessor}{\#include "{}minHashIterator.hpp"{}}}
+\DoxyCodeLine{38 \textcolor{preprocessor}{\#include "{}MinimizerIndex.hpp"{}}}
+\DoxyCodeLine{39 \textcolor{preprocessor}{\#include "{}RepHash.hpp"{}}}
+\DoxyCodeLine{40 \textcolor{preprocessor}{\#include "{}TinyVector.hpp"{}}}
+\DoxyCodeLine{41 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{Unitig_8hpp}{Unitig.hpp}}"{}}}
+\DoxyCodeLine{42 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{UnitigIterator_8hpp}{UnitigIterator.hpp}}"{}}}
+\DoxyCodeLine{43 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{UnitigMap_8hpp}{UnitigMap.hpp}}"{}}}
+\DoxyCodeLine{44 }
+\DoxyCodeLine{45 \textcolor{preprocessor}{\#include "{}roaring.hh"{}}}
+\DoxyCodeLine{46 }
+\DoxyCodeLine{47 \textcolor{preprocessor}{\#define MASK\_CONTIG\_ID (0xffffffff00000000)}}
+\DoxyCodeLine{48 \textcolor{preprocessor}{\#define MASK\_CONTIG\_TYPE (0x80000000)}}
+\DoxyCodeLine{49 \textcolor{preprocessor}{\#define MASK\_CONTIG\_POS (0x7fffffff)}}
+\DoxyCodeLine{50 \textcolor{preprocessor}{\#define RESERVED\_ID (0xffffffff)}}
+\DoxyCodeLine{51 }
+\DoxyCodeLine{52 \textcolor{preprocessor}{\#define DEFAULT\_K 31}}
+\DoxyCodeLine{53 }
+\DoxyCodeLine{54 \textcolor{preprocessor}{\#define DEFAULT\_G\_DEC1 8}}
+\DoxyCodeLine{55 \textcolor{preprocessor}{\#define DEFAULT\_G\_DEC2 4}}
+\DoxyCodeLine{56 }
+\DoxyCodeLine{62 \textcolor{keyword}{using namespace }std;}
+\DoxyCodeLine{63 }
+\DoxyCodeLine{128 \textcolor{keyword}{struct }\mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}} \{}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{130     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_ae904b922a07485a809f5bd89f9100225}{verbose}};}
+\DoxyCodeLine{131 }
+\DoxyCodeLine{132     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structCDBG__Build__opt_a788622fc88a1957d46d84feab8086d0c}{nb\_threads}};}
+\DoxyCodeLine{133 }
+\DoxyCodeLine{134     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structCDBG__Build__opt_a863fc8d612ec6fa3ba54ac970a83065c}{nb\_bits\_unique\_kmers\_bf}};}
+\DoxyCodeLine{135     \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{structCDBG__Build__opt_a0923610123fa39ddabff3863149b9636}{nb\_bits\_non\_unique\_kmers\_bf}};}
+\DoxyCodeLine{136 }
+\DoxyCodeLine{137     \textcolor{keywordtype}{string} \mbox{\hyperlink{structCDBG__Build__opt_aede0acb7ddd4b5bf7c6c539a86461d15}{inFilenameBBF}};}
+\DoxyCodeLine{138     \textcolor{keywordtype}{string} \mbox{\hyperlink{structCDBG__Build__opt_aa10751be5fcf01b1686cce66ebab733e}{outFilenameBBF}};}
+\DoxyCodeLine{139 }
+\DoxyCodeLine{140     vector<string> \mbox{\hyperlink{structCDBG__Build__opt_abb43cea644ca04c5ed0c3034b03c70d4}{filename\_seq\_in}};}
+\DoxyCodeLine{141     vector<string> \mbox{\hyperlink{structCDBG__Build__opt_a4d0d3e899b64c6bbc9e5913375ba40e3}{filename\_ref\_in}};}
+\DoxyCodeLine{142 }
+\DoxyCodeLine{143     \textcolor{comment}{// The following members are NOT used by CompactedDBG<U, G>::build}}
+\DoxyCodeLine{144     \textcolor{comment}{// but you can set them to use them as parameters for other functions}}
+\DoxyCodeLine{145     \textcolor{comment}{// such as CompactedDBG<U, G>::simplify, CompactedDBG<U, G>::read or}}
+\DoxyCodeLine{146     \textcolor{comment}{// CompactedDBG<U, G>::write.}}
+\DoxyCodeLine{147 }
+\DoxyCodeLine{148     \textcolor{keywordtype}{int} \mbox{\hyperlink{structCDBG__Build__opt_af59eb333394387f84dcf35ab740bd482}{k}}, \mbox{\hyperlink{structCDBG__Build__opt_ab8d8ec72715094561d247b45ed5887f0}{g}};}
+\DoxyCodeLine{149 }
+\DoxyCodeLine{150     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_af2d14fa2147c3353d545a3ab970b683e}{build}};}
+\DoxyCodeLine{151     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_a19fd0874dfc472a56d5c7bf375d849e8}{update}};}
+\DoxyCodeLine{152     \textcolor{keywordtype}{bool} query;}
+\DoxyCodeLine{153 }
+\DoxyCodeLine{154     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_a7e916ec6f4674bf1239b64da22bac9ee}{clipTips}};}
+\DoxyCodeLine{155     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_ae5c727e6d5b10764d03556f570ab5f5d}{deleteIsolated}};}
+\DoxyCodeLine{156     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_a6986d2570dc42f602b4ed884ff5b9084}{useMercyKmers}};}
+\DoxyCodeLine{157 }
+\DoxyCodeLine{158     \textcolor{keywordtype}{bool} \mbox{\hyperlink{structCDBG__Build__opt_a59256092145b2e12068a0874e3bffa94}{outputGFA}};}
+\DoxyCodeLine{159     \textcolor{keywordtype}{bool} inexact\_search;}
+\DoxyCodeLine{160 }
+\DoxyCodeLine{161     \textcolor{keywordtype}{double} ratio\_kmers;}
+\DoxyCodeLine{162 }
+\DoxyCodeLine{163     \textcolor{keywordtype}{string} \mbox{\hyperlink{structCDBG__Build__opt_a65f1dfdab74608283293c69e4bad60ba}{prefixFilenameOut}};}
+\DoxyCodeLine{164 }
+\DoxyCodeLine{165     \textcolor{keywordtype}{string} \mbox{\hyperlink{structCDBG__Build__opt_a121574067fffe9fa3c0c280ec633ffc3}{filename\_graph\_in}};}
+\DoxyCodeLine{166 }
+\DoxyCodeLine{167     vector<string> filename\_query\_in;}
+\DoxyCodeLine{168 }
+\DoxyCodeLine{169     \mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}}() :  \mbox{\hyperlink{structCDBG__Build__opt_a788622fc88a1957d46d84feab8086d0c}{nb\_threads}}(1), \mbox{\hyperlink{structCDBG__Build__opt_af59eb333394387f84dcf35ab740bd482}{k}}(DEFAULT\_K), \mbox{\hyperlink{structCDBG__Build__opt_ab8d8ec72715094561d247b45ed5887f0}{g}}(-\/1), \mbox{\hyperlink{structCDBG__Build__opt_a863fc8d612ec6fa3ba54ac970a83065c}{nb\_bits\_unique\_kmers\_bf}}(14),}
+\DoxyCodeLine{170                         \mbox{\hyperlink{structCDBG__Build__opt_a0923610123fa39ddabff3863149b9636}{nb\_bits\_non\_unique\_kmers\_bf}}(14), ratio\_kmers(0.8),}
+\DoxyCodeLine{171                         \mbox{\hyperlink{structCDBG__Build__opt_af2d14fa2147c3353d545a3ab970b683e}{build}}(false), \mbox{\hyperlink{structCDBG__Build__opt_a19fd0874dfc472a56d5c7bf375d849e8}{update}}(false), query(false), \mbox{\hyperlink{structCDBG__Build__opt_a7e916ec6f4674bf1239b64da22bac9ee}{clipTips}}(false), \mbox{\hyperlink{structCDBG__Build__opt_ae5c727e6d5b10764d03556f570ab5f5d}{deleteIsolated}}(false),}
+\DoxyCodeLine{172                         inexact\_search(false), \mbox{\hyperlink{structCDBG__Build__opt_a6986d2570dc42f602b4ed884ff5b9084}{useMercyKmers}}(false), \mbox{\hyperlink{structCDBG__Build__opt_a59256092145b2e12068a0874e3bffa94}{outputGFA}}(true), \mbox{\hyperlink{structCDBG__Build__opt_ae904b922a07485a809f5bd89f9100225}{verbose}}(false) \{\}}
+\DoxyCodeLine{173 \};}
+\DoxyCodeLine{174 }
+\DoxyCodeLine{180 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} G = \textcolor{keywordtype}{void}> \textcolor{keyword}{using} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap}} = \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, true>}};}
+\DoxyCodeLine{181 }
+\DoxyCodeLine{211 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}> \textcolor{comment}{//Curiously Recurring Template Pattern (CRTP)}}
+\DoxyCodeLine{212 \textcolor{keyword}{class }\mbox{\hyperlink{classCDBG__Data__t}{CDBG\_Data\_t}} \{}
+\DoxyCodeLine{213 }
+\DoxyCodeLine{214     \textcolor{keyword}{public}:}
+\DoxyCodeLine{215 }
+\DoxyCodeLine{221         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCDBG__Data__t_ad3ee42fef3155251e54886f3649f72a2}{clear}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_dest)\{\}}
+\DoxyCodeLine{222 }
+\DoxyCodeLine{236         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCDBG__Data__t_a1d1eefcc5b100fbe000a5d70c4280aa3}{concat}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_src)\{\}}
+\DoxyCodeLine{237 }
+\DoxyCodeLine{248         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCDBG__Data__t_a474f0f1668ae99e7ca0ee071d1f6f237}{merge}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_src)\{\}}
+\DoxyCodeLine{249 }
+\DoxyCodeLine{264         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCDBG__Data__t_a2e78ea1698f48c521164b8294435f618}{extract}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_src, \textcolor{keywordtype}{bool} last\_extraction)\{\}}
+\DoxyCodeLine{265 }
+\DoxyCodeLine{274         \textcolor{keywordtype}{string} \mbox{\hyperlink{classCDBG__Data__t_a4c6ec7ef1a4ca46bd643f59d25730945}{serialize}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<Unitig\_data\_t, Graph\_data\_t>}}\& um\_src)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{275 }
+\DoxyCodeLine{276             \textcolor{keywordflow}{return} string();}
+\DoxyCodeLine{277         \}}
+\DoxyCodeLine{278 \};}
+\DoxyCodeLine{279 }
+\DoxyCodeLine{304 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}>}
+\DoxyCodeLine{305 \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}} \{}
+\DoxyCodeLine{306 }
+\DoxyCodeLine{307     \textcolor{keyword}{static\_assert}(is\_void<Unitig\_data\_t>::value || is\_base\_of<CDBG\_Data\_t<Unitig\_data\_t, Graph\_data\_t>, Unitig\_data\_t>::value,}
+\DoxyCodeLine{308                   \textcolor{stringliteral}{"{}Type of data associated with vertices of class CompactedDBG must be void (no data) or a class extending class CDBG\_Data\_t"{}});}
+\DoxyCodeLine{309 }
+\DoxyCodeLine{310     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{311     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{312 }
+\DoxyCodeLine{313     \textcolor{keyword}{public}:}
+\DoxyCodeLine{314 }
+\DoxyCodeLine{315         \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classUnitigMap}{UnitigMap}};}
+\DoxyCodeLine{316         \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classunitigIterator}{unitigIterator}};}
+\DoxyCodeLine{317         \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G, \textcolor{keywordtype}{bool} is\_const> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classneighborIterator}{neighborIterator}};}
+\DoxyCodeLine{318 }
+\DoxyCodeLine{319         \textcolor{keyword}{template}<\textcolor{keyword}{typename} X, \textcolor{keyword}{typename} Y> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}};}
+\DoxyCodeLine{320 }
+\DoxyCodeLine{321         \textcolor{keyword}{typedef} \mbox{\hyperlink{classunitigIterator}{unitigIterator<U, G, false>}} \mbox{\hyperlink{classCompactedDBG_af4a6df70628f698d9a2ee843b5359883}{iterator}}; }
+\DoxyCodeLine{322         \textcolor{keyword}{typedef} \mbox{\hyperlink{classunitigIterator}{unitigIterator<U, G, true>}} \mbox{\hyperlink{classCompactedDBG_a7725fc78ad52227df1f70d9b8f44622c}{const\_iterator}}; }
+\DoxyCodeLine{328         \mbox{\hyperlink{classCompactedDBG_a6646a392f5ef5a44c9b5834fc98fdadf}{CompactedDBG}}(\textcolor{keyword}{const} \textcolor{keywordtype}{int} kmer\_length = DEFAULT\_K, \textcolor{keyword}{const} \textcolor{keywordtype}{int} minimizer\_length = -\/1);}
+\DoxyCodeLine{329 }
+\DoxyCodeLine{335         \mbox{\hyperlink{classCompactedDBG_a0cb141cdb38149097dafc9232a603307}{CompactedDBG}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o); \textcolor{comment}{// Copy constructor}}
+\DoxyCodeLine{336 }
+\DoxyCodeLine{342         \mbox{\hyperlink{classCompactedDBG_aad8aa47824b9c92b45d0b9f9c76ae0ff}{CompactedDBG}}(\mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\&\& o); \textcolor{comment}{// Move constructor}}
+\DoxyCodeLine{343 }
+\DoxyCodeLine{346         \textcolor{keyword}{virtual} \mbox{\hyperlink{classCompactedDBG_a64299c748d198a2596facfd39c2bd280}{\string~CompactedDBG}}();}
+\DoxyCodeLine{347 }
+\DoxyCodeLine{354         \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& \mbox{\hyperlink{classCompactedDBG_a023d41f5b1e650326294320b3d26ef95}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o);}
+\DoxyCodeLine{355 }
+\DoxyCodeLine{362         \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& \mbox{\hyperlink{classCompactedDBG_a69e7345db52b9236750d96b21a43c98e}{operator=}}(\mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\&\& o);}
+\DoxyCodeLine{363 }
+\DoxyCodeLine{375         \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& \mbox{\hyperlink{classCompactedDBG_a86ea8a1c139b6739d78800998d7eb3d4}{operator+=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o);}
+\DoxyCodeLine{376 }
+\DoxyCodeLine{381         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a26c22eed15d537d1e10ec95055b8d491}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{382 }
+\DoxyCodeLine{387         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a38d8e1a7c6aff01bfcbcf1fdb1c916bb}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{388 }
+\DoxyCodeLine{391         \textcolor{keywordtype}{void} \mbox{\hyperlink{classCompactedDBG_ac85b803c8f7527ed3c68054b77224d6d}{clear}}();}
+\DoxyCodeLine{392 }
+\DoxyCodeLine{397         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a6021ad2fe7b11998b886bc5fd9e1a4ba}{build}}(\mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}}\& opt);}
+\DoxyCodeLine{398 }
+\DoxyCodeLine{405         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_aa8c574863bed96d2a9415cbe3d154de6}{simplify}}(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} delete\_short\_isolated\_unitigs = \textcolor{keyword}{true}, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} clip\_short\_tips = \textcolor{keyword}{true}, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{406 }
+\DoxyCodeLine{414         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a15707e8624006d247e58e4c67718a677}{write}}(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& output\_filename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} GFA\_output = \textcolor{keyword}{true}, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{415 }
+\DoxyCodeLine{425         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a54246fd4260365e290eeb028fc637389}{read}}(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& input\_filename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{426 }
+\DoxyCodeLine{434         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a4ef7f50946f3e7fea1be9c1160f73625}{find}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false});}
+\DoxyCodeLine{435 }
+\DoxyCodeLine{443         \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_aadc9d0327247ec66b0dec2db6b1642e0}{find}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{444 }
+\DoxyCodeLine{453         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a086cb59168200fffa3f279a4931eac47}{findUnitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len);}
+\DoxyCodeLine{454 }
+\DoxyCodeLine{463         \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a517cd010fe08ccbb022be21d9c09e707}{findUnitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len) \textcolor{keyword}{const};}
+\DoxyCodeLine{464 }
+\DoxyCodeLine{477         vector<pair<size\_t, UnitigMap<U, G>>> \mbox{\hyperlink{classCompactedDBG_aee5776cb13e03c1e97ac0436e90ce1f3}{searchSequence}}(   \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& s, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} exact, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} insertion, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} deletion,}
+\DoxyCodeLine{478                                                                 \textcolor{keyword}{const} \textcolor{keywordtype}{bool} substitution, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} or\_exclusive\_match = \textcolor{keyword}{false});}
+\DoxyCodeLine{479 }
+\DoxyCodeLine{492         vector<pair<size\_t, const\_UnitigMap<U, G>>> \mbox{\hyperlink{classCompactedDBG_ad197312ef3cad9fd270cbd1127ac59c1}{searchSequence}}( \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& s, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} exact, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} insertion, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} deletion,}
+\DoxyCodeLine{493                                                                     \textcolor{keyword}{const} \textcolor{keywordtype}{bool} substitution, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} or\_exclusive\_match = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{494 }
+\DoxyCodeLine{502         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a3c884106eb285d837918ddf53ca422bf}{add}}(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{503 }
+\DoxyCodeLine{509         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_aa8e901dc6f1cf0adcc91608a6b34e999}{remove}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& um, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{510 }
+\DoxyCodeLine{523         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a936c3dc0ecc4c8aa28fd5b4dedd1746a}{merge}}(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG}}\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{524 }
+\DoxyCodeLine{535         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_ad71daf96811e96c97be70762d1cba7d8}{merge}}(\textcolor{keyword}{const} vector<CompactedDBG>\& v, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{536 }
+\DoxyCodeLine{540         \mbox{\hyperlink{classunitigIterator}{iterator}} \mbox{\hyperlink{classCompactedDBG_aafac845b848ae5cf79f1f818db6c2ecc}{begin}}();}
+\DoxyCodeLine{541 }
+\DoxyCodeLine{545         \mbox{\hyperlink{classunitigIterator}{const\_iterator}} \mbox{\hyperlink{classCompactedDBG_ab2768195113d859b806e77b56c9b3c2f}{begin}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{546 }
+\DoxyCodeLine{550         \mbox{\hyperlink{classunitigIterator}{iterator}} \mbox{\hyperlink{classCompactedDBG_ad8629de8e7d29ba9bca59c1179b1f88f}{end}}();}
+\DoxyCodeLine{551 }
+\DoxyCodeLine{555         \mbox{\hyperlink{classunitigIterator}{const\_iterator}} \mbox{\hyperlink{classCompactedDBG_a9145ad4ca08f9be984cb85a1ab6477f3}{end}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{556 }
+\DoxyCodeLine{560         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classCompactedDBG_a9f10000ce74e3b3cc6e9cc394cbaba3c}{length}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{561 }
+\DoxyCodeLine{565         \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classCompactedDBG_a86b73a3cf4a8b0755af4cca92ca358d1}{nbKmers}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{566 }
+\DoxyCodeLine{570         \textcolor{keyword}{inline} \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCompactedDBG_a5c2e72fe85306aa4ac190ae9b3e9b3a7}{isInvalid}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} invalid; \}}
+\DoxyCodeLine{571 }
+\DoxyCodeLine{575         \textcolor{keyword}{inline} \textcolor{keywordtype}{int} \mbox{\hyperlink{classCompactedDBG_adbc36fa6e978151d41b259d09443cf97}{getK}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} k\_; \}}
+\DoxyCodeLine{576 }
+\DoxyCodeLine{580         \textcolor{keyword}{inline} \textcolor{keywordtype}{int} \mbox{\hyperlink{classCompactedDBG_a81e7cf447ff19c9039dc340a97e13873}{getG}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} g\_; \}}
+\DoxyCodeLine{581 }
+\DoxyCodeLine{585         \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classCompactedDBG_ad0c9c06a0d88cd230eabf889900ecd17}{size}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} v\_unitigs.size() + km\_unitigs.size() + h\_kmers\_ccov.size(); \}}
+\DoxyCodeLine{586 }
+\DoxyCodeLine{590         \textcolor{keyword}{inline} G* \mbox{\hyperlink{classCompactedDBG_a205c6f712912d45a072efafb21104fc6}{getData}}() \{ \textcolor{keywordflow}{return} data.getData(); \}}
+\DoxyCodeLine{591 }
+\DoxyCodeLine{595         \textcolor{keyword}{inline} \textcolor{keyword}{const} G* \mbox{\hyperlink{classCompactedDBG_a2dcb0f16bb59aaa99f0a390195c870f9}{getData}}()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} data.getData(); \}}
+\DoxyCodeLine{596 }
+\DoxyCodeLine{597         \textcolor{keywordtype}{bool} search(\textcolor{keyword}{const} vector<string>\& query\_filenames, \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& out\_filename\_prefix,}
+\DoxyCodeLine{598                     \textcolor{keyword}{const} \textcolor{keywordtype}{double} ratio\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} inexact\_search, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads,}
+\DoxyCodeLine{599                     \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} verbose = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{600 }
+\DoxyCodeLine{601     \textcolor{keyword}{protected}:}
+\DoxyCodeLine{602 }
+\DoxyCodeLine{603         \textcolor{keywordtype}{bool} annotateSplitUnitigs(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{604 }
+\DoxyCodeLine{605         pair<size\_t, size\_t> splitAllUnitigs();}
+\DoxyCodeLine{606         pair<size\_t, size\_t> getSplitInfoAllUnitigs() \textcolor{keyword}{const};}
+\DoxyCodeLine{607 }
+\DoxyCodeLine{608         \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} joinUnitigs(vector<Kmer>* v\_joins = \textcolor{keyword}{nullptr}, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1) \{}
+\DoxyCodeLine{609 }
+\DoxyCodeLine{610             \textcolor{keywordflow}{return} joinUnitigs\_<is\_void<U>::value>(v\_joins, nb\_threads);}
+\DoxyCodeLine{611         \}}
+\DoxyCodeLine{612 }
+\DoxyCodeLine{613         \textcolor{keywordtype}{bool} mergeData(\textcolor{keyword}{const} \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{614         \textcolor{keywordtype}{bool} mergeData(\mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\&\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{615 }
+\DoxyCodeLine{616     \textcolor{keyword}{private}:}
+\DoxyCodeLine{617 }
+\DoxyCodeLine{618         \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}\& toDataGraph(\mbox{\hyperlink{classCompactedDBG}{CompactedDBG<void, void>}}\&\& o, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1);}
+\DoxyCodeLine{619 }
+\DoxyCodeLine{620         \textcolor{keywordtype}{bool} filter(\textcolor{keyword}{const} \mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}}\& opt, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_unique\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_non\_unique\_kmers);}
+\DoxyCodeLine{621         \textcolor{keywordtype}{bool} construct(\textcolor{keyword}{const} \mbox{\hyperlink{structCDBG__Build__opt}{CDBG\_Build\_opt}}\& opt, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_unique\_minimizers, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_non\_unique\_minimizers);}
+\DoxyCodeLine{622 }
+\DoxyCodeLine{623         \textcolor{keywordtype}{bool} addUnitigSequenceBBF(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}} km, \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos\_match\_km, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len\_match\_km, LockGraph\& lck\_g);}
+\DoxyCodeLine{624 }
+\DoxyCodeLine{625         \textcolor{keywordtype}{size\_t} findUnitigSequenceBBF(\mbox{\hyperlink{classKmer}{Kmer}} km, \textcolor{keywordtype}{string}\& s, \textcolor{keywordtype}{bool}\& isIsolated, vector<Kmer>\& l\_ignored\_km\_tip);}
+\DoxyCodeLine{626         \textcolor{keywordtype}{bool} bwStepBBF(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}} km, \mbox{\hyperlink{classKmer}{Kmer}}\& front, \textcolor{keywordtype}{char}\& c, \textcolor{keywordtype}{bool}\& has\_no\_neighbor, vector<Kmer>\& l\_ignored\_km\_tip, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} check\_fp\_cand = \textcolor{keyword}{true}) \textcolor{keyword}{const};}
+\DoxyCodeLine{627         \textcolor{keywordtype}{bool} fwStepBBF(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}} km, \mbox{\hyperlink{classKmer}{Kmer}}\& \mbox{\hyperlink{classCompactedDBG_ad8629de8e7d29ba9bca59c1179b1f88f}{end}}, \textcolor{keywordtype}{char}\& c, \textcolor{keywordtype}{bool}\& has\_no\_neighbor, vector<Kmer>\& l\_ignored\_km\_tip, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} check\_fp\_cand = \textcolor{keyword}{true}) \textcolor{keyword}{const};}
+\DoxyCodeLine{628 }
+\DoxyCodeLine{629         \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} \mbox{\hyperlink{classCompactedDBG_a4ef7f50946f3e7fea1be9c1160f73625}{find}}(\textcolor{keyword}{const} preAllocMinHashIterator<RepHash>\& it\_min\_h)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{630 }
+\DoxyCodeLine{631             \textcolor{keyword}{const} \textcolor{keywordtype}{int} pos = it\_min\_h.getPosition();}
+\DoxyCodeLine{632             \textcolor{keywordflow}{return} (hmap\_min\_unitigs.find(Minimizer(it\_min\_h.s + pos).rep()) != hmap\_min\_unitigs.end() ? 0 : pos -\/ it\_min\_h.p);}
+\DoxyCodeLine{633         \}}
+\DoxyCodeLine{634 }
+\DoxyCodeLine{635         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a4ef7f50946f3e7fea1be9c1160f73625}{find}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos\_km, \textcolor{keyword}{const} minHashIterator<RepHash>\& it\_min, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false});}
+\DoxyCodeLine{636         \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a4ef7f50946f3e7fea1be9c1160f73625}{find}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos\_km, \textcolor{keyword}{const} minHashIterator<RepHash>\& it\_min, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{637 }
+\DoxyCodeLine{638         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a4ef7f50946f3e7fea1be9c1160f73625}{find}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} preAllocMinHashIterator<RepHash>\& it\_min\_h);}
+\DoxyCodeLine{639 }
+\DoxyCodeLine{640         \textcolor{comment}{//vector<const\_UnitigMap<U, G>> find(const Minimizer\& minz) const;}}
+\DoxyCodeLine{641 }
+\DoxyCodeLine{642         vector<const\_UnitigMap<U, G>> findPredecessors(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{643         vector<const\_UnitigMap<U, G>> findSuccessors(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} limit = 4, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false}) \textcolor{keyword}{const};}
+\DoxyCodeLine{644 }
+\DoxyCodeLine{645         vector<UnitigMap<U, G>> findPredecessors(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false});}
+\DoxyCodeLine{646         vector<UnitigMap<U, G>> findSuccessors(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} limit = 4, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} extremities\_only = \textcolor{keyword}{false});}
+\DoxyCodeLine{647 }
+\DoxyCodeLine{648         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a086cb59168200fffa3f279a4931eac47}{findUnitig}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos);}
+\DoxyCodeLine{649         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a086cb59168200fffa3f279a4931eac47}{findUnitig}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km, \textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos, \textcolor{keyword}{const} preAllocMinHashIterator<RepHash>\& it\_min\_h);}
+\DoxyCodeLine{650 }
+\DoxyCodeLine{651         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a086cb59168200fffa3f279a4931eac47}{findUnitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len, \textcolor{keyword}{const} minHashIterator<RepHash>\& it\_min);}
+\DoxyCodeLine{652         \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}} \mbox{\hyperlink{classCompactedDBG_a086cb59168200fffa3f279a4931eac47}{findUnitig}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} pos, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} len, \textcolor{keyword}{const} minHashIterator<RepHash>\& it\_min) \textcolor{keyword}{const};}
+\DoxyCodeLine{653 }
+\DoxyCodeLine{654         \textcolor{keywordtype}{bool} addUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& str\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig);}
+\DoxyCodeLine{655         \textcolor{keywordtype}{bool} addUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& str\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig\_r, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} is\_short\_r);}
+\DoxyCodeLine{656         \textcolor{keywordtype}{bool} addUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& str\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig, SpinLock\& lck\_unitig, SpinLock\& lck\_kmer\textcolor{comment}{/*, const bool enable\_abundant = true*/});}
+\DoxyCodeLine{657         \textcolor{keywordtype}{void} swapUnitigs(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} isShort, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_a, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_b);}
+\DoxyCodeLine{658 }
+\DoxyCodeLine{659         \textcolor{keywordtype}{bool} mergeUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{660         \textcolor{keywordtype}{bool} annotateSplitUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{661         \textcolor{keywordtype}{bool} annotateSplitUnitig(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, LockGraph\& lck\_g, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{662 }
+\DoxyCodeLine{663         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{664         \textcolor{keyword}{inline} \textcolor{keyword}{typename} std::enable\_if<!is\_void, void>::type mergeData\_(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}}\& a, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& b)\{}
+\DoxyCodeLine{665 }
+\DoxyCodeLine{666             a.\mbox{\hyperlink{classUnitigMap_a0c40fd1ba2df6af9a0c55b7963e41493}{getData}}()-\/>merge(a, b);}
+\DoxyCodeLine{667         \}}
+\DoxyCodeLine{668 }
+\DoxyCodeLine{669         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{670         \textcolor{keyword}{inline} \textcolor{keyword}{typename} std::enable\_if<is\_void, void>::type mergeData\_(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G>}}\& a, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& b) \{\}}
+\DoxyCodeLine{671 }
+\DoxyCodeLine{672         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{673         \textcolor{keyword}{typename} std::enable\_if<!is\_void, void>::type deleteUnitig\_(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} isShort, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} isAbundant,}
+\DoxyCodeLine{674                                                                     \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} delete\_data = \textcolor{keyword}{true});}
+\DoxyCodeLine{675 }
+\DoxyCodeLine{676         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{677         \textcolor{keyword}{typename} std::enable\_if<is\_void, void>::type deleteUnitig\_( \textcolor{keyword}{const} \textcolor{keywordtype}{bool} isShort, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} isAbundant,}
+\DoxyCodeLine{678                                                                     \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} delete\_data = \textcolor{keyword}{true});}
+\DoxyCodeLine{679 }
+\DoxyCodeLine{680         \textcolor{keywordtype}{void} deleteUnitig\_(\textcolor{keyword}{const} \textcolor{keywordtype}{bool} isShort, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} isAbundant, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} id\_unitig, \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& str);}
+\DoxyCodeLine{681 }
+\DoxyCodeLine{682         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{683         \textcolor{keyword}{typename} std::enable\_if<!is\_void, bool>::type extractUnitig\_(\textcolor{keywordtype}{size\_t}\& pos\_v\_unitigs, \textcolor{keywordtype}{size\_t}\& nxt\_pos\_insert\_v\_unitigs,}
+\DoxyCodeLine{684                                                                     \textcolor{keywordtype}{size\_t}\& v\_unitigs\_sz, \textcolor{keywordtype}{size\_t}\& v\_kmers\_sz, \textcolor{keyword}{const} vector<pair<int,int>>\& sp);}
+\DoxyCodeLine{685         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{686         \textcolor{keyword}{typename} std::enable\_if<is\_void, bool>::type extractUnitig\_(\textcolor{keywordtype}{size\_t}\& pos\_v\_unitigs, \textcolor{keywordtype}{size\_t}\& nxt\_pos\_insert\_v\_unitigs,}
+\DoxyCodeLine{687                                                                     \textcolor{keywordtype}{size\_t}\& v\_unitigs\_sz, \textcolor{keywordtype}{size\_t}\& v\_kmers\_sz, \textcolor{keyword}{const} vector<pair<int,int>>\& sp);}
+\DoxyCodeLine{688 }
+\DoxyCodeLine{689         pair<size\_t, size\_t> extractAllUnitigs();}
+\DoxyCodeLine{690 }
+\DoxyCodeLine{691         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{692         \textcolor{keyword}{typename} std::enable\_if<!is\_void, size\_t>::type joinUnitigs\_(vector<Kmer>* v\_joins = \textcolor{keyword}{nullptr}, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1);}
+\DoxyCodeLine{693 }
+\DoxyCodeLine{694         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{695         \textcolor{keyword}{typename} std::enable\_if<is\_void, size\_t>::type joinUnitigs\_(vector<Kmer>* v\_joins = \textcolor{keyword}{nullptr}, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1);}
+\DoxyCodeLine{696 }
+\DoxyCodeLine{697         \textcolor{keywordtype}{void} moveToAbundant();}
+\DoxyCodeLine{698         \textcolor{keywordtype}{void} setFullCoverage(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} cov) \textcolor{keyword}{const};}
+\DoxyCodeLine{699 }
+\DoxyCodeLine{700         \textcolor{keywordtype}{void} createJoinHT(vector<Kmer>* v\_joins, KmerHashTable<Kmer>\& joins, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads) \textcolor{keyword}{const};}
+\DoxyCodeLine{701         \textcolor{keywordtype}{void} createJoinHT(vector<Kmer>* v\_joins, KmerHashTable<char>\& joins, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads) \textcolor{keyword}{const};}
+\DoxyCodeLine{702 }
+\DoxyCodeLine{703         \textcolor{keywordtype}{bool} checkJoin(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& a, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& cm\_a, \mbox{\hyperlink{classKmer}{Kmer}}\& b) \textcolor{keyword}{const};}
+\DoxyCodeLine{704         \textcolor{keywordtype}{void} check\_fp\_tips(KmerHashTable<bool>\& ignored\_km\_tips);}
+\DoxyCodeLine{705         \textcolor{keywordtype}{size\_t} removeUnitigs(\textcolor{keywordtype}{bool} rmIsolated, \textcolor{keywordtype}{bool} clipTips, vector<Kmer>\& v);}
+\DoxyCodeLine{706 }
+\DoxyCodeLine{707         \textcolor{keywordtype}{size\_t} joinTips(\textcolor{keywordtype}{string} filename\_MBBF\_uniq\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{708         vector<Kmer> extractMercyKmers(BlockedBloomFilter\& bf\_uniq\_km, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} verbose = \textcolor{keyword}{false});}
+\DoxyCodeLine{709 }
+\DoxyCodeLine{710         \textcolor{keywordtype}{void} writeGFA(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& graphfilename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1) \textcolor{keyword}{const};}
+\DoxyCodeLine{711         \textcolor{keywordtype}{void} writeFASTA(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& graphfilename) \textcolor{keyword}{const};}
+\DoxyCodeLine{712 }
+\DoxyCodeLine{713         \textcolor{keywordtype}{void} readGFA(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& graphfilename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1);}
+\DoxyCodeLine{714         \textcolor{keywordtype}{void} readFASTA(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& graphfilename, \textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} nb\_threads = 1);}
+\DoxyCodeLine{715 }
+\DoxyCodeLine{716         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{717         \textcolor{keyword}{typename} std::enable\_if<!is\_void, void>::type writeGFA\_sequence\_(GFA\_Parser\& graph, KmerHashTable<size\_t>\& idmap) \textcolor{keyword}{const};}
+\DoxyCodeLine{718         \textcolor{keyword}{template}<\textcolor{keywordtype}{bool} is\_\textcolor{keywordtype}{void}>}
+\DoxyCodeLine{719         \textcolor{keyword}{typename} std::enable\_if<is\_void, void>::type writeGFA\_sequence\_(GFA\_Parser\& graph, KmerHashTable<size\_t>\& idmap) \textcolor{keyword}{const};}
+\DoxyCodeLine{720 }
+\DoxyCodeLine{721         \textcolor{keywordtype}{void} mapRead(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& um);}
+\DoxyCodeLine{722         \textcolor{keywordtype}{void} mapRead(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& um, LockGraph\& lck\_g);}
+\DoxyCodeLine{723 }
+\DoxyCodeLine{724         \textcolor{keywordtype}{void} unmapRead(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& um);}
+\DoxyCodeLine{725         \textcolor{keywordtype}{void} unmapRead(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<U, G>}}\& um, LockGraph\& lck\_g);}
+\DoxyCodeLine{726 }
+\DoxyCodeLine{727         \textcolor{keywordtype}{void} setKmerGmerLength(\textcolor{keyword}{const} \textcolor{keywordtype}{int} kmer\_length, \textcolor{keyword}{const} \textcolor{keywordtype}{int} minimizer\_length = -\/1);}
+\DoxyCodeLine{728         \textcolor{keywordtype}{void} print() \textcolor{keyword}{const};}
+\DoxyCodeLine{729 }
+\DoxyCodeLine{730         vector<pair<size\_t, UnitigMap<U, G>>> \mbox{\hyperlink{classCompactedDBG_aee5776cb13e03c1e97ac0436e90ce1f3}{searchSequence}}(   \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} exact, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} insertion, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} deletion,}
+\DoxyCodeLine{731                                                                 \textcolor{keyword}{const} \textcolor{keywordtype}{bool} substitution, \textcolor{keyword}{const} \textcolor{keywordtype}{double} ratio\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} or\_exclusive\_match);}
+\DoxyCodeLine{732 }
+\DoxyCodeLine{733         vector<pair<size\_t, const\_UnitigMap<U, G>>> \mbox{\hyperlink{classCompactedDBG_aee5776cb13e03c1e97ac0436e90ce1f3}{searchSequence}}( \textcolor{keyword}{const} \textcolor{keywordtype}{string}\& seq, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} exact, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} insertion, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} deletion,}
+\DoxyCodeLine{734                                                                     \textcolor{keyword}{const} \textcolor{keywordtype}{bool} substitution, \textcolor{keyword}{const} \textcolor{keywordtype}{double} ratio\_kmers, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} or\_exclusive\_match) \textcolor{keyword}{const};}
+\DoxyCodeLine{735 }
+\DoxyCodeLine{736         \textcolor{keywordtype}{int} k\_;}
+\DoxyCodeLine{737         \textcolor{keywordtype}{int} g\_;}
+\DoxyCodeLine{738 }
+\DoxyCodeLine{739         \textcolor{keywordtype}{bool} invalid;}
+\DoxyCodeLine{740 }
+\DoxyCodeLine{741         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{int} tiny\_vector\_sz = 2;}
+\DoxyCodeLine{742         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{int} min\_abundance\_lim = 15;}
+\DoxyCodeLine{743         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{int} max\_abundance\_lim = 15;}
+\DoxyCodeLine{744 }
+\DoxyCodeLine{745         \textcolor{keyword}{typedef} KmerHashTable<CompressedCoverage\_t<U>> h\_kmers\_ccov\_t;}
+\DoxyCodeLine{746 }
+\DoxyCodeLine{747         vector<Unitig<U>*> v\_unitigs;}
+\DoxyCodeLine{748 }
+\DoxyCodeLine{749         KmerCovIndex<U> km\_unitigs;}
+\DoxyCodeLine{750         MinimizerIndex hmap\_min\_unitigs;}
+\DoxyCodeLine{751 }
+\DoxyCodeLine{752         h\_kmers\_ccov\_t h\_kmers\_ccov;}
+\DoxyCodeLine{753 }
+\DoxyCodeLine{754         BlockedBloomFilter bf;}
+\DoxyCodeLine{755 }
+\DoxyCodeLine{756         wrapperData<G> data;}
+\DoxyCodeLine{757 \};}
+\DoxyCodeLine{758 }
+\DoxyCodeLine{759 \textcolor{preprocessor}{\#include "{}CompactedDBG.tcc"{}}}
+\DoxyCodeLine{760 \textcolor{preprocessor}{\#include "{}Search.tcc"{}}}
+\DoxyCodeLine{761 }
+\DoxyCodeLine{762 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}
