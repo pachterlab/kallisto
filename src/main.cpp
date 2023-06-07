@@ -95,6 +95,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     case 'e': {
       std::string max_size_str;
       stringstream(optarg) >> max_size_str;
+      std::transform(max_size_str.begin(), max_size_str.end(),max_size_str.begin(), ::toupper);
       if (max_size_str.upper() == "AUTO") {
         opt.max_ec_size = 0;
       } else {
