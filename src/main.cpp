@@ -51,7 +51,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int aa_flag = 0;
   int distinguish_flag = 0;
   int skip_index_flag = 0;
-  int compact_flag = 0;
   const char *opt_string = "i:k:m:e:t:d:";
   static struct option long_options[] = {
     // long args
@@ -60,7 +59,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"aa", no_argument, &aa_flag, 1},
     {"skip-index", no_argument, &skip_index_flag, 1},
     {"distinguish", no_argument, &distinguish_flag, 1},
-    {"compact", no_argument, &compact_flag, 1},
     // short args
     {"index", required_argument, 0, 'i'},
     {"kmer-size", required_argument, 0, 'k'},
@@ -133,9 +131,6 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (distinguish_flag) {
     opt.distinguish = true;
-  }
-  if (compact_flag) {
-    opt.compact_index = true;
   }
 
   for (int i = optind; i < argc; i++) {
@@ -1948,7 +1943,6 @@ void usageIndex() {
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index where sequences are distinguished by the sequence name" << endl
-       << "    --compact               Generate a compact, more memory-efficient index" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)" << endl
