@@ -95,7 +95,13 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'e': {
-      stringstream(optarg) >> opt.max_ec_size;
+      std::string max_size_str;
+      stringstream(optarg) >> max_size_str;
+      if (max_size_str.upper() == "AUTO") {
+        opt.max_ec_size = 0;
+      } else {
+        stringstream(max_size_str) >> opt.max_ec_size;
+      }
       break;
     }
     case 't': {
@@ -1945,7 +1951,7 @@ void usageIndex() {
        << "    --compact               Generate a compact, more memory-efficient index" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
-       << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: automatically chosen)" << endl
+       << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)" << endl
        << endl;
 
 }

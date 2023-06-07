@@ -151,7 +151,7 @@ ProgramOptions() :
   threads(1),
   k(31),
   g(0),
-  max_ec_size(0),
+  max_ec_size(-1),
   iterations(500),
   skip(1),
   seed(42),

@@ -18,8 +18,8 @@ target_include_directories(bifrost_dynamic PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(Bifrost Bifrost.cpp)
 
 find_package(Threads REQUIRED)
-target_link_libraries(bifrost_static ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(bifrost_dynamic ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(bifrost_static pthread)
+target_link_libraries(bifrost_dynamic pthread)
 
 find_package(ZLIB REQUIRED)
 target_link_libraries(bifrost_static ${ZLIB_LIBRARIES})

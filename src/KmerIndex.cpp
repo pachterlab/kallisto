@@ -726,6 +726,10 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
     EC_THRESHOLD = opt.max_ec_size;
     EC_SOFT_THRESHOLD = EC_THRESHOLD;
     EC_MAX_N_ABOVE_THRESHOLD = 0;
+  } else if (opt.max_ec_size <= -1) { // Default: no cap
+    EC_THRESHOLD = std::numeric_limits<uint32_t>::max();
+    EC_SOFT_THRESHOLD = EC_THRESHOLD;
+    EC_MAX_N_ABOVE_THRESHOLD = 0;
   }
   uint32_t sense = 0x80000000, missense = 0;
 
