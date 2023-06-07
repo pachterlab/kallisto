@@ -1405,7 +1405,7 @@ bool CheckOptionsIndex(ProgramOptions& opt) {
       ret = false;
     }
   }
-  if (opt.max_ec_size < 0) {
+  if (opt.max_ec_size < -1) {
     cerr << "Error: invalid max ec size " << opt.max_ec_size << endl;
     ret = false;
   }
