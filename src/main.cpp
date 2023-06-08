@@ -2173,7 +2173,7 @@ int main(int argc, char *argv[]) {
         if ((opt.batch_mode && opt.technology.empty()) || opt.record_batch_bus_barcode) {
           std::vector<std::string> fake_bcs;
           for (size_t j = 0; j < MP.batch_id_mapping.size(); j++) {
-            fake_bcs.push_back(binaryToString(j, BUSFORMAT_FAKE_BARCODE_LEN));
+            fake_bcs.push_back(binaryToString(MP.batch_id_mapping[j], BUSFORMAT_FAKE_BARCODE_LEN));
           }                                                       
           writeCellIds(busbarcodelistname, fake_bcs);
         }
