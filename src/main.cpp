@@ -460,7 +460,8 @@ void ListSingleCellTechnologies() {
   << "10xv1            10x version 1 chemistry" << endl
   << "10xv2            10x version 2 chemistry" << endl
   << "10xv3            10x version 3 chemistry" << endl
-  << "Bulk             Bulk RNA-seq or Smart-seq2 (multiplexed)" << endl
+  << "Bulk             Bulk RNA-seq" << endl
+  << "SmartSeq2        Smart-seq2 (multiplexed)" << endl
   << "BDWTA            BD Rhapsody WTA" << endl
   << "CELSeq           CEL-Seq" << endl
   << "CELSeq2          CEL-Seq version 2" << endl
@@ -895,10 +896,11 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   if (opt.technology.empty()) { // kallisto pseudo
     // check for read files
     if (!opt.batch_mode) {
-      if (ret) {
-        cerr << "[bus] will try running read files as-is in bulk mode" << endl;
+      if (ret) {        
+        cerr << "Error: the technology must be specified via -x, use \"bulk\" for regular RNA-seq reads" << endl;
+        ret = false;
       }
-      opt.batch_mode = true;
+      /*
       if (!opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
@@ -945,6 +947,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           sample_id++;
         }
       }
+      */
     } else if (ret) {
       cerr << "[bus] will try running read files supplied in batch file" << endl;
       if (!opt.single_end) {
@@ -1202,6 +1205,18 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.paired = true;
       strand = ProgramOptions::StrandType::FR;
     } else if (opt.technology == "BULK") {
+      // TODO: Bulk RNA-seq
+      busopt.nfiles = 3;
+      busopt.seq.push_back(BUSOptionSubstr(2,0,0));
+      busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
+      busopt.bc.push_back(BUSOptionSubstr(0,0,0));
+      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
+      if (!opt.single_end) {
+        busopt.nfiles++;
+        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
+        busopt.paired = true;
+      }
+    }else if (opt.technology == "SMARTSEQ2") {
       busopt.nfiles = 3;
       busopt.seq.push_back(BUSOptionSubstr(2,0,0));
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
