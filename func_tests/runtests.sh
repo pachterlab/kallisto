@@ -314,12 +314,12 @@ fi
 
 # Try --aa (with comma-free code index)
 
-cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_f0 -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
+cmdexec "$kallisto bus -x bulk --aa -o $test_dir/bus_aa_f0 -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_frame0.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/bus_aa_f0/output.s.bus -t 12 $test_dir/bus_aa_f0/output.bus"
 checkcmdoutput "bustools text -p $test_dir/bus_aa_f0/output.s.bus|cut -f1,2,4" edbc95eff07ccc4f34e5e357357cb46b
 checkcmdoutput "head -n 7 $test_dir/bus_aa_f0/run_info.json " 8a816727bf99304851907e91a9e4238a
 
-cmdexec "$kallisto bus --aa -o $test_dir/bus_aa_mixedframes -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
+cmdexec "$kallisto bus -x bulk --aa -o $test_dir/bus_aa_mixedframes -i $test_dir/basic7_cfc.idx $test_dir/virus_nn_mixed_frames.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/bus_aa_mixedframes/output.s.bus -t 12 $test_dir/bus_aa_mixedframes/output.bus"
 checkcmdoutput "bustools text -p $test_dir/bus_aa_mixedframes/output.s.bus|cut -f1,2,4" 18a44f27b25053a0bb3db195473717d5
 checkcmdoutput "head -n 7 $test_dir/bus_aa_mixedframes/run_info.json " 49fd334d45490150ed97d231092ab9e4
@@ -344,7 +344,7 @@ t2	g1
 t3	g2
 t4	g2
 t5	g3" > $test_dir/t2g_test.txt # Make a transcript-to-gene mapping file
-cmdexec "$kallisto bus --fr-stranded -o $test_dir/busbulklarge -t 12 -i $test_dir/basic7.idx $test_dir/large.fastq.gz"
+cmdexec "$kallisto bus -x BULK --fr-stranded -o $test_dir/busbulklarge -t 12 -i $test_dir/basic7.idx $test_dir/large.fastq.gz"
 cmdexec "$bustools sort -o $test_dir/busbulklarge/output.s.bus -t 12 $test_dir/busbulklarge/output.bus"
 cmdexec "$bustools count --cm -m -o $test_dir/busbulklarge/counts_tcc/ -g $test_dir/t2g_test.txt -t $test_dir/busbulklarge/transcripts.txt -e $test_dir/busbulklarge/matrix.ec $test_dir/busbulklarge/output.bus"
 cmdexec "$kallisto quant-tcc -o $test_dir/quant_tcc_test1/ -l 5 -s 2 -i $test_dir/busbulklarge/index.saved -g $test_dir/t2g_test.txt -e $test_dir/busbulklarge/counts_tcc/output.ec.txt $test_dir/busbulklarge/counts_tcc/output.mtx"
