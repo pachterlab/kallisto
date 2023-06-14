@@ -893,18 +893,22 @@ bool CheckOptionsBus(ProgramOptions& opt) {
 
   ProgramOptions::StrandType strand = ProgramOptions::StrandType::None;
 
+  bool do_bulk_mode = (opt.technology == "BULK");
+  if (do_bulk_mode) {
+    opt.technology = "";
+  }
   if (opt.technology.empty()) { // kallisto pseudo
     // check for read files
     if (!opt.batch_mode) {
-      if (ret) {        
+      if (ret && !do_bulk_mode) {        
         cerr << "Error: the technology must be specified via -x, use \"bulk\" for regular RNA-seq reads" << endl;
         ret = false;
       }
-      /*
-      if (!opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
+      opt.batch_mode = true;
+      if (ret && !opt.single_end && opt.files.size() % 2 != 0 && opt.input_interleaved_nfiles == 0) {
         cerr << "Error: paired-end mode requires an even number of input files" << endl;
         ret = false;
-      } else {
+      } else if (ret) {
         int i = 0;
         int sample_id = 0;
         while (i < opt.files.size()) {
@@ -947,7 +951,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
           sample_id++;
         }
       }
-      */
     } else if (ret) {
       cerr << "[bus] will try running read files supplied in batch file" << endl;
       if (!opt.single_end) {
@@ -1204,19 +1207,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,0,0));
       busopt.paired = true;
       strand = ProgramOptions::StrandType::FR;
-    } else if (opt.technology == "BULK") {
-      // TODO: Bulk RNA-seq
-      busopt.nfiles = 3;
-      busopt.seq.push_back(BUSOptionSubstr(2,0,0));
-      busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
-      busopt.bc.push_back(BUSOptionSubstr(0,0,0));
-      busopt.bc.push_back(BUSOptionSubstr(1,0,0));
-      if (!opt.single_end) {
-        busopt.nfiles++;
-        busopt.seq.push_back(BUSOptionSubstr(3,0,0));
-        busopt.paired = true;
-      }
-    }else if (opt.technology == "SMARTSEQ2") {
+    } else if (opt.technology == "SMARTSEQ2") {
       busopt.nfiles = 3;
       busopt.seq.push_back(BUSOptionSubstr(2,0,0));
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
