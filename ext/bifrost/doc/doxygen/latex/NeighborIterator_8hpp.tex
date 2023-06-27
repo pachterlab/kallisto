@@ -1,0 +1,26 @@
+\hypertarget{NeighborIterator_8hpp}{}\section{src/\+Neighbor\+Iterator.hpp File Reference}
+\label{NeighborIterator_8hpp}\index{src/\+Neighbor\+Iterator.\+hpp@{src/\+Neighbor\+Iterator.\+hpp}}
+
+
+The \hyperlink{classneighborIterator}{neighbor\+Iterator}, \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} and \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} type interfaces.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+class \hyperlink{classCompactedDBG}{Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}
+\begin{DoxyCompactList}\small\item\em Represent a Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+class \hyperlink{classUnitigMap}{Unitig\+Map$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Contain all the information for the mapping of a k-\/mer or a sequence to a unitig of a Compacted de Bruijn graph. \end{DoxyCompactList}\item 
+class \hyperlink{classneighborIterator}{neighbor\+Iterator$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Iterator for the neighbors (predecessors or successors) of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\item 
+class \hyperlink{classBackwardCDBG}{Backward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\item 
+class \hyperlink{classForwardCDBG}{Forward\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t, is\+\_\+const $>$}
+\begin{DoxyCompactList}\small\item\em Wrapper for class \hyperlink{classneighborIterator}{neighbor\+Iterator} to iterate over the predecessors of a reference unitig used in a \hyperlink{classUnitigMap}{Unitig\+Map} object. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+The \hyperlink{classneighborIterator}{neighbor\+Iterator}, \hyperlink{classBackwardCDBG}{Backward\+C\+D\+BG} and \hyperlink{classForwardCDBG}{Forward\+C\+D\+BG} type interfaces. 
+
+Code snippets using these interfaces are provided in snippets/test.\+cpp. 

@@ -200,7 +200,8 @@ void H5Converter::rw_from_counts(hid_t group_id, const std::string& count_name, 
   std::vector<double> alpha;
   read_dataset(group_id, count_name.c_str(), alpha);
 
-  plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_);  
+  std::vector<uint32_t> lengths_2(std::begin(lengths_), std::end(lengths_));
+  plaintext_writer(out_fname, targ_ids_, alpha, eff_lengths_, lengths_2);  
 }
 
 #endif // USE_HDF5

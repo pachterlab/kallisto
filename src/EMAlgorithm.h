@@ -23,7 +23,7 @@ struct EMAlgorithm {
   // counts is vector from collector, with indices corresponding to ec ids
   // target_names is the target_names_ from collector
   // TODO: initialize alpha a bit more intelligently
-  EMAlgorithm(const std::vector<int>& counts,
+  EMAlgorithm(const std::vector<uint32_t>& counts,
               const KmerIndex& index,
               const MinCollector& tc,
               const std::vector<double>& all_means,
@@ -31,7 +31,7 @@ struct EMAlgorithm {
     index_(index),
     tc_(tc),
     num_trans_(index.target_names_.size()),
-    ecmap_(index.ecmap),
+    ecmapinv_(index.ecmapinv),
     counts_(counts),
     target_names_(index.target_names_),
     post_bias_(4096,1.0),
@@ -43,7 +43,7 @@ struct EMAlgorithm {
   {
     assert(all_fl_means.size() == index_.target_lens_.size());
     eff_lens_ = calc_eff_lens(index_.target_lens_, all_fl_means);
-    weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);    
+    weight_map_ = calc_weights(tc_.counts, ecmapinv_, eff_lens_);
     assert(target_names_.size() == eff_lens_.size());
   }
 
@@ -68,39 +68,45 @@ struct EMAlgorithm {
     for (i = 0; i < n_iter; ++i) {
       if (recomputeEffLen && (i == min_rounds || i == min_rounds + 500)) {
         eff_lens_ = update_eff_lens(all_fl_means, tc_, index_, alpha_, eff_lens_, post_bias_, opt);
-        weight_map_ = calc_weights (tc_.counts, ecmap_, eff_lens_);
+        weight_map_ = calc_weights(tc_.counts, ecmapinv_, eff_lens_);
       }
 
 
-      //for (auto& ec_kv : ecmap_ ) {
-      for (int ec = 0; ec < num_trans_; ec++) {
-        next_alpha[ec] = counts_[ec];
+      for (const auto& it : ecmapinv_) {
+        if (it.first.cardinality() == 1) {
+          next_alpha[it.first.maximum()] = counts_[it.second];
+        }
       }
 
+      for (const auto& it : ecmapinv_) {
+        if (it.first.cardinality() == 1) { // Individual transcript
+          continue;
+        }
 
-      for (int ec = num_trans_; ec < ecmap_.size();  ec++) {
         denom = 0.0;
 
-        if (counts_[ec] == 0) {
+        if (counts_[it.second] == 0) {
           continue;
         }
 
         // first, compute the denominator: a normalizer
         // iterate over targets in EC map
-        auto& wv = weight_map_[ec];
+        auto& wv = weight_map_[it.second];
 
         // everything in ecmap should be in weight_map
         //assert( w_search != weight_map_.end() );
         //assert( w_search->second.size() == ec_kv.second.size() );
 
         // wv is weights vector
-        // v is ec vector
+        // trs is a vector of transcript ids
 
-        auto& v = ecmap_[ec]; //ecmap_.find(ec)->second;
-        auto numEC = v.size();
+        auto& r = it.first; //ecmap_.find(ec)->second;
+        auto numEC = r.cardinality();
+        uint32_t* trs = new uint32_t[numEC];
+        r.toUint32Array(trs);
 
         for (auto t_it = 0; t_it < numEC; ++t_it) {
-          denom += alpha_[v[t_it]] * wv[t_it];
+          denom += alpha_[trs[t_it]] * wv[t_it];
         }
 
         if (denom < TOLERANCE) {
@@ -108,10 +114,13 @@ struct EMAlgorithm {
         }
 
         // compute the update step
-        auto countNorm = counts_[ec] / denom;
+        auto countNorm = counts_[it.second] / denom;
         for (auto t_it = 0; t_it < numEC; ++t_it) {
-          next_alpha[v[t_it]] +=  (wv[t_it] * alpha_[v[t_it]]) * countNorm;
+          next_alpha[trs[t_it]] += (wv[t_it] * alpha_[trs[t_it]]) * countNorm;
         }
+
+        delete[] trs;
+        trs = nullptr;
 
       }
 
@@ -279,8 +288,8 @@ struct EMAlgorithm {
   int num_trans_;
   const KmerIndex& index_;
   const MinCollector& tc_;
-  const EcMap& ecmap_;
-  const std::vector<int>& counts_;
+  const EcMapInv& ecmapinv_;
+  const std::vector<uint32_t>& counts_;
   const std::vector<std::string>& target_names_;
   const std::vector<double>& all_fl_means;
   std::vector<double> eff_lens_;

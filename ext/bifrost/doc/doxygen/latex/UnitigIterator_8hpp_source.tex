@@ -1,0 +1,64 @@
+\hypertarget{UnitigIterator_8hpp_source}{}\doxysection{Unitig\+Iterator.\+hpp}
+\label{UnitigIterator_8hpp_source}\index{src/UnitigIterator.hpp@{src/UnitigIterator.hpp}}
+\mbox{\hyperlink{UnitigIterator_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_UNITIG\_ITERATOR\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_UNITIG\_ITERATOR\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{UnitigMap_8hpp}{UnitigMap.hpp}}"{}}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include "{}KmerHashTable.hpp"{}}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include "{}CompressedCoverage.hpp"{}}}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{13 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U, \textcolor{keyword}{typename} G> \textcolor{keyword}{class }\mbox{\hyperlink{classCompactedDBG}{CompactedDBG}};}
+\DoxyCodeLine{14 }
+\DoxyCodeLine{35 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keyword}{typename} Graph\_data\_t = \textcolor{keywordtype}{void}, \textcolor{keywordtype}{bool} is\_const = false>}
+\DoxyCodeLine{36 \textcolor{keyword}{class }\mbox{\hyperlink{classunitigIterator}{unitigIterator}} : \textcolor{keyword}{public} std::iterator<std::input\_iterator\_tag, UnitigMap<Unitig\_data\_t, Graph\_data\_t, is\_const>, int> \{}
+\DoxyCodeLine{37 }
+\DoxyCodeLine{38     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{39     \textcolor{keyword}{typedef} Graph\_data\_t G;}
+\DoxyCodeLine{40 }
+\DoxyCodeLine{41     \textcolor{keyword}{public}:}
+\DoxyCodeLine{42 }
+\DoxyCodeLine{43         \textcolor{keyword}{typedef} \textcolor{keyword}{typename} std::conditional<is\_const, const CompactedDBG<U, G>*, \mbox{\hyperlink{classCompactedDBG}{CompactedDBG<U, G>}}*>::type CompactedDBG\_ptr\_t;}
+\DoxyCodeLine{44 }
+\DoxyCodeLine{48         \mbox{\hyperlink{classunitigIterator_a1bd469cfd276720b53c56ba810fccea5}{unitigIterator}}();}
+\DoxyCodeLine{49 }
+\DoxyCodeLine{55         \mbox{\hyperlink{classunitigIterator_a3a1d4af1f86c340ef92197cd11baa80a}{unitigIterator}}(CompactedDBG\_ptr\_t cdbg\_);}
+\DoxyCodeLine{56 }
+\DoxyCodeLine{60         \mbox{\hyperlink{classunitigIterator_af9a7540eb106197afa5b3befd7bf3ac9}{unitigIterator}}(\textcolor{keyword}{const} \mbox{\hyperlink{classunitigIterator}{unitigIterator}}\& o);}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{65         \mbox{\hyperlink{classunitigIterator}{unitigIterator}}\& \mbox{\hyperlink{classunitigIterator_a12e21b39853885dcaa3352d8f1dec3f8}{operator++}}();}
+\DoxyCodeLine{66 }
+\DoxyCodeLine{70         \mbox{\hyperlink{classunitigIterator}{unitigIterator}} \mbox{\hyperlink{classunitigIterator_aafb3c6c0095f40975ada699e738654ff}{operator++}}(\textcolor{keywordtype}{int});}
+\DoxyCodeLine{71 }
+\DoxyCodeLine{76         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classunitigIterator_a5c2d4c59d6024f71a8512e0cbae036fa}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classunitigIterator}{unitigIterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{77 }
+\DoxyCodeLine{82         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classunitigIterator_aead3edb7b33bdcbe9f5dd0e69714991e}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classunitigIterator}{unitigIterator}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{83 }
+\DoxyCodeLine{87         \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}\& \mbox{\hyperlink{classunitigIterator_afd97b3ac99dd7f83a288a383dd95172c}{operator*}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{88 }
+\DoxyCodeLine{92         \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}}* \mbox{\hyperlink{classunitigIterator_a2fe74b0796643c7468b59cc59baaaf59}{operator-\/>}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{93 }
+\DoxyCodeLine{94     \textcolor{keyword}{private}:}
+\DoxyCodeLine{95 }
+\DoxyCodeLine{96         \textcolor{keywordtype}{size\_t} i;}
+\DoxyCodeLine{97 }
+\DoxyCodeLine{98         \textcolor{keywordtype}{size\_t} v\_unitigs\_sz;}
+\DoxyCodeLine{99         \textcolor{keywordtype}{size\_t} v\_kmers\_sz;}
+\DoxyCodeLine{100         \textcolor{keywordtype}{size\_t} h\_kmers\_ccov\_sz;}
+\DoxyCodeLine{101         \textcolor{keywordtype}{size\_t} sz;}
+\DoxyCodeLine{102 }
+\DoxyCodeLine{103         \textcolor{keywordtype}{bool} invalid;}
+\DoxyCodeLine{104 }
+\DoxyCodeLine{105         \textcolor{keyword}{typename} KmerHashTable<CompressedCoverage\_t<U>>::const\_iterator it\_h\_kmers\_ccov;}
+\DoxyCodeLine{106 }
+\DoxyCodeLine{107         \mbox{\hyperlink{classUnitigMap}{UnitigMap<U, G, is\_const>}} um;}
+\DoxyCodeLine{108 }
+\DoxyCodeLine{109         CompactedDBG\_ptr\_t cdbg;}
+\DoxyCodeLine{110 \};}
+\DoxyCodeLine{111 }
+\DoxyCodeLine{112 \textcolor{preprocessor}{\#include "{}UnitigIterator.tcc"{}}}
+\DoxyCodeLine{113 }
+\DoxyCodeLine{114 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

@@ -1,0 +1,440 @@
+\hypertarget{classColoredCDBG}{}\section{Colored\+C\+D\+BG$<$ Unitig\+\_\+data\+\_\+t $>$ Class Template Reference}
+\label{classColoredCDBG}\index{Colored\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t $>$@{Colored\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t $>$}}
+
+
+Represent a Colored and Compacted de Bruijn graph.  
+
+
+
+
+Inherits \hyperlink{classCompactedDBG}{Compacted\+D\+B\+G$<$ Data\+Accessor$<$ Unitig\+\_\+data\+\_\+t $>$, Data\+Storage$<$ Unitig\+\_\+data\+\_\+t $>$ $>$}.
+
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{classColoredCDBG_aec6b5eb64fc7086bf81107849847071d}{Colored\+C\+D\+BG} (int kmer\+\_\+length=31, int minimizer\+\_\+length=23)
+\begin{DoxyCompactList}\small\item\em Constructor (set up an empty colored cd\+BG). \end{DoxyCompactList}\item 
+\hyperlink{classColoredCDBG_a8d2b4c5690efe813b6229a6e22343335}{Colored\+C\+D\+BG} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Copy constructor (copy a colored cd\+BG). \end{DoxyCompactList}\item 
+\hyperlink{classColoredCDBG_a757b4744f396052946171021db1a1fb6}{Colored\+C\+D\+BG} (\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move constructor (move a colored cd\+BG). \end{DoxyCompactList}\item 
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \& \hyperlink{classColoredCDBG_a11b72ab0d9fb63f499a93f6735a1d76e}{operator=} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Copy assignment operator (copy a colored cd\+BG). \end{DoxyCompactList}\item 
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \& \hyperlink{classColoredCDBG_a8904ededa077f4b0ad5e8d795d7de0e6}{operator=} (\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&\&o)
+\begin{DoxyCompactList}\small\item\em Move assignment operator (move a colored cd\+BG). \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a31d90c82590481d98b759f7302de90e6}{operator==} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o) const
+\begin{DoxyCompactList}\small\item\em Equality operator. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a35c67941c16969d13c838e0208b38ede}{operator!=} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o) const
+\begin{DoxyCompactList}\small\item\em Inequality operator. \end{DoxyCompactList}\item 
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \& \hyperlink{classColoredCDBG_a0c88f044938f8dcca4ede2396ceee550}{operator+=} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o)
+\begin{DoxyCompactList}\small\item\em Addition assignment operator (merge a colored cd\+BG). \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classColoredCDBG_aa366d5e47c978119a20ec9494d3f2ad2}\label{classColoredCDBG_aa366d5e47c978119a20ec9494d3f2ad2}} 
+void \hyperlink{classColoredCDBG_aa366d5e47c978119a20ec9494d3f2ad2}{clear} ()
+\begin{DoxyCompactList}\small\item\em Clear the graph\+: remove unitigs, user data and colors + reset its parameters. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a7213d0d20b4ee933af43993abf776d43}{build\+Graph} (const \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&opt)
+\begin{DoxyCompactList}\small\item\em Build the Colored and compacted de Bruijn graph (only the unitigs). \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_af9d50df31f6f82199eb815c43de73a52}{build\+Colors} (const \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&opt)
+\begin{DoxyCompactList}\small\item\em Map the colors to the unitigs. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_ae9a3cd0bfa8c72ec2a2e71e6b9f7a0bb}{write} (const string \&prefix\+\_\+output\+\_\+filename, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false) const
+\begin{DoxyCompactList}\small\item\em Write a colored and compacted de Bruijn graph to disk. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a513ae8190f56a26b088a99e1e33689d8}{read} (const string \&input\+\_\+graph\+\_\+filename, const string \&input\+\_\+colors\+\_\+filename, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Read a colored and compacted de Bruijn graph from disk. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{merge} (const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&o, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge a colored and compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_af15dc622a1c16cb8ec0f7b1a1dc2dcd8}{merge} (\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} \&\&o, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge and clear a colored and compacted de Bruijn graph. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a2b62245a0edcf177fd33680bfa3a3178}{merge} (const vector$<$ \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} $>$ \&v, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge multiple colored and compacted de Bruijn graphs. \end{DoxyCompactList}\item 
+bool \hyperlink{classColoredCDBG_a6820d9b88fcb3d1c0ce970bbe8478bab}{merge} (vector$<$ \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} $>$ \&\&v, const size\+\_\+t nb\+\_\+threads=1, const bool verbose=false)
+\begin{DoxyCompactList}\small\item\em Merge and clear multiple colored and compacted de Bruijn graphs. \end{DoxyCompactList}\item 
+string \hyperlink{classColoredCDBG_addda923f3d4f213ffd3a572163c410f8}{get\+Color\+Name} (const size\+\_\+t color\+\_\+id) const
+\begin{DoxyCompactList}\small\item\em Get the name of a color. \end{DoxyCompactList}\item 
+vector$<$ string $>$ \hyperlink{classColoredCDBG_ae628f30cb64ba6047585c3df87ac344c}{get\+Color\+Names} () const
+\begin{DoxyCompactList}\small\item\em Get the names of all colors. \end{DoxyCompactList}\item 
+size\+\_\+t \hyperlink{classColoredCDBG_a53c723997265f89ab284433670ab54f9}{get\+Nb\+Colors} () const
+\begin{DoxyCompactList}\small\item\em Get the number of colors in the graph. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Additional Inherited Members}
+
+
+\subsection{Detailed Description}
+\subsubsection*{template$<$typename Unitig\+\_\+data\+\_\+t = void$>$\newline
+class Colored\+C\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t $>$}
+
+Represent a Colored and Compacted de Bruijn graph. 
+
+The class inherits from \hyperlink{classCompactedDBG}{Compacted\+D\+BG} which means that all public functions available with \hyperlink{classCompactedDBG}{Compacted\+D\+BG} are also available with \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}. 
+\begin{DoxyCode}
+\hyperlink{classColoredCDBG}{ColoredCDBG<>} ccdbg\_1; \textcolor{comment}{// No unitig data}
+\hyperlink{classColoredCDBG}{ColoredCDBG<void>} ccdbg\_2; \textcolor{comment}{// Equivalent to previous notation}
+\hyperlink{classColoredCDBG}{ColoredCDBG<MyUnitigData>} ccdbg\_3; \textcolor{comment}{// An object of type MyUnitigData will be
+       associated with each unitig (along the colors)}
+\end{DoxyCode}
+ If data are to be associated with the unitigs, these data must be wrapped into a class that inherits from the abstract class \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}, such as in\+: 
+\begin{DoxyCode}
+\textcolor{keyword}{class }MyUnitigData : \textcolor{keyword}{public} \hyperlink{classCCDBG__Data__t}{CCDBG\_Data\_t}<MyUnitigData> \{ ... \};
+\hyperlink{classCompactedDBG}{CompactedDBG<MyUnitigData>} cdbg;
+\end{DoxyCode}
+ Because \hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t} is an abstract class, all the methods of the base class (\hyperlink{classCCDBG__Data__t}{C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t}) must be implemented in your wrapper (the derived class, aka My\+Unitig\+Data in this example). I\+M\+P\+O\+R\+T\+A\+NT\+: If you do not implement those methods, default ones that have no effects will be applied. 
+
+\subsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classColoredCDBG_aec6b5eb64fc7086bf81107849847071d}\label{classColoredCDBG_aec6b5eb64fc7086bf81107849847071d}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{Colored\+C\+D\+B\+G()}{ColoredCDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [1/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} (\begin{DoxyParamCaption}\item[{int}]{kmer\+\_\+length = {\ttfamily 31},  }\item[{int}]{minimizer\+\_\+length = {\ttfamily 23} }\end{DoxyParamCaption})}
+
+
+
+Constructor (set up an empty colored cd\+BG). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em kmer\+\_\+length} & is the length k of k-\/mers used in the graph (each unitig is of length at least k). \\
+\hline
+{\em minimizer\+\_\+length} & is the length g of minimizers (g $<$ k) used in the graph. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classColoredCDBG_a8d2b4c5690efe813b6229a6e22343335}\label{classColoredCDBG_a8d2b4c5690efe813b6229a6e22343335}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{Colored\+C\+D\+B\+G()}{ColoredCDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [2/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy constructor (copy a colored cd\+BG). 
+
+This function is expensive in terms of time and memory as the content of a colored and compacted de Bruijn graph is copied. After the call to this function, the same graph exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the colored and compacted de Bruijn graph to copy. \\
+\hline
+\end{DoxyParams}
+\mbox{\Hypertarget{classColoredCDBG_a757b4744f396052946171021db1a1fb6}\label{classColoredCDBG_a757b4744f396052946171021db1a1fb6}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{Colored\+C\+D\+B\+G()}{ColoredCDBG()}\hspace{0.1cm}{\footnotesize\ttfamily [3/3]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} (\begin{DoxyParamCaption}\item[{\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move constructor (move a colored cd\+BG). 
+
+The content of o is moved (\char`\"{}transfered\char`\"{}) to a new colored and compacted de Bruijn graph. The colored and compacted de Bruijn graph referenced by o will be empty after the call to this constructor. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a reference on a reference to the colored and compacted de Bruijn graph to move. \\
+\hline
+\end{DoxyParams}
+
+
+\subsection{Member Function Documentation}
+\mbox{\Hypertarget{classColoredCDBG_af9d50df31f6f82199eb815c43de73a52}\label{classColoredCDBG_af9d50df31f6f82199eb815c43de73a52}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!build\+Colors@{build\+Colors}}
+\index{build\+Colors@{build\+Colors}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{build\+Colors()}{buildColors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::build\+Colors (\begin{DoxyParamCaption}\item[{const \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&}]{opt }\end{DoxyParamCaption})}
+
+
+
+Map the colors to the unitigs. 
+
+This is done by reading the input files and querying the graph. If a color filename is provided in opt.\+filename\+\_\+colors\+\_\+in, colors are loaded from that file instead. 
+\begin{DoxyParams}{Parameters}
+{\em opt} & is a structure from which the members are parameters of this function. See \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the colors have been mapped successfully. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a7213d0d20b4ee933af43993abf776d43}\label{classColoredCDBG_a7213d0d20b4ee933af43993abf776d43}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!build\+Graph@{build\+Graph}}
+\index{build\+Graph@{build\+Graph}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{build\+Graph()}{buildGraph()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::build\+Graph (\begin{DoxyParamCaption}\item[{const \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt} \&}]{opt }\end{DoxyParamCaption})}
+
+
+
+Build the Colored and compacted de Bruijn graph (only the unitigs). 
+
+A call to Colored\+C\+D\+B\+G\+::map\+Colors is required afterwards to map colors to unitigs. 
+\begin{DoxyParams}{Parameters}
+{\em opt} & is a structure from which the members are parameters of this function. See \hyperlink{structCCDBG__Build__opt}{C\+C\+D\+B\+G\+\_\+\+Build\+\_\+opt}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+boolean indicating if the graph has been built successfully. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_addda923f3d4f213ffd3a572163c410f8}\label{classColoredCDBG_addda923f3d4f213ffd3a572163c410f8}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!get\+Color\+Name@{get\+Color\+Name}}
+\index{get\+Color\+Name@{get\+Color\+Name}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+Color\+Name()}{getColorName()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+string \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Color\+Name (\begin{DoxyParamCaption}\item[{const size\+\_\+t}]{color\+\_\+id }\end{DoxyParamCaption}) const}
+
+
+
+Get the name of a color. 
+
+As colors match the input files, the color names match the input filenames. \begin{DoxyReturn}{Returns}
+a string which is either a color name or an empty string if the color ID is invalid or if the colors have not yet been mapped to the unitigs. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_ae628f30cb64ba6047585c3df87ac344c}\label{classColoredCDBG_ae628f30cb64ba6047585c3df87ac344c}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!get\+Color\+Names@{get\+Color\+Names}}
+\index{get\+Color\+Names@{get\+Color\+Names}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+Color\+Names()}{getColorNames()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+vector$<$string$>$ \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Color\+Names (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Get the names of all colors. 
+
+As colors match the input files, the color names match the input filenames. \begin{DoxyReturn}{Returns}
+a vector of strings for which each string is either a color name or an empty string if the color ID is invalid or if the colors have not yet been mapped to the unitigs. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a53c723997265f89ab284433670ab54f9}\label{classColoredCDBG_a53c723997265f89ab284433670ab54f9}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!get\+Nb\+Colors@{get\+Nb\+Colors}}
+\index{get\+Nb\+Colors@{get\+Nb\+Colors}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{get\+Nb\+Colors()}{getNbColors()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+size\+\_\+t \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::get\+Nb\+Colors (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Get the number of colors in the graph. 
+
+\begin{DoxyReturn}{Returns}
+the number of colors in the graph. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}\label{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [1/4]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge a colored and compacted de Bruijn graph. 
+
+After merging, all unitigs and colors of the input graph have been added to and compacted with the current colored and compacted de Bruijn graph (this). If the unitigs of the input graph had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current colored and compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. Note that if multiple colored and compacted de Bruijn graphs have to be merged, it is more efficient to call \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{Colored\+C\+D\+B\+G\+::merge} with a vector of \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} as input. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the colored and compacted de Bruijn graph to merge. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graph has been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_af15dc622a1c16cb8ec0f7b1a1dc2dcd8}\label{classColoredCDBG_af15dc622a1c16cb8ec0f7b1a1dc2dcd8}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [2/4]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&\&}]{o,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge and clear a colored and compacted de Bruijn graph. 
+
+After merging, all unitigs and colors of the input graph have been added to and compacted with the current colored and compacted de Bruijn graph (this). The input graph is cleared before the function returns. If the unitigs of the input graph had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current colored and compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. Note that if multiple colored and compacted de Bruijn graphs have to be merged, it is more efficient to call \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{Colored\+C\+D\+B\+G\+::merge} with a vector of \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} as input. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a reference on a reference to the colored and compacted de Bruijn graph to merge. It can be obtained using std\+::move(). After merging, the graph pointed by o is cleared. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graph has been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a2b62245a0edcf177fd33680bfa3a3178}\label{classColoredCDBG_a2b62245a0edcf177fd33680bfa3a3178}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [3/4]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{const vector$<$ \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ $>$ \&}]{v,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge multiple colored and compacted de Bruijn graphs. 
+
+After merging, all unitigs and colors of the input colored and compacted de Bruijn graphs have been added to and compacted with the current colored and compacted de Bruijn graph (this). If the unitigs had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current colored and compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. 
+\begin{DoxyParams}{Parameters}
+{\em v} & is a constant reference to a vector of colored and compacted de Bruijn graphs to merge. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graphs have been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a6820d9b88fcb3d1c0ce970bbe8478bab}\label{classColoredCDBG_a6820d9b88fcb3d1c0ce970bbe8478bab}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!merge@{merge}}
+\index{merge@{merge}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{merge()}{merge()}\hspace{0.1cm}{\footnotesize\ttfamily [4/4]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::merge (\begin{DoxyParamCaption}\item[{vector$<$ \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ $>$ \&\&}]{v,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Merge and clear multiple colored and compacted de Bruijn graphs. 
+
+After merging, all unitigs and colors of the input colored and compacted de Bruijn graphs have been added to and compacted with the current colored and compacted de Bruijn graph (this). The input graphs are cleared before the function returns. If the input unitigs had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current colored and compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are also present in its base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. 
+\begin{DoxyParams}{Parameters}
+{\em v} & is a reference on a reference to a vector of colored and compacted de Bruijn graphs to merge. It can be obtained using std\+::move(). After merging, the graphs in v are cleared. \\
+\hline
+{\em nb\+\_\+threads} & is an integer indicating how many threads can be used during the merging. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages must be printed during the execution of the function. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graphs have been successfully merged. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a35c67941c16969d13c838e0208b38ede}\label{classColoredCDBG_a35c67941c16969d13c838e0208b38ede}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!operator"!=@{operator"!=}}
+\index{operator"!=@{operator"!=}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{operator"!=()}{operator!=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::operator!= (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Inequality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two compacted de Bruijn graphs have different colored unitigs (does not compare the data associated with the unitigs). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a0c88f044938f8dcca4ede2396ceee550}\label{classColoredCDBG_a0c88f044938f8dcca4ede2396ceee550}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!operator+=@{operator+=}}
+\index{operator+=@{operator+=}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{operator+=()}{operator+=()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}\& \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::operator+= (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Addition assignment operator (merge a colored cd\+BG). 
+
+After merging, all unitigs and colors of o have been added to and compacted with the current colored and compacted de Bruijn graph (this). If the unitigs of o had data of type \char`\"{}\+My\+Unitig\+Data\char`\"{} associated, they have been added to the current colored and compacted de Bruijn graph using the functions of the class My\+Unitig\+Data which are in base class C\+C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$\+My\+Unitig\+Data$>$. This function is similar to \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{Colored\+C\+D\+B\+G\+::merge} except that it uses only one thread while \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{Colored\+C\+D\+B\+G\+::merge} can work with multiple threads (number of threads provided as a parameter). Note that if multiple colored and compacted de Bruijn graphs have to be merged, it is more efficient to call \hyperlink{classColoredCDBG_a4242b53d2b0d7b28a038ad6d89b42db7}{Colored\+C\+D\+B\+G\+::merge} with a vector of \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG} as input. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the colored and compacted de Bruijn graph to merge. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the current colored and compacted de Bruijn after merging. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a11b72ab0d9fb63f499a93f6735a1d76e}\label{classColoredCDBG_a11b72ab0d9fb63f499a93f6735a1d76e}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!operator=@{operator=}}
+\index{operator=@{operator=}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}\& \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::operator= (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption})}
+
+
+
+Copy assignment operator (copy a colored cd\+BG). 
+
+This function is expensive in terms of time and memory as the content of a colored and compacted de Bruijn graph is copied. After the call to this function, the same graph exists twice in memory. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a constant reference to the colored and compacted de Bruijn graph to copy. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the colored and compacted de Bruijn which is the copy. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a8904ededa077f4b0ad5e8d795d7de0e6}\label{classColoredCDBG_a8904ededa077f4b0ad5e8d795d7de0e6}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!operator=@{operator=}}
+\index{operator=@{operator=}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{operator=()}{operator=()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}\& \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::operator= (\begin{DoxyParamCaption}\item[{\hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&\&}]{o }\end{DoxyParamCaption})}
+
+
+
+Move assignment operator (move a colored cd\+BG). 
+
+The content of o is moved (\char`\"{}transfered\char`\"{}) to a new colored and compacted de Bruijn graph. The colored and compacted de Bruijn graph referenced by o will be empty after the call to this operator. 
+\begin{DoxyParams}{Parameters}
+{\em o} & is a reference on a reference to the colored and compacted de Bruijn graph to move. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a reference to the colored and compacted de Bruijn which has (and owns) the content of o. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a31d90c82590481d98b759f7302de90e6}\label{classColoredCDBG_a31d90c82590481d98b759f7302de90e6}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!operator==@{operator==}}
+\index{operator==@{operator==}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{operator==()}{operator==()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::operator== (\begin{DoxyParamCaption}\item[{const \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$ \&}]{o }\end{DoxyParamCaption}) const}
+
+
+
+Equality operator. 
+
+\begin{DoxyReturn}{Returns}
+a boolean indicating if two compacted de Bruijn graphs have the same colored unitigs (does not compare the data associated with the unitigs). 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_a513ae8190f56a26b088a99e1e33689d8}\label{classColoredCDBG_a513ae8190f56a26b088a99e1e33689d8}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!read@{read}}
+\index{read@{read}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{read()}{read()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::read (\begin{DoxyParamCaption}\item[{const string \&}]{input\+\_\+graph\+\_\+filename,  }\item[{const string \&}]{input\+\_\+colors\+\_\+filename,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption})}
+
+
+
+Read a colored and compacted de Bruijn graph from disk. 
+
+The graph (in G\+FA format) must have been produced by Bifrost. 
+\begin{DoxyParams}{Parameters}
+{\em prefix\+\_\+input\+\_\+filename} & is a string which is the prefix of the filename for the two files that are going to be read from disk. Assuming the prefix is \char`\"{}\+X\+X\+X\char`\"{}, two files \char`\"{}\+X\+X\+X.\+gfa\char`\"{} and \char`\"{}\+X\+X\+X.\+bfg\+\_\+colors\char`\"{} will be read from disk. \\
+\hline
+{\em nb\+\_\+threads} & is the number of threads that can be used to read the graph and its colors from disk. \\
+\hline
+{\em verbose} & is a boolean indicating if information messages are printed during reading (true) or not (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graph was successfully read. 
+\end{DoxyReturn}
+\mbox{\Hypertarget{classColoredCDBG_ae9a3cd0bfa8c72ec2a2e71e6b9f7a0bb}\label{classColoredCDBG_ae9a3cd0bfa8c72ec2a2e71e6b9f7a0bb}} 
+\index{Colored\+C\+D\+BG@{Colored\+C\+D\+BG}!write@{write}}
+\index{write@{write}!Colored\+C\+D\+BG@{Colored\+C\+D\+BG}}
+\subsubsection{\texorpdfstring{write()}{write()}}
+{\footnotesize\ttfamily template$<$typename Unitig\+\_\+data\+\_\+t = void$>$ \\
+bool \hyperlink{classColoredCDBG}{Colored\+C\+D\+BG}$<$ Unitig\+\_\+data\+\_\+t $>$\+::write (\begin{DoxyParamCaption}\item[{const string \&}]{prefix\+\_\+output\+\_\+filename,  }\item[{const size\+\_\+t}]{nb\+\_\+threads = {\ttfamily 1},  }\item[{const bool}]{verbose = {\ttfamily false} }\end{DoxyParamCaption}) const}
+
+
+
+Write a colored and compacted de Bruijn graph to disk. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em prefix\+\_\+output\+\_\+filename} & is a string which is the prefix of the filename for the two files that are going to be written to disk. Assuming the prefix is \char`\"{}\+X\+X\+X\char`\"{}, two files \char`\"{}\+X\+X\+X.\+gfa\char`\"{} and \char`\"{}\+X\+X\+X.\+bfg\+\_\+colors\char`\"{} will be written to disk. \\
+\hline
+{\em nb\+\_\+threads} & is the number of threads that can be used to write the graph to disk. \\
+\hline
+{\em verbose} & is a boolean indicating if information message are printed during writing (true) or not (false). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a boolean indicating if the graph was successfully written. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/\hyperlink{ColoredCDBG_8hpp}{Colored\+C\+D\+B\+G.\+hpp}\end{DoxyCompactItemize}

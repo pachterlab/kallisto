@@ -1,0 +1,95 @@
+\hypertarget{structBFT__Root}{}\section{B\+F\+T\+\_\+\+Root Struct Reference}
+\label{structBFT__Root}\index{B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}}
+
+
+Root vertex of a B\+FT.  
+
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+char $\ast$$\ast$ \hyperlink{structBFT__Root_a8022a504e2c0dd2d800efda892413ce7}{filenames}
+\begin{DoxyCompactList}\small\item\em Inserted genome file names. \end{DoxyCompactList}\item 
+uint64\+\_\+t $\ast$ {\bfseries hash\+\_\+v}\hypertarget{structBFT__Root_a789074cc3578299eaaba89b29dd5fadb}{}\label{structBFT__Root_a789074cc3578299eaaba89b29dd5fadb}
+
+\item 
+uint16\+\_\+t $\ast$$\ast$ {\bfseries skip\+\_\+sp}\hypertarget{structBFT__Root_a7cb8a4466eecbbf38c65c5dc47ee0d2d}{}\label{structBFT__Root_a7cb8a4466eecbbf38c65c5dc47ee0d2d}
+
+\item 
+annotation\+\_\+array\+\_\+elem $\ast$ {\bfseries comp\+\_\+set\+\_\+colors}\hypertarget{structBFT__Root_ac4116550c32152d92c31fb7fad439967}{}\label{structBFT__Root_ac4116550c32152d92c31fb7fad439967}
+
+\item 
+info\+\_\+per\+\_\+level $\ast$ {\bfseries info\+\_\+per\+\_\+lvl}\hypertarget{structBFT__Root_a30af03cee8ba9b5657d8b4f329d21e71}{}\label{structBFT__Root_a30af03cee8ba9b5657d8b4f329d21e71}
+
+\item 
+annotation\+\_\+inform $\ast$ {\bfseries ann\+\_\+inf}\hypertarget{structBFT__Root_afcaa7dcf9bdb8550b76c6b0327b86065}{}\label{structBFT__Root_afcaa7dcf9bdb8550b76c6b0327b86065}
+
+\item 
+result\+Presence $\ast$ {\bfseries res}\hypertarget{structBFT__Root_ae520818d6f6ff0178671c24db1f5c1c3}{}\label{structBFT__Root_ae520818d6f6ff0178671c24db1f5c1c3}
+
+\item 
+int \hyperlink{structBFT__Root_ac496349ff4cba68727c5e38d4200848e}{k}
+\begin{DoxyCompactList}\small\item\em Size of k-\/mers. \end{DoxyCompactList}\item 
+int {\bfseries r1}\hypertarget{structBFT__Root_a5f9133c413279e9184248ee9df58377e}{}\label{structBFT__Root_a5f9133c413279e9184248ee9df58377e}
+
+\item 
+int {\bfseries r2}\hypertarget{structBFT__Root_a2319c2ec89e8196fad6ab66f46f52f93}{}\label{structBFT__Root_a2319c2ec89e8196fad6ab66f46f52f93}
+
+\item 
+int \hyperlink{structBFT__Root_aaa57149b486231b370c0d9287e7e5328}{nb\+\_\+genomes}
+\begin{DoxyCompactList}\small\item\em Number of genomes inserted. \end{DoxyCompactList}\item 
+int {\bfseries length\+\_\+comp\+\_\+set\+\_\+colors}\hypertarget{structBFT__Root_ab6dc409b011bf32096366e936266d871}{}\label{structBFT__Root_ab6dc409b011bf32096366e936266d871}
+
+\item 
+int \hyperlink{structBFT__Root_ac791b1bb0df480c8574095bf0444cc64}{treshold\+\_\+compression}
+\begin{DoxyCompactList}\small\item\em Color compression is triggered every \hyperlink{structBFT__Root_ac791b1bb0df480c8574095bf0444cc64}{B\+F\+T\+\_\+\+Root\+::treshold\+\_\+compression} genome inserted. \end{DoxyCompactList}\item 
+uint8\+\_\+t {\bfseries compressed}\hypertarget{structBFT__Root_af43416c7309bc382c787d59dac51434e}{}\label{structBFT__Root_af43416c7309bc382c787d59dac51434e}
+
+\item 
+uint8\+\_\+t {\bfseries marked}\hypertarget{structBFT__Root_ae5f00a6cb4a5d56158d869aec2e87a38}{}\label{structBFT__Root_ae5f00a6cb4a5d56158d869aec2e87a38}
+
+\item 
+Node {\bfseries node}\hypertarget{structBFT__Root_a996c0a58aa4e6396bde1fd3037b79f03}{}\label{structBFT__Root_a996c0a58aa4e6396bde1fd3037b79f03}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Root vertex of a B\+FT. 
+
+A \hyperlink{structBFT__Root}{B\+F\+T\+\_\+\+Root} contains the k-\/mer size as well as the number and name of the inserted genomes. Other contained structures and variables are for internal use only and must not be modified. 
+
+\subsection{Field Documentation}
+\index{B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}!filenames@{filenames}}
+\index{filenames@{filenames}!B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}}
+\subsubsection[{\texorpdfstring{filenames}{filenames}}]{\setlength{\rightskip}{0pt plus 5cm}char$\ast$$\ast$ B\+F\+T\+\_\+\+Root\+::filenames}\hypertarget{structBFT__Root_a8022a504e2c0dd2d800efda892413ce7}{}\label{structBFT__Root_a8022a504e2c0dd2d800efda892413ce7}
+
+
+Inserted genome file names. 
+
+\index{B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}!k@{k}}
+\index{k@{k}!B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}}
+\subsubsection[{\texorpdfstring{k}{k}}]{\setlength{\rightskip}{0pt plus 5cm}int B\+F\+T\+\_\+\+Root\+::k}\hypertarget{structBFT__Root_ac496349ff4cba68727c5e38d4200848e}{}\label{structBFT__Root_ac496349ff4cba68727c5e38d4200848e}
+
+
+Size of k-\/mers. 
+
+\index{B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}!nb\+\_\+genomes@{nb\+\_\+genomes}}
+\index{nb\+\_\+genomes@{nb\+\_\+genomes}!B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}}
+\subsubsection[{\texorpdfstring{nb\+\_\+genomes}{nb_genomes}}]{\setlength{\rightskip}{0pt plus 5cm}int B\+F\+T\+\_\+\+Root\+::nb\+\_\+genomes}\hypertarget{structBFT__Root_aaa57149b486231b370c0d9287e7e5328}{}\label{structBFT__Root_aaa57149b486231b370c0d9287e7e5328}
+
+
+Number of genomes inserted. 
+
+It corresponds to the number of files stored in \hyperlink{structBFT__Root_a8022a504e2c0dd2d800efda892413ce7}{B\+F\+T\+\_\+\+Root\+::filenames}. \index{B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}!treshold\+\_\+compression@{treshold\+\_\+compression}}
+\index{treshold\+\_\+compression@{treshold\+\_\+compression}!B\+F\+T\+\_\+\+Root@{B\+F\+T\+\_\+\+Root}}
+\subsubsection[{\texorpdfstring{treshold\+\_\+compression}{treshold_compression}}]{\setlength{\rightskip}{0pt plus 5cm}int B\+F\+T\+\_\+\+Root\+::treshold\+\_\+compression}\hypertarget{structBFT__Root_ac791b1bb0df480c8574095bf0444cc64}{}\label{structBFT__Root_ac791b1bb0df480c8574095bf0444cc64}
+
+
+Color compression is triggered every \hyperlink{structBFT__Root_ac791b1bb0df480c8574095bf0444cc64}{B\+F\+T\+\_\+\+Root\+::treshold\+\_\+compression} genome inserted. 
+
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/Node.\+h\end{DoxyCompactItemize}

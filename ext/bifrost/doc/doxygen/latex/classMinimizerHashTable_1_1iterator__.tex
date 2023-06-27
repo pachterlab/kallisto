@@ -1,0 +1,77 @@
+\hypertarget{classMinimizerHashTable_1_1iterator__}{}\section{Minimizer\+Hash\+Table$<$ T, Hash $>$\+:\+:iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$ Class Template Reference}
+\label{classMinimizerHashTable_1_1iterator__}\index{Minimizer\+Hash\+Table$<$ T, Hash $>$\+::iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$@{Minimizer\+Hash\+Table$<$ T, Hash $>$\+::iterator\+\_\+$<$ is\+\_\+const\+\_\+iterator $>$}}
+
+
+Inherits iterator$<$ std\+::forward\+\_\+iterator\+\_\+tag, value\+\_\+type $>$.
+
+\subsection*{Public Types}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a1419092067dc70321e463c0275bda713}\label{classMinimizerHashTable_1_1iterator___a1419092067dc70321e463c0275bda713}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const \hyperlink{structMinimizerHashTable}{Minimizer\+Hash\+Table} $\ast$, \hyperlink{structMinimizerHashTable}{Minimizer\+Hash\+Table} $\ast$ $>$\+::type {\bfseries Data\+Structure\+Pointer\+Type}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a27510afe2c8a46cf10141fc2237d1ca5}\label{classMinimizerHashTable_1_1iterator___a27510afe2c8a46cf10141fc2237d1ca5}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const value\+\_\+type \&, value\+\_\+type \& $>$\+::type {\bfseries Value\+Reference\+Type}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a8d6be0678d79effcd5162c7b45698bb3}\label{classMinimizerHashTable_1_1iterator___a8d6be0678d79effcd5162c7b45698bb3}} 
+typedef std\+::conditional$<$ is\+\_\+const\+\_\+iterator, const value\+\_\+type $\ast$, value\+\_\+type $\ast$ $>$\+::type {\bfseries Value\+Pointer\+Type}
+\end{DoxyCompactItemize}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___ab02f254646a32449236a5f69e92cba07}\label{classMinimizerHashTable_1_1iterator___ab02f254646a32449236a5f69e92cba07}} 
+{\bfseries iterator\+\_\+} (Data\+Structure\+Pointer\+Type ht\+\_\+)
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a85bd7e9be78b26b715dc75d691b1a86d}\label{classMinimizerHashTable_1_1iterator___a85bd7e9be78b26b715dc75d691b1a86d}} 
+{\bfseries iterator\+\_\+} (Data\+Structure\+Pointer\+Type ht\+\_\+, size\+\_\+t h\+\_\+)
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a42eaebfd68d31de323983a5b2463ed31}\label{classMinimizerHashTable_1_1iterator___a42eaebfd68d31de323983a5b2463ed31}} 
+{\bfseries iterator\+\_\+} (const \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+}$<$ false $>$ \&o)
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a3224b9140c892d7e817e977024d0a24e}\label{classMinimizerHashTable_1_1iterator___a3224b9140c892d7e817e977024d0a24e}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} \& {\bfseries operator=} (const \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} \&o)
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a60edb505652464459adde83f679ff857}\label{classMinimizerHashTable_1_1iterator___a60edb505652464459adde83f679ff857}} 
+Value\+Reference\+Type {\bfseries operator$\ast$} () const
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___ada03bb3d229e4b7bab26e3f8ef2d77ae}\label{classMinimizerHashTable_1_1iterator___ada03bb3d229e4b7bab26e3f8ef2d77ae}} 
+Value\+Pointer\+Type {\bfseries operator-\/$>$} () const
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___ac3f3ea7cdf7f22dcc32486c0567dd9c0}\label{classMinimizerHashTable_1_1iterator___ac3f3ea7cdf7f22dcc32486c0567dd9c0}} 
+size\+\_\+t {\bfseries get\+Hash} () const
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a7a04984951113b8bceb48f49f8d2d751}\label{classMinimizerHashTable_1_1iterator___a7a04984951113b8bceb48f49f8d2d751}} 
+void {\bfseries find\+\_\+first} ()
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___ac86ac22dd876e806fe11758b5650bb21}\label{classMinimizerHashTable_1_1iterator___ac86ac22dd876e806fe11758b5650bb21}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} {\bfseries operator++} (int)
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a5be8ef598b6173fdd95a75a5b6f0712c}\label{classMinimizerHashTable_1_1iterator___a5be8ef598b6173fdd95a75a5b6f0712c}} 
+\hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} \& {\bfseries operator++} ()
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___af0bec3c6fb8db100def7e6756a4ca08b}\label{classMinimizerHashTable_1_1iterator___af0bec3c6fb8db100def7e6756a4ca08b}} 
+bool {\bfseries operator==} (const \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} \&o) const
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a40c8eba39b0408e8155d9cc67d0cbbf9}\label{classMinimizerHashTable_1_1iterator___a40c8eba39b0408e8155d9cc67d0cbbf9}} 
+bool {\bfseries operator!=} (const \hyperlink{classMinimizerHashTable_1_1iterator__}{iterator\+\_\+} \&o) const
+\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a372226f316dfa9c17756465a275f64b9}\label{classMinimizerHashTable_1_1iterator___a372226f316dfa9c17756465a275f64b9}} 
+Data\+Structure\+Pointer\+Type {\bfseries ht}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___aa563ae2bd70dae53c25a6a5291e75fc4}\label{classMinimizerHashTable_1_1iterator___aa563ae2bd70dae53c25a6a5291e75fc4}} 
+size\+\_\+t {\bfseries h}
+\end{DoxyCompactItemize}
+\subsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classMinimizerHashTable_1_1iterator___a97892b3c6f1f1c933ebed425135d20cb}\label{classMinimizerHashTable_1_1iterator___a97892b3c6f1f1c933ebed425135d20cb}} 
+class {\bfseries iterator\+\_\+$<$ true $>$}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/Kmer\+Hash\+Table.\+h\end{DoxyCompactItemize}

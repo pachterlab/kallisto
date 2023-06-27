@@ -1,0 +1,58 @@
+\hypertarget{DataAccessor_8hpp_source}{}\doxysection{Data\+Accessor.\+hpp}
+\label{DataAccessor_8hpp_source}\index{src/DataAccessor.hpp@{src/DataAccessor.hpp}}
+\mbox{\hyperlink{DataAccessor_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_DATA\_ACCESSOR\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_DATA\_ACCESSOR\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{CompactedDBG_8hpp}{CompactedDBG.hpp}}"{}}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#include "{}\mbox{\hyperlink{ColorSet_8hpp}{ColorSet.hpp}}"{}}}
+\DoxyCodeLine{6 }
+\DoxyCodeLine{13 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{using} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap}} = \mbox{\hyperlink{classUnitigMap}{UnitigMap<DataAccessor<U>}}, \mbox{\hyperlink{classDataStorage}{DataStorage<U>}}>;}
+\DoxyCodeLine{14 \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{using} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap}} = \mbox{\hyperlink{classUnitigMap}{const\_UnitigMap<DataAccessor<U>}}, \mbox{\hyperlink{classDataStorage}{DataStorage<U>}}>;}
+\DoxyCodeLine{15 }
+\DoxyCodeLine{20 \textcolor{keyword}{template}<\textcolor{keyword}{typename} Unitig\_data\_t = \textcolor{keywordtype}{void}>}
+\DoxyCodeLine{21 \textcolor{keyword}{class }\mbox{\hyperlink{classDataAccessor}{DataAccessor}} : \textcolor{keyword}{public} \mbox{\hyperlink{classCDBG__Data__t}{CDBG\_Data\_t}}<DataAccessor<Unitig\_data\_t>, DataStorage<Unitig\_data\_t>> \{}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{23     \textcolor{keyword}{typedef} Unitig\_data\_t U;}
+\DoxyCodeLine{24 }
+\DoxyCodeLine{25     \textcolor{keyword}{template}<\textcolor{keyword}{typename} U> \textcolor{keyword}{friend} \textcolor{keyword}{class }\mbox{\hyperlink{classDataStorage}{DataStorage}};}
+\DoxyCodeLine{26 }
+\DoxyCodeLine{27     \textcolor{keyword}{public}:}
+\DoxyCodeLine{28 }
+\DoxyCodeLine{31         \mbox{\hyperlink{classDataAccessor_a0c30e8dfb40ff350083dd0822082dd66}{DataAccessor}}(\textcolor{keyword}{const} uint8\_t \textcolor{keywordtype}{id} = 0);}
+\DoxyCodeLine{32 }
+\DoxyCodeLine{38         \textcolor{keywordtype}{void} \mbox{\hyperlink{classDataAccessor_a8a0c9cd4d31f8c7b08dcb06e420ad202}{clear}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um);}
+\DoxyCodeLine{39 }
+\DoxyCodeLine{45         \textcolor{keyword}{const} U* \mbox{\hyperlink{classDataAccessor_afbd7bc36bd27ee6badccffedd3d72528}{getData}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{46 }
+\DoxyCodeLine{52         U* \mbox{\hyperlink{classDataAccessor_ab5f6d45996bfa829ac1bcd8978cdfd2f}{getData}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{53 }
+\DoxyCodeLine{60         \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* \mbox{\hyperlink{classDataAccessor_a79a664ff2c45f5cbbf784b2ee0cad3df}{getUnitigColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{61 }
+\DoxyCodeLine{67         \mbox{\hyperlink{classUnitigColors}{UnitigColors}}* \mbox{\hyperlink{classDataAccessor_a6dce5c32ae57e426523532cdf636ee98}{getUnitigColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{68 }
+\DoxyCodeLine{76         \mbox{\hyperlink{classUnitigColors}{UnitigColors}} \mbox{\hyperlink{classDataAccessor_aec000525e0b4fee736de1acc0630370b}{getSubUnitigColors}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{77 }
+\DoxyCodeLine{82         vector<string> \mbox{\hyperlink{classDataAccessor_a3745298ef34653775c35a808c0acf526}{getSubUnitigColorNames}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um) \textcolor{keyword}{const};}
+\DoxyCodeLine{83 }
+\DoxyCodeLine{95         \textcolor{keywordtype}{void} \mbox{\hyperlink{classDataAccessor_a42b319c9eb802a3a9276227c00f69665}{concat}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_src);}
+\DoxyCodeLine{96 }
+\DoxyCodeLine{107         \textcolor{keywordtype}{void} \mbox{\hyperlink{classDataAccessor_a662c0fa811a55a750f32fbb7db3bef5c}{merge}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_dest, \textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um\_src);}
+\DoxyCodeLine{108 }
+\DoxyCodeLine{122         \textcolor{keywordtype}{void} \mbox{\hyperlink{classDataAccessor_ad329606e200210ed14a2db858d1cb5ac}{extract}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{UnitigColorMap<U>}}\& um\_src, \textcolor{keyword}{const} \textcolor{keywordtype}{bool} last\_extraction);}
+\DoxyCodeLine{123 }
+\DoxyCodeLine{131         \textcolor{keywordtype}{string} \mbox{\hyperlink{classDataAccessor_aae08bdd0b2c5d077672be826f112cfe1}{serialize}}(\textcolor{keyword}{const} \mbox{\hyperlink{classUnitigMap}{const\_UnitigColorMap<U>}}\& um\_src) \textcolor{keyword}{const};}
+\DoxyCodeLine{132 }
+\DoxyCodeLine{133     \textcolor{keyword}{private}:}
+\DoxyCodeLine{134 }
+\DoxyCodeLine{135         \textcolor{keyword}{inline} uint8\_t get()\textcolor{keyword}{ const }\{ \textcolor{keywordflow}{return} da\_id; \}}
+\DoxyCodeLine{136 }
+\DoxyCodeLine{137         \textcolor{keyword}{inline} \textcolor{keywordtype}{void} set(\textcolor{keyword}{const} uint8\_t \textcolor{keywordtype}{id}) \{ da\_id = id; \}}
+\DoxyCodeLine{138 }
+\DoxyCodeLine{139         uint8\_t da\_id;}
+\DoxyCodeLine{140 \};}
+\DoxyCodeLine{141 }
+\DoxyCodeLine{142 \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

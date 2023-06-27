@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0.0)
 
 project(kallisto)
 
@@ -6,10 +6,15 @@ include(GNUInstallDirs)
 
 
 option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
+option(USE_BAM "Compile with HTSLIB support" OFF) # OFF by default
 
 if(USE_HDF5)
     add_compile_definitions("USE_HDF5=ON")
 endif(USE_HDF5)
+
+if(NOT USE_BAM)
+    add_compile_definitions("NO_HTSLIB=ON")
+endif()
 
 set(EXT_PROJECTS_DIR ${PROJECT_SOURCE_DIR}/ext)
 set(CMAKE_CXX_FLAGS_PROFILE "-g")
@@ -28,12 +33,20 @@ if(${CMAKE_VERSION} VERSION_LESS 3.1)
     # remove this block once CMake >=3.1 has fixated in the ecosystem
     add_compile_options(-std=c++11)
 else()
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-std=c++17 COMPILER_SUPPORTS_CXX17)
+    if(COMPILER_SUPPORTS_CXX17)
+    set(CMAKE_CXX_STANDARD 17)
+    else()
     set(CMAKE_CXX_STANDARD 11)
+    endif()
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 endif()
 
 #add_compile_options(-Wall -Wno-unused-function)
+add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
+set(PROJECT_BIFROST_CMAKE_CXX_FLAGS "-Wno-subobject-linkage -Wno-return-type") # Suppress bifrost warning
 
 if(LINK MATCHES static)
     message("static build")
@@ -43,17 +56,46 @@ ENDIF(LINK MATCHES static)
 
 
 include(ExternalProject)
+if (USE_BAM)
 ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoheader && autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure 
+    CONFIGURE_COMMAND autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
         --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
     BUILD_COMMAND make lib-static
     INSTALL_COMMAND ""
 )
+endif(USE_BAM)
 
+ExternalProject_Add(bifrost
+    PREFIX ${PROJECT_SOURCE_DIR}/ext/bifrost
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/bifrost
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_CXX_FLAGS=${PROJECT_BIFROST_CMAKE_CXX_FLAGS}
+    BUILD_COMMAND cd build && make
+    INSTALL_COMMAND ""
+)
+
+if (ZLIBNG)
+    message("zlib-ng enabled.")
+    ExternalProject_Add(zlib-ng
+    PREFIX ${PROJECT_SOURCE_DIR}/ext/zlib-ng
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/zlib-ng
+    BUILD_IN_SOURCE 1
+    CONFIGURE_COMMAND mkdir -p zlib-ng && cd zlib-ng && cmake .. -DZLIB_COMPAT=ON -DZLIB_ENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX}
+    BUILD_COMMAND cd zlib-ng && make
+    INSTALL_COMMAND ""
+    )
+endif(ZLIBNG)
+
+if (USE_BAM)
 include_directories(${htslib_PREFIX}/src/htslib)
+endif(USE_BAM)
+include_directories(${EXT_PROJECTS_DIR}/bifrost/build/src)
+
+ExternalProject_Get_Property(bifrost install_dir)
+include_directories(${install_dir}/src)
 
 
 

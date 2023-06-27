@@ -1,0 +1,88 @@
+\hypertarget{classpreAllocMinHashIterator}{}\section{pre\+Alloc\+Min\+Hash\+Iterator$<$ HF $>$ Class Template Reference}
+\label{classpreAllocMinHashIterator}\index{pre\+Alloc\+Min\+Hash\+Iterator$<$ H\+F $>$@{pre\+Alloc\+Min\+Hash\+Iterator$<$ H\+F $>$}}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a8838a833fdf7f555f5e71990d6f225e4}\label{classpreAllocMinHashIterator_a8838a833fdf7f555f5e71990d6f225e4}} 
+{\bfseries pre\+Alloc\+Min\+Hash\+Iterator} (const char $\ast$\+\_\+s, int \+\_\+n, int \+\_\+k, int \+\_\+g, HF \+\_\+h, bool \+\_\+nh)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a991161d50ddfb0e043e41f0089666d71}\label{classpreAllocMinHashIterator_a991161d50ddfb0e043e41f0089666d71}} 
+bool {\bfseries operator==} (const \hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \&o)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_af0d9c396afa35e08fb4b445a39655dbe}\label{classpreAllocMinHashIterator_af0d9c396afa35e08fb4b445a39655dbe}} 
+bool {\bfseries operator!=} (const \hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \&o)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_abd1b5b6dc989dbc071f830394005dd86}\label{classpreAllocMinHashIterator_abd1b5b6dc989dbc071f830394005dd86}} 
+\hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \& {\bfseries operator++} ()
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a236e5211925167865f53761894cf0cf8}\label{classpreAllocMinHashIterator_a236e5211925167865f53761894cf0cf8}} 
+\hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} {\bfseries operator++} (int)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_ae476eaa136118335375c6edc4064cf31}\label{classpreAllocMinHashIterator_ae476eaa136118335375c6edc4064cf31}} 
+\hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \& {\bfseries operator+=} (int i)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a095cf0f60261f0281d6859545c3058a9}\label{classpreAllocMinHashIterator_a095cf0f60261f0281d6859545c3058a9}} 
+\hyperlink{structpreAllocMinHashResultIterator}{pre\+Alloc\+Min\+Hash\+Result\+Iterator}$<$ HF $>$ {\bfseries operator$\ast$} () const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a3833bd86e8c116dd1f598fc5e09a875f}\label{classpreAllocMinHashIterator_a3833bd86e8c116dd1f598fc5e09a875f}} 
+uint64\+\_\+t {\bfseries get\+Hash} () const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_ae7f71b69e023dad0598b291c85311070}\label{classpreAllocMinHashIterator_ae7f71b69e023dad0598b291c85311070}} 
+int {\bfseries get\+Position} () const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_ae00bd91e3c45335eff1f7925d20dcdfe}\label{classpreAllocMinHashIterator_ae00bd91e3c45335eff1f7925d20dcdfe}} 
+int {\bfseries get\+Nb\+Min} () const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_ab9e2756b35b78cfbccf464b8c188439e}\label{classpreAllocMinHashIterator_ab9e2756b35b78cfbccf464b8c188439e}} 
+int {\bfseries get\+Kmer\+Position} () const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_aea1b6bef336122c56191c7d4ea6c4ecc}\label{classpreAllocMinHashIterator_aea1b6bef336122c56191c7d4ea6c4ecc}} 
+\hyperlink{structminHashResult}{min\+Hash\+Result} {\bfseries get\+New\+Min} (const \hyperlink{structminHashResult}{min\+Hash\+Result} \&mhr\+\_\+discard) const
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_aa73171ecae7283b6a46fd21431a12e56}\label{classpreAllocMinHashIterator_aa73171ecae7283b6a46fd21431a12e56}} 
+{\bfseries pre\+Alloc\+Min\+Hash\+Iterator} (const \hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \&o)
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_af432ac6cf030edc141b12d682f8a26b4}\label{classpreAllocMinHashIterator_af432ac6cf030edc141b12d682f8a26b4}} 
+{\bfseries pre\+Alloc\+Min\+Hash\+Iterator} (const \hyperlink{classpreAllocMinHashIterator}{pre\+Alloc\+Min\+Hash\+Iterator} \&o, int len)
+\end{DoxyCompactItemize}
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a4172453b46109b08804759b6bfbaa8a9}\label{classpreAllocMinHashIterator_a4172453b46109b08804759b6bfbaa8a9}} 
+const char $\ast$ {\bfseries s}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_aabb92a16e79dcf3997c313e74d20d77c}\label{classpreAllocMinHashIterator_aabb92a16e79dcf3997c313e74d20d77c}} 
+int {\bfseries n}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_ad816b040e8c8199f622abcb1e3492d73}\label{classpreAllocMinHashIterator_ad816b040e8c8199f622abcb1e3492d73}} 
+int {\bfseries k}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a5bdad61df61e8919c76c606df753e3f8}\label{classpreAllocMinHashIterator_a5bdad61df61e8919c76c606df753e3f8}} 
+int {\bfseries g}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_af0685c109ccb258481089926b0587e0b}\label{classpreAllocMinHashIterator_af0685c109ccb258481089926b0587e0b}} 
+HF {\bfseries hf}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a12ddb5d628a2761fdd075460f52eae90}\label{classpreAllocMinHashIterator_a12ddb5d628a2761fdd075460f52eae90}} 
+vector$<$ \hyperlink{structminHashResult}{min\+Hash\+Result} $>$ {\bfseries v}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_abd6a80481ca102307ddb724148854ebd}\label{classpreAllocMinHashIterator_abd6a80481ca102307ddb724148854ebd}} 
+size\+\_\+t {\bfseries p\+\_\+cur\+\_\+start}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a6e4d6dc5c621852bd27a61dcd5917188}\label{classpreAllocMinHashIterator_a6e4d6dc5c621852bd27a61dcd5917188}} 
+size\+\_\+t {\bfseries p\+\_\+cur\+\_\+end}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a4b76bb8a9e95eb305b682b4460e0fa04}\label{classpreAllocMinHashIterator_a4b76bb8a9e95eb305b682b4460e0fa04}} 
+int {\bfseries p}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a1477a7f71b524ab5a17e5f0e9277f35f}\label{classpreAllocMinHashIterator_a1477a7f71b524ab5a17e5f0e9277f35f}} 
+bool {\bfseries invalid}
+\item 
+\mbox{\Hypertarget{classpreAllocMinHashIterator_a383961c9dbbc9209fe6216894ebae728}\label{classpreAllocMinHashIterator_a383961c9dbbc9209fe6216894ebae728}} 
+bool {\bfseries nh}
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+src/min\+Hash\+Iterator.\+hpp\end{DoxyCompactItemize}

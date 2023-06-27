@@ -47,6 +47,8 @@ AH_TOP([/* If you use configure, this file provides @%:@defines reflecting your
    accurate PACKAGE_VERSION as computed by the Makefile.  */])
 
 AC_PROG_CC
+AC_CANONICAL_HOST 
+AC_PROG_INSTALL 
 AC_PROG_RANLIB
 
 dnl Avoid chicken-and-egg problem where pkg-config supplies the

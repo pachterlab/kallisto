@@ -1,0 +1,212 @@
+\hypertarget{Kmer_8hpp_source}{}\doxysection{Kmer.\+hpp}
+\label{Kmer_8hpp_source}\index{src/Kmer.hpp@{src/Kmer.hpp}}
+\mbox{\hyperlink{Kmer_8hpp}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{preprocessor}{\#ifndef BIFROST\_KMER\_HPP}}
+\DoxyCodeLine{2 \textcolor{preprocessor}{\#define BIFROST\_KMER\_HPP}}
+\DoxyCodeLine{3 }
+\DoxyCodeLine{4 \textcolor{preprocessor}{\#ifndef MAX\_KMER\_SIZE}}
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#define MAX\_KMER\_SIZE 32}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{7 }
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#ifndef MAX\_GMER\_SIZE}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#define MAX\_GMER\_SIZE MAX\_KMER\_SIZE}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{11 }
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include <stdint.h>}}
+\DoxyCodeLine{13 \textcolor{preprocessor}{\#include <stdio.h>}}
+\DoxyCodeLine{14 }
+\DoxyCodeLine{15 \textcolor{preprocessor}{\#include <bitset>}}
+\DoxyCodeLine{16 \textcolor{preprocessor}{\#include <cassert>}}
+\DoxyCodeLine{17 \textcolor{preprocessor}{\#include <cstring>}}
+\DoxyCodeLine{18 \textcolor{preprocessor}{\#include <iostream>}}
+\DoxyCodeLine{19 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{20 }
+\DoxyCodeLine{21 \textcolor{preprocessor}{\#include "{}Common.hpp"{}}}
+\DoxyCodeLine{22 }
+\DoxyCodeLine{32 \textcolor{keyword}{class }CompressedSequence;}
+\DoxyCodeLine{33 }
+\DoxyCodeLine{42 \textcolor{keyword}{class }\mbox{\hyperlink{classKmer}{Kmer}} \{}
+\DoxyCodeLine{43 }
+\DoxyCodeLine{44     \textcolor{keyword}{friend} \textcolor{keyword}{class }CompressedSequence;}
+\DoxyCodeLine{45 }
+\DoxyCodeLine{46     \textcolor{keyword}{public}:}
+\DoxyCodeLine{47 }
+\DoxyCodeLine{50         \mbox{\hyperlink{classKmer_a5ab9d401261a8bd25968b7be5554bf45}{Kmer}}();}
+\DoxyCodeLine{51 }
+\DoxyCodeLine{56         \mbox{\hyperlink{classKmer_a8b6222680b4b2c7ba854f59bdbddc5b6}{Kmer}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& o);}
+\DoxyCodeLine{57 }
+\DoxyCodeLine{62         \textcolor{keyword}{explicit} \mbox{\hyperlink{classKmer_a1fb825d0a9444de791c5bba652d69f1d}{Kmer}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char}* s);}
+\DoxyCodeLine{63 }
+\DoxyCodeLine{68         \mbox{\hyperlink{classKmer}{Kmer}}\& \mbox{\hyperlink{classKmer_a2b254500deed375ec60bc4588e44050e}{operator=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& o);}
+\DoxyCodeLine{69 }
+\DoxyCodeLine{72         BFG\_INLINE \textcolor{keywordtype}{void} \mbox{\hyperlink{classKmer_aed7e4989323e49f78e3b0ceeaedc21b4}{set\_deleted}}() \{}
+\DoxyCodeLine{73 }
+\DoxyCodeLine{74             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < MAX\_K/32; ++i) longs[i] = 0xffffffffffffffffULL;}
+\DoxyCodeLine{75         \}}
+\DoxyCodeLine{76 }
+\DoxyCodeLine{79         BFG\_INLINE \textcolor{keywordtype}{void} \mbox{\hyperlink{classKmer_a13f76eacb925e986280191035788bc03}{set\_empty}}() \{}
+\DoxyCodeLine{80 }
+\DoxyCodeLine{81             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < MAX\_K/32; ++i) longs[i] = 0xfffffffffffffffeULL;}
+\DoxyCodeLine{82         \}}
+\DoxyCodeLine{83 }
+\DoxyCodeLine{87         BFG\_INLINE \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_a1bc247ae3a78c166657e2f87a03ab717}{isDeleted}}()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{88 }
+\DoxyCodeLine{89             \textcolor{keywordflow}{return} (longs[(MAX\_K/32)-\/1] == 0xffffffffffffffffULL);}
+\DoxyCodeLine{90         \}}
+\DoxyCodeLine{91 }
+\DoxyCodeLine{95         BFG\_INLINE \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_a165d359c1eb24ed3d227ffd5b38e458f}{isEmpty}}()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{96 }
+\DoxyCodeLine{97             \textcolor{keywordflow}{return} (longs[(MAX\_K/32)-\/1] == 0xfffffffffffffffeULL);}
+\DoxyCodeLine{98         \}}
+\DoxyCodeLine{99 }
+\DoxyCodeLine{100         \textcolor{keywordtype}{bool} operator<(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{101 }
+\DoxyCodeLine{107         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_a7d0f2060f9bda7c9b29a40e1b991ce85}{operator==}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{108 }
+\DoxyCodeLine{114         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_ab859842b0a779eae64aace119eec9244}{operator!=}}(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{115 }
+\DoxyCodeLine{120         BFG\_INLINE uint64\_t \mbox{\hyperlink{classKmer_a11645c016419fec967ab50743cf4c83e}{hash}}(\textcolor{keyword}{const} uint64\_t seed = 0)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{121 }
+\DoxyCodeLine{122             \textcolor{keywordflow}{return} wyhash(bytes, MAX\_K/4, seed, \_wyp);}
+\DoxyCodeLine{123         \}}
+\DoxyCodeLine{124 }
+\DoxyCodeLine{128         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classKmer_a82924425f6f6bd3e1d746f600936781c}{twin}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{129 }
+\DoxyCodeLine{133         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classKmer_a2b86fe792388a910a073d9fc4a811779}{rep}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{134 }
+\DoxyCodeLine{141         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classKmer_ad21155c7aa0e25973bc8c95047cee78d}{forwardBase}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} b) \textcolor{keyword}{const};}
+\DoxyCodeLine{142 }
+\DoxyCodeLine{149         \mbox{\hyperlink{classKmer}{Kmer}} \mbox{\hyperlink{classKmer_a7670003b3027c3401454dc700ca5b3c5}{backwardBase}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} b) \textcolor{keyword}{const};}
+\DoxyCodeLine{150 }
+\DoxyCodeLine{155         \textcolor{keywordtype}{void} \mbox{\hyperlink{classKmer_a605ec250880652507ae279f348046936}{selfForwardBase}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} b);}
+\DoxyCodeLine{156 }
+\DoxyCodeLine{161         \textcolor{keywordtype}{char} \mbox{\hyperlink{classKmer_af23c636ad07801e49b09565513da451c}{getChar}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} offset) \textcolor{keyword}{const};}
+\DoxyCodeLine{162 }
+\DoxyCodeLine{169         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_acd1e99defb65ea71c7cf804d3f1e3dc4}{setChar}}(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} offset, \textcolor{keyword}{const} \textcolor{keywordtype}{char} b);}
+\DoxyCodeLine{170 }
+\DoxyCodeLine{174         \textcolor{keywordtype}{void} \mbox{\hyperlink{classKmer_a69125d95f234312a670b970cd14d9ef3}{toString}}(\textcolor{keywordtype}{char} *s) \textcolor{keyword}{const};}
+\DoxyCodeLine{175 }
+\DoxyCodeLine{179         std::string \mbox{\hyperlink{classKmer_ae394adf5587405c5204a07df6b95cebb}{toString}}() \textcolor{keyword}{const};}
+\DoxyCodeLine{180 }
+\DoxyCodeLine{187         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_afeabfe32515eb278bdab47d5434e8a92}{write}}(std::ostream\& stream\_out) \textcolor{keyword}{const};}
+\DoxyCodeLine{188 }
+\DoxyCodeLine{195         \textcolor{keywordtype}{bool} \mbox{\hyperlink{classKmer_ad7e63cd4337067ac247a52f4b8235204}{read}}(std::istream\& stream\_in);}
+\DoxyCodeLine{196 }
+\DoxyCodeLine{201         \textcolor{keyword}{static} \textcolor{keywordtype}{void} \mbox{\hyperlink{classKmer_ae76504dbc6fe791fadc50667852a62c8}{set\_k}}(\textcolor{keyword}{const} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} \_k);}
+\DoxyCodeLine{202 }
+\DoxyCodeLine{203         \textcolor{keyword}{static} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} k;}
+\DoxyCodeLine{204 }
+\DoxyCodeLine{205     \textcolor{keyword}{private}:}
+\DoxyCodeLine{206 }
+\DoxyCodeLine{207         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} MAX\_K = MAX\_KMER\_SIZE;}
+\DoxyCodeLine{208 }
+\DoxyCodeLine{209         \textcolor{keyword}{union }\{}
+\DoxyCodeLine{210 }
+\DoxyCodeLine{211             uint8\_t bytes[MAX\_K/4];}
+\DoxyCodeLine{212             uint64\_t longs[MAX\_K/32];}
+\DoxyCodeLine{213         \};}
+\DoxyCodeLine{214 }
+\DoxyCodeLine{215         \textcolor{keywordtype}{void} set\_kmer(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *s);}
+\DoxyCodeLine{216 }
+\DoxyCodeLine{217         \mbox{\hyperlink{classKmer}{Kmer}} getLink(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} index) \textcolor{keyword}{const};}
+\DoxyCodeLine{218 }
+\DoxyCodeLine{219         std::string getBinary() \textcolor{keyword}{const};}
+\DoxyCodeLine{220 \};}
+\DoxyCodeLine{221 }
+\DoxyCodeLine{222 }
+\DoxyCodeLine{223 \textcolor{keyword}{struct }\mbox{\hyperlink{structKmerHash}{KmerHash}} \{}
+\DoxyCodeLine{224 }
+\DoxyCodeLine{225     \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} operator()(\textcolor{keyword}{const} \mbox{\hyperlink{classKmer}{Kmer}}\& km)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{226 }
+\DoxyCodeLine{227         \textcolor{keywordflow}{return} km.\mbox{\hyperlink{classKmer_a11645c016419fec967ab50743cf4c83e}{hash}}();}
+\DoxyCodeLine{228     \}}
+\DoxyCodeLine{229 \};}
+\DoxyCodeLine{230 }
+\DoxyCodeLine{232 \textcolor{keyword}{class }Minimizer \{}
+\DoxyCodeLine{233 }
+\DoxyCodeLine{234     \textcolor{keyword}{public}:}
+\DoxyCodeLine{235 }
+\DoxyCodeLine{236         Minimizer();}
+\DoxyCodeLine{237         Minimizer(\textcolor{keyword}{const} Minimizer\& o);}
+\DoxyCodeLine{238         \textcolor{keyword}{explicit} Minimizer(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *s);}
+\DoxyCodeLine{239 }
+\DoxyCodeLine{240         Minimizer\& operator=(\textcolor{keyword}{const} Minimizer\& o);}
+\DoxyCodeLine{241 }
+\DoxyCodeLine{242         \textcolor{keywordtype}{bool} operator<(\textcolor{keyword}{const} Minimizer\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{243         \textcolor{keywordtype}{bool} operator==(\textcolor{keyword}{const} Minimizer\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{244         \textcolor{keywordtype}{bool} operator!=(\textcolor{keyword}{const} Minimizer\& o) \textcolor{keyword}{const};}
+\DoxyCodeLine{245 }
+\DoxyCodeLine{246         \textcolor{keywordtype}{void} set\_minimizer(\textcolor{keyword}{const} \textcolor{keywordtype}{char} *s);}
+\DoxyCodeLine{247 }
+\DoxyCodeLine{248         BFG\_INLINE uint64\_t hash(\textcolor{keyword}{const} uint64\_t seed = 0)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{249 }
+\DoxyCodeLine{250             \textcolor{keywordflow}{return} wyhash(bytes, MAX\_G/4, seed, \_wyp);}
+\DoxyCodeLine{251         \}}
+\DoxyCodeLine{252 }
+\DoxyCodeLine{253         BFG\_INLINE \textcolor{keywordtype}{void} set\_deleted() \{}
+\DoxyCodeLine{254 }
+\DoxyCodeLine{255             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < MAX\_G/32; ++i) longs[i] = 0xffffffffffffffffULL;}
+\DoxyCodeLine{256         \}}
+\DoxyCodeLine{257 }
+\DoxyCodeLine{258         BFG\_INLINE \textcolor{keywordtype}{void} set\_empty() \{}
+\DoxyCodeLine{259 }
+\DoxyCodeLine{260             \textcolor{keywordflow}{for} (\textcolor{keywordtype}{size\_t} i = 0; i < MAX\_G/32; ++i) longs[i] = 0xfffffffffffffffeULL;}
+\DoxyCodeLine{261         \}}
+\DoxyCodeLine{262 }
+\DoxyCodeLine{263         BFG\_INLINE \textcolor{keywordtype}{bool} isDeleted()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{264 }
+\DoxyCodeLine{265             \textcolor{keywordflow}{return} (longs[(MAX\_G/32)-\/1] == 0xffffffffffffffffULL);}
+\DoxyCodeLine{266         \}}
+\DoxyCodeLine{267 }
+\DoxyCodeLine{268         BFG\_INLINE \textcolor{keywordtype}{bool} isEmpty()\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{269 }
+\DoxyCodeLine{270             \textcolor{keywordflow}{return} (longs[(MAX\_G/32)-\/1] == 0xfffffffffffffffeULL);}
+\DoxyCodeLine{271         \}}
+\DoxyCodeLine{272 }
+\DoxyCodeLine{273         Minimizer twin() \textcolor{keyword}{const};}
+\DoxyCodeLine{274         Minimizer rep() \textcolor{keyword}{const};}
+\DoxyCodeLine{275 }
+\DoxyCodeLine{276         Minimizer getLink(\textcolor{keyword}{const} \textcolor{keywordtype}{size\_t} index) \textcolor{keyword}{const};}
+\DoxyCodeLine{277 }
+\DoxyCodeLine{278         Minimizer forwardBase(\textcolor{keyword}{const} \textcolor{keywordtype}{char} b) \textcolor{keyword}{const};}
+\DoxyCodeLine{279         Minimizer backwardBase(\textcolor{keyword}{const} \textcolor{keywordtype}{char} b) \textcolor{keyword}{const};}
+\DoxyCodeLine{280 }
+\DoxyCodeLine{281         std::string getBinary() \textcolor{keyword}{const};}
+\DoxyCodeLine{282 }
+\DoxyCodeLine{283         \textcolor{keywordtype}{void} toString(\textcolor{keywordtype}{char} *s) \textcolor{keyword}{const};}
+\DoxyCodeLine{284         std::string toString() \textcolor{keyword}{const};}
+\DoxyCodeLine{285 }
+\DoxyCodeLine{286         \textcolor{comment}{// static functions}}
+\DoxyCodeLine{287         \textcolor{keyword}{static} \textcolor{keywordtype}{void} set\_g(\textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} \_g);}
+\DoxyCodeLine{288 }
+\DoxyCodeLine{289         \textcolor{keyword}{static} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} g;}
+\DoxyCodeLine{290 }
+\DoxyCodeLine{291     \textcolor{keyword}{private}:}
+\DoxyCodeLine{292 }
+\DoxyCodeLine{293         \textcolor{keyword}{static} \textcolor{keyword}{const} \textcolor{keywordtype}{unsigned} \textcolor{keywordtype}{int} MAX\_G = MAX\_GMER\_SIZE;}
+\DoxyCodeLine{294 }
+\DoxyCodeLine{295         \textcolor{comment}{// data fields}}
+\DoxyCodeLine{296         \textcolor{keyword}{union }\{}
+\DoxyCodeLine{297 }
+\DoxyCodeLine{298             uint8\_t bytes[MAX\_G/4];}
+\DoxyCodeLine{299             uint64\_t longs[MAX\_G/32];}
+\DoxyCodeLine{300         \};}
+\DoxyCodeLine{301 }
+\DoxyCodeLine{302         \textcolor{comment}{// By default MAX\_K == 64 so the union uses 16 bytes}}
+\DoxyCodeLine{303         \textcolor{comment}{// However sizeof(Kmer) == 24}}
+\DoxyCodeLine{304         \textcolor{comment}{// Are the 8 extra bytes alignment?}}
+\DoxyCodeLine{305 \};}
+\DoxyCodeLine{306 }
+\DoxyCodeLine{307 }
+\DoxyCodeLine{308 \textcolor{keyword}{struct }MinimizerHash \{}
+\DoxyCodeLine{309 }
+\DoxyCodeLine{310     \textcolor{keyword}{inline} \textcolor{keywordtype}{size\_t} operator()(\textcolor{keyword}{const} Minimizer\& minz)\textcolor{keyword}{ const }\{}
+\DoxyCodeLine{311 }
+\DoxyCodeLine{312         \textcolor{keywordflow}{return} minz.hash();}
+\DoxyCodeLine{313     \}}
+\DoxyCodeLine{314 \};}
+\DoxyCodeLine{316 }
+\DoxyCodeLine{317 \textcolor{preprocessor}{\#endif }\textcolor{comment}{// BFG\_KMER\_HPP}}
+
+\end{DoxyCode}

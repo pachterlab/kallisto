@@ -29,6 +29,7 @@ is either FW or RE depending on whether the read aligns to the forward or revers
 void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::string s,
   const std::vector<std::pair<KmerEntry,int>>& v, const std::vector<int> u) {
 
+  /*
   Kmer km;
   KmerEntry val;
   int p;
@@ -53,9 +54,12 @@ void printTranscripts(const KmerIndex& index, std::stringstream& o, const std::s
       o << "RC)";
     }
   }
+  */
 }
 
 std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::pair<KmerEntry,int>>& v) {
+  return {};
+  /*
   if (v.empty()) {
     return {};
   }
@@ -76,13 +80,17 @@ std::vector<int> simpleIntersect(const KmerIndex& index, const std::vector<std::
     }
   }
   return u;
+  */
 }
 
 
 bool checkMapability(const KmerIndex& index, const std::string &s, const std::vector<std::pair<KmerEntry,int>>& v, std::vector<int> &u) {
+
+  return false;
+  /*
   const int maxMismatch = 2;
   const int maxSoftclip = 5;
-    
+
   Kmer km;
   KmerEntry val;
   int p;
@@ -93,9 +101,9 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
   } else {
     return false;
   }
-  
+
   std::vector<int> vtmp; vtmp.reserve(u.size());
-  
+
   for (auto tr : u) {
     auto trpos = index.findPosition(tr, km, val, p);
     int tpos = (int)trpos.first;
@@ -121,7 +129,7 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
     }  else {
       if (tpos > index.target_seqs_[tr].size() || tpos - sz < 1) {
         add = false;
-      } else {      
+      } else {
         std::string rs = revcomp(s);
         //std::cout << index.target_seqs_[tr].substr(tpos - sz, sz) << std::endl;
         //std::cout << rs << std::endl;
@@ -137,30 +145,30 @@ bool checkMapability(const KmerIndex& index, const std::string &s, const std::ve
         add = (mis <= maxMismatch);
       }
     }
-    
+
     if (add) {
       vtmp.push_back(tr);
     }
-    
   }
- 
-  
+
   if (vtmp.empty()) {
     return false;
   }
-  
+
   if (vtmp.size() < u.size()) {
     u = vtmp; // copy
   }
-  
+
   return true;
-  
+  */
 }
 
 // returns true if the intersection of the union of EC classes for v1 and v2 respectively is empty
-bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2, std::pair<int,int> &p1, std::pair<int,int> &p2) { 
+bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const std::string &s2, std::pair<int,int> &p1, std::pair<int,int> &p2) {
 //const std::vector<std::pair<KmerEntry,int>>& v1, const std::vector<std::pair<KmerEntry,int>>& v2) {
   
+  // TODO:
+  /*
   std::set<int> su1,su2;
   
   auto union_set = [&](const std::string &s, std::pair<int,int> &p) {
@@ -189,21 +197,22 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
       }
     }
     
-    /*
-    int ec = index.dbGraph.ecs[v[0].first.contig];
-    int lastEC = ec;
-    //const std::vector<int> &u = index.ecmap[ec];
-    s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
-    for (int i = 1; i < v.size(); i++) {
-      if (v[i].first.contig != v[i-1].first.contig) {
-        ec = index.dbGraph.ecs[v[i].first.contig];
-        if (ec != lastEC) {
-          s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
-          lastEC = ec;
-        }
-      }
-    }
-    */
+    // ATTN:
+    // This was already commented out
+    // Consider removing as cruft
+    //int ec = index.dbGraph.ecs[v[0].first.contig];
+    //int lastEC = ec;
+    ////const std::vector<int> &u = index.ecmap[ec];
+    //s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+    //for (int i = 1; i < v.size(); i++) {
+      //if (v[i].first.contig != v[i-1].first.contig) {
+        //ec = index.dbGraph.ecs[v[i].first.contig];
+        //if (ec != lastEC) {
+          //s.insert(index.ecmap[ec].begin(), index.ecmap[ec].end());
+          //lastEC = ec;
+        //}
+      //}
+    //}
     return su;
   };
 
@@ -223,6 +232,8 @@ bool checkUnionIntersection(const KmerIndex& index, const std::string &s1, const
     }
   }
   return true;
+  */
+  return false;
 }
 
 
@@ -231,17 +242,18 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   const std::string &n1, const std::string &s1, std::vector<std::pair<KmerEntry,int>> &v1,
   const std::string &n2, const std::string &s2, std::vector<std::pair<KmerEntry,int>> &v2, bool paired) {
 
+  /*
+
   bool partialMap = false;
   if (ec != -1) {
     partialMap = true;
   }
   std::stringstream o;
-  
+
   // no mapping information
   if (v1.empty() && v2.empty()) {
     return; // consider splitting in case either is empty
   }
-
 
   auto u1 = simpleIntersect(index, v1);
   auto u2 = simpleIntersect(index, v2);
@@ -365,5 +377,5 @@ void searchFusion(const KmerIndex &index, const ProgramOptions& opt,
   }
 
   return;
-
+  */
 }

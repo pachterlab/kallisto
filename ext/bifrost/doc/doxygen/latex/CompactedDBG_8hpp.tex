@@ -1,0 +1,41 @@
+\hypertarget{CompactedDBG_8hpp}{}\section{src/\+Compacted\+D\+BG.hpp File Reference}
+\label{CompactedDBG_8hpp}\index{src/\+Compacted\+D\+B\+G.\+hpp@{src/\+Compacted\+D\+B\+G.\+hpp}}
+
+
+Interface for the Compacted de Bruijn graph A\+PI.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structCDBG__Build__opt}{C\+D\+B\+G\+\_\+\+Build\+\_\+opt}
+\begin{DoxyCompactList}\small\item\em Most members of this structure are parameters for \hyperlink{classCompactedDBG_a6021ad2fe7b11998b886bc5fd9e1a4ba}{Compacted\+D\+B\+G$<$\+U, G$>$\+::build()}, except for\+: \end{DoxyCompactList}\item 
+class \hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}
+\begin{DoxyCompactList}\small\item\em If data are to be associated with the unitigs of the compacted de Bruijn graph, those data must be wrapped into a class that inherits from the abstract class \hyperlink{classCDBG__Data__t}{C\+D\+B\+G\+\_\+\+Data\+\_\+t}. \end{DoxyCompactList}\item 
+class \hyperlink{classCompactedDBG}{Compacted\+D\+B\+G$<$ Unitig\+\_\+data\+\_\+t, Graph\+\_\+data\+\_\+t $>$}
+\begin{DoxyCompactList}\small\item\em Represent a Compacted de Bruijn graph. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+{\footnotesize template$<$typename U , typename G $>$ }\\using \hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map} = \hyperlink{classUnitigMap}{Unitig\+Map}$<$ U, G, true $>$
+\begin{DoxyCompactList}\small\item\em const\+\_\+\+Unitig\+Map is a constant \hyperlink{classUnitigMap}{Unitig\+Map}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Interface for the Compacted de Bruijn graph A\+PI. 
+
+Code snippets using this interface are provided in snippets/test.\+cpp. 
+
+\subsection{Typedef Documentation}
+\mbox{\Hypertarget{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}\label{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}} 
+\index{Compacted\+D\+B\+G.\+hpp@{Compacted\+D\+B\+G.\+hpp}!const\+\_\+\+Unitig\+Map@{const\+\_\+\+Unitig\+Map}}
+\index{const\+\_\+\+Unitig\+Map@{const\+\_\+\+Unitig\+Map}!Compacted\+D\+B\+G.\+hpp@{Compacted\+D\+B\+G.\+hpp}}
+\subsubsection{\texorpdfstring{const\+\_\+\+Unitig\+Map}{const\_UnitigMap}}
+{\footnotesize\ttfamily template$<$typename U , typename G $>$ \\
+\hyperlink{CompactedDBG_8hpp_a631369597e56604279ba89a211c14fd0}{const\+\_\+\+Unitig\+Map}}
+
+
+
+const\+\_\+\+Unitig\+Map is a constant \hyperlink{classUnitigMap}{Unitig\+Map}. 
+
+The main difference in its usage with a \hyperlink{classUnitigMap}{Unitig\+Map} object is when you call the method \hyperlink{classUnitigMap_ab6bc6b4a479bef4a7cb9c72806679f5e}{Unitig\+Map\+::get\+Graph()}\+: with a const\+\_\+\+Unitig\+Map, this method returns a pointer to a constant \hyperlink{classCompactedDBG}{Compacted\+D\+BG} (you can\textquotesingle{}t modify it). 

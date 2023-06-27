@@ -10,6 +10,7 @@
 
 #include "KmerIndex.h"
 #include "weights.h"
+#include "Node.hpp"
 
 const int MAX_FRAG_LEN = 1000;
 
@@ -18,7 +19,7 @@ struct MinCollector {
   MinCollector(KmerIndex& ind, const ProgramOptions& opt)
     :
       index(ind),
-      counts(index.ecmap.size(), 0),
+      counts(index.ecmapinv.size(), 0),
       flens(MAX_FRAG_LEN),
       bias3(4096),
       bias5(4096),
@@ -27,7 +28,8 @@ struct MinCollector {
       mean_fl(0.0),
       has_mean_fl(false),
       mean_fl_trunc(MAX_FRAG_LEN, 0.0),
-      has_mean_fl_trunc(false)
+      has_mean_fl_trunc(false),
+      cardinality_clashes(0)
       // eff_len_cache(MAX_FRAG_LEN, 0.0)
        {
          if (opt.fld != 0.0) {
@@ -36,22 +38,28 @@ struct MinCollector {
          }
        }
 
-  int collect(std::vector<std::pair<KmerEntry,int>>& v1,
-              std::vector<std::pair<KmerEntry,int>>& v2,
+  int collect(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1,
+              std::vector<std::pair<const_UnitigMap<Node>, int>>& v2,
               bool nonpaired=false);
 
-  int collect(std::vector<std::pair<KmerEntry,int>>& v1) {
-    std::vector<std::pair<KmerEntry,int>> dummy;
+  int collect(std::vector<std::pair<const_UnitigMap<Node>, int>>& v1) {
+    std::vector<std::pair<const_UnitigMap<Node>, int>> dummy;
     return collect(v1,dummy,true);
 
   }
-  int increaseCount(const std::vector<int>& u);
+  int increaseCount(const Roaring& u);
   int decreaseCount(const int ec);
 
-  std::vector<int> intersectECs(std::vector<std::pair<KmerEntry,int>>& v) const;
-  int intersectKmers(std::vector<std::pair<KmerEntry,int>>& v1,
-                    std::vector<std::pair<KmerEntry,int>>& v2, bool nonpaired, std::vector<int> &u) const;
-  int findEC(const std::vector<int>& u) const;
+  Roaring intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const;
+  int intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const;
+  int intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                    std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const;
+  int findEC(const std::vector<int32_t>& u) const;
 
 
   // deprecated
@@ -60,13 +68,12 @@ struct MinCollector {
       o << id << "\t" << counts[id] << "\n";
     }
   }
-  void write(const std::string& index_out) const;
 
   void loadCounts(ProgramOptions& opt);
 
 
-  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired);
-  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<KmerEntry,int>> v1, const std::vector<std::pair<KmerEntry,int>> v2, bool paired, std::vector<int>& biasOut) const;
+  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired);
+  bool countBias(const char *s1, const char *s2, const std::vector<std::pair<const_UnitigMap<Node>,int>> v1, const std::vector<std::pair<const_UnitigMap<Node>,int>> v2, bool paired, std::vector<int>& biasOut) const;
 
   // DEPRECATED
   double get_mean_frag_len(bool lenient = false) const;
@@ -79,9 +86,9 @@ struct MinCollector {
   void init_mean_fl_trunc(double mean, double sd);
 
   KmerIndex& index;
-  std::vector<int> counts;
-  std::vector<int> flens;
-  std::vector<int> bias3, bias5;
+  std::vector<uint32_t> counts;
+  std::vector<uint32_t> flens;
+  std::vector<int32_t> bias3, bias5;
   int min_range;
   int k;
 
@@ -90,6 +97,8 @@ struct MinCollector {
 
   std::vector<double> mean_fl_trunc;
   bool has_mean_fl_trunc;
+
+  mutable int cardinality_clashes;
 };
 
 std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y);
