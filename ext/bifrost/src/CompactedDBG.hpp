@@ -59,7 +59,6 @@
 * Code snippets using this interface are provided in snippets/test.cpp.
 */
 
-using namespace std;
 
 /** @struct CDBG_Build_opt
 * @brief Most members of this structure are parameters for CompactedDBG<U, G>::build(), except for:
@@ -135,11 +134,11 @@ struct CDBG_Build_opt {
 
     size_t nb_bits_kmers_bf;
 
-    string inFilenameBBF;
-    string outFilenameBBF;
+    std::string inFilenameBBF;
+    std::string outFilenameBBF;
 
-    vector<string> filename_seq_in;
-    vector<string> filename_ref_in;
+    std::vector<std::string> filename_seq_in;
+    std::vector<std::string> filename_ref_in;
 
     // The following members are NOT used by CompactedDBG<U, G>::build
     // but you can set them to use them as parameters for other functions
@@ -167,12 +166,12 @@ struct CDBG_Build_opt {
 
     double ratio_kmers;
 
-    string prefixFilenameOut;
+    std::string prefixFilenameOut;
 
-    string filename_graph_in;
-    string filename_index_in;
+    std::string filename_graph_in;
+    std::string filename_index_in;
 
-    vector<string> filename_query_in;
+    std::vector<std::string> filename_query_in;
 
     CDBG_Build_opt() :  nb_threads(1), k(DEFAULT_K), g(-1), nb_bits_kmers_bf(14), ratio_kmers(0.8), min_count_km(1),
                         build(false), update(false), query(false), clipTips(false), deleteIsolated(false),
@@ -279,9 +278,9 @@ class CDBG_Data_t {
         * associated.
         * @return a string which is the serialization of the data.
         */
-        string serialize(const const_UnitigMap<Unitig_data_t, Graph_data_t>& um_src) const {
+        std::string serialize(const const_UnitigMap<Unitig_data_t, Graph_data_t>& um_src) const {
 
-            return string();
+            return std::string();
         }
 };
 
@@ -312,7 +311,7 @@ class CDBG_Data_t {
 template<typename Unitig_data_t = void, typename Graph_data_t = void>
 class CompactedDBG {
 
-    static_assert(is_void<Unitig_data_t>::value || is_base_of<CDBG_Data_t<Unitig_data_t, Graph_data_t>, Unitig_data_t>::value,
+    static_assert(std::is_void<Unitig_data_t>::value || std::is_base_of<CDBG_Data_t<Unitig_data_t, Graph_data_t>, Unitig_data_t>::value,
                   "Type of data associated with vertices of class CompactedDBG must be void (no data) or a class extending class CDBG_Data_t");
 
     typedef Unitig_data_t U;
@@ -424,7 +423,7 @@ class CompactedDBG {
         * @param verbose is a boolean indicating if information messages must be printed during the function execution.
         * @return boolean indicating if the graph has been written successfully.
         */
-        bool write( const string& output_fn, const size_t nb_threads = 1, const bool GFA_output = true, const bool FASTA_output = false,
+        bool write( const std::string& output_fn, const size_t nb_threads = 1, const bool GFA_output = true, const bool FASTA_output = false,
                     const bool BFG_output = false, const bool write_index_file = true, const bool compressed_output = false,
                     const bool verbose = false) const;
 
@@ -439,7 +438,7 @@ class CompactedDBG {
         * @param verbose is a boolean indicating if information messages must be printed during the function execution.
         * @return boolean indicating if the graph has been read successfully.
         */
-        bool read(const string& input_graph_fn, const size_t nb_threads = 1, const bool verbose = false);
+        bool read(const std::string& input_graph_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Read a Compacted de Bruijn graph from disk (GFA1, FASTA or BFG format) using an index file (BFI format).
         * Index files make the loading much faster than the other function read() without meta graph file.
@@ -452,7 +451,7 @@ class CompactedDBG {
         * @param verbose is a boolean indicating if information messages must be printed during the function execution.
         * @return boolean indicating if the graph has been read successfully.
         */
-        bool read(const string& input_graph_fn, const string& input_index_fn, const size_t nb_threads = 1, const bool verbose = false);
+        bool read(const std::string& input_graph_fn, const std::string& input_index_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Find the unitig containing the queried k-mer in the Compacted de Bruijn graph.
         * @param km is the queried k-mer (see Kmer class). It does not need to be a canonical k-mer.
@@ -504,7 +503,7 @@ class CompactedDBG {
         * and the corresponding k-mer match in the graph. Note that no information is given on whether the match is exact or inexact, nor on what edit
         * operation makes the match to be inexact or at what position the edit operation takes place.
         */
-        vector<pair<size_t, UnitigMap<U, G>>> searchSequence(   const string& s, const bool exact, const bool insertion, const bool deletion,
+        std::vector<std::pair<size_t, UnitigMap<U, G>>> searchSequence(   const std::string& s, const bool exact, const bool insertion, const bool deletion,
                                                                 const bool substitution, const bool or_exclusive_match = false);
 
         /** Performs exact and/or inexact search of the k-mers of a sequence query in the Compacted de Bruijn graph.
@@ -519,7 +518,7 @@ class CompactedDBG {
         * and the corresponding k-mer match in the graph. Note that no information is given on whether the match is exact or inexact, nor on what edit
         * operation makes the match to be inexact or at what position the edit operation takes place.
         */
-        vector<pair<size_t, const_UnitigMap<U, G>>> searchSequence( const string& s, const bool exact, const bool insertion, const bool deletion,
+        std::vector<std::pair<size_t, const_UnitigMap<U, G>>> searchSequence( const std::string& s, const bool exact, const bool insertion, const bool deletion,
                                                                     const bool substitution, const bool or_exclusive_match = false) const;
 
         /** Add a sequence to the Compacted de Bruijn graph. Non-{A,C,G,T} characters such as Ns are discarded.
@@ -529,7 +528,7 @@ class CompactedDBG {
         * @param verbose is a boolean indicating if information messages must be printed during the function execution.
         * @return a boolean indicating if the sequence was successfully inserted in the graph.
         */
-        bool add(const string& seq, const bool verbose = false);
+        bool add(const std::string& seq, const bool verbose = false);
 
         /** Remove a unitig from the Compacted de Bruijn graph.
         * @param um is a UnitigMap object containing the information of the unitig to remove from the graph.
@@ -562,7 +561,7 @@ class CompactedDBG {
         * @param verbose is a boolean indicating if information messages must be printed during the execution of the function.
         * @return a boolean indicating if the graphs have been successfully merged.
         */
-        bool merge(const vector<CompactedDBG>& v, const size_t nb_threads = 1, const bool verbose = false);
+        bool merge(const std::vector<CompactedDBG>& v, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Create an iterator to the first unitig of the Compacted de Bruijn graph (unitigs are NOT sorted lexicographically).
         * @return an iterator to the first unitig of the graph.
@@ -624,19 +623,19 @@ class CompactedDBG {
         */
         inline const G* getData() const { return data.getData(); }
 
-        bool search(const vector<string>& query_filenames, const string& out_filename_prefix,
+        bool search(const std::vector<std::string>& query_filenames, const std::string& out_filename_prefix,
                     const double ratio_kmers, const bool inexact_search, const size_t nb_threads,
                     const size_t verbose = false) const;
 
-        bool writeBinary(const string& fn, const size_t nb_threads = 1) const;
-        bool writeBinary(ostream& out, const size_t nb_threads = 1) const;
+        bool writeBinary(const std::string& fn, const size_t nb_threads = 1) const;
+        bool writeBinary(std::ostream& out, const size_t nb_threads = 1) const;
 
-        bool readBinary(const string& fn, bool static_m=false, uint32_t threads=1);
-        bool readBinary(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
-        bool readBinary(istream& in, boophf_t* mphf, uint32_t threads=1);
+        bool readBinary(const std::string& fn, bool static_m=false, uint32_t threads=1);
+        bool readBinary(std::istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
+        bool readBinary(std::istream& in, boophf_t* mphf, uint32_t threads=1);
 
-        bool readMinimizers(istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
-        size_t writeMinimizers(ostream& out);
+        bool readMinimizers(std::istream& in, std::vector<Minimizer>& minz, uint32_t threads=1);
+        size_t writeMinimizers(std::ostream& out);
         void clearAndGetMinimizers(std::vector<Minimizer>& minz);
 
 
@@ -646,12 +645,12 @@ class CompactedDBG {
 
         bool annotateSplitUnitigs(const CompactedDBG<U, G>& o, const size_t nb_threads = 1, const bool verbose = false);
 
-        pair<size_t, size_t> splitAllUnitigs();
-        pair<size_t, size_t> getSplitInfoAllUnitigs() const;
+        std::pair<size_t, size_t> splitAllUnitigs();
+        std::pair<size_t, size_t> getSplitInfoAllUnitigs() const;
 
-        inline size_t joinUnitigs(vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1) {
+        inline size_t joinUnitigs(std::vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1) {
 
-            return joinUnitigs_<is_void<U>::value>(v_joins, nb_threads);
+            return joinUnitigs_<std::is_void<U>::value>(v_joins, nb_threads);
         }
 
         bool mergeData(const CompactedDBG<U, G>& o, const size_t nb_threads = 1, const bool verbose = false);
@@ -659,42 +658,42 @@ class CompactedDBG {
 
     private:
 
-        bool writeBinaryGraph(ostream& out, const size_t nb_threads = 1) const;
-        bool writeBinaryGraph(const string& fn, const size_t nb_threads = 1) const;
+        bool writeBinaryGraph(std::ostream& out, const size_t nb_threads = 1) const;
+        bool writeBinaryGraph(const std::string& fn, const size_t nb_threads = 1) const;
 
-        bool writeBinaryIndex(ostream& out, const uint64_t checksum, const size_t nb_threads = 1) const;
-        bool writeBinaryIndex(const string& fn, const uint64_t checksum, const size_t nb_threads = 1) const;
+        bool writeBinaryIndex(std::ostream& out, const uint64_t checksum, const size_t nb_threads = 1) const;
+        bool writeBinaryIndex(const std::string& fn, const uint64_t checksum, const size_t nb_threads = 1) const;
 
-        pair<uint64_t, bool> readBinaryGraph(istream& in);
-        pair<uint64_t, bool> readBinaryGraph(const string& fn);
+        std::pair<uint64_t, bool> readBinaryGraph(std::istream& in);
+        std::pair<uint64_t, bool> readBinaryGraph(const std::string& fn);
 
-        bool readBinaryMinimizers(istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
+        bool readBinaryMinimizers(std::istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
 
-        bool readBinaryIndex(istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
-        bool readBinaryIndex(istream& in, const uint64_t checksum, boophf_t* mphf, uint32_t threads=1);
-        bool readBinaryIndex(const string& fn, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
+        bool readBinaryIndex(std::istream& in, const uint64_t checksum, std::vector<Minimizer>& minz, uint32_t threads=1);
+        bool readBinaryIndex(std::istream& in, const uint64_t checksum, boophf_t* mphf, uint32_t threads=1);
+        bool readBinaryIndex(const std::string& fn, const uint64_t checksum, bool static_m=false, uint32_t threads=1);
 
-        bool readBinaryIndexHead(const string& fn, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
+        bool readBinaryIndexHead(const std::string& fn, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
                                 size_t& h_kmers_ccov_sz, size_t& hmap_min_unitigs_sz, uint64_t& read_checksum) const;
 
-        bool readBinaryIndexHead(istream& in, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
+        bool readBinaryIndexHead(std::istream& in, size_t& file_format_version, size_t& v_unitigs_sz, size_t& km_unitigs_sz,
                                 size_t& h_kmers_ccov_sz, size_t& hmap_min_unitigs_sz, uint64_t& read_checksum) const;
 
         uint64_t checksum() const;
 
         CompactedDBG<U, G>& toDataGraph(CompactedDBG<void, void>&& o, const size_t nb_threads = 1);
 
-        pair<bool, pair<BlockedBloomFilter, Roaring>> filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers);
+        std::pair<bool, std::pair<BlockedBloomFilter, Roaring>> filter(const CDBG_Build_opt& opt, const size_t nb_unique_kmers, const size_t nb_non_unique_kmers);
         bool construct(const CDBG_Build_opt& opt, BlockedBloomFilter& bf, Roaring& r, const size_t nb_unique_minimizers, const size_t nb_non_unique_minimizers);
 
-        void addUnitigSequence(const Kmer km, const string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g, const bool map_read = true);
-        //void addUnitigSequence(const string& seq);
+        void addUnitigSequence(const Kmer km, const std::string& seq, const size_t pos_match_km, const size_t len_match_km, LockGraph& lck_g, const bool map_read = true);
+        //void addUnitigSequence(const std::string& seq);
 
-        size_t findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip);
-        size_t findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, string& s, bool& isIsolated, vector<Kmer>& l_ignored_km_tip, LockGraph& lck_g);
+        size_t findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, std::string& s, bool& isIsolated, std::vector<Kmer>& l_ignored_km_tip);
+        size_t findUnitigSequenceBBF(const BlockedBloomFilter& bf, const Kmer km, std::string& s, bool& isIsolated, std::vector<Kmer>& l_ignored_km_tip, LockGraph& lck_g);
 
-        bool bwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& front, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
-        bool fwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& end, char& c, bool& has_no_neighbor, vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
+        bool bwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& front, char& c, bool& has_no_neighbor, std::vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
+        bool fwStepBBF(const BlockedBloomFilter& bf, const Kmer km, Kmer& end, char& c, bool& has_no_neighbor, std::vector<Kmer>& l_ignored_km_tip, const bool check_fp_cand = true) const;
 
         inline size_t find(const preAllocMinHashIterator<RepHash>& it_min_h) const {
 
@@ -707,13 +706,13 @@ class CompactedDBG {
 
         UnitigMap<U, G> find(const Kmer& km, const preAllocMinHashIterator<RepHash>& it_min_h);
 
-        //vector<const_UnitigMap<U, G>> find(const Minimizer& minz) const;
+        //std::vector<const_UnitigMap<U, G>> find(const Minimizer& minz) const;
 
-        vector<const_UnitigMap<U, G>> findPredecessors(const Kmer& km, const bool extremities_only = false) const;
-        vector<const_UnitigMap<U, G>> findSuccessors(const Kmer& km, const size_t limit = 4, const bool extremities_only = false) const;
+        std::vector<const_UnitigMap<U, G>> findPredecessors(const Kmer& km, const bool extremities_only = false) const;
+        std::vector<const_UnitigMap<U, G>> findSuccessors(const Kmer& km, const size_t limit = 4, const bool extremities_only = false) const;
 
-        vector<UnitigMap<U, G>> findPredecessors(const Kmer& km, const bool extremities_only = false);
-        vector<UnitigMap<U, G>> findSuccessors(const Kmer& km, const size_t limit = 4, const bool extremities_only = false);
+        std::vector<UnitigMap<U, G>> findPredecessors(const Kmer& km, const bool extremities_only = false);
+        std::vector<UnitigMap<U, G>> findSuccessors(const Kmer& km, const size_t limit = 4, const bool extremities_only = false);
 
         UnitigMap<U, G> findUnitig(const Kmer& km, const char* s, const size_t pos);
         UnitigMap<U, G> findUnitig(const Kmer& km, const char* s, const size_t pos, const preAllocMinHashIterator<RepHash>& it_min_h);
@@ -721,14 +720,14 @@ class CompactedDBG {
         UnitigMap<U, G> findUnitig(const char* s, const size_t pos, const size_t len, const minHashIterator<RepHash>& it_min);
         const_UnitigMap<U, G> findUnitig(const char* s, const size_t pos, const size_t len, const minHashIterator<RepHash>& it_min) const;
 
-        bool addUnitig(const string& str_unitig, const size_t id_unitig);
-        bool addUnitig(const string& str_unitig, const size_t id_unitig, const size_t id_unitig_r, const size_t is_short_r);
-        bool addUnitig(const string& str_unitig, const size_t id_unitig, SpinLock& lck_unitig, SpinLock& lck_kmer/*, const bool enable_abundant = true*/);
+        bool addUnitig(const std::string& str_unitig, const size_t id_unitig);
+        bool addUnitig(const std::string& str_unitig, const size_t id_unitig, const size_t id_unitig_r, const size_t is_short_r);
+        bool addUnitig(const std::string& str_unitig, const size_t id_unitig, SpinLock& lck_unitig, SpinLock& lck_kmer/*, const bool enable_abundant = true*/);
         void swapUnitigs(const bool isShort, const size_t id_a, const size_t id_b);
 
-        bool mergeUnitig(const string& seq, const bool verbose = false);
-        bool annotateSplitUnitig(const string& seq, const bool verbose = false);
-        bool annotateSplitUnitig(const string& seq, LockGraph& lck_g, const bool verbose = false);
+        bool mergeUnitig(const std::string& seq, const bool verbose = false);
+        bool annotateSplitUnitig(const std::string& seq, const bool verbose = false);
+        bool annotateSplitUnitig(const std::string& seq, LockGraph& lck_g, const bool verbose = false);
 
         template<bool is_void>
         inline typename std::enable_if<!is_void, void>::type mergeData_(const UnitigMap<U, G>& a, const const_UnitigMap<U, G>& b){
@@ -747,44 +746,44 @@ class CompactedDBG {
         typename std::enable_if<is_void, void>::type deleteUnitig_( const bool isShort, const bool isAbundant,
                                                                     const size_t id_unitig, const bool delete_data = true);
 
-        void deleteUnitig_(const bool isShort, const bool isAbundant, const size_t id_unitig, const string& str);
+        void deleteUnitig_(const bool isShort, const bool isAbundant, const size_t id_unitig, const std::string& str);
 
         template<bool is_void>
         typename std::enable_if<!is_void, bool>::type extractUnitig_(size_t& pos_v_unitigs, size_t& nxt_pos_insert_v_unitigs,
-                                                                    size_t& v_unitigs_sz, size_t& v_kmers_sz, const vector<pair<int,int>>& sp);
+                                                                    size_t& v_unitigs_sz, size_t& v_kmers_sz, const std::vector<std::pair<int,int>>& sp);
         template<bool is_void>
         typename std::enable_if<is_void, bool>::type extractUnitig_(size_t& pos_v_unitigs, size_t& nxt_pos_insert_v_unitigs,
-                                                                    size_t& v_unitigs_sz, size_t& v_kmers_sz, const vector<pair<int,int>>& sp);
+                                                                    size_t& v_unitigs_sz, size_t& v_kmers_sz, const std::vector<std::pair<int,int>>& sp);
 
-        pair<size_t, size_t> extractAllUnitigs();
-
-        template<bool is_void>
-        typename std::enable_if<!is_void, size_t>::type joinUnitigs_(vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1);
+        std::pair<size_t, size_t> extractAllUnitigs();
 
         template<bool is_void>
-        typename std::enable_if<is_void, size_t>::type joinUnitigs_(vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1);
+        typename std::enable_if<!is_void, size_t>::type joinUnitigs_(std::vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1);
+
+        template<bool is_void>
+        typename std::enable_if<is_void, size_t>::type joinUnitigs_(std::vector<Kmer>* v_joins = nullptr, const size_t nb_threads = 1);
 
         void moveToAbundant();
         void setFullCoverage(const size_t cov) const;
 
-        void createJoinHT(vector<Kmer>* v_joins, KmerHashTable<Kmer>& joins, const size_t nb_threads) const;
-        void createJoinHT(vector<Kmer>* v_joins, KmerHashTable<char>& joins, const size_t nb_threads) const;
+        void createJoinHT(std::vector<Kmer>* v_joins, KmerHashTable<Kmer>& joins, const size_t nb_threads) const;
+        void createJoinHT(std::vector<Kmer>* v_joins, KmerHashTable<char>& joins, const size_t nb_threads) const;
 
         bool checkJoin(const Kmer& a, const const_UnitigMap<U, G>& cm_a, Kmer& b) const;
         void check_fp_tips(KmerHashTable<bool>& ignored_km_tips);
-        size_t removeUnitigs(bool rmIsolated, bool clipTips, vector<Kmer>& v);
+        size_t removeUnitigs(bool rmIsolated, bool clipTips, std::vector<Kmer>& v);
 
-        size_t joinTips(string filename_MBBF_uniq_kmers, const size_t nb_threads = 1, const bool verbose = false);
-        vector<Kmer> extractMercyKmers(const BlockedBloomFilter& bf_uniq_km, const size_t nb_threads = 1, const bool verbose = false);
+        size_t joinTips(std::string filename_MBBF_uniq_kmers, const size_t nb_threads = 1, const bool verbose = false);
+        std::vector<Kmer> extractMercyKmers(const BlockedBloomFilter& bf_uniq_km, const size_t nb_threads = 1, const bool verbose = false);
 
-        bool writeGFA(const string& fn, const size_t nb_threads = 1, const bool compressed_output = false) const;
-        bool writeFASTA(const string& fn, const bool compressed_output = false) const;
+        bool writeGFA(const std::string& fn, const size_t nb_threads = 1, const bool compressed_output = false) const;
+        bool writeFASTA(const std::string& fn, const bool compressed_output = false) const;
 
-        void makeGraphFromGFA(const string& fn, const size_t nb_threads = 1);
-        void makeGraphFromFASTA(const string& fn, const size_t nb_threads = 1);
+        void makeGraphFromGFA(const std::string& fn, const size_t nb_threads = 1);
+        void makeGraphFromFASTA(const std::string& fn, const size_t nb_threads = 1);
 
-        pair<uint64_t, bool> readGraphFromIndexGFA(const string& graph_fn, const string& index_fn, const size_t k, const size_t g);
-        pair<uint64_t, bool> readGraphFromIndexFASTA(const string& graph_fn, const string& index_fn, const size_t k, const size_t g);
+        std::pair<uint64_t, bool> readGraphFromIndexGFA(const std::string& graph_fn, const std::string& index_fn, const size_t k, const size_t g);
+        std::pair<uint64_t, bool> readGraphFromIndexFASTA(const std::string& graph_fn, const std::string& index_fn, const size_t k, const size_t g);
 
         template<bool is_void>
         typename std::enable_if<!is_void, void>::type writeGFA_sequence_(GFA_Parser& graph, KmerHashTable<size_t>& idmap) const;
@@ -800,10 +799,10 @@ class CompactedDBG {
         void setKmerGmerLength(const int kmer_length, const int minimizer_length = -1);
         void print() const;
 
-        vector<pair<size_t, UnitigMap<U, G>>> searchSequence(   const string& seq, const bool exact, const bool insertion, const bool deletion,
+        std::vector<std::pair<size_t, UnitigMap<U, G>>> searchSequence(   const std::string& seq, const bool exact, const bool insertion, const bool deletion,
                                                                 const bool substitution, const double ratio_kmers, const bool or_exclusive_match);
 
-        vector<pair<size_t, const_UnitigMap<U, G>>> searchSequence( const string& seq, const bool exact, const bool insertion, const bool deletion,
+        std::vector<std::pair<size_t, const_UnitigMap<U, G>>> searchSequence( const std::string& seq, const bool exact, const bool insertion, const bool deletion,
                                                                     const bool substitution, const double ratio_kmers, const bool or_exclusive_match) const;
 
         int k_;
@@ -817,7 +816,7 @@ class CompactedDBG {
 
         typedef KmerHashTable<CompressedCoverage_t<U>> h_kmers_ccov_t;
 
-        vector<Unitig<U>*> v_unitigs;
+        std::vector<Unitig<U>*> v_unitigs;
         KmerCovIndex<U> km_unitigs;
         h_kmers_ccov_t h_kmers_ccov;
 

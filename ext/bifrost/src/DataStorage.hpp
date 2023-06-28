@@ -36,7 +36,7 @@ class DataStorage {
         typedef Unitig_data_t U;
 
         DataStorage();
-        DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const vector<string>& color_names_);
+        DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const std::vector<std::string>& color_names_);
         DataStorage(const DataStorage& o);
         DataStorage(DataStorage&& o);
 
@@ -55,10 +55,10 @@ class DataStorage {
 
         UnitigColors getSubUnitigColors(const const_UnitigColorMap<U>& um) const;
 
-        vector<string> getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const;
+        std::vector<std::string> getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const;
 
-        bool write(const string& prefix_output_fn, const bool verbose = false) const;
-        bool read(const string& color_fn, const size_t nb_threads = 1, const bool verbose = false);
+        bool write(const std::string& prefix_output_fn, const bool verbose = false) const;
+        bool read(const std::string& color_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         bool addUnitigColors(const UnitigColorMap<U>& um_dest, const const_UnitigColorMap<U>& um_src);
         UnitigColors joinUnitigColors(const const_UnitigColorMap<U>& um_dest, const const_UnitigColorMap<U>& um_src) const;
@@ -69,8 +69,8 @@ class DataStorage {
 
         uint64_t getHash(const UnitigColorMap<U>& um) const;
 
-        pair<DataAccessor<U>, pair<UnitigColors*, U*>> insert(const UnitigColorMap<U>& um, const bool force_overflow = false);
-        pair<DataAccessor<U>, pair<UnitigColors*, U*>> insert(const Kmer head_unitig, const size_t unitig_sz, const bool force_overflow = false);
+        std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> insert(const UnitigColorMap<U>& um, const bool force_overflow = false);
+        std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> insert(const Kmer head_unitig, const size_t unitig_sz, const bool force_overflow = false);
 
         void remove(const UnitigColorMap<U>& um_dest);
 
@@ -80,7 +80,7 @@ class DataStorage {
 
         void releaseMemory();
 
-        pair<DataAccessor<U>, UnitigColors*> insert_(const Kmer head_unitig, const size_t unitig_sz, const bool force_overflow = false);
+        std::pair<DataAccessor<U>, UnitigColors*> insert_(const Kmer head_unitig, const size_t unitig_sz, const bool force_overflow = false);
 
         size_t nb_seeds;
 
@@ -95,15 +95,15 @@ class DataStorage {
         UnitigColors* color_sets;
         UnitigColors::SharedUnitigColors* shared_color_sets;
 
-        atomic<uint64_t>* unitig_cs_link;
+        std::atomic<uint64_t>* unitig_cs_link;
 
         U* data;
 
-        unordered_map<pair<Kmer, size_t>, size_t> overflow;
+        std::unordered_map<std::pair<Kmer, size_t>, size_t> overflow;
 
-        mutable mutex mutex_overflow;
+        mutable std::mutex mutex_overflow;
 
-        vector<string> color_names;
+        std::vector<std::string> color_names;
 };
 
 #endif

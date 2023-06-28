@@ -24,7 +24,7 @@ class CompressedSequence {
         ~CompressedSequence();
 
         CompressedSequence(const char *s);
-        CompressedSequence(const string& s);
+        CompressedSequence(const std::string& s);
         CompressedSequence(const Kmer& km);
 
         CompressedSequence(const CompressedSequence& o); // Copy constructor
@@ -46,9 +46,9 @@ class CompressedSequence {
         void setSequence(const char *s, const size_t offset, const size_t length, const bool reversed = false);
 
         void toString(char *s, const size_t offset, const size_t length) const;
-        string toString(const size_t offset, const size_t length) const;
+        std::string toString(const size_t offset, const size_t length) const;
 
-        BFG_INLINE string toString() const {
+        BFG_INLINE std::string toString() const {
 
             return toString(0, size());
         }
@@ -59,7 +59,7 @@ class CompressedSequence {
         }
 
 
-        BFG_INLINE void setSequence(const string& s, const size_t offset, const size_t length, const bool reversed = false) {
+        BFG_INLINE void setSequence(const std::string& s, const size_t offset, const size_t length, const bool reversed = false) {
 
             setSequence(s.c_str(), offset, length, reversed);
         }

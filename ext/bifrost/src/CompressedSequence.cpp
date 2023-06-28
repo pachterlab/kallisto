@@ -98,7 +98,7 @@ CompressedSequence::CompressedSequence(const char *s) {
 
 
 // same as with char *s but with string
-CompressedSequence::CompressedSequence(const string& s) {
+CompressedSequence::CompressedSequence(const std::string& s) {
 
     initShort();
 
@@ -235,11 +235,11 @@ void CompressedSequence::setSequence(const char *s, const size_t offset, const s
 // use:  s = cs.toString(offset, length);
 // pre:  offset + length <= cs.size(),
 // post: s is the DNA string from c[offset,...,offset+length-1]
-string CompressedSequence::toString(const size_t offset, const size_t length) const {
+std::string CompressedSequence::toString(const size_t offset, const size_t length) const {
 
     const unsigned char* data = getPointer();
 
-    string s(length, 0);
+    std::string s(length, 0);
 
     for (size_t index = offset; index < offset+length; ++index) {
 

@@ -79,7 +79,7 @@ class DataAccessor : public CDBG_Data_t<DataAccessor<Unitig_data_t>, DataStorage
         * @param um is a constant reference to a const_UnitigColorMap object which is a unitig mapping.
         * @return a vector of string, each string is the name of a color.
         */
-        vector<string> getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const;
+        std::vector<std::string> getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const;
 
         /**
         * Join data and colors of two colored unitigs which are going to be concatenated. Specifically, if A is the reference unitig
@@ -128,7 +128,7 @@ class DataAccessor : public CDBG_Data_t<DataAccessor<Unitig_data_t>, DataStorage
         * associated.
         * @return a GFA-formatted string which is the serialization of the data.
         */
-        string serialize(const const_UnitigColorMap<U>& um_src) const;
+        std::string serialize(const const_UnitigColorMap<U>& um_src) const;
 
     private:
 

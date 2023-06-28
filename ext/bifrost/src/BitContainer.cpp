@@ -162,7 +162,7 @@ BitContainer& BitContainer::operator|=(const BitContainer& rhs) {
             }
             else {
 
-                vector<uint32_t> new_ids;
+                std::vector<uint32_t> new_ids;
 
                 const_iterator it = begin(), it_end = end();
                 const_iterator r_it = rhs.begin(), r_it_end = rhs.end();
@@ -211,7 +211,7 @@ BitContainer& BitContainer::operator&=(const BitContainer& rhs) {
         if ((cardinality() == 0) || (rhs.cardinality() == 0)) clear();
         else {
 
-            vector<uint32_t> old_ids;
+            std::vector<uint32_t> old_ids;
 
             const_iterator it = begin(), it_end = end();
             const_iterator r_it = rhs.begin(), r_it_end = rhs.end();
@@ -257,7 +257,7 @@ BitContainer& BitContainer::operator-=(const BitContainer& rhs) {
         const_iterator it = begin(), it_end = end();
         const_iterator r_it = rhs.begin(), r_it_end = rhs.end();
 
-        vector<uint32_t> old_ids;
+        std::vector<uint32_t> old_ids;
 
         old_ids.reserve(cardinality());
 
@@ -407,7 +407,7 @@ void BitContainer::add(const size_t pair_id) {
     if (flag == ptrBitmap) getPtrBitmap()->r.add(pair_id); // flag == ptrBitmap
 }
 
-void BitContainer::addSortedVector(const vector<uint32_t>& v) { // Private, assumes vector is sorted
+void BitContainer::addSortedVector(const std::vector<uint32_t>& v) { // Private, assumes vector is sorted
 
     if (v.empty()) return;
 
@@ -580,7 +580,7 @@ void BitContainer::remove(const size_t pair_id) {
 
                 setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
 
-                *this = move(new_uc);
+                *this = std::move(new_uc);
             }
             else setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
         }
@@ -630,13 +630,13 @@ void BitContainer::remove(const size_t pair_id) {
 
             for (; it != it_end; ++it) new_uc.add(*it);
 
-            *this = move(new_uc);
+            *this = std::move(new_uc);
         }
         else if ((setBits & flagMask) == ptrBitmap) bitmap->r.runOptimize();
     }
 }
 
-void BitContainer::removeSortedVector(const vector<uint32_t>& v) {
+void BitContainer::removeSortedVector(const std::vector<uint32_t>& v) {
 
     if (v.empty()) return;
 
@@ -704,7 +704,7 @@ void BitContainer::removeSortedVector(const vector<uint32_t>& v) {
 
                 setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
 
-                *this = move(new_uc);
+                *this = std::move(new_uc);
             }
             else setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
         }
@@ -752,7 +752,7 @@ void BitContainer::removeSortedVector(const vector<uint32_t>& v) {
 
             for (const_iterator it = begin(), it_end = end(); it != it_end; ++it) new_uc.add(*it);
 
-            *this = move(new_uc);
+            *this = std::move(new_uc);
         }
         else if ((setBits & flagMask) == ptrBitmap) bitmap->r.runOptimize();
     }
@@ -845,7 +845,7 @@ size_t BitContainer::size() const {
     return 1;
 }
 
-bool BitContainer::write(ostream& stream_out) const {
+bool BitContainer::write(std::ostream& stream_out) const {
 
     if (!stream_out.fail()){
 
@@ -884,7 +884,7 @@ bool BitContainer::write(ostream& stream_out) const {
     return false;
 }
 
-bool BitContainer::read(istream& stream_in) {
+bool BitContainer::read(std::istream& stream_in) {
 
     if (!stream_in.fail()){
 

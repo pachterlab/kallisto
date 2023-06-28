@@ -1,5 +1,8 @@
 #include "GFA_Parser.hpp"
 
+
+using namespace std;
+
 GFA_Parser::GFA_Parser() : file_open_write(false), file_open_read(false), file_no(0), v_gfa(0), graph_out(nullptr), graph_in(nullptr) {}
 
 GFA_Parser::GFA_Parser(const string& filename) :    file_open_write(false), file_open_read(false), file_no(0),

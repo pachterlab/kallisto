@@ -13,7 +13,7 @@ DataStorage<U>::DataStorage() : color_sets(nullptr), shared_color_sets(nullptr),
 }
 
 template<typename U>
-DataStorage<U>::DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const vector<string>& color_names_) :
+DataStorage<U>::DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const std::vector<std::string>& color_names_) :
                             color_sets(nullptr), shared_color_sets(nullptr), unitig_cs_link(nullptr), data(nullptr),
                             nb_seeds(nb_seeds_), nb_cs(sz_cs_), sz_cs(sz_cs_), sz_shared_cs(0), pos_empty_cs(0),
                             color_names(color_names_) {
@@ -27,14 +27,14 @@ DataStorage<U>::DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const v
     for (size_t i = 0; i != 256; ++i) seeds[i] = distribution(generator); //Initialize the hash function seeds
 
     color_sets = new UnitigColors[sz_cs];
-    unitig_cs_link = new atomic<uint64_t>[sz_unitig_cs_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_unitig_cs_link];
     data = new U[sz_cs];
 
     for (size_t i = 0; i != sz_unitig_cs_link; ++i) unitig_cs_link[i] = 0;
 }
 
 template<>
-inline DataStorage<void>::DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const vector<string>& color_names_) :
+inline DataStorage<void>::DataStorage(const size_t nb_seeds_, const size_t sz_cs_, const std::vector<std::string>& color_names_) :
                                 color_sets(nullptr), shared_color_sets(nullptr), unitig_cs_link(nullptr), data(nullptr),
                                 nb_seeds(nb_seeds_), nb_cs(sz_cs_), sz_cs(sz_cs_), sz_shared_cs(0), pos_empty_cs(0),
                                 color_names(color_names_) {
@@ -48,7 +48,7 @@ inline DataStorage<void>::DataStorage(const size_t nb_seeds_, const size_t sz_cs
     for (int i = 0; i < 256; ++i) seeds[i] = distribution(generator); //Initialize the hash function seeds
 
     color_sets = new UnitigColors[sz_cs];
-    unitig_cs_link = new atomic<uint64_t>[sz_unitig_cs_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_unitig_cs_link];
 
     for (size_t i = 0; i != sz_unitig_cs_link; ++i) unitig_cs_link[i] = 0;
 }
@@ -76,7 +76,7 @@ DataStorage<U>::DataStorage(const DataStorage& o) : color_sets(nullptr), shared_
 
         const size_t sz_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-        unitig_cs_link = new atomic<uint64_t>[sz_link];
+        unitig_cs_link = new std::atomic<uint64_t>[sz_link];
 
         for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.sz_link[i].load();
     }
@@ -112,7 +112,7 @@ inline DataStorage<void>::DataStorage(const DataStorage& o) :   color_sets(nullp
 
         const size_t sz_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-        unitig_cs_link = new atomic<uint64_t>[sz_link];
+        unitig_cs_link = new std::atomic<uint64_t>[sz_link];
 
         for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.unitig_cs_link[i].load();
     }
@@ -120,9 +120,9 @@ inline DataStorage<void>::DataStorage(const DataStorage& o) :   color_sets(nullp
 
 template<typename U>
 DataStorage<U>::DataStorage(DataStorage&& o) :  color_sets(o.color_sets), shared_color_sets(o.shared_color_sets), data(o.data),
-                                                unitig_cs_link(o.unitig_cs_link), overflow(move(o.overflow)), nb_seeds(o.nb_seeds),
+                                                unitig_cs_link(o.unitig_cs_link), overflow(std::move(o.overflow)), nb_seeds(o.nb_seeds),
                                                 nb_cs(o.nb_cs), sz_cs(o.sz_cs), sz_shared_cs(o.sz_shared_cs), pos_empty_cs(o.pos_empty_cs),
-                                                color_names(move(o.color_names)) {
+                                                color_names(std::move(o.color_names)) {
 
     memcpy(seeds, o.seeds, 256 * sizeof(uint64_t));
 
@@ -241,7 +241,7 @@ DataStorage<U>& DataStorage<U>::operator=(const DataStorage& o) {
 
         const size_t sz_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-        unitig_cs_link = new atomic<uint64_t>[sz_link];
+        unitig_cs_link = new std::atomic<uint64_t>[sz_link];
         for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.unitig_cs_link[i].load();
     }
 
@@ -286,7 +286,7 @@ inline DataStorage<void>& DataStorage<void>::operator=(const DataStorage& o) {
 
         const size_t sz_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-        unitig_cs_link = new atomic<uint64_t>[sz_link];
+        unitig_cs_link = new std::atomic<uint64_t>[sz_link];
 
         for (size_t i = 0; i != sz_link; ++i) unitig_cs_link[i] = o.unitig_cs_link[i].load();
     }
@@ -307,9 +307,9 @@ DataStorage<U>& DataStorage<U>::operator=(DataStorage&& o) {
         sz_shared_cs = o.sz_shared_cs;
         pos_empty_cs = o.pos_empty_cs;
 
-        color_names = move(o.color_names);
+        color_names = std::move(o.color_names);
 
-        overflow = move(o.overflow);
+        overflow = std::move(o.overflow);
 
         color_sets = o.color_sets;
         shared_color_sets = o.shared_color_sets;
@@ -342,9 +342,9 @@ inline DataStorage<void>& DataStorage<void>::operator=(DataStorage&& o) {
         sz_shared_cs = o.sz_shared_cs;
         pos_empty_cs = o.pos_empty_cs;
 
-        color_names = move(o.color_names);
+        color_names = std::move(o.color_names);
 
-        overflow = move(o.overflow);
+        overflow = std::move(o.overflow);
 
         color_sets = o.color_sets;
         shared_color_sets = o.shared_color_sets;
@@ -372,9 +372,9 @@ const UnitigColors* DataStorage<U>::getUnitigColors(const const_UnitigColorMap<U
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
             if (it != overflow.end()) return &color_sets[it->second];
         }
         else return &(color_sets[head.hash(seeds[da_id - 1]) % nb_cs]);
@@ -393,9 +393,9 @@ UnitigColors* DataStorage<U>::getUnitigColors(const UnitigColorMap<U>& um) {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
             if (it != overflow.end()) return &color_sets[it->second];
         }
         else return &(color_sets[head.hash(seeds[da_id - 1]) % nb_cs]);
@@ -414,9 +414,9 @@ const U* DataStorage<U>::getData(const const_UnitigColorMap<U>& um) const {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
             if (it != overflow.end()) return &data[it->second];
         }
         else return &(data[head.hash(seeds[da_id - 1]) % nb_cs]);
@@ -440,9 +440,9 @@ U* DataStorage<U>::getData(const UnitigColorMap<U>& um) {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
             if (it != overflow.end()) return &data[it->second];
         }
         else return &(data[head.hash(seeds[da_id - 1]) % nb_cs]);
@@ -510,9 +510,9 @@ UnitigColors DataStorage<U>::getSubUnitigColors(const const_UnitigColorMap<U>& u
 }
 
 template<typename U>
-vector<string> DataStorage<U>::getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const {
+std::vector<std::string> DataStorage<U>::getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const {
 
-    vector<string> v_out;
+    std::vector<std::string> v_out;
 
     if (!um.isEmpty && (color_sets != nullptr)){
 
@@ -531,30 +531,30 @@ vector<string> DataStorage<U>::getSubUnitigColorNames(const const_UnitigColorMap
 }
 
 template<typename U>
-bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) const {
+bool DataStorage<U>::write(const std::string& prefix_output_fn, const bool verbose) const {
 
-    if (verbose) cout << endl << "DataStorage::write(): Writing colors to disk" << endl;
+    if (verbose) std::cout << std::endl << "DataStorage::write(): Writing colors to disk" << std::endl;
 
-    const string out = prefix_output_fn + ".color.bfg";
+    const std::string out = prefix_output_fn + ".color.bfg";
 
     FILE* fp = fopen(out.c_str(), "wb");
 
     if (fp == NULL) {
 
-        cerr << "DataStorage::write(): Could not open file " << out << " for writing color sets" << endl;
+        std::cerr << "DataStorage::write(): Could not open file " << out << " for writing color sets" << std::endl;
         return false;
     }
     else {
 
         fclose(fp);
 
-        if (std::remove(out.c_str()) != 0) cerr << "DataStorage::write(): Could not remove temporary file " << out << endl;
+        if (std::remove(out.c_str()) != 0) std::cerr << "DataStorage::write(): Could not remove temporary file " << out << std::endl;
     }
 
-    ofstream colorsfile_out;
-    ostream colors_out(nullptr);
+    std::ofstream colorsfile_out;
+    std::ostream colors_out(nullptr);
 
-    colorsfile_out.open(out.c_str(), ios_base::out | ios_base::binary);
+    colorsfile_out.open(out.c_str(), std::ios_base::out | std::ios_base::binary);
     colors_out.rdbuf(colorsfile_out.rdbuf());
     //colors_out.sync_with_stdio(false);
 
@@ -566,9 +566,9 @@ bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) c
 
     const char nl = '\n';
 
-    streampos pos_f_cs;
+    std::streampos pos_f_cs;
 
-    vector<streampos> v_pos_f_cs;
+    std::vector<std::streampos> v_pos_f_cs;
 
     //Write the file format version number
     if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&format_version), sizeof(size_t));
@@ -596,12 +596,12 @@ bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) c
 
     for (size_t i = 0; (i < nb_pos_shared_cs) && colors_out.good(); ++i){
         // Reserve space to write positions in file of shared colorsets blocks
-        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(streampos));
+        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(std::streampos));
     }
 
     for (size_t i = 0; (i < nb_pos_cs) && colors_out.good(); ++i){
         // Reserve space to write positions in file of non-shared colorsets blocks
-        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(streampos));
+        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(std::streampos));
     }
 
     for (size_t i = 0; (i < nb_colors) && colors_out.good(); ++i){
@@ -633,8 +633,8 @@ bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) c
         color_sets[i].write(colors_out, false); //Write the color sets
     }
 
-    unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it(overflow.begin());
-    const unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it_end(overflow.end());
+    std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it(overflow.begin());
+    const std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it_end(overflow.end());
 
     for (; (it != it_end) && colors_out.good(); ++it){
 
@@ -648,7 +648,7 @@ bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) c
 
         colors_out.seekp(pos_f_cs); // Re-position cursor to array of position of shared color sets at the beginning
 
-        if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&v_pos_f_cs[0]), v_pos_f_cs.size() * sizeof(streampos));
+        if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&v_pos_f_cs[0]), v_pos_f_cs.size() * sizeof(std::streampos));
     }
 
     const bool ret = colors_out.good();
@@ -659,30 +659,30 @@ bool DataStorage<U>::write(const string& prefix_output_fn, const bool verbose) c
 }
 
 template<>
-inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool verbose) const {
+inline bool DataStorage<void>::write(const std::string& prefix_output_fn, const bool verbose) const {
 
-    if (verbose) cout << endl << "DataStorage::write(): Writing colors to disk" << endl;
+    if (verbose) std::cout << std::endl << "DataStorage::write(): Writing colors to disk" << std::endl;
 
-    const string out = prefix_output_fn + ".color.bfg";
+    const std::string out = prefix_output_fn + ".color.bfg";
 
     FILE* fp = fopen(out.c_str(), "wb");
 
     if (fp == NULL) {
 
-        cerr << "DataStorage::write(): Could not open file " << out << " for writing color sets" << endl;
+        std::cerr << "DataStorage::write(): Could not open file " << out << " for writing color sets" << std::endl;
         return false;
     }
     else {
 
         fclose(fp);
 
-        if (std::remove(out.c_str()) != 0) cerr << "DataStorage::write(): Could not remove temporary file " << out << endl;
+        if (std::remove(out.c_str()) != 0) std::cerr << "DataStorage::write(): Could not remove temporary file " << out << std::endl;
     }
 
-    ofstream colorsfile_out;
-    ostream colors_out(nullptr);
+    std::ofstream colorsfile_out;
+    std::ostream colors_out(nullptr);
 
-    colorsfile_out.open(out.c_str(), ios_base::out | ios_base::binary);
+    colorsfile_out.open(out.c_str(), std::ios_base::out | std::ios_base::binary);
     colors_out.rdbuf(colorsfile_out.rdbuf());
     //colors_out.sync_with_stdio(false);
 
@@ -694,9 +694,9 @@ inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool 
 
     const char nl = '\n';
 
-    streampos pos_f_cs;
+    std::streampos pos_f_cs;
 
-    vector<streampos> v_pos_f_cs;
+    std::vector<std::streampos> v_pos_f_cs;
 
     //Write the file format version number
     if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&format_version), sizeof(size_t));
@@ -724,12 +724,12 @@ inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool 
 
     for (size_t i = 0; (i < nb_pos_shared_cs) && colors_out.good(); ++i){
         // Reserve space to write positions in file of shared colorsets blocks
-        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(streampos));
+        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(std::streampos));
     }
 
     for (size_t i = 0; (i < nb_pos_cs) && colors_out.good(); ++i){
         // Reserve space to write positions in file of non-shared colorsets blocks
-        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(streampos));
+        colors_out.write(reinterpret_cast<const char*>(&pos_f_cs), sizeof(std::streampos));
     }
 
     for (size_t i = 0; (i < nb_colors) && colors_out.good(); ++i){
@@ -761,8 +761,8 @@ inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool 
         color_sets[i].write(colors_out, false); //Write the color sets
     }
 
-    unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it(overflow.begin());
-    const unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it_end(overflow.end());
+    std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it(overflow.begin());
+    const std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it_end(overflow.end());
 
     for (; (it != it_end) && colors_out.good(); ++it){
 
@@ -776,7 +776,7 @@ inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool 
 
         colors_out.seekp(pos_f_cs); // Re-position cursor to array of position of shared color sets at the beginning
 
-        if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&v_pos_f_cs[0]), v_pos_f_cs.size() * sizeof(streampos));
+        if (colors_out.good()) colors_out.write(reinterpret_cast<const char*>(&v_pos_f_cs[0]), v_pos_f_cs.size() * sizeof(std::streampos));
     }
 
     const bool ret = colors_out.good();
@@ -787,20 +787,20 @@ inline bool DataStorage<void>::write(const string& prefix_output_fn, const bool 
 }
 
 template<typename U>
-bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const bool verbose) {
+bool DataStorage<U>::read(const std::string& color_fn, const size_t nb_threads, const bool verbose) {
 
-    if (verbose) cout << endl << "DataStorage::read(): Reading color sets from disk" << endl;
+    if (verbose) std::cout << std::endl << "DataStorage::read(): Reading color sets from disk" << std::endl;
 
     FILE* fp = fopen(color_fn.c_str(), "rb");
 
     if (fp == NULL) {
 
-        cerr << "DataStorage::read(): Could not open file " << color_fn << " for reading color sets" << endl;
+        std::cerr << "DataStorage::read(): Could not open file " << color_fn << " for reading color sets" << std::endl;
         return false;
     }
     else fclose(fp);
 
-    auto readSharedColorSets = [](UnitigColors::SharedUnitigColors* shared_color_sets, istream& colors_in, const size_t sz){
+    auto readSharedColorSets = [](UnitigColors::SharedUnitigColors* shared_color_sets, std::istream& colors_in, const size_t sz){
 
         for (size_t i = 0; (i < sz) && colors_in.good(); ++i){
 
@@ -811,7 +811,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
         }
     };
 
-    auto readColorSets = [](UnitigColors* color_sets, istream& colors_in, const size_t sz){
+    auto readColorSets = [](UnitigColors* color_sets, std::istream& colors_in, const size_t sz){
 
         for (size_t i = 0; (i < sz) && colors_in.good(); ++i) color_sets[i].read(colors_in);
     };
@@ -820,10 +820,10 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
     size_t format_version, overflow_sz, nb_colors;
 
-    ifstream colorsfile_in;
-    istream colors_in(nullptr);
+    std::ifstream colorsfile_in;
+    std::istream colors_in(nullptr);
 
-    colorsfile_in.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+    colorsfile_in.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
     colors_in.rdbuf(colorsfile_in.rdbuf());
 
     clear();
@@ -845,16 +845,16 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
     if (nb_seeds >= 256){
 
-        cerr << "DataStorage::read(): Does not support more than 255 hash seeds" << endl;
+        std::cerr << "DataStorage::read(): Does not support more than 255 hash seeds" << std::endl;
         return false;
     }
 
     if (format_version < 3) { // Color files v1 and v2 are incompatible with Bifrost v1.0.6.2 and versions onward
 
-        stringstream ss_bfg_version(string(BFG_VERSION));
-        string segment;
+        std::stringstream ss_bfg_version(std::string(BFG_VERSION));
+        std::string segment;
 
-        vector<int> seglist;
+        std::vector<int> seglist;
 
         while(getline(ss_bfg_version, segment, '.')) seglist.push_back(atoi(segment.c_str()));
 
@@ -882,18 +882,18 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
         if (!compatible) {
 
-            cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << endl;
+            std::cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << std::endl;
             return false;
         }
     }
 
     const size_t sz_unitig_cs_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-    overflow = unordered_map<pair<Kmer, size_t>, size_t>(overflow_sz);
+    overflow = std::unordered_map<std::pair<Kmer, size_t>, size_t>(overflow_sz);
 
     color_sets = new UnitigColors[sz_cs];
     shared_color_sets = new UnitigColors::SharedUnitigColors[sz_shared_cs];
-    unitig_cs_link = new atomic<uint64_t>[sz_unitig_cs_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_unitig_cs_link];
     data = new U[sz_cs];
 
     //Read the hash function seeds of the graph
@@ -903,7 +903,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
         for (size_t i = 0; (i < nb_colors) && colors_in.good(); ++i){
             //Read the hash function seeds of the graph
-            color_names.push_back(string());
+            color_names.push_back(std::string());
             getline(colors_in, color_names[i]);
         }
 
@@ -920,7 +920,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
         size_t block_sz = 0;
 
-        streampos* pos_f_cs = nullptr;
+        std::streampos* pos_f_cs = nullptr;
 
         //Read the hash function seeds of the graph
         if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(&block_sz), sizeof(size_t));
@@ -931,14 +931,14 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
         if (pos_f_cs_sz != 0){
 
-            pos_f_cs = new streampos[pos_f_cs_sz];
+            pos_f_cs = new std::streampos[pos_f_cs_sz];
 
-            if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(pos_f_cs), pos_f_cs_sz * sizeof(streampos));
+            if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(pos_f_cs), pos_f_cs_sz * sizeof(std::streampos));
         }
 
         for (size_t i = 0; (i < nb_colors) && colors_in.good(); ++i){
             //Read the hash function seeds of the graph
-            color_names.push_back(string());
+            color_names.push_back(std::string());
             getline(colors_in, color_names[i]);
         }
 
@@ -955,13 +955,13 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
         }
         else {
 
-            streampos colors_in_pos = colors_in.tellg();
+            std::streampos colors_in_pos = colors_in.tellg();
 
             colorsfile_in.close();
 
-            mutex m_colors_in_pos;
+            std::mutex m_colors_in_pos;
 
-            vector<thread> workers; // need to keep track of threads so we can join them
+            std::vector<std::thread> workers; // need to keep track of threads so we can join them
 
             std::atomic<size_t> i;
 
@@ -973,10 +973,10 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
                     [&]{
 
-                        ifstream colorsfile_in_t;
-                        istream colors_in_t(nullptr);
+                        std::ifstream colorsfile_in_t;
+                        std::istream colors_in_t(nullptr);
 
-                        colorsfile_in_t.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+                        colorsfile_in_t.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
                         colors_in_t.rdbuf(colorsfile_in_t.rdbuf());
 
                         while (true) {
@@ -985,12 +985,12 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
                             if (l_i >= nb_pos_shared_cs){
 
-                                const streampos colors_in_t_pos = colors_in_t.tellg();
+                                const std::streampos colors_in_t_pos = colors_in_t.tellg();
 
                                 {
-                                    unique_lock<mutex> lock(m_colors_in_pos);
+                                    std::unique_lock<std::mutex> lock(m_colors_in_pos);
 
-                                    colors_in_pos = max(colors_in_pos, colors_in_t_pos);
+                                    colors_in_pos = std::max(colors_in_pos, colors_in_t_pos);
                                 }
 
                                 colorsfile_in_t.close();
@@ -999,7 +999,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
                             }
 
                             colors_in_t.seekg(pos_f_cs[l_i]);
-                            readSharedColorSets(shared_color_sets + (l_i * block_sz), colors_in_t, min(block_sz, sz_shared_cs - (l_i * block_sz)));
+                            readSharedColorSets(shared_color_sets + (l_i * block_sz), colors_in_t, std::min(block_sz, sz_shared_cs - (l_i * block_sz)));
                         }
                     }
                 );
@@ -1017,10 +1017,10 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
                     [&]{
 
-                        ifstream colorsfile_in_t;
-                        istream colors_in_t(nullptr);
+                        std::ifstream colorsfile_in_t;
+                        std::istream colors_in_t(nullptr);
 
-                        colorsfile_in_t.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+                        colorsfile_in_t.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
                         colors_in_t.rdbuf(colorsfile_in_t.rdbuf());
 
                         while (true) {
@@ -1029,12 +1029,12 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
                             if (l_i >= pos_f_cs_sz){
 
-                                const streampos colors_in_t_pos = colors_in_t.tellg();
+                                const std::streampos colors_in_t_pos = colors_in_t.tellg();
 
                                 {
-                                    unique_lock<mutex> lock(m_colors_in_pos);
+                                    std::unique_lock<std::mutex> lock(m_colors_in_pos);
 
-                                    colors_in_pos = max(colors_in_pos, colors_in_t_pos);
+                                    colors_in_pos = std::max(colors_in_pos, colors_in_t_pos);
                                 }
 
                                 colorsfile_in_t.close();
@@ -1046,7 +1046,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
                             l_i -= nb_pos_shared_cs;
 
-                            readColorSets(color_sets + (l_i * block_sz), colors_in_t, min(block_sz, sz_cs - (l_i * block_sz)));
+                            readColorSets(color_sets + (l_i * block_sz), colors_in_t, std::min(block_sz, sz_cs - (l_i * block_sz)));
                         }
                     }
                 );
@@ -1054,7 +1054,7 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 
             for (auto& t : workers) t.join();
 
-            colorsfile_in.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+            colorsfile_in.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
             colors_in.rdbuf(colorsfile_in.rdbuf());
             colors_in.seekg(colors_in_pos);
         }
@@ -1080,20 +1080,20 @@ bool DataStorage<U>::read(const string& color_fn, const size_t nb_threads, const
 }
 
 template<>
-inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_threads, const bool verbose) {
+inline bool DataStorage<void>::read(const std::string& color_fn, const size_t nb_threads, const bool verbose) {
 
-    if (verbose) cout << endl << "DataStorage::read(): Reading color sets from disk" << endl;
+    if (verbose) std::cout << std::endl << "DataStorage::read(): Reading color sets from disk" << std::endl;
 
     FILE* fp = fopen(color_fn.c_str(), "rb");
 
     if (fp == NULL) {
 
-        cerr << "DataStorage::read(): Could not open file " << color_fn << " for reading color sets" << endl;
+        std::cerr << "DataStorage::read(): Could not open file " << color_fn << " for reading color sets" << std::endl;
         return false;
     }
     else fclose(fp);
 
-    auto readSharedColorSets = [](UnitigColors::SharedUnitigColors* shared_color_sets, istream& colors_in, const size_t sz){
+    auto readSharedColorSets = [](UnitigColors::SharedUnitigColors* shared_color_sets, std::istream& colors_in, const size_t sz){
 
         for (size_t i = 0; (i < sz) && colors_in.good(); ++i){
 
@@ -1104,7 +1104,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
         }
     };
 
-    auto readColorSets = [](UnitigColors* color_sets, istream& colors_in, const size_t sz){
+    auto readColorSets = [](UnitigColors* color_sets, std::istream& colors_in, const size_t sz){
 
         for (size_t i = 0; (i < sz) && colors_in.good(); ++i) color_sets[i].read(colors_in);
     };
@@ -1113,10 +1113,10 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
     size_t format_version, overflow_sz, nb_colors;
 
-    ifstream colorsfile_in;
-    istream colors_in(nullptr);
+    std::ifstream colorsfile_in;
+    std::istream colors_in(nullptr);
 
-    colorsfile_in.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+    colorsfile_in.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
     colors_in.rdbuf(colorsfile_in.rdbuf());
 
     clear();
@@ -1138,16 +1138,16 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
     if (nb_seeds >= 256){
 
-        cerr << "DataStorage::read(): Does not support more than 255 hash seeds" << endl;
+        std::cerr << "DataStorage::read(): Does not support more than 255 hash seeds" << std::endl;
         return false;
     }
 
     if (format_version < 3) { // Color files v1 and v2 are incompatible with Bifrost v1.0.6.2 and versions onward
 
-        stringstream ss_bfg_version(string(BFG_VERSION));
-        string segment;
+        std::stringstream ss_bfg_version(std::string(BFG_VERSION));
+        std::string segment;
 
-        vector<int> seglist;
+        std::vector<int> seglist;
 
         while(getline(ss_bfg_version, segment, '.')) seglist.push_back(atoi(segment.c_str()));
 
@@ -1175,18 +1175,18 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
         if (!compatible) {
 
-            cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << endl;
+            std::cerr << "DataStorage::read(): Color files v1 and v2 (computed prior to Bifrost v1.0.6.2) are incompatible with Bifrost v1.0.6.2 and versions onward." << std::endl;
             return false;
         }
     }
 
     const size_t sz_unitig_cs_link = (sz_cs >> 6) + ((sz_cs & 0x3F) != 0);
 
-    overflow = unordered_map<pair<Kmer, size_t>, size_t>(overflow_sz);
+    overflow = std::unordered_map<std::pair<Kmer, size_t>, size_t>(overflow_sz);
 
     color_sets = new UnitigColors[sz_cs];
     shared_color_sets = new UnitigColors::SharedUnitigColors[sz_shared_cs];
-    unitig_cs_link = new atomic<uint64_t>[sz_unitig_cs_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_unitig_cs_link];
 
     //Read the hash function seeds of the graph
     colors_in.read(reinterpret_cast<char*>(seeds), nb_seeds * sizeof(uint64_t));
@@ -1195,7 +1195,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
         for (size_t i = 0; (i < nb_colors) && colors_in.good(); ++i){
             //Read the hash function seeds of the graph
-            color_names.push_back(string());
+            color_names.push_back(std::string());
             getline(colors_in, color_names[i]);
         }
 
@@ -1212,7 +1212,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
         size_t block_sz = 0;
 
-        streampos* pos_f_cs = nullptr;
+        std::streampos* pos_f_cs = nullptr;
 
         //Read the hash function seeds of the graph
         if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(&block_sz), sizeof(size_t));
@@ -1223,14 +1223,14 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
         if (pos_f_cs_sz != 0){
 
-            pos_f_cs = new streampos[pos_f_cs_sz];
+            pos_f_cs = new std::streampos[pos_f_cs_sz];
 
-            if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(pos_f_cs), pos_f_cs_sz * sizeof(streampos));
+            if (colors_in.good()) colors_in.read(reinterpret_cast<char*>(pos_f_cs), pos_f_cs_sz * sizeof(std::streampos));
         }
 
         for (size_t i = 0; (i < nb_colors) && colors_in.good(); ++i){
             //Read the hash function seeds of the graph
-            color_names.push_back(string());
+            color_names.push_back(std::string());
             getline(colors_in, color_names[i]);
         }
 
@@ -1247,13 +1247,13 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
         }
         else {
 
-            streampos colors_in_pos = colors_in.tellg();
+            std::streampos colors_in_pos = colors_in.tellg();
 
             colorsfile_in.close();
 
-            mutex m_colors_in_pos;
+            std::mutex m_colors_in_pos;
 
-            vector<thread> workers; // need to keep track of threads so we can join them
+            std::vector<std::thread> workers; // need to keep track of threads so we can join them
 
             std::atomic<size_t> i;
 
@@ -1265,10 +1265,10 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
                     [&]{
 
-                        ifstream colorsfile_in_t;
-                        istream colors_in_t(nullptr);
+                        std::ifstream colorsfile_in_t;
+                        std::istream colors_in_t(nullptr);
 
-                        colorsfile_in_t.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+                        colorsfile_in_t.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
                         colors_in_t.rdbuf(colorsfile_in_t.rdbuf());
 
                         while (true) {
@@ -1277,12 +1277,12 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
                             if (l_i >= nb_pos_shared_cs){
 
-                                const streampos colors_in_t_pos = colors_in_t.tellg();
+                                const std::streampos colors_in_t_pos = colors_in_t.tellg();
 
                                 {
-                                    unique_lock<mutex> lock(m_colors_in_pos);
+                                    std::unique_lock<std::mutex> lock(m_colors_in_pos);
 
-                                    colors_in_pos = max(colors_in_pos, colors_in_t_pos);
+                                    colors_in_pos = std::max(colors_in_pos, colors_in_t_pos);
                                 }
 
                                 colorsfile_in_t.close();
@@ -1291,7 +1291,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
                             }
 
                             colors_in_t.seekg(pos_f_cs[l_i]);
-                            readSharedColorSets(shared_color_sets + (l_i * block_sz), colors_in_t, min(block_sz, sz_shared_cs - (l_i * block_sz)));
+                            readSharedColorSets(shared_color_sets + (l_i * block_sz), colors_in_t, std::min(block_sz, sz_shared_cs - (l_i * block_sz)));
                         }
                     }
                 );
@@ -1309,10 +1309,10 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
                     [&]{
 
-                        ifstream colorsfile_in_t;
-                        istream colors_in_t(nullptr);
+                        std::ifstream colorsfile_in_t;
+                        std::istream colors_in_t(nullptr);
 
-                        colorsfile_in_t.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+                        colorsfile_in_t.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
                         colors_in_t.rdbuf(colorsfile_in_t.rdbuf());
 
                         while (true) {
@@ -1321,12 +1321,12 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
                             if (l_i >= pos_f_cs_sz){
 
-                                const streampos colors_in_t_pos = colors_in_t.tellg();
+                                const std::streampos colors_in_t_pos = colors_in_t.tellg();
 
                                 {
-                                    unique_lock<mutex> lock(m_colors_in_pos);
+                                    std::unique_lock<std::mutex> lock(m_colors_in_pos);
 
-                                    colors_in_pos = max(colors_in_pos, colors_in_t_pos);
+                                    colors_in_pos = std::max(colors_in_pos, colors_in_t_pos);
                                 }
 
                                 colorsfile_in_t.close();
@@ -1338,7 +1338,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
                             l_i -= nb_pos_shared_cs;
 
-                            readColorSets(color_sets + (l_i * block_sz), colors_in_t, min(block_sz, sz_cs - (l_i * block_sz)));
+                            readColorSets(color_sets + (l_i * block_sz), colors_in_t, std::min(block_sz, sz_cs - (l_i * block_sz)));
                         }
                     }
                 );
@@ -1346,7 +1346,7 @@ inline bool DataStorage<void>::read(const string& color_fn, const size_t nb_thre
 
             for (auto& t : workers) t.join();
 
-            colorsfile_in.open(color_fn.c_str(), ios_base::in | ios_base::binary);
+            colorsfile_in.open(color_fn.c_str(), std::ios_base::in | std::ios_base::binary);
             colors_in.rdbuf(colorsfile_in.rdbuf());
             colors_in.seekg(colors_in_pos);
         }
@@ -1559,9 +1559,9 @@ void DataStorage<U>::remove(const UnitigColorMap<U>& um) {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
 
             if (it != overflow.end()){
 
@@ -1602,9 +1602,9 @@ inline void DataStorage<void>::remove(const UnitigColorMap<void>& um) {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::iterator it = overflow.find({head, um.size});
 
             if (it != overflow.end()){
 
@@ -1635,7 +1635,7 @@ size_t DataStorage<U>::getUnitigColorsSize(const size_t nb_threads) const {
 
     if (color_sets != nullptr){
 
-        atomic<size_t> sz_in_bytes(0);
+        std::atomic<size_t> sz_in_bytes(0);
 
         auto worker_function = [&sz_in_bytes, this](const size_t idx_start, const size_t idx_end){
 
@@ -1646,7 +1646,7 @@ size_t DataStorage<U>::getUnitigColorsSize(const size_t nb_threads) const {
             sz_in_bytes += cpt;
         };
 
-        vector<thread> workers;
+        std::vector<std::thread> workers;
 
         const size_t load_per_thread = nb_cs / nb_threads;
 
@@ -1674,9 +1674,9 @@ uint64_t DataStorage<U>::getHash(const UnitigColorMap<U>& um) const {
 
         if (da_id == 0){
 
-            unique_lock<mutex> lock(mutex_overflow);
+            std::unique_lock<std::mutex> lock(mutex_overflow);
 
-            unordered_map<pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
+            std::unordered_map<std::pair<Kmer, size_t>, size_t>::const_iterator it = overflow.find({head, um.size});
             if (it != overflow.end()) return it->second;
         }
         else return head.hash(seeds[da_id - 1]) % nb_cs;
@@ -1686,7 +1686,7 @@ uint64_t DataStorage<U>::getHash(const UnitigColorMap<U>& um) const {
 }
 
 template<typename U>
-pair<DataAccessor<U>, UnitigColors*> DataStorage<U>::insert_(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
+std::pair<DataAccessor<U>, UnitigColors*> DataStorage<U>::insert_(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
 
     if (color_sets == nullptr) return {DataAccessor<U>(0), nullptr};
 
@@ -1702,7 +1702,7 @@ pair<DataAccessor<U>, UnitigColors*> DataStorage<U>::insert_(const Kmer head, co
 
     if (i == nb_seeds){ // IF we couldn't find a hash matching an unoccupied color set for current k-mer
 
-        unique_lock<mutex> lock(mutex_overflow);
+        std::unique_lock<std::mutex> lock(mutex_overflow);
 
         size_t j = 0;
 
@@ -1746,43 +1746,43 @@ pair<DataAccessor<U>, UnitigColors*> DataStorage<U>::insert_(const Kmer head, co
 }
 
 template<typename U>
-pair<DataAccessor<U>, pair<UnitigColors*, U*>> DataStorage<U>::insert(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
+std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> DataStorage<U>::insert(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
 
     if ((color_sets == nullptr) && (data == nullptr)) return {DataAccessor<U>(0), {nullptr, nullptr}};
 
-    const pair<DataAccessor<U>, UnitigColors*> p(insert_(head, unitig_sz, force_overflow));
+    const std::pair<DataAccessor<U>, UnitigColors*> p(insert_(head, unitig_sz, force_overflow));
 
     return {p.first, {p.second, &data[p.second - color_sets]}};
 }
 
 template<>
-inline pair<DataAccessor<void>, pair<UnitigColors*, void*>> DataStorage<void>::insert(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
+inline std::pair<DataAccessor<void>, std::pair<UnitigColors*, void*>> DataStorage<void>::insert(const Kmer head, const size_t unitig_sz, const bool force_overflow) {
 
     if ((color_sets == nullptr) && (data == nullptr)) return {DataAccessor<void>(0), {nullptr, nullptr}};
 
-    const pair<DataAccessor<void>, UnitigColors*> p(insert_(head, unitig_sz, force_overflow));
+    const std::pair<DataAccessor<void>, UnitigColors*> p(insert_(head, unitig_sz, force_overflow));
 
     return {p.first, {p.second, nullptr}};
 }
 
 template<typename U>
-pair<DataAccessor<U>, pair<UnitigColors*, U*>> DataStorage<U>::insert(const UnitigColorMap<U>& um, const bool force_overflow) {
+std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> DataStorage<U>::insert(const UnitigColorMap<U>& um, const bool force_overflow) {
 
     if ((color_sets == nullptr) && (data == nullptr)) return {DataAccessor<U>(0), {nullptr, nullptr}};
 
     const Kmer head(um.getMappedHead());
-    const pair<DataAccessor<U>, UnitigColors*> p(insert_(head, um.len + um.getGraph()->getK() - 1, force_overflow));
+    const std::pair<DataAccessor<U>, UnitigColors*> p(insert_(head, um.len + um.getGraph()->getK() - 1, force_overflow));
 
     return {p.first, {p.second, &data[p.second - color_sets]}};
 }
 
 template<>
-inline pair<DataAccessor<void>, pair<UnitigColors*, void*>> DataStorage<void>::insert(const UnitigColorMap<void>& um, const bool force_overflow) {
+inline std::pair<DataAccessor<void>, std::pair<UnitigColors*, void*>> DataStorage<void>::insert(const UnitigColorMap<void>& um, const bool force_overflow) {
 
     if ((color_sets == nullptr) && (data == nullptr)) return {DataAccessor<void>(0), {nullptr, nullptr}};
 
     const Kmer head(um.getMappedHead());
-    const pair<DataAccessor<void>, UnitigColors*> p(insert_(head, um.len + um.getGraph()->getK() - 1, force_overflow));
+    const std::pair<DataAccessor<void>, UnitigColors*> p(insert_(head, um.len + um.getGraph()->getK() - 1, force_overflow));
 
     return {p.first, {p.second, nullptr}};
 }
@@ -1791,7 +1791,7 @@ template<typename U>
 void DataStorage<U>::resize(const double growth) {
 
     UnitigColors* old_color_sets = color_sets;
-    atomic<uint64_t>* old_unitig_cs_link = unitig_cs_link;
+    std::atomic<uint64_t>* old_unitig_cs_link = unitig_cs_link;
     U* old_data = data;
 
     const size_t old_sz_cs = sz_cs;
@@ -1804,11 +1804,11 @@ void DataStorage<U>::resize(const double growth) {
     // Reallocate UnitigColors
     color_sets = new UnitigColors[sz_cs];
 
-    move(old_color_sets, old_color_sets + old_sz_cs, color_sets);
+    std::move(old_color_sets, old_color_sets + old_sz_cs, color_sets);
     delete[] old_color_sets;
 
     // Reallocate UnitigColors occupancy
-    unitig_cs_link = new atomic<uint64_t>[sz_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_link];
 
     for (size_t i = 0; i != old_sz_link; ++i) unitig_cs_link[i] = old_unitig_cs_link[i].load();
     for (size_t i = old_sz_link; i != sz_link; ++i) unitig_cs_link[i] = 0;
@@ -1818,7 +1818,7 @@ void DataStorage<U>::resize(const double growth) {
     // Reallocate data
     data = new U[sz_cs];
 
-    move(old_data, old_data + old_sz_cs, data);
+    std::move(old_data, old_data + old_sz_cs, data);
     delete[] old_data;
 }
 
@@ -1826,7 +1826,7 @@ template<>
 inline void DataStorage<void>::resize(const double growth) {
 
     UnitigColors* old_color_sets = color_sets;
-    atomic<uint64_t>* old_unitig_cs_link = unitig_cs_link;
+    std::atomic<uint64_t>* old_unitig_cs_link = unitig_cs_link;
 
     const size_t old_sz_cs = sz_cs;
     const size_t old_sz_link = (old_sz_cs >> 6) + ((old_sz_cs & 0x3F) != 0);
@@ -1837,10 +1837,10 @@ inline void DataStorage<void>::resize(const double growth) {
 
     color_sets = new UnitigColors[sz_cs];
 
-    move(old_color_sets, old_color_sets + old_sz_cs, color_sets);
+    std::move(old_color_sets, old_color_sets + old_sz_cs, color_sets);
     delete[] old_color_sets;
 
-    unitig_cs_link = new atomic<uint64_t>[sz_link];
+    unitig_cs_link = new std::atomic<uint64_t>[sz_link];
 
     for (size_t i = 0; i != old_sz_link; ++i) unitig_cs_link[i] = old_unitig_cs_link[i].load();
     for (size_t i = old_sz_link; i != sz_link; ++i) unitig_cs_link[i] = 0;

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <vector>
+#include <algorithm>
 
 /* TinyBitmap is a compressed bitmap that mimics the behavior of a CRoaring container.
 *  Its main purpose is to store a tiny set of unsigned integers, up to 65488 uint.
@@ -21,7 +22,6 @@
 *  - CRoaring has a lot more functions (set intersection, union, etc.).
 */
 
-using namespace std;
 
 class TinyBitmap {
 
@@ -96,8 +96,8 @@ class TinyBitmap {
 
         uint32_t maximum() const;
 
-        bool write(ostream& stream_out) const;
-        bool read(istream& stream_in);
+        bool write(std::ostream& stream_out) const;
+        bool read(std::istream& stream_in);
 
         inline void toArray(uint32_t* values) const {
 

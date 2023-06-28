@@ -14,20 +14,19 @@
 
 #include "zstr.hpp"
 
-using namespace std;
 
 class GFA_Parser {
 
     struct Sequence {
 
-        string id;
-        string seq;
+        std::string id;
+        std::string seq;
         size_t len;
 
-        vector<string> tags;
+        std::vector<std::string> tags;
 
         Sequence() : seq("*"), len(0) {};
-        Sequence(const string& id_, const string& seq_, const size_t len_) :  id(id_), seq(seq_), len(len_) {};
+        Sequence(const std::string& id_, const std::string& seq_, const size_t len_) :  id(id_), seq(seq_), len(len_) {};
 
         inline void clear() {
 
@@ -41,14 +40,14 @@ class GFA_Parser {
 
     struct Edge {
 
-        string edge_id;
+        std::string edge_id;
 
-        string vertexA_id;
+        std::string vertexA_id;
         size_t pos_start_overlapA;
         size_t pos_end_overlapA;
         bool strand_overlapA;
 
-        string vertexB_id;
+        std::string vertexB_id;
         size_t pos_start_overlapB;
         size_t pos_end_overlapB;
         bool strand_overlapB;
@@ -57,9 +56,9 @@ class GFA_Parser {
                     vertexA_id(), pos_start_overlapA(0), pos_end_overlapA(0), strand_overlapA(true),
                     vertexB_id(), pos_start_overlapB(0), pos_end_overlapB(0), strand_overlapB(true) {};
 
-        Edge(const string vertexA_id_, const size_t pos_start_overlapA_, const size_t pos_end_overlapA_, const bool strand_overlapA_,
-             const string vertexB_id_, const size_t pos_start_overlapB_, const size_t pos_end_overlapB_, const bool strand_overlapB_,
-             const string edge_id_ = "*") : edge_id(edge_id_),
+        Edge(const std::string vertexA_id_, const size_t pos_start_overlapA_, const size_t pos_end_overlapA_, const bool strand_overlapA_,
+             const std::string vertexB_id_, const size_t pos_start_overlapB_, const size_t pos_end_overlapB_, const bool strand_overlapB_,
+             const std::string edge_id_ = "*") : edge_id(edge_id_),
              vertexA_id(vertexA_id_), pos_start_overlapA(pos_start_overlapA_), pos_end_overlapA(pos_end_overlapA_), strand_overlapA(strand_overlapA_),
              vertexB_id(vertexB_id_), pos_start_overlapB(pos_start_overlapB_), pos_end_overlapB(pos_end_overlapB_), strand_overlapB(strand_overlapB_) {};
 
@@ -82,38 +81,38 @@ class GFA_Parser {
 
     public:
 
-        typedef pair<const Sequence*, const Edge*> GFA_line;
+        typedef std::pair<const Sequence*, const Edge*> GFA_line;
 
         GFA_Parser();
-        GFA_Parser(const string& filename);
-        GFA_Parser(const vector<string>& filenames);
+        GFA_Parser(const std::string& filename);
+        GFA_Parser(const std::vector<std::string>& filenames);
 
         ~GFA_Parser();
 
         GFA_Parser(GFA_Parser&& o);
         GFA_Parser& operator=(GFA_Parser&& o);
 
-        bool open_write(const size_t version_GFA = 1, const string tags_line_header = "", const bool compressed_output = false);
-        pair<string, bool> open_read();
+        bool open_write(const size_t version_GFA = 1, const std::string tags_line_header = "", const bool compressed_output = false);
+        std::pair<std::string, bool> open_read();
 
         void close();
 
-        bool write_sequence(const string& id, const size_t len, const string seq = "*", const string tags_line = "");
-        bool write_edge(const string vertexA_id, const size_t pos_start_overlapA, const size_t pos_end_overlapA, const bool strand_overlapA,
-                        const string vertexB_id, const size_t pos_start_overlapB, const size_t pos_end_overlapB, const bool strand_overlapB,
-                        const string edge_id = "*");
+        bool write_sequence(const std::string& id, const size_t len, const std::string seq = "*", const std::string tags_line = "");
+        bool write_edge(const std::string vertexA_id, const size_t pos_start_overlapA, const size_t pos_end_overlapA, const bool strand_overlapA,
+                        const std::string vertexB_id, const size_t pos_start_overlapB, const size_t pos_end_overlapB, const bool strand_overlapB,
+                        const std::string edge_id = "*");
 
         GFA_line read(size_t& file_id);
         GFA_line read(size_t& file_id, bool& new_file_opened, const bool skip_edges = false);
 
     private:
 
-        pair<string, bool> open(const size_t idx_filename);
+        std::pair<std::string, bool> open(const size_t idx_filename);
 
-        vector<string> graph_filenames;
+        std::vector<std::string> graph_filenames;
 
-        unique_ptr<istream> graph_in;
-        unique_ptr<ostream> graph_out;
+        std::unique_ptr<std::istream> graph_in;
+        std::unique_ptr<std::ostream> graph_out;
 
         size_t v_gfa;
         size_t file_no;

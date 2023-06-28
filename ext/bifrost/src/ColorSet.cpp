@@ -671,7 +671,7 @@ void UnitigColors::remove(const UnitigMapBase& um, const size_t color_id) {
 
         uintptr_t mask = 0;
 
-        for (; color_id_start < min(maxBitVectorIDs, color_id_end); ++color_id_start) mask |= 1ULL << (color_id_start + shiftMaskBits);
+        for (; color_id_start < std::min(maxBitVectorIDs, color_id_end); ++color_id_start) mask |= 1ULL << (color_id_start + shiftMaskBits);
 
         setBits &= ~mask;
     }
@@ -717,7 +717,7 @@ void UnitigColors::remove(const UnitigMapBase& um, const size_t color_id) {
 
                 setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
 
-                *this = move(new_uc);
+                *this = std::move(new_uc);
             }
             else setBits = (reinterpret_cast<uintptr_t>(t_bmp.detach()) & pointerMask) | localTinyBitmap;
         }
@@ -767,7 +767,7 @@ void UnitigColors::remove(const UnitigMapBase& um, const size_t color_id) {
 
             for (; it != it_end; ++it) new_uc.add(it.getColorID() * um_km_sz + it.getKmerPosition());
 
-            *this = move(new_uc);
+            *this = std::move(new_uc);
         }
         else if ((setBits & flagMask) == ptrBitmap) bitmap->r.runOptimize();
     }
@@ -870,7 +870,7 @@ size_t UnitigColors::colorMax(const UnitigMapBase& um) const {
         const UnitigColors* uc = getConstPtrUnitigColors();
         const UnitigMapBase fake_um(0, 1, Kmer::k, um.strand);
 
-        return max(uc[0].colorMax(fake_um), uc[1].colorMax(um));
+        return std::max(uc[0].colorMax(fake_um), uc[1].colorMax(um));
     }
 
     if (flag == ptrSharedUnitigColors) return getConstPtrSharedUnitigColors()->first.colorMax(um);
@@ -971,7 +971,7 @@ size_t UnitigColors::size(const UnitigMapBase& um, const size_t color_id) const 
 
             uintptr_t mask = 0;
 
-            end_pos = min(end_pos, maxBitVectorIDs);
+            end_pos = std::min(end_pos, maxBitVectorIDs);
 
             for (size_t i = start_pos; i != end_pos; ++i) mask |= 0x1ULL << (i + shiftMaskBits);
 
@@ -1093,8 +1093,8 @@ bool UnitigColors::optimizeFullColors(const UnitigMapBase& um){
 
             UnitigColors* uc = new UnitigColors[2];
 
-            uc[0] = move(full_uc);
-            uc[1] = move(non_full_uc);
+            uc[0] = std::move(full_uc);
+            uc[1] = std::move(non_full_uc);
 
             setBits = (reinterpret_cast<uintptr_t>(uc) & pointerMask) | ptrUnitigColors;
 
@@ -1117,8 +1117,8 @@ UnitigColors UnitigColors::makeFullColors(const UnitigMapBase& um) const {
 
     UnitigColors* uc = new UnitigColors[2];
 
-    uc[0] = move(full_uc);
-    uc[1] = move(non_full_uc);
+    uc[0] = std::move(full_uc);
+    uc[1] = std::move(non_full_uc);
 
     new_uc.setBits = (reinterpret_cast<uintptr_t>(uc) & pointerMask) | ptrUnitigColors;
 
@@ -1171,7 +1171,7 @@ UnitigColors UnitigColors::getFullColors(const UnitigMapBase& um) const {
     return new_uc;
 }
 
-bool UnitigColors::write(ostream& stream_out, const bool copy_UnitigColors) const {
+bool UnitigColors::write(std::ostream& stream_out, const bool copy_UnitigColors) const {
 
     if (stream_out.good()){
 
@@ -1225,7 +1225,7 @@ bool UnitigColors::write(ostream& stream_out, const bool copy_UnitigColors) cons
     return false;
 }
 
-bool UnitigColors::read(istream& stream_in) {
+bool UnitigColors::read(std::istream& stream_in) {
 
     if (stream_in.good()){
 
@@ -1558,7 +1558,7 @@ UnitigColors::UnitigColors_const_iterator& UnitigColors::UnitigColors_const_iter
         }
         else if (flag == localBitVector){
 
-            it_setBits = min(maxBitVectorIDs, nextPos);
+            it_setBits = std::min(maxBitVectorIDs, nextPos);
 
             while (it_setBits < maxBitVectorIDs){
 

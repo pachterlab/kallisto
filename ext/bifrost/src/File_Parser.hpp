@@ -3,7 +3,8 @@
 
 #include <sstream>
 #include <stdio.h>
-#include <string.h>
+#include <string>
+#include <vector>
 #include <zlib.h>
 
 #include "Common.hpp"
@@ -20,12 +21,12 @@ class FileParser {
 
     public:
 
-        FileParser(const vector<string>& filenames) :   files_it(0), files_fastx_it(0), files_gfa_it(0),
+        FileParser(const std::vector<std::string>& filenames) :   files_it(0), files_fastx_it(0), files_gfa_it(0),
                                                         reading_fastx(false), invalid(false) {
 
             if (filenames.size() == 0) {
 
-                cerr << "FileParser::FileParser(): Missing input files" << endl;
+                std::cerr << "FileParser::FileParser(): Missing input files" << std::endl;
                 invalid = true;
             }
             else {
@@ -40,7 +41,7 @@ class FileParser {
 
                     if (intStat != 0) {
 
-                        cerr << "FileParser::FileParser(): File not found: " << s << endl;
+                        std::cerr << "FileParser::FileParser(): File not found: " << s << std::endl;
                         invalid = true;
                     }
                     else {
@@ -49,8 +50,8 @@ class FileParser {
 
                         if (format == -1){
 
-                            cerr << "FileParser::FileParser(): Input file " << s << " does not exist";
-                            cerr << ", is ill-formed or is not in FASTA/FASTQ/GFA format. Continuing without it." << endl;
+                            std::cerr << "FileParser::FileParser(): Input file " << s << " does not exist" 
+                            << ", is ill-formed or is not in FASTA/FASTQ/GFA format. Continuing without it." << std::endl;
                         }
                         else if (format == 0) files_fastx.push_back(s); // FASTA
                         else if (format == 1) files_fastx.push_back(s); // FASTQ
@@ -76,7 +77,7 @@ class FileParser {
             }
         }
 
-        bool read(string& seq, size_t& file_id){
+        bool read(std::string& seq, size_t& file_id){
 
             if (!invalid){
 
@@ -129,7 +130,7 @@ class FileParser {
             return !invalid;
         }
 
-        bool read(stringstream& ss, size_t& file_id){
+        bool read(std::stringstream& ss, size_t& file_id){
 
             if (!invalid){
 
@@ -243,9 +244,9 @@ class FileParser {
         size_t files_fastx_it;
         size_t files_gfa_it;
 
-        vector<string> files;
-        vector<string> files_fastx;
-        vector<string> files_gfa;
+        std::vector<std::string> files;
+        std::vector<std::string> files_fastx;
+        std::vector<std::string> files_gfa;
 
         FastqFile ff;
         GFA_Parser gfap;

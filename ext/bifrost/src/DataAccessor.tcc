@@ -98,7 +98,7 @@ UnitigColors DataAccessor<U>::getSubUnitigColors(const const_UnitigColorMap<U>& 
 }
 
 template<typename U>
-vector<string> DataAccessor<U>::getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const {
+std::vector<std::string> DataAccessor<U>::getSubUnitigColorNames(const const_UnitigColorMap<U>& um) const {
 
     if (!um.isEmpty && (um.getGraph() != nullptr)){
 
@@ -107,7 +107,7 @@ vector<string> DataAccessor<U>::getSubUnitigColorNames(const const_UnitigColorMa
         if (ds != nullptr) return ds->getSubUnitigColorNames(um);
     }
 
-    return vector<string>();
+    return std::vector<std::string>();
 }
 
 template<typename U>
@@ -138,7 +138,7 @@ void DataAccessor<U>::concat(const UnitigColorMap<U>& um_dest, const UnitigColor
 
         if ((uc_ptr == nullptr) || (head != new_head) || (da_dest->get() == 0)){
              // If (da_dest->get() == 0, UnitigColors of um_dest cannot be recycled 'cause new unitig length will be different from the one of um_dest
-            const pair<DataAccessor<U>, pair<UnitigColors*, U*>> p  = ds->insert(new_head, um_dest.size + um_src.size - um_dest.getGraph()->getK() + 1);
+            const std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> p  = ds->insert(new_head, um_dest.size + um_src.size - um_dest.getGraph()->getK() + 1);
 
             uc_ptr = p.second.first;
             data_ptr = p.second.second;
@@ -150,8 +150,8 @@ void DataAccessor<U>::concat(const UnitigColorMap<U>& um_dest, const UnitigColor
             *da_dest = DataAccessor<U>(0);
         }
 
-        *uc_ptr = move(uc_);
-        *data_ptr = move(data_);
+        *uc_ptr = std::move(uc_);
+        *data_ptr = std::move(data_);
     }
 }
 
@@ -181,7 +181,7 @@ inline void DataAccessor<void>::concat(const UnitigColorMap<void>& um_dest, cons
         if ((uc_ptr == nullptr) || (head != new_head) || (da_dest->get() == 0)){
             //
             // If (da_dest->get() == 0, UnitigColors of um_dest cannot be recycled 'cause new unitig length will be different from the one of um_dest
-            const pair<DataAccessor<void>, pair<UnitigColors*, void*>> p  = ds->insert(new_head, um_dest.size + um_src.size - um_dest.getGraph()->getK() + 1);
+            const std::pair<DataAccessor<void>, std::pair<UnitigColors*, void*>> p  = ds->insert(new_head, um_dest.size + um_src.size - um_dest.getGraph()->getK() + 1);
 
             uc_ptr = p.second.first;
             *this = p.first;
@@ -194,7 +194,7 @@ inline void DataAccessor<void>::concat(const UnitigColorMap<void>& um_dest, cons
             *da_dest = DataAccessor<void>(0);
         }
 
-        *uc_ptr = move(uc_);
+        *uc_ptr = std::move(uc_);
     }
 }
 
@@ -221,7 +221,7 @@ void DataAccessor<U>::merge(const UnitigColorMap<U>& um_dest, const const_Unitig
         um.strand = true;
 
         // Insert new UnitigColors and data for reference unitig of um_dest
-        const pair<DataAccessor<U>, pair<UnitigColors*, U*>> p  = ds->insert(um);
+        const std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> p  = ds->insert(um);
 
         uc_dest = p.second.first; // Set the new UnitigColors
         data_dest = p.second.second; // Set the new data
@@ -252,7 +252,7 @@ inline void DataAccessor<void>::merge(const UnitigColorMap<void>& um_dest, const
         um.strand = true;
 
         // Insert new UnitigColors for reference unitig of um_dest
-        const pair<DataAccessor<void>, pair<UnitigColors*, void*>> p  = ds->insert(um);
+        const std::pair<DataAccessor<void>, std::pair<UnitigColors*, void*>> p  = ds->insert(um);
 
         uc_dest = p.second.first; // Set the new UnitigColors
         *this = p.first; // Set the new DataAccessor to locate new UnitigColors
@@ -267,13 +267,13 @@ void DataAccessor<U>::extract(const UnitigColorMap<U>& um_src, const bool last_e
 
     DataStorage<U>* ds = um_src.getGraph()->getData(); // Get DataStorage where the UnitigColors and data are stored
 
-    const pair<DataAccessor<U>, pair<UnitigColors*, U*>> p  = ds->insert(um_src); // Insert new UnitigColors + data associated with that mapping
+    const std::pair<DataAccessor<U>, std::pair<UnitigColors*, U*>> p  = ds->insert(um_src); // Insert new UnitigColors + data associated with that mapping
 
     if (ds->getUnitigColors(um_src) != nullptr){ // If reference unitig of um_src has a UnitigColors associated
 
         UnitigColors new_cs = ds->getSubUnitigColors(um_src); // Extract colors for k-mer positions matching mapping of um_src
 
-        if (!new_cs.isEmpty()) *(p.second.first) = move(new_cs); // Move extracted colors to new (inserted) UnitigColors
+        if (!new_cs.isEmpty()) *(p.second.first) = std::move(new_cs); // Move extracted colors to new (inserted) UnitigColors
     }
 
     U* new_data = p.second.second; // Get new data slot
@@ -294,35 +294,35 @@ inline void DataAccessor<void>::extract(const UnitigColorMap<void>& um_src, cons
 
         if (!new_cs.isEmpty()){ // If some colors were extracted
 
-            const pair<DataAccessor<void>, pair<UnitigColors*, void*>> p  = ds->insert(um_src); // Insert new UnitigColors associated with that mapping
+            const std::pair<DataAccessor<void>, std::pair<UnitigColors*, void*>> p  = ds->insert(um_src); // Insert new UnitigColors associated with that mapping
 
-            *(p.second.first) = move(new_cs); // Move extracted colors to new (inserted) UnitigColors
+            *(p.second.first) = std::move(new_cs); // Move extracted colors to new (inserted) UnitigColors
             *this = p.first; // Set the new DataAccessor to locate new UnitigColors
         }
     }
 }
 
 template<typename U>
-string DataAccessor<U>::serialize(const const_UnitigColorMap<U>& um_src) const {
+std::string DataAccessor<U>::serialize(const const_UnitigColorMap<U>& um_src) const {
 
-    string da_str("DA:Z:" + std::to_string(da_id));
+    std::string da_str("DA:Z:" + std::to_string(da_id));
 
     const U* data_src = um_src.getData()->getData(um_src);
 
     if (data_src != nullptr) {
 
-        const string data_str(data_src->serialize(um_src));
+        const std::string data_str(data_src->serialize(um_src));
 
-        if (!data_str.empty()) da_str += string('\t' + data_str);
+        if (!data_str.empty()) da_str += std::string('\t' + data_str);
     }
 
     return da_str;
 }
 
 template<>
-inline string DataAccessor<void>::serialize(const const_UnitigColorMap<void>& um_src) const {
+inline std::string DataAccessor<void>::serialize(const const_UnitigColorMap<void>& um_src) const {
 
-    return string("DA:Z:" + std::to_string(da_id));
+    return std::string("DA:Z:" + std::to_string(da_id));
 }
 
 #endif

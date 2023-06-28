@@ -93,7 +93,7 @@ class RepHash {
 
             uint64_t hashes[2] = {h, ht};
 
-            if (hashes[1] < hashes[0]) swap(hashes[0], hashes[1]);
+            if (hashes[1] < hashes[0]) std::swap(hashes[0], hashes[1]);
 
             return wyhash(hashes, sizeof(uint64_t) + sizeof(uint64_t), 0, _wyp);
             //return (h ^ ht);
@@ -141,7 +141,7 @@ class RepHash {
         size_t k;
         uint64_t h, ht;
 
-        string str;
+        std::string str;
 };
 
 #else

@@ -8,8 +8,6 @@
 #include "KmerIndex.h"
 #include "GeneModel.h"
 
-using namespace std;
-
 
 struct ECStruct {
   int ec;
@@ -84,35 +82,35 @@ std::vector<ECStruct> merge_contigs(std::vector<ECStruct> ecv) {
   return out;
 }
 
-void printVector(const vector<int>& v) {
-  cout << "[";
+void printVector(const std::vector<int>& v) {
+  std::cout << "[";
   int i = 0;
   for (auto x : v) {
     if (i>0) {
-      cout << ", ";
+      std::cout << ", ";
     }
-    cout << x;
+    std::cout << x;
     i++;
   }
-  cout << "]";
+  std::cout << "]";
 }
 
-void printHisto(const unordered_map<int,int>& m, const string& header) {
-  cout << header << "\n";
+void printHisto(const std::unordered_map<int,int>& m, const std::string& header) {
+  std::cout << header << "\n";
   int mn = std::numeric_limits<int>::max();
   int mx = 0;
 
   for (auto kv : m) {
-    mn = min(mn,kv.first);
-    mx = max(mx,kv.first);
+    mn = std::min(mn,kv.first);
+    mx = std::max(mx,kv.first);
   }
 
   for (int i = mn; i <= mx; i++) {
     auto search = m.find(i);
     if (search == m.end()) {
-      cout << i << "\t0\n";
+      std::cout << i << "\t0\n";
     } else {
-      cout << i << "\t" << search->second << "\n";
+      std::cout << i << "\t" << search->second << "\n";
     }
   }
 }
@@ -126,20 +124,20 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
   auto Dna = [](int i) {return dna[i & 0x03];};
 
   int k = index.k;
-  cout << "[inspect] Index version number = " << index.INDEX_VERSION << endl;
-  //cout << "#[inspect] k = " << index.k << endl;;
-  //cout << "#[inspect] number of targets = " << index.num_trans << endl;
+  std::cout << "[inspect] Index version number = " << index.INDEX_VERSION << std::endl;
+  //std::cout << "#[inspect] k = " << index.k << std::endl;;
+  //std::cout << "#[inspect] number of targets = " << index.num_trans << std::endl;
 
-  cout << "[inspect] number of unitigs = " << index.dbg.size() << endl;
-  cout << "[inspect] minimizer length = " << index.dbg.getG() << endl;
+  std::cout << "[inspect] number of unitigs = " << index.dbg.size() << std::endl;
+  std::cout << "[inspect] minimizer length = " << index.dbg.getG() << std::endl;
 
   std::pair<size_t,size_t> ec_info = index.getECInfo();
 
-  cout << "[inspect] max EC size = " << ec_info.first << std::endl;
-  cout << "[inspect] number of ECs discarded = " << ec_info.second << std::endl;
+  std::cout << "[inspect] max EC size = " << ec_info.first << std::endl;
+  std::cout << "[inspect] number of ECs discarded = " << ec_info.second << std::endl;
 
 
-  // cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;
+  // std::cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << std::endl;
 
   if (!gfa.empty()) {
     //index.dbg.write(gfa);
