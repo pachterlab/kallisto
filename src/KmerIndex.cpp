@@ -124,7 +124,12 @@ std::string nn_to_cfc (const char * s, int l) {
   for (int i = 0; i < l; i += incrementer) {
       if (l - i >= incrementer) {
         // add comma-free triplet to cfc string
-        s_cfc += cfc_map(s+i);
+        char bytes[3];
+        memset(bytes,0,3);
+        bytes[0] = ::toupper(s[i]);
+        bytes[1] = ::toupper(s[i+1]);
+        bytes[2] = ::toupper(s[i+2]);
+        s_cfc += cfc_map(bytes);
       }
   }
   return s_cfc;
