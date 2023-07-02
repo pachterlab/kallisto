@@ -6,7 +6,7 @@ on:
 jobs:
   build-linux:
     name: Build and test linux
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     env:
       RELEASE_OS: linux
     steps:
