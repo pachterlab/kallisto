@@ -145,6 +145,7 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
+  std::string priors;
 
 ProgramOptions() :
   verbose(false),
@@ -183,7 +184,8 @@ ProgramOptions() :
   inspect_thorough(false),
   single_overhang(false),
   aa(false),
-  distinguish(false)
+  distinguish(false),
+  priors("")
   {}
 };
 

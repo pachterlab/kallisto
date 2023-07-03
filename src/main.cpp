@@ -206,7 +206,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:p:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -232,6 +232,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
+    {"priors", required_argument, 0, 'p'},
     {0,0,0,0}
   };
   int c;
@@ -287,6 +288,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
+      break;
+    }
+    case 'p': {
+      opt.priors = optarg;
       break;
     }
 
@@ -348,7 +353,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
+  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:p:";
   int matrix_to_files = 0;
   int matrix_to_directories = 0;
   int plaintext_flag = 0;
@@ -368,7 +373,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"gtf", required_argument, 0, 'G'},
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"seed", required_argument, 0, 'd'},
-    
+    {"priors", required_argument, 0, 'p'}, 
     {0,0,0,0}
   };
   int c;
@@ -429,6 +434,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'T': {
       opt.transcriptsFile = optarg;
+      break;
+    }
+    case 'p': {
+      opt.priors = optarg;
       break;
     }
     default: break;
@@ -1997,6 +2006,10 @@ void usageEM(bool valid_input = true) {
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
+       << "-p, --priors                  Priors for the EM algorithm, either as raw counts or as" << endl
+       << "                              probabilities. Pseudocounts are added to raw reads to"  << endl
+       << "                              prevent zero valued priors. Supplied in the same order" << endl
+       << "                              as the transcripts in the transcriptome" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 
@@ -2038,6 +2051,10 @@ void usageTCCQuant(bool valid_input = true) {
        << "                              (note: -l, -s values only should be supplied when" << endl
        << "                               effective length normalization needs to be performed" << endl
        << "                               but --fragment-file is not specified)" << endl
+       << "-p, --priors                  Priors for the EM algorithm, either as raw counts or as" << endl
+       << "                              probabilities. Pseudocounts are added to raw reads to"  << endl
+       << "                              prevent zero valued priors. Supplied in the same order" << endl
+       << "                              as the transcripts in the transcriptome" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-g, --genemap                 File for mapping transcripts to genes" << endl
        << "                              (required for obtaining gene-level abundances)" << endl
@@ -2388,6 +2405,11 @@ int main(int argc, char *argv[]) {
         //}
 
         EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+        if (opt.priors != "") {
+          std::vector<double> priors = EMAlgorithm::read_priors(opt.priors);
+          em.set_priors(priors);
+          priors.clear();
+        }
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -2679,6 +2701,11 @@ int main(int argc, char *argv[]) {
         const bool gene_level_counting = !opt.genemap.empty() || !opt.gtfFile.empty();
 
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
+
+        std::vector<double> priors;
+        if (opt.priors != "") {
+          priors = EMAlgorithm::read_priors(opt.priors);
+        }
         auto EM_lambda = [&](int id) {
           std::cerr << "[quant] Processing sample/cell " << std::to_string(id) << std::endl;
           MinCollector collection(index, opt);
@@ -2710,6 +2737,7 @@ int main(int argc, char *argv[]) {
           }
 
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          em.set_priors(priors);
           em.run(10000, 50, false, false);
 
           if (isMatrixFile) { // Update abundances matrix
@@ -2870,6 +2898,9 @@ int main(int argc, char *argv[]) {
             cerr << endl;
           }
         }; // end of EM_lambda
+
+        priors.clear();
+
 
         std::vector<std::thread> workers;
         int num_ids = nrow;
