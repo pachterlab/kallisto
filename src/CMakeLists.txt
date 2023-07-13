@@ -18,12 +18,13 @@ file(GLOB_RECURSE headers *.h *.hpp)
 list(REMOVE_ITEM sources ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 add_executable(kallisto ${sources} ${headers} main.cpp)
 
-if (DEFINED ENV{RELEASE_OS} AND "$ENV{RELEASE_OS}" STREQUAL "windows")
+if (WIN32 OR (DEFINED ENV{RELEASE_OS} AND "$ENV{RELEASE_OS}" STREQUAL "windows"))
     set_target_properties(kallisto PROPERTIES LINK_FLAGS "-Wl,--allow-multiple-definition")
 endif()
 #add_executable(kallisto main.cpp)
 
 find_package( Threads REQUIRED )
+
 ExternalProject_Get_Property(bifrost install_dir)
 if (USE_BAM)
 target_link_libraries(kallisto  pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a)
@@ -71,6 +72,11 @@ if (ZLIBNG)
     target_link_libraries(kallisto ${CMAKE_CURRENT_SOURCE_DIR}/../ext/zlib-ng/zlib-ng/libz.a)
     endif(WIN32)
 endif(ZLIBNG)
+
+
+if (WIN32)
+target_link_libraries(kallisto ws2_32)
+endif(WIN32)
 
 if(USE_HDF5)
     if(HDF5_FOUND)
