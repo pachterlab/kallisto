@@ -1484,12 +1484,13 @@ void BUSProcessor::processBuffer() {
     // process frames for commafree (to do: extend to paired-end reads)
     if (busopt.aa) {
       // initiate equivalence classes
-      std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
+      std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7, v8;
       v3.reserve(1000);
       v4.reserve(1000);
       v5.reserve(1000);
       v6.reserve(1000);
       v7.reserve(1000);
+      v8.reserve(1000);
 
       // align remaining forward frames using the match function
       const char * seq3 = seq+1;
@@ -1525,9 +1526,11 @@ void BUSProcessor::processBuffer() {
       v7.clear();
       index.match(seq7, seqlen7, v7, match_partial, busopt.aa);
 
+      // Unaltered sequence for dlist matching
+      index.match(seq, seqlen, v8, match_partial);
+      
       // intersect set of equivalence classes for each frame
-      // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
-      int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
+      int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, v8, u);
     }
     else {
       // collect the target information

@@ -620,25 +620,26 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   } else {
     opt.single_end = true;
   }
-  
+
   if (interleaved_flag) {
     opt.input_interleaved_nfiles = 1;
   }
-  
+
   if (batch_barcodes_flag) {
     opt.record_batch_bus_barcode = true;
   }
-  
+
   if (dfk_onlist_flag) {
     opt.dfk_onlist = true;
   }
-  
+
   opt.single_overhang = true;
 
   // throw warning when --aa is passed with paired-end arg 
   // paired-end currently not supported in --aa mode -> will automatically switch to single-end
   if (aa_flag) {
     opt.aa =true;
+    opt.dfk_onlist =true;
     opt.single_end = true;
     if (paired_end_flag) {
       cerr << "[bus] --paired ignored; --aa only supports single-end reads" << endl;

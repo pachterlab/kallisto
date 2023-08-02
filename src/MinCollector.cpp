@@ -46,13 +46,37 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
-                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v8, Roaring& r) const {
+
+  // If a single kmer of untranslated sequence u8 matches perfectly in the host genome, throw out read
+  bool found_something_in_dlist = false;
+  Roaring r_;
+  for (int i = 0; i < v8.size(); i++) {
+    r_ = v8[i].first.getData()->ec[v8[i].first.dist].getIndices();
+    auto usize = r_.cardinality();
+    r_ &= index.onlist_sequences;
+    if (r_.cardinality() != usize) {
+      found_something_in_dlist = true;
+      return -1;
+    }
+  }
+
+  // If v8 did not match to dlist, intersect cfc kmers
   Roaring u1 = intersectECs(v1);
   Roaring u3 = intersectECs(v3);
   Roaring u4 = intersectECs(v4);
   Roaring u5 = intersectECs(v5);
   Roaring u6 = intersectECs(v6);
   Roaring u7 = intersectECs(v7);
+
+  // Only take into account ref seqs NOT in the dlist
+  u1 &= index.onlist_sequences;
+  u3 &= index.onlist_sequences;
+  u4 &= index.onlist_sequences;
+  u5 &= index.onlist_sequences;
+  u6 &= index.onlist_sequences;
+  u7 &= index.onlist_sequences;
 
   if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
     return -1;
