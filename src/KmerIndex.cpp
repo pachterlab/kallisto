@@ -350,6 +350,47 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
     std::cerr << "[build] warning: found " << countNonAA << " non-standard amino acid characters in the input sequence" << std::endl << "        which were reverse translated to 'NNN'" << std::endl;
   }
 
+  // Eventually: Put AA D-list into separate function to clean up code
+  // Save number of sequence in onlist
+  size_t num_trans_original = num_trans;
+  // If a dlist was supplied, add all dlist sequences to deBruijn graph for the --aa option
+  if (opt.aa && !opt.d_list.empty()) {
+    for (auto& fasta : opt.d_list) {
+          fp = gzopen(fasta.c_str(), "r");
+          seq = kseq_init(fp);
+          gzclose(fp);
+          fp=0;
+          while (true) {
+            l = kseq_read(seq);
+            if (l <= 0) {
+              break;
+            }
+
+            // Get dlist nucleotide sequence
+            std::string str = seq->seq.s;
+
+            of << ">" << num_trans++ << "\n" << str << std::endl;
+            // Record length of sequence
+            target_lens_.push_back(str.size());
+            // Give sequence arbritrary name
+            std::string name = "d_list" + std::to_string(num_trans);
+
+            target_names_.push_back(name);
+      }
+    }
+    size_t num_trans_final = num_trans;
+    // Build deBruijn graph with all sequences (onlist and dlist), 
+    // but only mark onlist sequences as "onlist" -> hence num_trans is adjusted to the number of onlist sequences
+    num_trans = num_trans_original;
+    BuildDeBruijnGraph(opt, tmp_file, out);
+    BuildEquivalenceClasses(opt, tmp_file);
+    // Reset num_trans to number of all sequences (onlist and dlist)
+    num_trans = num_trans_final;
+
+    std::remove(tmp_file.c_str());
+    return;
+  }
+
   BuildDeBruijnGraph(opt, tmp_file, out);
   BuildEquivalenceClasses(opt, tmp_file);
 
@@ -492,7 +533,7 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  DListFlankingKmers(opt, tmp_file);
+  if (!opt.aa) DListFlankingKmers(opt, tmp_file);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
