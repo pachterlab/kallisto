@@ -124,7 +124,12 @@ std::string nn_to_cfc (const char * s, int l) {
   for (int i = 0; i < l; i += incrementer) {
       if (l - i >= incrementer) {
         // add comma-free triplet to cfc string
-        s_cfc += cfc_map(s+i);
+        char bytes[3];
+        memset(bytes,0,3);
+        bytes[0] = ::toupper(s[i]);
+        bytes[1] = ::toupper(s[i+1]);
+        bytes[2] = ::toupper(s[i+2]);
+        s_cfc += cfc_map(bytes);
       }
   }
   return s_cfc;
@@ -637,6 +642,82 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   int l = 0;
   size_t rlen = 0;
   const size_t max_rlen = 640000;
+
+  // Translate nucleotide dlist genomes to comma-free code in all possible frames
+  std::string cfc_str_f1;
+  std::string cfc_str_f2;
+  std::string cfc_str_f3;
+  std::string cfc_str_f4;
+  std::string cfc_str_f5;
+  std::string cfc_str_f6;
+  if (opt.aa) {
+    std::string tmp_file = generate_tmp_file(opt.index + "aa");
+    std::ofstream of(tmp_file);
+    size_t i = 0;
+    for (auto& fasta : dlist_fasta_files) {
+      fp = gzopen(fasta.c_str(), "r");
+      seq = kseq_init(fp);
+      while (true) {
+        l = kseq_read(seq);
+        if (l <= 0) {
+          break;
+        }
+
+        const char * sequence = seq->seq.s;
+
+        // Forward frame 1
+        size_t seqlen1 = strlen(sequence);
+        // Translate to comma-free code
+        cfc_str_f1 = nn_to_cfc(sequence, seqlen1);
+        // Write translated sequence to temporary file
+        of << ">" << i++ << "\n" << cfc_str_f1 << std::endl;
+
+        // Forward frame 2
+        const char * seq2 = sequence+1;
+        size_t seqlen2 = strlen(seq2);
+        cfc_str_f2 = nn_to_cfc(seq2, seqlen2);
+        of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
+
+        // Forward frame 3
+        const char * seq3 = sequence+2;
+        size_t seqlen3 = strlen(seq3);
+        cfc_str_f3 = nn_to_cfc(seq3, seqlen3);
+        of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
+
+        // Get reverse complement of sequence
+        // const char * to string
+        std::string com_seq(sequence);
+        // transform comseq to its reverse complement
+        com_seq = revcomp (std::move(com_seq));
+        // string to const char *
+        const char * com_seq_char = com_seq.c_str();
+
+        // Rev frame 4
+        size_t seqlen4 = strlen(com_seq_char);
+        cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen4);
+        of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
+
+        // Rev frame 5
+        const char * seq5 = com_seq_char+1;
+        size_t seqlen5 = strlen(seq5);
+        cfc_str_f5 = nn_to_cfc(seq5, seqlen5);
+        of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
+
+        // Rev frame 6
+        const char * seq6 = com_seq_char+2;
+        size_t seqlen6 = strlen(seq6);
+        cfc_str_f6 = nn_to_cfc(seq6, seqlen6);
+        of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
+      }
+      gzclose(fp);
+      fp = 0;
+    }
+    of.close();
+    // Overwrite dlist fastas with tmp file containing translated seqs
+    dlist_fasta_files.clear();
+    dlist_fasta_files.push_back(tmp_file);
+  }
+
   for (auto& fasta : dlist_fasta_files) {
     std::vector<std::string > seqs_v(max_threads_read, "");
     std::vector<std::thread> workers;
