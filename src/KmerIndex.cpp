@@ -14,6 +14,7 @@
 
 // --aa option helper functions
 // first three letters of nucleotide seq -> comma-free nuc_seq
+// the three stop codons will be translated to 'NNN'
 constexpr const char * cfc_map(const char * nuc_seq){
     // Must use ternary operator because < C++14 allows only a single return statement (and nothing else) in a constexpr
   return (
@@ -653,9 +654,6 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   if (opt.aa) {
     std::string tmp_file = generate_tmp_file("aa" + opt.index);
     std::ofstream of(tmp_file);
-
-    std::cout << tmp_file << std::endl;
-
     size_t i = 0;
     for (auto& fasta : dlist_fasta_files) {
       fp = gzopen(fasta.c_str(), "r");
@@ -675,23 +673,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         // Write translated sequence to temporary file
         of << ">" << i++ << "\n" << cfc_str_f1 << std::endl;
 
-        std::cout << cfc_str_f1 << std::endl;
-
         // Forward frame 2
         const char * seq2 = sequence+1;
         size_t seqlen2 = strlen(seq2);
         cfc_str_f2 = nn_to_cfc(seq2, seqlen2);
         of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
 
-        std::cout << cfc_str_f2 << std::endl;
-
         // Forward frame 3
         const char * seq3 = sequence+2;
         size_t seqlen3 = strlen(seq3);
         cfc_str_f3 = nn_to_cfc(seq3, seqlen3);
         of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
-
-        std::cout << cfc_str_f3 << std::endl;
 
         // Get reverse complement of sequence
         // const char * to string
@@ -701,28 +693,22 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         // string to const char *
         const char * com_seq_char = com_seq.c_str();
 
-        // Rev frame 4
+        // Rev comp frame 1
         size_t seqlen4 = strlen(com_seq_char);
         cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen4);
         of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
 
-        std::cout << cfc_str_f4 << std::endl;
-
-        // Rev frame 5
+        // Rev comp frame 2
         const char * seq5 = com_seq_char+1;
         size_t seqlen5 = strlen(seq5);
         cfc_str_f5 = nn_to_cfc(seq5, seqlen5);
         of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
 
-        std::cout << cfc_str_f5 << std::endl;
-
-        // Rev frame 6
+        // Rev comp frame 3
         const char * seq6 = com_seq_char+2;
         size_t seqlen6 = strlen(seq6);
         cfc_str_f6 = nn_to_cfc(seq6, seqlen6);
         of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
-
-        std::cout << cfc_str_f6 << std::endl;
       }
       gzclose(fp);
       fp = 0;
