@@ -1470,8 +1470,8 @@ void BUSProcessor::processBuffer() {
     numreads++;
     v.clear();
     u = Roaring();
-    
-    bool match_partial = !busopt.paired && !index.dfk_onlist;
+
+    bool match_partial = !busopt.paired && !index.dfk_onlist && !busopt.aa;
 
     index.match(seq, seqlen, v, match_partial, busopt.aa);
 
