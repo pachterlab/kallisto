@@ -651,7 +651,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   std::string cfc_str_f5;
   std::string cfc_str_f6;
   if (opt.aa) {
-    std::string tmp_file = generate_tmp_file(opt.index + "aa");
+    std::string tmp_file = generate_tmp_file("aa" + opt.index);
     std::ofstream of(tmp_file);
     size_t i = 0;
     for (auto& fasta : dlist_fasta_files) {
