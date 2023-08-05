@@ -1493,14 +1493,12 @@ void BUSProcessor::processBuffer() {
 
       // align remaining forward frames using the match function
       const char * seq3 = seq+1;
-      size_t seqlen3 = strlen(seq3);
       v3.clear();
-      index.match(seq3, seqlen3, v3, match_partial, busopt.aa);
+      index.match(seq3, seqlen-1, v3, match_partial, busopt.aa);
 
       const char * seq4 = seq+2;
-      size_t seqlen4 = strlen(seq4);
       v4.clear();
-      index.match(seq4, seqlen4, v4, match_partial, busopt.aa);
+      index.match(seq4, seqlen-2, v4, match_partial, busopt.aa);
 
       // get reverse complement of seq
       // const char * to string
@@ -1511,19 +1509,16 @@ void BUSProcessor::processBuffer() {
       const char * com_seq_char = com_seq.c_str();
 
       // align reverse complement frames using the match function
-      size_t seqlen5 = strlen(com_seq_char);
       v5.clear();
-      index.match(com_seq_char, seqlen5, v5, match_partial, busopt.aa);
+      index.match(com_seq_char, seqlen, v5, match_partial, busopt.aa);
 
       const char * seq6 = com_seq_char+1;
-      size_t seqlen6 = strlen(seq6);
       v6.clear();
-      index.match(seq6, seqlen6, v6, match_partial, busopt.aa);
+      index.match(seq6, seqlen-1, v6, match_partial, busopt.aa);
 
       const char * seq7 = com_seq_char+2;
-      size_t seqlen7 = strlen(seq7);
       v7.clear();
-      index.match(seq7, seqlen7, v7, match_partial, busopt.aa);
+      index.match(seq7, seqlen-2, v7, match_partial, busopt.aa);
 
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?

@@ -675,14 +675,12 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Forward frame 2
         const char * seq2 = sequence+1;
-        size_t seqlen2 = strlen(seq2);
-        cfc_str_f2 = nn_to_cfc(seq2, seqlen2);
+        cfc_str_f2 = nn_to_cfc(seq2, seqlen1 - 1);
         of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
 
         // Forward frame 3
         const char * seq3 = sequence+2;
-        size_t seqlen3 = strlen(seq3);
-        cfc_str_f3 = nn_to_cfc(seq3, seqlen3);
+        cfc_str_f3 = nn_to_cfc(seq3, seqlen1 - 2);
         of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
 
         // Get reverse complement of sequence
@@ -694,20 +692,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         const char * com_seq_char = com_seq.c_str();
 
         // Rev comp frame 1
-        size_t seqlen4 = strlen(com_seq_char);
-        cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen4);
+        cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen1);
         of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
 
         // Rev comp frame 2
         const char * seq5 = com_seq_char+1;
-        size_t seqlen5 = strlen(seq5);
-        cfc_str_f5 = nn_to_cfc(seq5, seqlen5);
+        cfc_str_f5 = nn_to_cfc(seq5, seqlen1-1);
         of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
 
         // Rev comp frame 3
         const char * seq6 = com_seq_char+2;
-        size_t seqlen6 = strlen(seq6);
-        cfc_str_f6 = nn_to_cfc(seq6, seqlen6);
+        cfc_str_f6 = nn_to_cfc(seq6, seqlen1-2);
         of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
       }
       gzclose(fp);
