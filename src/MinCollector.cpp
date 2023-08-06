@@ -47,12 +47,28 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+
+  // If a single kmer matches perfectly in the host genome, throw out the entire read
   Roaring u1 = intersectECs(v1);
+  if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
   Roaring u3 = intersectECs(v3);
+  if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
   Roaring u4 = intersectECs(v4);
+  if ((u4 & index.onlist_sequences).cardinality() != u4.cardinality()) return -1;
   Roaring u5 = intersectECs(v5);
+  if ((u5 & index.onlist_sequences).cardinality() != u5.cardinality()) return -1;
   Roaring u6 = intersectECs(v6);
+  if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
   Roaring u7 = intersectECs(v7);
+  if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
+
+  // Only take into account ref seqs NOT in the dlist
+  u1 &= index.onlist_sequences;
+  u3 &= index.onlist_sequences;
+  u4 &= index.onlist_sequences;
+  u5 &= index.onlist_sequences;
+  u6 &= index.onlist_sequences;
+  u7 &= index.onlist_sequences;
 
   if (u1.isEmpty() && u3.isEmpty() && u4.isEmpty() && u5.isEmpty() && u6.isEmpty() && u7.isEmpty()) {
     return -1;
