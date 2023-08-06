@@ -61,6 +61,9 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
   if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
   Roaring u7 = intersectECs(v7);
   if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
+    
+  // std::cerr << "u1 onlist cardinality: " << (u1 & index.onlist_sequences).cardinality() << endl;
+  // std::cerr << "u1 total cardinality: " << u1.cardinality() << endl;
 
   // Only take into account ref seqs NOT in the dlist
   u1 &= index.onlist_sequences;
