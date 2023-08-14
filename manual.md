@@ -6,10 +6,28 @@ group: navigation
 ---
 {% include JB/setup %}
 
+
+#### Compiling
+
+
+~~~
+git clone https://github.com/pachterlab/kallisto
+cd kallisto
+mkdir build
+cd build
+cmake ..
+make
+make install
+~~~
+
+If you don't want to install kallisto system-wide and only want the executable binary, don't run make install -- make will already have generated the binary and have put it at: kallisto/build/src/kallisto
+
+#### kallisto
+
 Typing `kallisto` produces a list of usage options, which are:
 
 ~~~
-kallisto 0.46.0
+kallisto 0.50.0
 
 Usage: kallisto <CMD> [arguments] ..
 
@@ -17,9 +35,8 @@ Where <CMD> can be one of:
 
     index         Builds a kallisto index
     quant         Runs the quantification algorithm
+    quant-tcc     Runs quantification on transcript-compatibility counts
     bus           Generate BUS files for single-cell data
-    pseudo        Runs the pseudoalignment step
-    merge         Merges several batch runs
     h5dump        Converts HDF5-formatted results to plaintext
     inspect       Inspects and gives information about an index
     version       Prints version information
@@ -34,7 +51,7 @@ The usage commands are:
 `kallisto index` builds an index from a FASTA formatted file of target sequences. The arguments for the index command are:
 
 ~~~
-kallisto 0.46.0
+kallisto 0.50.0
 Builds a kallisto index
 
 Usage: kallisto index [arguments] FASTA-files
@@ -44,17 +61,23 @@ Required argument:
 
 Optional argument:
 -k, --kmer-size=INT         k-mer (odd) length (default: 31, max value: 31)
+-d, --d-list=STRING         Path to a FASTA-file containing sequences to mask from quantification
     --make-unique           Replace repeated target names with unique names
+    --aa                    Generate index from a FASTA-file containing amino acid sequences
+    --distinguish           Generate index where sequences are distinguished by the sequence name
+-t, --threads=INT           Number of threads to use (default: 1)
+-m, --min-size=INT          Length of minimizers (default: automatically chosen)
+-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)
 ~~~
 
-The Fasta file supplied can be either in plaintext or gzipped format. Prebuilt indices constructed from [Ensembl reference transcriptomes](https://uswest.ensembl.org/info/data/ftp/index.html) can be download from the [kallisto transcriptome indices](https://github.com/pachterlab/kallisto-transcriptome-indices/releases) site.
+The Fasta file supplied can be either in plaintext or gzipped format. Note: Do not supply the genome Fasta file; the Fasta file must be a transcriptome Fasta.
 
 #### quant
 
 `kallisto quant` runs the quantification algorithm. The arguments for the quant command are:
 
 ~~~
-kallisto 0.46.0
+kallisto 0.50.0
 Computes equivalence classes for reads and quantifies abundances
 
 Usage: kallisto quant [arguments] FASTQ-files
@@ -65,11 +88,9 @@ Required arguments:
 -o, --output-dir=STRING       Directory to write output to
 
 Optional arguments:
-    --bias                    Perform sequence based bias correction
 -b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
     --seed=INT                Seed for the bootstrap sampling (default: 42)
     --plaintext               Output plaintext instead of HDF5
-    --fusion                  Search for fusions for Pizzly
     --single                  Quantify single-end reads
     --single-overhang         Include reads where unobserved rest of fragment is
                               predicted to lie outside a transcript
@@ -80,12 +101,6 @@ Optional arguments:
                               (default: -l, -s values are estimated from paired
                                end data, but are required when using --single)
 -t, --threads=INT             Number of threads to use (default: 1)
-    --pseudobam               Save pseudoalignments to transcriptome to BAM file
-    --genomebam               Project pseudoalignments to genome sorted BAM file
--g, --gtf                     GTF file for transcriptome information
-                              (required for --genomebam)
--c, --chromosomes             Tab separated file with chromosome names and lengths
-                              (optional for --genomebam, but recommended)
 ~~~
 
 __kallisto__ can process either single-end or paired-end reads. The default running mode is paired-end and requires an even number of FASTQ files represented as pairs, e.g.
@@ -126,7 +141,6 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 ##### Optional arguments
 
-+ `--bias` learns parameters for a model of sequences specific bias and corrects the abundances accordlingly.
 
 + `-t, --threads` specifies the number of threads to be used both for pseudoalignment and running bootstrap. The default value is 1 thread, specifying more than the number of bootstraps or the number of cores on your machine has no additional effect.
 
@@ -134,18 +148,63 @@ The number of bootstrap samples is specified using -b. Note that because of the 
 
 + `--rf-stranded` same as `--fr-stranded` but the **first** read maps to the **reverse** strand of a transcript.
 
+
+##### Legacy options:
+
+These options are only supported in kallisto versions before 0.50.0. To use them install an older version of kallisto (recommended: 0.48.0).
+
+kallisto quant:
+
++ `--bias` learns parameters for a model of sequences specific bias and corrects the abundances accordlingly.
+
 + `--fusion` does normal quantification, but additionally looks for reads that do not pseudoalign because they are potentially from fusion genes. All output is written to the file `fusion.txt` in the output folder.
 
-##### Pseudobam
-
 `--pseudobam` outputs all pseudoalignments to a file `pseudoalignments.bam` in the output directory. This BAM file contains the pseudoalignments in BAM format, ordered by reads so that each pseudoalignment of a read is adjacent in the BAM file.
+
+`--genomebam` constructs the pseudoalignments to the transcriptome, but projects the transcript alignments to genome coordinates, resulting in split-read alignments. When the `--genomebam` option is supplied at GTF file must be given with the `--gtf` option. The GTF file, which can be plain text or gzipped, translates transcripts into genomic coordinates. We recommend downloading a the cdna FASTA files and GTF files from the same data source. The `--chromosomes` option can provide a length of the genomic chromosomes, this option is not neccessary, but gives a more consistent BAM header, some programs may require this for downstream analysis. __kallisto__ does not require the genome sequence to do pseudoalignment, but downstream tools such as genome browsers will probably need it.
 
 
 A detailed description of the SAM output is [here](pseudobam.html).
 
-##### GenomeBam
 
-`--genomebam` constructs the pseudoalignments to the transcriptome, but projects the transcript alignments to genome coordinates, resulting in split-read alignments. When the `--genomebam` option is supplied at GTF file must be given with the `--gtf` option. The GTF file, which can be plain text or gzipped, translates transcripts into genomic coordinates. We recommend downloading a the cdna FASTA files and GTF files from the same data source. The `--chromosomes` option can provide a length of the genomic chromosomes, this option is not neccessary, but gives a more consistent BAM header, some programs may require this for downstream analysis. __kallisto__ does not require the genome sequence to do pseudoalignment, but downstream tools such as genome browsers will probably need it.
+#### quant-tcc
+
+`kallisto quant` runs the EM algorithm to produce estimated counts from a transcript-compatibility-counts matrix file (which is in a MatrixMarket format where each column is an equivalence class and each row is a sample). The necessary files can all be generated from `bustools count` in bustools.
+
+~~~
+kallisto 0.50.0
+Generates BUS files for single-cell sequencing
+
+Usage: kallisto bus [arguments] FASTQ-files
+
+Required arguments:
+-o, --output-dir=STRING       Directory to write output to
+
+Optional arguments:
+-i, --index=STRING            Filename for the kallisto index to be used
+                              (required if file with names of transcripts not supplied)
+-T, --txnames=STRING          File with names of transcripts
+                              (required if index file not supplied)
+-e, --ec-file=FILE            File containing equivalence classes
+                              (default: equivalence classes are taken from the index)
+-f, --fragment-file=FILE      File containing fragment length distribution
+                              (default: effective length normalization is not performed)
+-l, --fragment-length=DOUBLE  Estimated average fragment length
+-s, --sd=DOUBLE               Estimated standard deviation of fragment length
+                              (note: -l, -s values only should be supplied when
+                               effective length normalization needs to be performed
+                               but --fragment-file is not specified)
+-t, --threads=INT             Number of threads to use (default: 1)
+-g, --genemap                 File for mapping transcripts to genes
+                              (required for obtaining gene-level abundances)
+-G, --gtf=FILE                GTF file for transcriptome information
+                              (can be used instead of --genemap for obtaining gene-level abundances)
+-b, --bootstrap-samples=INT   Number of bootstrap samples (default: 0)
+    --matrix-to-files         Reorganize matrix output into abundance tsv files
+    --matrix-to-directories   Reorganize matrix output into abundance tsv files across multiple directories
+    --seed=INT                Seed for the bootstrap sampling (default: 42)
+    --plaintext               Output plaintext only, not HDF5
+~~~
 
 
 #### bus
@@ -153,7 +212,7 @@ A detailed description of the SAM output is [here](pseudobam.html).
 `kallisto bus` works with raw FASTQ files for single-cell RNA-Seq datasets. For each read the cell barcode and UMI information and the equivalence class resulting from pseudoalignment are stored in a [BUS](https://github.com/BUStools/BUS) file `output.bus` stored in the output directory directory, along with `matrix.ec` and `transcripts.txt` which store information about the equivalence classes and transcript names for downstream processing.
 
 ~~~
-kallisto 0.46.0
+kallisto 0.50.0
 Generates BUS files for single-cell sequencing
 
 Usage: kallisto bus [arguments] FASTQ-files
@@ -166,7 +225,20 @@ Required arguments:
 
 Optional arguments:
 -l, --list                    List all single-cell technologies supported
+-B, --batch=FILE              Process files listed in FILE
 -t, --threads=INT             Number of threads to use (default: 1)
+-b, --bam                     Input file is a BAM file
+-n, --num                     Output number of read in flag column (incompatible with --bam)
+-N, --numReads                Maximum number of reads to process from supplied input
+-T, --tag=STRING              5′ tag sequence to identify UMI reads for certain technologies
+    --fr-stranded             Strand specific reads for UMI-tagged reads, first read forward
+    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse
+    --unstranded              Treat all read as non-strand-specific
+    --paired                  Treat reads as paired
+    --aa                      Align to index generated from a FASTA-file containing amino acid sequences
+    --inleaved                Specifies that input is an interleaved FASTQ file
+    --batch-barcodes          Records both batch and extracted barcode in BUS file
+    --verbose                 Print out progress information every 1M proccessed reads
 ~~~
 
 To process the `output.bus` file further use [bustools](https://github.com/BUStools/bustools); examples of downstream processing can be seen in [dataset specific notebooks](https://github.com/BUStools/Notebooks) available from the [bustools repository](https://github.com/BUStools). 
@@ -181,52 +253,29 @@ short name       description
 10xv1            10x version 1 chemistry
 10xv2            10x version 2 chemistry
 10xv3            10x version 3 chemistry
+Bulk             Bulk RNA-seq
+SmartSeq2        Smart-seq2
+BDWTA            BD Rhapsody WTA
 CELSeq           CEL-Seq
 CELSeq2          CEL-Seq version 2
 DropSeq          DropSeq
-inDrops          inDrops
+inDropsv1        inDrops version 1 chemistry
+inDropsv2        inDrops version 2 chemistry
+inDropsv3        inDrops version 3 chemistry
 SCRBSeq          SCRB-Seq
+SmartSeq3        Smart-seq3
+SPLiT-seq        SPLiT-seq
 SureCell         SureCell for ddSEQ
+Visium           10x Visium Spatial Transcriptomics
 ~~~
 
 When specifying the input the short name can be used to indicate the technology.
 
 Additionally `kallisto bus` will accept a string specifying a new technology in the format of `bc:umi:seq` where each of `bc`,`umi` and `seq` are a triplet of integers separated by a comma, denoting the file index, start and stop of the sequence used. For example to specify the `10xV2` technology we would use `0,0,16:0,16,26:1,0,0`. The first part `bc` is `0,0,16` indicating it is in the 0-th file (also known as the first file in plain english), the barcode starts at the 0-th bp and ends at the 16-th bp in the sequence (i.e. 16bp barcode), the UMI is similarly in the same file, right after the barcode in position 16-26 (a 10bp UMI), finally the sequence is in a separate file, starts at 0 and ends at 0 (in this case stopping at 0 means there is no limit, we use the entire sequence).
 
-#### pseudo
+##### Batch files
 
-`kallisto pseudo` runs only the pseudoalignment step and is meant for usage in single-cell RNA-seq. The arguments for the pseudo command are:
-
-~~~
-kallisto 0.46.0
-Computes equivalence classes for reads and quantifies abundances
-
-Usage: kallisto pseudo [arguments] FASTQ-files
-
-Required arguments:
--i, --index=STRING            Filename for the kallisto index to be used for
-                              pseudoalignment
--o, --output-dir=STRING       Directory to write output to
-
-Optional arguments:
--u  --umi                     First file in pair is a UMI file
--b  --batch=FILE              Process files listed in FILE
-    --single                  Quantify single-end reads
--l, --fragment-length=DOUBLE  Estimated average fragment length
--s, --sd=DOUBLE               Estimated standard deviation of fragment length
-                              (default: -l, -s values are estimated from paired
-                               end data, but are required when using --single)
--t, --threads=INT             Number of threads to use (default: 1)
-
-~~~
-
-The form of the command and the meaning of the parameters are identical to the quant command. However, pseudo does not run the EM-algorithm to quantify abundances. In addition the pseudo command has an option to specify many cells in a batch file, e.g.
-
-~~~
-kallisto pseudo -i index -o output -b batch.txt
-~~~
-
-which will read information about each cell in the `batch.txt` file and process all cells simultaneously.
+Using the --batch option in `kallisto bus ` allows you to supply a list of fastq files in a separate text file (each line represents a unique sample or cell).
 
 The format of the batch file is
 
@@ -237,31 +286,6 @@ cell2 cell2_1.fastq.gz cell2_1.fastq.gz
 cell3 cell3_1.fastq.gz cell3_1.fastq.gz
 ...
 ~~~
-
-where the first column is the id of the cell and the next two fields are the corresponding files containing the paired end reads. Any lines starting with `#` are ignored. In the case of single end reads, specified with `--single`, only one file should be specified per cell.
-
-When the `--umi` option is specified the batch file is of the form
-
-~~~
-#id umi-file file-1
-cell1 cell_1.umi cell_1.fastq.gz
-cell2 cell_2.umi cell_2.fastq.gz
-cell3 cell_3.umi cell_3.fastq.gz
-...
-~~~
-
-where the umi-file is a text file of the form
-
-~~~
-TTACACTGAC
-CCACTCTATG
-CAGGAAATCG
-...
-~~~
-
-listing the Unique Molecular Identifier (UMI) for each read. The order of UMIs and reads in the fastq file must match. Even though the UMI data is single end we do not require or make use of the fragment length.
-
-When run in **UMI** mode kallisto will use the sequenced reads to pseudoalign and find an equivalence class, but rather than count the number of reads for each equivalence class, kallisto counts the number of distinct UMIs that pseudoalign to each equivalence class.
 
 #### h5dump
 
@@ -280,35 +304,17 @@ Required argument:
 
 ~~~
 
-#### merge
-
-`kallisto merge` can merge the results of several batches performed by `pseudo`, this creates a single output as if `kallisto` had ben run on the entire sample.
-
-~~~
-kallisto 0.46.0
-Computes equivalence classes for reads and quantifies abundances
-
-Usage: kallisto merge [arguments] ouput-directories
-
-Required arguments:
--i, --index=STRING            Filename for the kallisto index to be used for
-                              pseudoalignment
--o, --output-dir=STRING       Directory to write output to
-~~~
-
 #### inspect
 
 `kallisto inspect` can output the Target de Bruijn Graph in the index in two ways, as a file in `GFA` [format](https://github.com/GFA-spec/GFA-spec) or it can map the contigs of the graph and and equivalence classes in a `BED` format that can be visualized using [IGV](http://software.broadinstitute.org/software/igv/)
 
 ~~~
-kallisto 0.46.0
+kallisto 0.50.0
 
 Usage: kallisto inspect INDEX-file
 
 Optional arguments:
--G, --gfa=STRING        Filename for GFA output of T-DBG
--g, --gtf=STRING        Filename for GTF file
--b, --bed=STRING        Filename for BED output (default: index + ".bed")
+-t, --threads=INT       Number of threads
 ~~~
 
 #### version
