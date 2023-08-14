@@ -50,17 +50,17 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 
   // If a single kmer matches perfectly in the host genome, throw out the entire read
   Roaring u1 = intersectECs(v1);
-  // if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
+  if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
   Roaring u3 = intersectECs(v3);
-  // if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
+  if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
   Roaring u4 = intersectECs(v4);
-  // if ((u4 & index.onlist_sequences).cardinality() != u4.cardinality()) return -1;
+  if ((u4 & index.onlist_sequences).cardinality() != u4.cardinality()) return -1;
   Roaring u5 = intersectECs(v5);
-  // if ((u5 & index.onlist_sequences).cardinality() != u5.cardinality()) return -1;
+  if ((u5 & index.onlist_sequences).cardinality() != u5.cardinality()) return -1;
   Roaring u6 = intersectECs(v6);
-  // if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
+  if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
   Roaring u7 = intersectECs(v7);
-  // if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
+  if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
     
   // std::cerr << "u1 onlist cardinality: " << (u1 & index.onlist_sequences).cardinality() << endl;
   // std::cerr << "u1 total cardinality: " << u1.cardinality() << endl;
