@@ -573,8 +573,9 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       return false;
   };
 
+  unsigned long overhang = opt.d_list_overhang;
   // Main worker thread
-  auto worker_function = [&](std::string& seq) {
+  auto worker_function = [&, overhang](std::string& seq) {
 
     int lb = -1, ub = -1;
     int pos = 0;
@@ -590,12 +591,18 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Add leading kmer to set
         if (lb >= 0 && ub >= lb) {
-          if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
+          for (int i = 0; i < std::min<unsigned long>(lb, overhang); ++i) {
+            // Add up to #overhang leading k-mers to set
+            if (!isInvalidKmer(seq.c_str() + lb - i, k)) kmers_.emplace(seq.c_str() + lb - i);
+          }
         }
 
         // Add trailing kmer to set
         if (ub > lb && ub + k < seq.length()) {
-          if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
+          for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+            // Add up to #overhang trailing k-mers to set
+            if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
+          }
         }
 
         lb = -1;
@@ -616,12 +623,18 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
     // Add last leading kmer to set
     if (lb >= 0 && ub >= lb) {
-      if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
+      for (int i = 0; i < std::min<unsigned long>(lb, overhang); ++i) {
+        // Add up to #overhang leading k-mers to set
+        if (!isInvalidKmer(seq.c_str() + lb - i, k)) kmers_.emplace(seq.c_str() + lb - i);
+      }
     }
 
     // Add last trailing kmer to set
     if (ub > lb && ub + k < seq.length()) {
-        if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
+      for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+        // Add up to #overhang trailing k-mers to set
+        if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
+      }
     }
 
     return kmers_;
@@ -688,13 +701,19 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   size_t N = 0;
   size_t start = num_trans;
+  size_t unique_flanking_kmers = 0;
   std::ofstream outfile;
   outfile.open(tmp_file, std::ios_base::app);
   for (const auto& kmer : kmers) {
-    // Insert all flanking kmers into graph
+    // Check whether flanking k-mer exists elsewhere in the graph
+    // (may occur in the case of longer overhangs)
+    auto um = dbg.find(kmer);
+    if (!um.isEmpty) continue;
+
+    // Insert all other flanking kmers into graph
     dbg.add(kmer.toString());
 
-    // Insert all flanking kmers into tmp_file and transcript-related member variables
+    // Insert all other flanking kmers into tmp_file and transcript-related member variables
     std::string tx_name = "d_list." + std::to_string(N++);
 
     ++num_trans;
@@ -707,8 +726,10 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
             << kmer.toString()
             << std::endl;
 
+    ++unique_flanking_kmers;
+
   }
-  std::cerr << "[build] identified " << kmers.size() << " distinguishing flanking k-mers" << std::endl;
+  std::cerr << "[build] identified " << unique_flanking_kmers << " distinguishing flanking k-mers" << std::endl;
 
   outfile.close();
 }

@@ -66,6 +66,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
     {"d-list", required_argument, 0, 'd'},
+    {"d-list-overhang", required_argument, 0, 'D'}, // Do we have to have a one-letter flag as well?
     {0,0,0,0}
   };
   int c;
@@ -115,6 +116,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       while (std::getline(ss, filename, ',')) { 
         opt.d_list.push_back(filename);
       }
+      break;
+    }
+    case 'D': {
+      stringstream(optarg) >> opt.d_list_overhang;
       break;
     }
     default: break;
