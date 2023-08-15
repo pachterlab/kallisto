@@ -134,7 +134,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (aa_flag) {
     opt.aa = true;
-    if (opt.d_list_overhang < 3) opt.d_list_overhang = 3;
+    if (opt.d_list_overhang < 3) {
+        cerr << "[index] --d-list-overhang ignored; with --aa, the d-list overhang must be >= 3" << endl;
+        opt.d_list_overhang = 3;
+    }
   }
   if (distinguish_flag) {
     opt.distinguish = true;
