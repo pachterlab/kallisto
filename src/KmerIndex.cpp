@@ -784,8 +784,10 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   for (const auto& kmer : kmers) {
     // Check whether flanking k-mer exists elsewhere in the graph
     // (may occur in the case of longer overhangs)
-    auto um = dbg.find(kmer);
-    if (!um.isEmpty) continue;
+    if (overhang > 1) {
+      auto um = dbg.find(kmer);
+      if (!um.isEmpty) continue;
+    }
 
     // Insert all other flanking kmers into graph
     dbg.add(kmer.toString());
