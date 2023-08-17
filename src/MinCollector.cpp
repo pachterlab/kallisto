@@ -48,8 +48,10 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
 
-  // If a single kmer matches perfectly in the host genome, throw out the entire read
+  // If a single kmer matches perfectly in the host genome in any frame, throw out the entire read
   Roaring u1 = intersectECs(v1);
+  std::cerr << "u1 onlist cardinality: " << (u1 & index.onlist_sequences).cardinality() << endl;
+  std::cerr << "u1 total cardinality: " << u1.cardinality() << endl;
   if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
   Roaring u3 = intersectECs(v3);
   if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
@@ -61,9 +63,6 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
   if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
   Roaring u7 = intersectECs(v7);
   if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
-    
-  // std::cerr << "u1 onlist cardinality: " << (u1 & index.onlist_sequences).cardinality() << endl;
-  // std::cerr << "u1 total cardinality: " << u1.cardinality() << endl;
 
   // Only take into account ref seqs NOT in the dlist
   u1 &= index.onlist_sequences;
@@ -117,7 +116,7 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
     return -1;
   }
 
-  // std::cerr << "Aligned frame: " << winner_frame_idx << endl;
+  std::cerr << "Aligned frame: " << winner_frame_idx << endl;
   return 1;
 }
 

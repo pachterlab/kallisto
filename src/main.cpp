@@ -135,8 +135,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   if (aa_flag) {
     opt.aa = true;
     if (opt.d_list_overhang < 3) {
-        cerr << "[index] --d-list-overhang set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
-        opt.d_list_overhang = 3;
+        cerr << "[index] WARNING --d-list-overhang set to < 3; should be >= 3 with --aa" << endl;
+        // cerr << "[index] --d-list-overhang set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
+        // opt.d_list_overhang = 3;
     }
   }
   if (distinguish_flag) {
@@ -648,6 +649,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   // paired-end currently not supported in --aa mode -> will automatically switch to single-end
   if (aa_flag) {
     opt.aa =true;
+    opt.dfk_onlist =true;
     opt.single_end = true;
     if (paired_end_flag) {
       cerr << "[bus] --paired ignored; --aa only supports single-end reads" << endl;
