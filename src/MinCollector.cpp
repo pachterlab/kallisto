@@ -258,7 +258,6 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
         }
         r &= ec;
         if (r.isEmpty()) {
-          std::cerr << std::endl;
           return r;
         }
         lastEC = std::move(ec);
@@ -278,8 +277,6 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
-
-  std::cout << "Intersection found: " << r.toString() << std::endl;
 
   return r;
 }
