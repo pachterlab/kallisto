@@ -370,8 +370,14 @@ class BlockArray {
         }
 
         void print() const {
-            for (const auto& b : poly) {
-                std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << ", ";
+
+            if (flag == 0) return;
+            if (flag == 1) {
+                std::cout << "[" << mono.lb << ", " << mono.ub << "): " << mono.val;
+            } else {
+                for (const auto& b : poly) {
+                    std::cout << "[" << b.lb << ", " << b.ub << "): " << b.val << ", ";
+                }
             }
             std::cout << std::endl;
         }

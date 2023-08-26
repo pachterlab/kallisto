@@ -451,11 +451,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       tr.stop  = um.dist + um.len;
 
       trinfos[n->id].push_back(tr);
-
-      // DEBUG:
-      // std::cout << tr.trid << " " << n->id << ": " << um.strand << " " << tr.start << " " << tr.stop << " ";
-      // std::cout << seq << " " << um.mappedSequenceToString() << " " << um.referenceUnitigToString();
-      // std::cout << std::endl;
     }
   }
   infile_a.close();
@@ -873,7 +868,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       }
       TRInfo tr;
 
-      tr.trid = j;
+      tr.trid = std::min<size_t>(j, onlist_sequences.cardinality());
       tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
@@ -904,7 +899,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
-  //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
@@ -1781,8 +1775,6 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
       ret = {trpos+padding-p, !csense}; // case II
     }
   }
-  // DEBUG:
-  //std::cout << std::to_string(ret.first) << " " << std::to_string(ret.second) << std::endl;
   return ret;
 }
 

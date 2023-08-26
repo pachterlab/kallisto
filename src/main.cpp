@@ -137,7 +137,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     if (opt.d_list_overhang < 3) {
         cerr << "[index] WARNING --d-list-overhang set to < 3; should be >= 3 with --aa" << endl;
         // cerr << "[index] --d-list-overhang set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
-        // opt.d_list_overhang = 3;
+        //opt.d_list_overhang = 3;
     }
   }
   if (distinguish_flag) {
@@ -648,8 +648,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   // throw warning when --aa is passed with paired-end arg 
   // paired-end currently not supported in --aa mode -> will automatically switch to single-end
   if (aa_flag) {
-    opt.aa =true;
-    opt.dfk_onlist =true;
+    opt.aa = true;
+    opt.dfk_onlist = true;
     opt.single_end = true;
     if (paired_end_flag) {
       cerr << "[bus] --paired ignored; --aa only supports single-end reads" << endl;
@@ -2166,7 +2166,7 @@ int main(int argc, char *argv[]) {
       
       KmerIndex index(opt);
       index.load(opt);
-      
+
       bool guessChromosomes = true;
       Transcriptome model; // empty
       if (opt.genomebam) {
@@ -2381,10 +2381,6 @@ int main(int argc, char *argv[]) {
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           //fld.resize(MAX_FRAG_LEN,0); // no obersvations
           fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
-
-          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-          // }
         }
 
         std::vector<int32_t> preBias(4096,1);
@@ -2393,10 +2389,6 @@ int main(int argc, char *argv[]) {
         }
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
-
-        //for (int i = 0; i < collection.bias3.size(); i++) {
-          //std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
-        //}
 
         EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
         em.run(10000, 50, true, opt.bias);

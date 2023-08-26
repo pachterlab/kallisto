@@ -50,8 +50,6 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 
   // If a single kmer matches perfectly in the host genome in any frame, throw out the entire read
   Roaring u1 = intersectECs(v1);
-  std::cerr << "u1 onlist cardinality: " << (u1 & index.onlist_sequences).cardinality() << endl;
-  std::cerr << "u1 total cardinality: " << u1.cardinality() << endl;
   if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
   Roaring u3 = intersectECs(v3);
   if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
@@ -233,6 +231,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
          }
        }); // sort by contig, and then first position
 
+  
   r = v[0].first.getData()->ec[v[0].first.dist].getIndices();
   bool found_nonempty = !r.isEmpty();
   Roaring lastEC = r;
@@ -244,6 +243,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
     if (!found_nonempty) {
       r = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       found_nonempty = !r.isEmpty();
+      continue;
     }
 
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
@@ -258,6 +258,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
         }
         r &= ec;
         if (r.isEmpty()) {
+          std::cerr << std::endl;
           return r;
         }
         lastEC = std::move(ec);
@@ -277,6 +278,8 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
+
+  std::cout << "Intersection found: " << r.toString() << std::endl;
 
   return r;
 }
