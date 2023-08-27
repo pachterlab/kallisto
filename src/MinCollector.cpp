@@ -243,7 +243,6 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
     if (!found_nonempty) {
       r = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       found_nonempty = !r.isEmpty();
-      continue;
     }
 
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
