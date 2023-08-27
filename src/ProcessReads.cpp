@@ -215,13 +215,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
 
-
-
-  /*
-  for (int i = 0; i < 4096; i++) {
-    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
-    }*/
-
   // write output to outdir
   if (opt.write_index) {
     std::string outfile = opt.output + "/counts.txt";
@@ -656,23 +649,6 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     }
   }
 
-  // debug and show breakpoints
-  /*
-  std::cout << "bplimit = " << bpLimit << ", sum = " << sum << std::endl;
-  std::cout << "breakpoints (" << breakpoints.size() << ") = {" << std::endl;
-  for (auto &x : breakpoints) {
-    int32_t tid = (int32_t) (x >> 32);
-    int32_t pos = (int32_t) ((x >> 1) & (0xFFFF)) - 1;
-    std::string chr = "*";
-    if (tid != -1) {
-      chr = model.chr[tid].name;
-    }
-    std::cout << "  " << chr << " (" << model.chr[tid].len << ") : " << pos << std::endl;
-  }
-
-  std::cout << "}" << std::endl;
-  */
-
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
   SR->reset();
@@ -987,7 +963,6 @@ void ReadProcessor::processBuffer() {
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
-      //std::cout << s1 << std::endl;
     }
 
     /* --  possibly modify the pseudoalignment  -- */
@@ -1556,7 +1531,6 @@ void BUSProcessor::processBuffer() {
       b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
-      //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
       if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }
