@@ -135,9 +135,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   if (aa_flag) {
     opt.aa = true;
     if (!opt.d_list.empty() && opt.d_list_overhang < 3) {
-        cerr << "[index] WARNING --d-list-overhang set to < 3; should be >= 3 with --aa" << endl;
-        // cerr << "[index] --d-list-overhang set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
-        //opt.d_list_overhang = 3;
+        // cerr << "[index] WARNING --d-list-overhang set to < 3; should be >= 3 with --aa" << endl;
+        cerr << "[index] --d-list-overhang was set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
+        opt.d_list_overhang = 3;
     }
   }
   if (distinguish_flag) {
