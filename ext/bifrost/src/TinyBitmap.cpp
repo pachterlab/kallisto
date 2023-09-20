@@ -1,4 +1,5 @@
 #include "TinyBitmap.hpp"
+#include <random>
 
 TinyBitmap::TinyBitmap() : tiny_bmp(nullptr) {}
 
@@ -1133,6 +1134,7 @@ bool TinyBitmap::test(const bool verbose) {
     }
 
     t_bmp.clear();
+    std::mt19937 g(44);
 
     for (size_t j = 0; j < nb_rounds; ++j){
 
@@ -1162,7 +1164,7 @@ bool TinyBitmap::test(const bool verbose) {
 
         if (verbose) cout << "TinyBitmap::test(): Removing values in random order from 0 to 65536-49 (round " << j << ")" << endl;
 
-        std::random_shuffle(val_added.begin(), val_added.end());
+        std::shuffle(val_added.begin(), val_added.end(), g);
 
         for (const auto val : val_added){
 
@@ -1281,7 +1283,7 @@ bool TinyBitmap::test(const bool verbose) {
 
         if (verbose) cout << "TinyBitmap::test(): Removing values in random order (round " << j << ")" << endl;
 
-        std::random_shuffle(val_added.begin(), val_added.end());
+        std::shuffle(val_added.begin(), val_added.end(), g);
 
         for (const auto val : val_added){
 
