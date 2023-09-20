@@ -115,6 +115,7 @@ struct ProgramOptions {
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   std::vector<std::string> d_list;
+  int d_list_overhang;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -185,7 +186,7 @@ ProgramOptions() :
   single_overhang(false),
   aa(false),
   distinguish(false),
-  priors("")
+  d_list_overhang(1)
   {}
 };
 

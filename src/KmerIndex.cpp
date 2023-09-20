@@ -14,6 +14,7 @@
 
 // --aa option helper functions
 // first three letters of nucleotide seq -> comma-free nuc_seq
+// the three stop codons will be translated to 'NNN'
 constexpr const char * cfc_map(const char * nuc_seq){
     // Must use ternary operator because < C++14 allows only a single return statement (and nothing else) in a constexpr
   return (
@@ -124,7 +125,12 @@ std::string nn_to_cfc (const char * s, int l) {
   for (int i = 0; i < l; i += incrementer) {
       if (l - i >= incrementer) {
         // add comma-free triplet to cfc string
-        s_cfc += cfc_map(s+i);
+        char bytes[3];
+        memset(bytes,0,3);
+        bytes[0] = ::toupper(s[i]);
+        bytes[1] = ::toupper(s[i+1]);
+        bytes[2] = ::toupper(s[i+2]);
+        s_cfc += cfc_map(bytes);
       }
   }
   return s_cfc;
@@ -445,11 +451,6 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       tr.stop  = um.dist + um.len;
 
       trinfos[n->id].push_back(tr);
-
-      // DEBUG:
-      // std::cout << tr.trid << " " << n->id << ": " << um.strand << " " << tr.start << " " << tr.stop << " ";
-      // std::cout << seq << " " << um.mappedSequenceToString() << " " << um.referenceUnitigToString();
-      // std::cout << std::endl;
     }
   }
   infile_a.close();
@@ -573,8 +574,9 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       return false;
   };
 
+  unsigned long overhang = opt.d_list_overhang;
   // Main worker thread
-  auto worker_function = [&](std::string& seq) {
+  auto worker_function = [&, overhang](std::string& seq) {
 
     int lb = -1, ub = -1;
     int pos = 0;
@@ -590,12 +592,18 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Add leading kmer to set
         if (lb >= 0 && ub >= lb) {
-          if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
+          for (int i = 0; i < std::min<unsigned long>(lb, overhang); ++i) {
+            // Add up to #overhang leading k-mers to set
+            if (!isInvalidKmer(seq.c_str() + lb - i, k)) kmers_.emplace(seq.c_str() + lb - i);
+          }
         }
 
         // Add trailing kmer to set
         if (ub > lb && ub + k < seq.length()) {
-          if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
+          for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+            // Add up to #overhang trailing k-mers to set
+            if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
+          }
         }
 
         lb = -1;
@@ -616,12 +624,18 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
     // Add last leading kmer to set
     if (lb >= 0 && ub >= lb) {
-      if (!isInvalidKmer(seq.c_str()+lb,k)) kmers_.emplace(seq.c_str()+lb);
+      for (int i = 0; i < std::min<unsigned long>(lb, overhang); ++i) {
+        // Add up to #overhang leading k-mers to set
+        if (!isInvalidKmer(seq.c_str() + lb - i, k)) kmers_.emplace(seq.c_str() + lb - i);
+      }
     }
 
     // Add last trailing kmer to set
     if (ub > lb && ub + k < seq.length()) {
-        if (!isInvalidKmer(seq.c_str()+ub,k)) kmers_.emplace(seq.c_str()+ub);
+      for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+        // Add up to #overhang trailing k-mers to set
+        if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
+      }
     }
 
     return kmers_;
@@ -637,6 +651,77 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   int l = 0;
   size_t rlen = 0;
   const size_t max_rlen = 640000;
+
+  // Translate nucleotide dlist genomes to comma-free code in all possible frames
+  std::string cfc_str_f1;
+  std::string cfc_str_f2;
+  std::string cfc_str_f3;
+  std::string cfc_str_f4;
+  std::string cfc_str_f5;
+  std::string cfc_str_f6;
+  if (opt.aa) {
+    std::string tmp_file = generate_tmp_file("aa" + opt.index);
+    std::ofstream of(tmp_file);
+    size_t i = 0;
+    for (auto& fasta : dlist_fasta_files) {
+      fp = gzopen(fasta.c_str(), "r");
+      seq = kseq_init(fp);
+      while (true) {
+        l = kseq_read(seq);
+        if (l <= 0) {
+          break;
+        }
+
+        const char * sequence = seq->seq.s;
+
+        // Forward frame 1
+        size_t seqlen1 = seq->seq.l;
+        // Translate to comma-free code
+        cfc_str_f1 = nn_to_cfc(sequence, seqlen1);
+        // Write translated sequence to temporary file
+        of << ">" << i++ << "\n" << cfc_str_f1 << std::endl;
+
+        // Forward frame 2
+        const char * seq2 = sequence+1;
+        cfc_str_f2 = nn_to_cfc(seq2, seqlen1 - 1);
+        of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
+
+        // Forward frame 3
+        const char * seq3 = sequence+2;
+        cfc_str_f3 = nn_to_cfc(seq3, seqlen1 - 2);
+        of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
+
+        // Get reverse complement of sequence
+        // const char * to string
+        std::string com_seq(sequence);
+        // transform comseq to its reverse complement
+        com_seq = revcomp (std::move(com_seq));
+        // string to const char *
+        const char * com_seq_char = com_seq.c_str();
+
+        // Rev comp frame 1
+        cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen1);
+        of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
+
+        // Rev comp frame 2
+        const char * seq5 = com_seq_char+1;
+        cfc_str_f5 = nn_to_cfc(seq5, seqlen1-1);
+        of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
+
+        // Rev comp frame 3
+        const char * seq6 = com_seq_char+2;
+        cfc_str_f6 = nn_to_cfc(seq6, seqlen1-2);
+        of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
+      }
+      gzclose(fp);
+      fp = 0;
+    }
+    of.close();
+    // Overwrite dlist fastas with tmp file containing translated seqs
+    dlist_fasta_files.clear();
+    dlist_fasta_files.push_back(tmp_file);
+  }
+
   for (auto& fasta : dlist_fasta_files) {
     std::vector<std::string > seqs_v(max_threads_read, "");
     std::vector<std::thread> workers;
@@ -688,13 +773,21 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   size_t N = 0;
   size_t start = num_trans;
+  size_t unique_flanking_kmers = 0;
   std::ofstream outfile;
   outfile.open(tmp_file, std::ios_base::app);
   for (const auto& kmer : kmers) {
-    // Insert all flanking kmers into graph
+    // Check whether flanking k-mer exists elsewhere in the graph
+    // (may occur in the case of longer overhangs)
+    //if (overhang > 1) {
+    //  auto um = dbg.find(kmer);
+    //  if (!um.isEmpty) continue;
+    //}
+
+    // Insert all other flanking kmers into graph
     dbg.add(kmer.toString());
 
-    // Insert all flanking kmers into tmp_file and transcript-related member variables
+    // Insert all other flanking kmers into tmp_file and transcript-related member variables
     std::string tx_name = "d_list." + std::to_string(N++);
 
     ++num_trans;
@@ -707,8 +800,10 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
             << kmer.toString()
             << std::endl;
 
+    ++unique_flanking_kmers;
+
   }
-  std::cerr << "[build] identified " << kmers.size() << " distinguishing flanking k-mers" << std::endl;
+  std::cerr << "[build] identified " << unique_flanking_kmers << " distinguishing flanking k-mers" << std::endl;
 
   outfile.close();
 }
@@ -773,7 +868,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       }
       TRInfo tr;
 
-      tr.trid = j;
+      tr.trid = std::min<size_t>(j, onlist_sequences.cardinality());
       tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
@@ -804,7 +899,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
   std::cerr << "[build] target de Bruijn graph has k-mer length " << dbg.getK() << " and minimizer length "  << dbg.getG() << std::endl;
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "  << dbg.nbKmers() << " k-mers " << std::endl;
-  //std::cerr << "[build] target de Bruijn graph contains " << ecmapinv.size() << " equivalence classes from " << seqs.size() << " sequences." << std::endl;
 }
 
 void KmerIndex::PopulateMosaicECs(std::vector<std::vector<TRInfo> >& trinfos) {
@@ -1681,8 +1775,6 @@ std::pair<int,bool> KmerIndex::findPosition(int tr, Kmer km, const_UnitigMap<Nod
       ret = {trpos+padding-p, !csense}; // case II
     }
   }
-  // DEBUG:
-  //std::cout << std::to_string(ret.first) << " " << std::to_string(ret.second) << std::endl;
   return ret;
 }
 
