@@ -2635,11 +2635,13 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<uint32_t>> FLDs;
         Transcriptome model; // empty model
 
-        std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
-          transout_f << index.target_names_[i] << "\n";
+        if (index.onlist_sequences.cardinality() > 0) {
+          std::ofstream transout_f((opt.output + "/transcripts.txt"));
+          for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
+            transout_f << index.target_names_[i] << "\n";
+          }
+          transout_f.close();
         }
-        transout_f.close();
         std::string prefix = opt.output + "/matrix";
         std::string abtsvfilename = opt.output + "/abundance.tsv";
         std::string abtsvprefix = opt.output + "/abundance";
