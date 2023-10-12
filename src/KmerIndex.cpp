@@ -493,7 +493,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  DListFlankingKmers(opt, tmp_file);
+  u_set_<Kmer, KmerHash> dfks;
+  DListFlankingKmers(opt, tmp_file, dfks);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -532,6 +533,27 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   out.seekp(pos1);
 
   dbg.clear();
+  
+  uint64_t dfks_size = dfks.size();
+  uint64_t dlist_overhang = opt.d_list_overhang;
+  out.write((char*)&dfks_size, sizeof(dfks_size));
+  out.write((char*)&dlist_overhang, sizeof(dlist_overhang));
+  if (dfks.size() > 0) {
+    bool found_dummy_dfk = false;
+    out.write((char*)&dummy_dfk, sizeof(dummy_dfk)); // The first DFK is the dummy
+    for (auto dfk : dfks) {
+      if (dfk != dummy_dfk) {
+        out.write((char*)&dfk, sizeof(dfk));
+      } else {
+        found_dummy_dfk = true;
+      }
+    }
+    if (!found_dummy_dfk) {
+      // Should never happen
+      std::cerr << "Assertion failed: Dummy DFK Not Found" << std::endl;
+      exit(1);
+    }
+  }
 
   std::ifstream infile;
   infile.open(opt.index, std::ios::in | std::ios::binary);
@@ -552,15 +574,13 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file, u_set_<Kmer, KmerHash>& kmers) {
 
   if (opt.d_list.empty()) return;
 
   std::cerr << "[build] extracting distinguishing flanking k-mers from";
   for (std::string s : opt.d_list) std::cerr << " \"" << s << "\""; 
   std::cerr << std::endl;
-
-  u_set_<Kmer, KmerHash> kmers;
   
   auto isInvalidKmer = [](const char* s, const int k) {
       int count_nonATCG = 0;
@@ -742,7 +762,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
           // Preempting write access for kmer set
           std::unique_lock<std::mutex> lock(mutex_kmers);
           for (auto& kmer : kmers_local) {
-            kmers.insert(kmer);
+            kmers.insert(kmer.rep());
           }
         }
         continue;
@@ -755,7 +775,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
             // Preempting write access for kmer set
             std::unique_lock<std::mutex> lock(mutex_kmers);
             for (auto& kmer : kmers_local) {
-              kmers.insert(kmer);
+              kmers.insert(kmer.rep());
             }
           }
         }
@@ -776,6 +796,8 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   size_t unique_flanking_kmers = 0;
   std::ofstream outfile;
   outfile.open(tmp_file, std::ios_base::app);
+  bool added_dummy_dfk = false;
+  u_set_<Kmer, KmerHash> already_in_graph;
   for (const auto& kmer : kmers) {
     // Check whether flanking k-mer exists elsewhere in the graph
     // (may occur in the case of longer overhangs)
@@ -785,7 +807,16 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     //}
 
     // Insert all other flanking kmers into graph
-    dbg.add(kmer.toString());
+    const_UnitigMap<Node> um_ = dbg.find(kmer.rep());
+    if (!um_.isEmpty) { already_in_graph.insert(kmer.rep()); continue; }
+    if (!added_dummy_dfk) {
+      // const_UnitigMap<Node> um_ = dbg.find(kmer);
+      if (um_.isEmpty) {
+        dbg.add(kmer.rep().toString());
+        dummy_dfk = kmer.rep();
+        added_dummy_dfk = true;
+      }
+    }
 
     // Insert all other flanking kmers into tmp_file and transcript-related member variables
     std::string tx_name = "d_list." + std::to_string(N++);
@@ -803,6 +834,10 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     ++unique_flanking_kmers;
 
   }
+  for (const auto& kmer : already_in_graph) {
+    if (kmer != dummy_dfk) kmers.erase(kmer);
+  }
+  if (!added_dummy_dfk) kmers.clear();
   std::cerr << "[build] identified " << unique_flanking_kmers << " distinguishing flanking k-mers" << std::endl;
 
   outfile.close();
@@ -1164,6 +1199,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
     k = dbg.getK();
   }
   std::cerr << "[index] k-mer length: " << std::to_string(k) << std::endl;
+  
+  // 2.2 deserialize distinguishing flanking k-mers for D-list
+  uint64_t dlist_size;
+  uint64_t dlist_overhang;
+  in.read((char*)&dlist_size, sizeof(dlist_size));
+  in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
+  d_list.reserve(dlist_size);
+  for (size_t i = 0; i < dlist_size; i++) {
+    Kmer dfk;     
+    in.read((char*)&dfk, sizeof(dfk));
+    d_list.insert(dfk);   
+    if (i == 0) {    
+      dummy_dfk = dfk;
+      um_dummy = dbg.find(dummy_dfk);
+      if (um_dummy.isEmpty) {
+        std::cerr << "Error: Dummy k-mer not found in graph" << std::endl;
+        exit(1);
+      }                            
+    }                                          
+  }
 
   // 3. deserialize nodes
   Kmer kmer;
@@ -1550,12 +1605,15 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
           }
           if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
+            bool is_in_dlist = um2.isEmpty && d_list.size() > 0 && (d_list.find((kit2->first).rep()) != d_list.end()); // D-list (check after first jump)
             if (found2pos >= l-k) {
               v.push_back({um, l-k}); // push back a fake position
+              if (partial && is_in_dlist) { v.push_back({um_dummy, kit2->second}); return; } // D-list
               break; //
             } else {
               v.push_back({um, found2pos});
               kit = kit2; // move iterator to this new position
+              if (partial && is_in_dlist) { v.push_back({um_dummy, kit2->second}); return; } // D-list
             }
           } else {
             // this is weird, let's try the middle k-mer
@@ -1653,6 +1711,19 @@ donejumping:
           backOff = false;
           break; // break out of backoff for loop
         }
+      }
+    }
+  }
+  
+  // D-list:
+  KmerIterator kit_dlist(s);
+  if (d_list.size() > 0 && (v.size() > 0 || !partial)) {
+    for (int i = 0;  kit_dlist != kit_end; ++i,++kit_dlist) {
+      // need to check it
+      bool is_in_dlist = (d_list.find((kit_dlist->first).rep()) != d_list.end());
+      if (is_in_dlist) {
+        v.push_back({um_dummy, kit_dlist->second});
+        break;
       }
     }
   }
