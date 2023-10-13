@@ -577,8 +577,10 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
 void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file, u_set_<Kmer, KmerHash>& kmers) {
 
   if (opt.d_list.empty()) return;
+  
+  auto kmers_special = kmers; // copy; kmers_special will be the ones we store as-is (i.e. not flanking); these are the entries where the FASTA name header is not populated
 
-  std::cerr << "[build] extracting distinguishing flanking k-mers from";
+  std::cerr << "[build] extracting D-list k-mers from";
   for (std::string s : opt.d_list) std::cerr << " \"" << s << "\""; 
   std::cerr << std::endl;
   
@@ -596,13 +598,21 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   unsigned long overhang = opt.d_list_overhang;
   // Main worker thread
-  auto worker_function = [&, overhang](std::string& seq) {
+  auto worker_function = [&, overhang](std::string& seq, bool is_special) {
 
     int lb = -1, ub = -1;
     int pos = 0;
-
+    
     std::transform(seq.begin(), seq.end(),seq.begin(), ::toupper);
     u_set_<Kmer, KmerHash> kmers_;
+    if (is_special) { // Sequence has no name; it is "special"
+      int seqlen = seq.size() - k + 1; // number of k-mers
+      while (pos < seqlen) {
+        if (!isInvalidKmer(seq.c_str()+pos, k)) kmers_.emplace(seq.c_str()+pos);
+        ++pos;
+      }
+      return kmers_; // Return the special k-mers
+    }
     const_UnitigMap<Node> um;
     int seqlen = seq.size() - k + 1; // number of k-mers
     while (pos < seqlen) {
@@ -756,13 +766,16 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       }
       std::string sequence = seq->seq.s;
       auto slen = sequence.size();
-      if (slen < max_rlen || max_threads_read <= 1) { // Small enough; no need to create a new thread
-        auto kmers_local = worker_function(sequence);
+      if (slen < max_rlen || max_threads_read <= 1 || seq->name.l == 0) { // Small enough (or "special" sequence); no need to create a new thread
+        bool is_special = (seq->name.l == 0);
+        auto kmers_local = worker_function(sequence, is_special);
         {
           // Preempting write access for kmer set
           std::unique_lock<std::mutex> lock(mutex_kmers);
+          bool is_special = (seq->name.l == 0);
           for (auto& kmer : kmers_local) {
-            kmers.insert(kmer.rep());
+            if (!is_special) kmers.insert(kmer.rep());
+            else kmers_special.insert(kmer.rep());
           }
         }
         continue;
@@ -770,7 +783,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       seqs_v[n % seqs_v.size()] = std::move(sequence);
       workers.emplace_back(
         [&, n] {
-          auto kmers_local = worker_function(seqs_v[n % seqs_v.size()]);
+          auto kmers_local = worker_function(seqs_v[n % seqs_v.size()], false);
           {
             // Preempting write access for kmer set
             std::unique_lock<std::mutex> lock(mutex_kmers);
@@ -790,10 +803,21 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     gzclose(fp);
     fp = 0;
   }
+  
+  // Some clean ups:
+  if (opt.aa) { // Get rid of the temp file for translated aa
+    struct stat stFileInfo;
+    std::string aa_tmp_file = generate_tmp_file("aa" + opt.index);
+    auto intStat = stat(aa_tmp_file.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      std::remove(aa_tmp_file.c_str());
+    }
+  }
 
   size_t N = 0;
   size_t start = num_trans;
   size_t unique_flanking_kmers = 0;
+  size_t other_dlist_kmers = 0;
   std::ofstream outfile;
   outfile.open(tmp_file, std::ios_base::app);
   bool added_dummy_dfk = false;
@@ -834,11 +858,37 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     ++unique_flanking_kmers;
 
   }
+  for (const auto& kmer : kmers_special) { // Add these directly (not checking for flanking)
+    if (kmers.find(kmer.rep()) != kmers.end()) continue; // Already found; just continue
+    if (!added_dummy_dfk) {
+      const_UnitigMap<Node> um_ = dbg.find(kmer.rep());
+      if (um_.isEmpty) {
+        dbg.add(kmer.rep().toString());
+        dummy_dfk = kmer.rep();
+        added_dummy_dfk = true;
+      }
+    }
+    kmers.insert(kmer.rep()); // Add to the master k-mer set
+    already_in_graph.erase(kmer.rep()); // Erase from here if necessary (because these special D-listed k-mers are stringent filters)
+    std::string tx_name = "d_list." + std::to_string(N++);
+    ++num_trans;
+    target_names_.push_back(tx_name);
+    target_lens_.push_back(k);
+    outfile << ">"
+            << tx_name
+            << std::endl
+            << kmer.toString()
+            << std::endl;
+    ++other_dlist_kmers;
+  }
   for (const auto& kmer : already_in_graph) {
     if (kmer != dummy_dfk) kmers.erase(kmer);
   }
   if (!added_dummy_dfk) kmers.clear();
   std::cerr << "[build] identified " << unique_flanking_kmers << " distinguishing flanking k-mers" << std::endl;
+  if (other_dlist_kmers > 0) {
+    std::cerr << "[build] identified " << other_dlist_kmers << " other D-list k-mers" << std::endl;
+  }
 
   outfile.close();
 }
@@ -1336,7 +1386,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   std::cerr << "[index] number of targets: " << pretty_num(static_cast<size_t>(onlist_sequences.cardinality())) << std::endl;
   std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;
   if (num_trans-onlist_sequences.cardinality() > 0) {
-    std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
+    std::cerr << "[index] number of D-list k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
   }
 
   in.close();
@@ -1347,7 +1397,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   
   if (!loadDlist) { // Destroy the D-list
     if (num_trans != onlist_sequences.cardinality()) {
-      std::cerr << "[index] not using the distinguishing flanking k-mers" << std::endl;
+      std::cerr << "[index] not using the D-list k-mers" << std::endl;
       num_trans = onlist_sequences.cardinality();
       target_names_.resize(num_trans);
       target_lens_.resize(num_trans);
