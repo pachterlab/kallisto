@@ -703,23 +703,24 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         }
 
         const char * sequence = seq->seq.s;
+        bool is_special = (seq->name.l == 0);
 
         // Forward frame 1
         size_t seqlen1 = seq->seq.l;
         // Translate to comma-free code
         cfc_str_f1 = nn_to_cfc(sequence, seqlen1);
         // Write translated sequence to temporary file
-        of << ">" << i++ << "\n" << cfc_str_f1 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f1 << std::endl;
 
         // Forward frame 2
         const char * seq2 = sequence+1;
         cfc_str_f2 = nn_to_cfc(seq2, seqlen1 - 1);
-        of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f2 << std::endl;
 
         // Forward frame 3
         const char * seq3 = sequence+2;
         cfc_str_f3 = nn_to_cfc(seq3, seqlen1 - 2);
-        of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f3 << std::endl;
 
         // Get reverse complement of sequence
         // const char * to string
@@ -731,17 +732,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Rev comp frame 1
         cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen1);
-        of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f4 << std::endl;
 
         // Rev comp frame 2
         const char * seq5 = com_seq_char+1;
         cfc_str_f5 = nn_to_cfc(seq5, seqlen1-1);
-        of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f5 << std::endl;
 
         // Rev comp frame 3
         const char * seq6 = com_seq_char+2;
         cfc_str_f6 = nn_to_cfc(seq6, seqlen1-2);
-        of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f6 << std::endl;
       }
       gzclose(fp);
       fp = 0;
