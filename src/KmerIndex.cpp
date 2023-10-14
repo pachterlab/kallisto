@@ -1104,6 +1104,11 @@ void KmerIndex::write(std::ofstream& out, int threads) {
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
+  
+  if (writeKmerTable) {
+    std::cerr << "KmerIndex::write() must have writeKmerTable set to false" << std::endl;
+    exit(1);
+  }
 
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
@@ -1145,6 +1150,11 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     tmp_size = 0;
     out.write((char *)&tmp_size, sizeof(tmp_size));
   }
+  // Don't write out a D-list:
+  uint64_t dlist_size = 0;
+  uint64_t dlist_overhang = 1;
+  out.write((char*)&dlist_size, sizeof(dlist_size));
+  out.write((char*)&dlist_overhang, sizeof(dlist_overhang));
 
   // 3. serialize nodes
   if (writeKmerTable) {
