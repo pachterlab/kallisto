@@ -374,7 +374,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   kseq_t *seq;
   int l = 0;
   size_t num_seqs = 0;
-  u_set_<std::string> external_input_names;
+  int max_color = 0;
+  u_set_<int> external_input_names;
   for (int i = 0; i < opt.transfasta.size(); i++) { // Currently, this should only be one file
     auto fasta = opt.transfasta[i];
     fp = opt.transfasta.size() == 1 && opt.transfasta[0] == "-" ? gzdopen(fileno(stdin), "r") : gzopen(fasta.c_str(), "r");
@@ -389,8 +390,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       if (strname.length() == 0) {
         continue;
       }
-      external_input_names.insert(strname);
-      of << ">" << strname << "\n" << str << std::endl;
+      int color = std::atoi(strname.c_str());
+      external_input_names.insert(color);
+      if (color > max_color) max_color = color;
+      of << ">" << std::to_string(color) << "\n" << str << std::endl;
       num_seqs++;
     }
     gzclose(fp);
@@ -399,7 +402,9 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   of.close();
   ncolors = external_input_names.size();
   std::cerr << "[build] Read in " << num_seqs << " sequences" << std::endl;
-  std::cerr << "[build] Detected " << ncolors << " colors" << std::endl;
+  std::cerr << "[build] Detected " << ncolors << " used colors" << std::endl;
+  ncolors = max_color+1; // +1 because color id is zero-indexed
+  std::cerr << "[build] Detected " << ncolors << " total colors" << std::endl;
 
   // Prepare some variables:
   num_trans = ncolors;
@@ -426,7 +431,11 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     if (line.length() == 0) {
       continue;
     } else if (line[0] == '>') {
-      current_color = std::atoi(line.c_str()+1);
+      if (line.size() >= 1 && strncmp(line.c_str()+1, "d_list.", 7) == 0) {
+        current_color = onlist_sequences.cardinality();
+      } else {
+        current_color = std::atoi(line.c_str()+1);
+      }
       continue;
     }
     const auto& seq = line;
@@ -847,8 +856,8 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     std::string tx_name = "d_list." + std::to_string(N++);
 
     ++num_trans;
-    target_names_.push_back(tx_name);
-    target_lens_.push_back(k);
+    //target_names_.push_back(tx_name);
+    //target_lens_.push_back(k);
 
     outfile << ">"
             << tx_name
@@ -867,14 +876,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         dbg.add(kmer.rep().toString());
         dummy_dfk = kmer.rep();
         added_dummy_dfk = true;
+      } else {
+        dummy_dfk = kmer.rep(); // for special k-mers, it's ok to make a k-mer already in the graph the dummy
+        added_dummy_dfk = true;
       }
     }
     kmers.insert(kmer.rep()); // Add to the master k-mer set
     already_in_graph.erase(kmer.rep()); // Erase from here if necessary (because these special D-listed k-mers are stringent filters)
     std::string tx_name = "d_list." + std::to_string(N++);
     ++num_trans;
-    target_names_.push_back(tx_name);
-    target_lens_.push_back(k);
+    //target_names_.push_back(tx_name);
+    //target_lens_.push_back(k);
     outfile << ">"
             << tx_name
             << std::endl
@@ -1348,6 +1360,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
 
   // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
+  num_trans -= dlist_size;
 
   // 5. read out target lengths
   target_lens_.clear();
@@ -1393,6 +1406,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
+  
+  num_trans += dlist_size;
 
   std::cerr << "[index] number of targets: " << pretty_num(static_cast<size_t>(onlist_sequences.cardinality())) << std::endl;
   std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;

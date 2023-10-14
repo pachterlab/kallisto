@@ -336,6 +336,19 @@ cmdexec "$kallisto bus -o $test_dir/bus10xv3 -t 1 -i $test_dir/basic7.idx -x 10X
 cmdexec "$bustools sort -o $test_dir/bus10xv3/output.s.bus -t 12 $test_dir/bus10xv3/output.bus"
 checkcmdoutput "$bustools text -p $test_dir/bus10xv3/output.s.bus|cut -f1,2,4" 3991a31f0078b30e7f755b2df7a77106
 
+# Test D-list and distinguish
+
+cat $test_dir/simple.fasta|sed 's/^\>t/\>/g' > $test_dir/simple_distinguish.fasta
+cmdexec "$kallisto index -t 2 -i $test_dir/basic7_dlist.idx --d-list=$test_dir/polyA.fasta -k 7 $test_dir/simple.fasta"
+cmdexec "$kallisto bus -t 1 --num -x bulk -o $test_dir/busdlist -i $test_dir/basic7_dlist.idx $test_dir/small.fastq.gz"
+checkcmdoutput "$bustools text -p $test_dir/busdlist/output.bus|wc -l|tr -d ' '" 1dcca23355272056f04fe8bf20edfce0
+cmdexec "$kallisto index --distinguish -t 2 -i $test_dir/basic7_dlist.idx --d-list=$test_dir/polyA.fasta -k 7 $test_dir/simple.fasta"
+cmdexec "$kallisto bus -t 1 --num -x bulk -o $test_dir/busdlist -i $test_dir/basic7_dlist.idx $test_dir/small.fastq.gz"
+checkcmdoutput "$bustools text -p $test_dir/busdlist/output.bus|cut -f3" db2d82c814b606ac9deb38634f7659ae
+cmdexec "$kallisto index --distinguish -t 2 -i $test_dir/basic7_dlist.idx --d-list=$test_dir/polyA.fasta -k 7 $test_dir/simple_distinguish.fasta"
+cmdexec "$kallisto bus -t 1 --num -x bulk -o $test_dir/busdlist -i $test_dir/basic7_dlist.idx $test_dir/small.fastq.gz"
+checkcmdoutput "$bustools text -p $test_dir/busdlist/output.bus|cut -f3" ce82711968bfe6d3b4a13be3e6b8ea00
+
 
 # Try processing demultiplexed bulk RNA-seq with strand-specificity with EM and kallisto quant-tcc (and compare with quant) 
 
