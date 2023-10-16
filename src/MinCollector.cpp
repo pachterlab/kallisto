@@ -61,6 +61,14 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
   if ((u6 & index.onlist_sequences).cardinality() != u6.cardinality()) return -1;
   Roaring u7 = intersectECs(v7);
   if ((u7 & index.onlist_sequences).cardinality() != u7.cardinality()) return -1;
+  if (index.destroy && (u1.contains(index.destroy_color) ||
+      u3.contains(index.destroy_color) || 
+      u4.contains(index.destroy_color) || 
+      u5.contains(index.destroy_color) || 
+      u6.contains(index.destroy_color) || 
+      u7.contains(index.destroy_color))) {
+    return -1;
+  }
 
   // Only take into account ref seqs NOT in the dlist
   u1 &= index.onlist_sequences;
@@ -122,6 +130,11 @@ int MinCollector::intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, in
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
   Roaring u1 = intersectECs(v1);
   Roaring u2 = intersectECs(v2);
+  if (index.destroy && (u1.contains(index.destroy_color) || u2.contains(index.destroy_color))) {
+    r = Roaring();
+    r.add(index.onlist_sequences.cardinality());
+    return -1;
+  }
 
   if (u1.isEmpty() && u2.isEmpty()) {
     return -1;

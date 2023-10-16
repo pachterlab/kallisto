@@ -77,6 +77,8 @@ struct KmerIndex {
     //LoadTranscripts(opt.transfasta);
     load_positional_info = opt.bias || opt.pseudobam || opt.genomebam || !opt.single_overhang;
     dfk_onlist = opt.dfk_onlist;
+    destroy = false;
+    destroy_color = std::numeric_limits<uint32_t>::max()-1; // -1 since we use the actual max() value elsewhere...
   }
 
   ~KmerIndex() {}
@@ -140,6 +142,9 @@ struct KmerIndex {
   u_set_<Kmer, KmerHash> d_list;
   Kmer dummy_dfk;
   const_UnitigMap<Node> um_dummy;
+
+  bool destroy; // If a k-mer is colored with the "destroy color", if that k-mer appears in the pseudoalignment, pseudoalignment will go unaligned
+  uint64_t destroy_color; // The destroy color in the DBG
 };
 
 #endif // KALLISTO_KMERINDEX_H

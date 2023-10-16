@@ -137,6 +137,9 @@ void InspectIndex(const KmerIndex& index, const ProgramOptions& opt) {
 
   cout << "[inspect] max EC size = " << ec_info.first << std::endl;
   cout << "[inspect] number of ECs discarded = " << ec_info.second << std::endl;
+  if (index.destroy) {
+    cout << "[inspect] Destroy certain common sequences: True" << std::endl;
+  }
 
 
   // cout << "#[inspect] Number of k-mers in index = " << index.dbg.nbKmers() << endl;

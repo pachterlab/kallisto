@@ -436,6 +436,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       } else {
         current_color = std::atoi(line.c_str()+1);
       }
+      if (line.length() == 2 && line[1] == '>') current_color = onlist_sequences.cardinality();
       continue;
     }
     const auto& seq = line;
@@ -713,23 +714,24 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         const char * sequence = seq->seq.s;
         bool is_special = (seq->name.l == 0);
+        bool common = (seq->name.l == 1 && seq->name.s[0] == '>'); // D-list common sequences between input and graph
 
         // Forward frame 1
         size_t seqlen1 = seq->seq.l;
         // Translate to comma-free code
         cfc_str_f1 = nn_to_cfc(sequence, seqlen1);
         // Write translated sequence to temporary file
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f1 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f1 << std::endl;
 
         // Forward frame 2
         const char * seq2 = sequence+1;
         cfc_str_f2 = nn_to_cfc(seq2, seqlen1 - 1);
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f2 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f2 << std::endl;
 
         // Forward frame 3
         const char * seq3 = sequence+2;
         cfc_str_f3 = nn_to_cfc(seq3, seqlen1 - 2);
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f3 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f3 << std::endl;
 
         // Get reverse complement of sequence
         // const char * to string
@@ -741,17 +743,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Rev comp frame 1
         cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen1);
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f4 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f4 << std::endl;
 
         // Rev comp frame 2
         const char * seq5 = com_seq_char+1;
         cfc_str_f5 = nn_to_cfc(seq5, seqlen1-1);
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f5 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f5 << std::endl;
 
         // Rev comp frame 3
         const char * seq6 = com_seq_char+2;
         cfc_str_f6 = nn_to_cfc(seq6, seqlen1-2);
-        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f6 << std::endl;
+        of << ">" << (!is_special && !common ? std::to_string(i++) : (is_special ? "" : ">")) << "\n" << cfc_str_f6 << std::endl;
       }
       gzclose(fp);
       fp = 0;
@@ -761,6 +763,9 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     dlist_fasta_files.clear();
     dlist_fasta_files.push_back(tmp_file);
   }
+
+  std::ofstream outfile;
+  outfile.open(tmp_file, std::ios_base::app);
 
   for (auto& fasta : dlist_fasta_files) {
     std::vector<std::string > seqs_v(max_threads_read, "");
@@ -776,8 +781,15 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       }
       std::string sequence = seq->seq.s;
       auto slen = sequence.size();
-      if (slen < max_rlen || max_threads_read <= 1 || seq->name.l == 0) { // Small enough (or "special" sequence); no need to create a new thread
-        bool is_special = (seq->name.l == 0);
+      bool is_special = (seq->name.l == 0); // D-list these k-mers regardless of what they are (whether they're found in graph or not)
+      bool common = (seq->name.l == 1 && seq->name.s[0] == '>'); // D-list common sequences between input and graph
+      if (slen < max_rlen || max_threads_read <= 1 || is_special || common) { // Small enough (or "special" sequence); no need to create a new thread
+        if (common) { // For these, we'll just write to the outfile (we'll color them later directly in the graph)
+          outfile << ">>" << std::endl 
+                  << sequence
+                  << std::endl;
+          continue;
+        }
         auto kmers_local = worker_function(sequence, is_special);
         {
           // Preempting write access for kmer set
@@ -828,8 +840,6 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   size_t start = num_trans;
   size_t unique_flanking_kmers = 0;
   size_t other_dlist_kmers = 0;
-  std::ofstream outfile;
-  outfile.open(tmp_file, std::ios_base::app);
   bool added_dummy_dfk = false;
   u_set_<Kmer, KmerHash> already_in_graph;
   for (const auto& kmer : kmers) {
@@ -931,8 +941,13 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   size_t j = 0;
   size_t n_above_threshold = 0;
   //for (size_t i = 0; i < seqs.size(); ++i) {
+  bool extract_dlist_common = false;
   while (std::getline(infile, line)) {
-    if (line[0] == '>') continue;
+    if (line[0] == '>') {
+      extract_dlist_common = false;
+      if (line.length() == 2 && line[1] == '>') { extract_dlist_common = true; }
+      continue;
+    }
     const auto& seq = line;
     if (seq.size() < k) { j++; continue; }
 
@@ -970,6 +985,10 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
+      if (extract_dlist_common) {
+        destroy = true;
+        tr.trid = destroy_color; // D-list the sequences designated as "common" (i.e. these targets get d-listed directly in the graph)
+      }
 
       trinfos[n->id].push_back(tr);
     }
@@ -1113,6 +1132,9 @@ void KmerIndex::write(std::ofstream& out, int threads) {
   delete[] buffer;
   buffer = nullptr;
 
+  // 8. Write boolean (whether we set destroy to true or not)
+  out.write((char*)&destroy, sizeof(destroy));
+
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
@@ -1214,6 +1236,9 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   delete[] buffer;
   buffer = nullptr;
 
+  // 8. Write destroy boolean
+  out.write((char*)&destroy, sizeof(destroy));
+
   out.flush();
   out.close();
 }
@@ -1278,6 +1303,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   uint64_t dlist_overhang;
   in.read((char*)&dlist_size, sizeof(dlist_size));
   in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
+  if (destroy) dfk_onlist = true;
   d_list.reserve(dlist_size);
   for (size_t i = 0; i < dlist_size; i++) {
     Kmer dfk;     
@@ -1402,6 +1428,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   buffer = new char[tmp_size];
   in.read(buffer, tmp_size);
   onlist_sequences = onlist_sequences.read(buffer);
+  
+  // 8. Read the destroy boolean
+  in.read((char*)&destroy, sizeof(destroy));
 
   // delete the buffer
   delete[] buffer;
