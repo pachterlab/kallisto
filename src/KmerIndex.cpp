@@ -982,7 +982,6 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
       TRInfo tr;
 
       tr.trid = std::min<size_t>(j, onlist_sequences.cardinality());
-      tr.pos = (proc-um.len) | (!um.strand ? sense : missense);
       tr.start = um.dist;
       tr.stop  = um.dist + um.len;
       if (extract_dlist_common) {
@@ -1303,7 +1302,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   uint64_t dlist_overhang;
   in.read((char*)&dlist_size, sizeof(dlist_size));
   in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
-  if (destroy) dfk_onlist = true;
   d_list.reserve(dlist_size);
   for (size_t i = 0; i < dlist_size; i++) {
     Kmer dfk;     
@@ -1431,6 +1429,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   
   // 8. Read the destroy boolean
   in.read((char*)&destroy, sizeof(destroy));
+  if (destroy) dfk_onlist = true;
 
   // delete the buffer
   delete[] buffer;
