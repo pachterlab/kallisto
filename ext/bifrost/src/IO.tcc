@@ -306,7 +306,6 @@ bool CompactedDBG<U, G>::read(const string& input_graph_fn, const string& input_
 
     if (format_index != 4) {
 
-        //cerr << format_index << endl;
         cerr << "CompactedDBG::read(): Input index file " << input_index_fn << " does not exist, is ill-formed or is not a valid index file format." << endl;
 
         return false;
@@ -1221,13 +1220,35 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum,
     // 0 - Write file format version, checksum and number of minimizers
     if (read_success) {
 
-        size_t file_format_version = 0, v_unitigs_sz = 0, km_unitigs_sz = 0, h_kmers_ccov_sz = 0, hmap_min_unitigs_sz = 0;
+        size_t file_format = 0, v_unitigs_sz = 0, km_unitigs_sz = 0, h_kmers_ccov_sz = 0, hmap_min_unitigs_sz = 0;
         uint64_t read_checksum = 0;
 
-        read_success = readBinaryIndexHead(in, file_format_version, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
+        read_success = readBinaryIndexHead(in, file_format, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
 
-        if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
-        if (!read_success || (read_checksum != checksum)) return false;
+        const size_t file_format_header = file_format >> 32;
+        const size_t file_format_version = file_format & 0x00000000ffffffffULL;
+
+        if (!read_success || (file_format_header != BFG_METABIN_FORMAT_HEADER)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Unrecognized Bifrost index file header." << endl;
+
+            return false; // Is not an index file
+        }
+
+        if (!read_success || (file_format_version!= BFG_METABIN_FORMAT_VERSION)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Current Bifrost version (" << BFG_VERSION << ") can only read index files in version v" <<
+            BFG_METABIN_FORMAT_VERSION << " but provided input index file is in version v" << file_format_version << "." << endl;
+
+            return false; // Is not a compatible index file version
+        }
+
+        if (!read_success || (read_checksum != checksum)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Graph checksum does not match, input file(s) might be corrupted" << endl;
+
+            return false;
+        }
 
         if (minz.empty()) {
             hmap_min_unitigs = MinimizerIndex(hmap_min_unitigs_sz);
@@ -1417,13 +1438,36 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
     // 0 - Write file format version, checksum and number of minimizers
     if (read_success) {
 
-        size_t file_format_version = 0, v_unitigs_sz = 0, km_unitigs_sz = 0, h_kmers_ccov_sz = 0, hmap_min_unitigs_sz = 0;
+        size_t file_format = 0, v_unitigs_sz = 0, km_unitigs_sz = 0, h_kmers_ccov_sz = 0, hmap_min_unitigs_sz = 0;
         uint64_t read_checksum = 0;
 
-        read_success = readBinaryIndexHead(in, file_format_version, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
+        read_success = readBinaryIndexHead(in, file_format, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
 
-        if (!read_success || ((file_format_version >> 32) != BFG_METABIN_FORMAT_HEADER)) return false;
-        if (!read_success || (read_checksum != checksum)) return false;
+        const size_t file_format_header = file_format >> 32;
+        
+        const size_t file_format_version = file_format & 0x00000000ffffffffULL;
+
+        if (!read_success || (file_format_header != BFG_METABIN_FORMAT_HEADER)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Unrecognized Bifrost index file header." << endl;
+
+            return false; // Is not an index file
+        }
+
+        if (!read_success || (file_format_version!= BFG_METABIN_FORMAT_VERSION)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Current Bifrost version (" << BFG_VERSION << ") can only read index files in version v" <<
+            BFG_METABIN_FORMAT_VERSION << " but provided input index file is in version v" << file_format_version << "." << endl;
+
+            return false; // Is not a compatible index file version
+        }
+
+        if (!read_success || (read_checksum != checksum)) {
+
+            cerr << "CompactedDBG::readBinaryIndex(): Graph checksum does not match, input file(s) might be corrupted" << endl;
+
+            return false;
+        }
 
         hmap_min_unitigs = MinimizerIndex(2);
         hmap_min_unitigs.register_mphf(mphf);
@@ -1441,7 +1485,44 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
 
         if (read_success && !v_bmp_unitigs.empty() && !v_bmp_unitigs.front().isEmpty()) {
 
-            vector<size_t> unitig_pos_ids;
+            // TODO: FIX THIS - Delaney
+            
+            size_t unitig_id = 0, tot_unitig_len = 0, curr_unitig_len = v_unitigs[0]->getSeq().size() - g_ + 1;
+
+            for (size_t i = 0; i < nb_bmp_unitigs; ++i) {
+
+                const size_t id_bmp = i << 32;
+
+                for (const auto pos_bmp : v_bmp_unitigs[i]) {
+
+                    const size_t pos = id_bmp + pos_bmp;
+
+                    while (pos >= (tot_unitig_len + curr_unitig_len)) {
+
+                        ++unitig_id;
+                        tot_unitig_len += curr_unitig_len;
+
+                        curr_unitig_len = v_unitigs[unitig_id]->getSeq().size() - g_ + 1;
+                    }
+
+                    const size_t relative_pos = pos - tot_unitig_len;
+                    const size_t pos_id_unitig = (unitig_id << 32) | relative_pos;
+
+                    const Minimizer minz_rep = v_unitigs[unitig_id]->getSeq().getMinimizer(relative_pos).rep();
+
+                    std::pair<MinimizerIndex::iterator, bool> p = hmap_min_unitigs.insert(minz_rep, packed_tiny_vector(), 0);
+
+                    packed_tiny_vector& v = p.first.getVector();
+                    uint8_t& flag_v = p.first.getVectorSize();
+
+                    flag_v = v.push_back(pos_id_unitig, flag_v);
+                }
+
+                v_bmp_unitigs[i].clear();
+            }
+
+            
+            /*vector<size_t> unitig_pos_ids;
             const size_t n_elems_buffer = 33554432; // 2^25
             hmap_min_unitigs.init_threads();
 
@@ -1492,7 +1573,7 @@ bool CompactedDBG<U, G>::readBinaryIndex(istream& in, const uint64_t checksum, b
 
             }
 
-            hmap_min_unitigs.release_threads();
+            hmap_min_unitigs.release_threads();*/
         }
     }
 
@@ -1642,10 +1723,10 @@ pair<uint64_t, bool> CompactedDBG<U, G>::readBinaryGraph(istream& in) {
 
     if (read_success) {
 
-        size_t file_format_version = 0;
+        size_t file_format = 0;
         int rk = 0, rg = 0;
 
-        in.read(reinterpret_cast<char*>(&file_format_version), sizeof(size_t));
+        in.read(reinterpret_cast<char*>(&file_format), sizeof(size_t));
         in.read(reinterpret_cast<char*>(&rk), sizeof(int));
         in.read(reinterpret_cast<char*>(&rg), sizeof(int));
 
@@ -1660,7 +1741,24 @@ pair<uint64_t, bool> CompactedDBG<U, G>::readBinaryGraph(istream& in) {
             graph_checksum = wyhash(&g, sizeof(size_t), graph_checksum, _wyp);
         }
 
-        if ((file_format_version >> 32) != BFG_GRAPHBIN_FORMAT_HEADER) return {graph_checksum, false};
+        const size_t file_format_header = file_format >> 32;
+        const size_t file_format_version = file_format & 0x00000000ffffffffULL;
+
+        if (file_format_header != BFG_GRAPHBIN_FORMAT_HEADER) {
+
+            cerr << "CompactedDBG::readBinaryGraph(): Unrecognized Bifrost binary graph file header." << endl;
+
+            return {graph_checksum, false};
+        }
+
+        if (file_format_version != BFG_GRAPHBIN_FORMAT_VERSION) {
+
+            cerr << "CompactedDBG::readBinaryGraph(): Current Bifrost version (" << BFG_VERSION << ") can only read binary graph files in version v" <<
+            BFG_GRAPHBIN_FORMAT_VERSION << " but provided input binary graph file is in version v" << file_format_version << "." << endl;
+
+            return {graph_checksum, false};
+        }
+
         if (read_success) *this = CompactedDBG<U, G>(rk, rg);
         if (invalid) return {graph_checksum, false};
     }
@@ -2243,7 +2341,7 @@ void CompactedDBG<U, G>::makeGraphFromGFA(const string& fn, const size_t nb_thre
 
     GFA_Parser::GFA_line r = graph.read(graph_file_id, new_file_opened, true);
 
-    if (nb_threads == 1){
+    /*if (nb_threads == 1)*/{
 
         while ((r.first != nullptr) || (r.second != nullptr)){
 
@@ -2252,7 +2350,7 @@ void CompactedDBG<U, G>::makeGraphFromGFA(const string& fn, const size_t nb_thre
             r = graph.read(graph_file_id, new_file_opened, true);
         }
     }
-    else {
+    /*else {
 
         const size_t block_sz = 1024;
 
@@ -2311,7 +2409,7 @@ void CompactedDBG<U, G>::makeGraphFromGFA(const string& fn, const size_t nb_thre
         hmap_min_unitigs.release_threads();
 
         moveToAbundant();
-    }
+    }*/
 }
 
 template<typename U, typename G>
@@ -2323,11 +2421,11 @@ void CompactedDBG<U, G>::makeGraphFromFASTA(const string& fn, const size_t nb_th
 
     string seq;
 
-    if (nb_threads == 1){
+    /*if (nb_threads == 1)*/{
 
         while (ff.read_next(seq, graph_file_id) != -1) addUnitig(seq, (seq.length() == k_) ? km_unitigs.size() : v_unitigs.size());
     }
-    else {
+    /*else {
 
         const size_t block_sz = 1024;
 
@@ -2383,7 +2481,7 @@ void CompactedDBG<U, G>::makeGraphFromFASTA(const string& fn, const size_t nb_th
         hmap_min_unitigs.release_threads();
 
         moveToAbundant();
-    }
+    }*/
 }
 
 template<typename U, typename G>
@@ -2398,7 +2496,7 @@ pair<uint64_t, bool> CompactedDBG<U, G>::readGraphFromIndexFASTA(const string& g
 
     bool read_success = readBinaryIndexHead(index_fn, file_format_version, v_unitigs_sz, km_unitigs_sz, h_kmers_ccov_sz, hmap_min_unitigs_sz, read_checksum);
 
-    {
+    if (read_success) {
         graph_checksum = wyhash(&k, sizeof(size_t), 0, _wyp);
         graph_checksum = wyhash(&g, sizeof(size_t), graph_checksum, _wyp);
     }

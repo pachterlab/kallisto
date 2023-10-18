@@ -609,11 +609,15 @@ bool ColoredCDBG<U>::read(const string& input_graph_fn, const string& input_colo
 
         if (verbose) cout << "ColoredCDBG::read(): Reading graph." << endl;
 
-        if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, nb_threads, verbose)) return false; // Read graph
+        invalid = !CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, nb_threads, verbose);
+        
+        if (invalid) return false; // Read graph
 
         if (verbose) cout << "ColoredCDBG::read(): Reading colors." << endl;
-
-        if (!loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose)) return false;
+        
+        invalid = !loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose);
+        
+        if (invalid) return false;
     }
 
     return valid_input_files;
@@ -702,12 +706,16 @@ bool ColoredCDBG<U>::read(const string& input_graph_fn, const string& input_inde
     if (valid_input_files){
 
         if (verbose) cout << "ColoredCDBG::read(): Reading graph." << endl;
-
-        if (!CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, input_index_fn, nb_threads, verbose)) return false; // Read graph
+        
+        invalid = !CompactedDBG<DataAccessor<U>, DataStorage<U>>::read(input_graph_fn, input_index_fn, nb_threads, verbose);
+        
+        if (invalid) return false; // Read graph
 
         if (verbose) cout << "ColoredCDBG::read(): Reading colors." << endl;
+        
+        invalid = !loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose);
 
-        if (!loadColors(input_graph_fn, input_colors_fn, nb_threads, verbose)) return false;
+        if (invalid) return false;
     }
 
     return valid_input_files;
@@ -1380,8 +1388,8 @@ vector<string> ColoredCDBG<U>::getColorNames() const {
 
 template<typename U>
 bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string& out_filename_prefix,
-                            const double ratio_kmers, const bool inexact_search, const size_t nb_threads,
-                            const bool verbose) const {
+                            const double ratio_kmers, const bool get_nb_found_km, const bool get_ratio_found_km,
+                            const bool inexact_search, const size_t nb_threads, const bool verbose) const {
 
     if (invalid){
 
@@ -1398,6 +1406,24 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
     if (nb_threads <= 0){
 
         cerr << "ColoredCDBG::search(): Number of threads cannot be less than or equal to 0." << endl;
+        return false;
+    }
+    
+    if (ratio_kmers <= 0.0){
+
+        cerr << "ColoredCDBG::search(): Ratio of k-mers is less than or equal to 0.0." << endl;
+        return false;
+    }
+
+    if (ratio_kmers > 1.0){
+
+        cerr << "ColoredCDBG::search(): Ratio of k-mers is greater than 1.0." << endl;
+        return false;
+    }
+
+    if (get_nb_found_km && get_ratio_found_km){
+
+        cerr << "ColoredCDBG::search(): Cannot output at once the number of found k-mers and the ratio of found k-mers." << endl;
         return false;
     }
 
@@ -1424,10 +1450,6 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
     size_t file_id = 0;
 
     const size_t k = this->getK();
-
-    //const size_t max_len_seq = 1024;
-    //const size_t thread_seq_buf_sz = 64 * max_len_seq;
-    const size_t max_len_seq = rndup(static_cast<size_t>(1024 + k - 1));
     const size_t thread_seq_buf_sz = BUFFER_SIZE;
 
     FileParser fp(query_filenames);
@@ -1445,7 +1467,7 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
     const size_t l_query_res = 2;
     const size_t nb_colors = getNbColors();
-    const size_t sz_color_query_out = nb_colors * l_query_res + 1;
+    const size_t sz_binary_color_query_out = nb_colors * l_query_res + 1;
 
     auto processCounts = [&](const vector<pair<size_t, const_UnitigColorMap<U>>>& v_um, Roaring* color_occ_r, uint32_t* color_occ_u){
 
@@ -1605,12 +1627,12 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
         }
     };
 
-    auto writeOut = [&](const char* query_name, const size_t l_query_name, const uint32_t* color_occ, char* buffer_res,
-                        size_t& pos_buffer_out, const size_t nb_km_min){
+    auto writeOutBinary = [&](const char* query_name, const size_t l_query_name, const uint32_t* color_occ,
+                        char* buffer_res, size_t& pos_buffer_out, const size_t nb_km_min){
 
         bool is_found = false;
 
-        if ((pos_buffer_out + l_query_name + sz_color_query_out) > thread_seq_buf_sz){
+        if ((pos_buffer_out + l_query_name + sz_binary_color_query_out) > thread_seq_buf_sz){
 
             if (pos_buffer_out > 0) {
 
@@ -1655,6 +1677,134 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
         return is_found;
     };
 
+    auto writeOutBinaryMutex = [&]( const char* query_name, const size_t l_query_name, const uint32_t* color_occ,
+                                    char* buffer_res, size_t& pos_buffer_out, const size_t nb_km_min, mutex& mtx){
+
+        bool is_found = false;
+
+        if ((pos_buffer_out + l_query_name + sz_binary_color_query_out) > thread_seq_buf_sz){
+        
+            unique_lock<mutex> lock(mtx);
+
+            if (pos_buffer_out > 0) {
+
+                out.write(buffer_res, pos_buffer_out); // Write result buffer
+                pos_buffer_out = 0; // Reset position to 0;
+            }
+
+            out.write(query_name, l_query_name * sizeof(char)); // Write title
+
+            for (size_t i = 0; i < nb_colors; ++i) {
+
+                if (color_occ[i] >= nb_km_min) {
+
+                    out.write(query_pres, l_query_res * sizeof(char));
+                    is_found = true;
+                }
+                else out.write(query_abs, l_query_res * sizeof(char));
+            }
+
+            out.write(eol, sizeof(char));
+        }
+        else {
+
+            // Copy new result to buffer
+            std::memcpy(buffer_res + pos_buffer_out, query_name, l_query_name * sizeof(char));
+
+            pos_buffer_out += l_query_name;
+
+            for (size_t i = 0; i < nb_colors; ++i, pos_buffer_out += l_query_res){
+
+                if (color_occ[i] >= nb_km_min) {
+
+                    std::memcpy(buffer_res + pos_buffer_out, query_pres, l_query_res * sizeof(char));
+                    is_found = true;
+                }
+                else std::memcpy(buffer_res + pos_buffer_out, query_abs, l_query_res * sizeof(char));
+            }
+
+            buffer_res[pos_buffer_out++] = eol[0];
+        }
+
+        return is_found;
+    };
+    
+    auto writeOutQuant = [&](   const char* query_name, const size_t l_query_name, const size_t nb_km_query,
+                                const uint32_t* color_occ, char* buffer_res, size_t& pos_buffer_out){
+
+        string color_query_out = "";
+
+        for (size_t i = 0; i < nb_colors; ++i) {
+
+            color_query_out += '\t';
+            color_query_out += to_string(get_ratio_found_km ? color_occ[i] : (static_cast<double>(color_occ[i]) / static_cast<double>(nb_km_query)));
+        }
+
+        const size_t l_color_query_out = color_query_out.length();
+
+        if ((pos_buffer_out + l_query_name + l_color_query_out + 1) > thread_seq_buf_sz){
+
+            if (pos_buffer_out > 0) {
+
+                out.write(buffer_res, pos_buffer_out); // Write result buffer
+                pos_buffer_out = 0; // Reset position to 0;
+            }
+
+            out.write(query_name, l_query_name * sizeof(char)); // Write query name
+            out.write(color_query_out.c_str(), l_color_query_out * sizeof(char)); // Write query name
+            out.write(eol, sizeof(char));
+        }
+        else {
+
+            // Copy new result to buffer
+            std::memcpy(buffer_res + pos_buffer_out, query_name, l_query_name * sizeof(char));
+            std::memcpy(buffer_res + pos_buffer_out + l_query_name, color_query_out.c_str(), l_color_query_out * sizeof(char));
+
+            pos_buffer_out += l_query_name + l_color_query_out;
+
+            buffer_res[pos_buffer_out++] = eol[0];
+        }
+    };
+
+    auto writeOutQuantMutex = [&](  const char* query_name, const size_t l_query_name, const size_t nb_km_query,
+                                    const uint32_t* color_occ, char* buffer_res, size_t& pos_buffer_out, mutex& mtx){
+
+        string color_query_out = "";
+
+        for (size_t i = 0; i < nb_colors; ++i) {
+
+            color_query_out += '\t';
+            color_query_out += to_string(get_ratio_found_km ? color_occ[i] : (static_cast<double>(color_occ[i]) / static_cast<double>(nb_km_query)));
+        }
+
+        const size_t l_color_query_out = color_query_out.length();
+
+        if ((pos_buffer_out + l_query_name + l_color_query_out + 1) > thread_seq_buf_sz){
+
+            unique_lock<mutex> lock(mtx);
+
+            if (pos_buffer_out > 0) {
+
+                out.write(buffer_res, pos_buffer_out); // Write result buffer
+                pos_buffer_out = 0; // Reset position to 0;
+            }
+
+            out.write(query_name, l_query_name * sizeof(char)); // Write query name
+            out.write(color_query_out.c_str(), l_color_query_out * sizeof(char)); // Write query name
+            out.write(eol, sizeof(char));
+        }
+        else {
+
+            // Copy new result to buffer
+            std::memcpy(buffer_res + pos_buffer_out, query_name, l_query_name * sizeof(char));
+            std::memcpy(buffer_res + pos_buffer_out + l_query_name, color_query_out.c_str(), l_color_query_out * sizeof(char));
+
+            pos_buffer_out += l_query_name + l_color_query_out;
+
+            buffer_res[pos_buffer_out++] = eol[0];
+        }
+    };
+
     // Write header to TSV file
     {
         const vector<string> color_names = getColorNames();
@@ -1676,19 +1826,28 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
         size_t pos_buffer_out = 0;
         size_t nb_queries_found = 0;
+        size_t nb_queries_processed = 0;
 
         while (fp.read(s, file_id)){
 
-            const size_t nb_km_min = static_cast<double>(s.length() - k + 1) * ratio_kmers;
+            const size_t nb_km_query = s.length() - k + 1;
 
             const char* query_name = fp.getNameString();
 
             for (auto& c : s) c &= 0xDF;
 
-            searchQuery(s, color_occ_r, color_occ_u, nb_km_min);
+            if (get_nb_found_km || get_ratio_found_km){
 
-            // Output presence/absence for each color in the buffer, return if query is present in at least one color
-            nb_queries_found += static_cast<size_t>(writeOut(query_name, strlen(query_name), color_occ_u, buffer_res, pos_buffer_out, nb_km_min));
+                searchQuery(s, color_occ_r, color_occ_u, nb_km_query);
+                writeOutQuant(query_name, strlen(query_name), nb_km_query, color_occ_u, buffer_res, pos_buffer_out);
+            }
+            else {
+
+                const size_t nb_km_min = max(static_cast<size_t>(1), static_cast<size_t>(round(static_cast<double>(nb_km_query) * ratio_kmers)));
+                searchQuery(s, color_occ_r, color_occ_u, nb_km_min);
+
+                nb_queries_found += static_cast<size_t>(writeOutBinary(query_name, strlen(query_name), color_occ_u, buffer_res, pos_buffer_out, nb_km_min));
+            }
 
             std::memset(color_occ_u, 0, nb_colors * sizeof(uint32_t));
 
@@ -1696,6 +1855,8 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
                 for (size_t j = 0; j < nb_colors; ++j) color_occ_r[j] = Roaring(); // Reset k-mer occurences for each color
             }
+            
+            ++nb_queries_processed;
         }
 
         // Flush unresult written to final output
@@ -1705,7 +1866,12 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
         delete[] color_occ_u;
 
         if (color_occ_r != nullptr) delete[] color_occ_r;
-        if (verbose) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries in at least one color. " << endl;
+        if (verbose) {
+
+            cout << "CompactedDBG::search(): Processed " << nb_queries_processed << " queries. " << endl;
+
+            if (!get_nb_found_km && !get_ratio_found_km) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries in at least one color. " << endl;
+        }
     }
     else {
 
@@ -1714,10 +1880,11 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
         vector<thread> workers; // need to keep track of threads so we can join them
 
         std::atomic<size_t> nb_queries_found;
+        std::atomic<size_t> nb_queries_processed;
 
         mutex mutex_files_in, mutex_file_out;
-
-        nb_queries_found = 0;
+        
+        nb_queries_processed = 0;
 
         for (size_t t = 0; t < nb_threads; ++t){
 
@@ -1765,28 +1932,31 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
                         size_t pos_buffer_out = 0;
                         size_t l_nb_queries_found = 0;
+                        size_t l_nb_queries_processed = 0;
 
                         const size_t buffers_seq_sz = buffers_seq.size();
 
                         for (size_t i = 0; i < buffers_seq_sz; ++i){
 
-                            const size_t nb_km_min = static_cast<double>(buffers_seq[i].length() - k + 1) * ratio_kmers;
-
-                            bool is_found = false;
+                            const size_t nb_km_query = buffers_seq[i].length() - k + 1;
 
                             for (auto& c : buffers_seq[i]) c &= 0xDF;
 
-                            searchQuery(buffers_seq[i], color_occ_r, color_occ_u, nb_km_min);
+                            if (get_nb_found_km){
 
-                            if ((pos_buffer_out + buffers_name[i].length() + nb_colors * l_query_res + 1) > thread_seq_buf_sz){
-
-                                unique_lock<mutex> lock(mutex_file_out);
-
-                                is_found = writeOut(buffers_name[i].c_str(), buffers_name[i].length(), color_occ_u, buffer_res, pos_buffer_out, nb_km_min);
+                                searchQuery(buffers_seq[i], color_occ_r, color_occ_u, nb_km_query);
+                                writeOutQuantMutex(buffers_name[i].c_str(), buffers_name[i].length(), nb_km_query, color_occ_u, buffer_res, pos_buffer_out, mutex_file_out);
                             }
-                            else is_found = writeOut(buffers_name[i].c_str(), buffers_name[i].length(), color_occ_u, buffer_res, pos_buffer_out, nb_km_min);
+                            else {
 
-                            l_nb_queries_found += static_cast<size_t>(is_found);
+                                const size_t nb_km_min = max(static_cast<size_t>(1), static_cast<size_t>(round(static_cast<double>(nb_km_query) * ratio_kmers)));
+
+                                searchQuery(buffers_seq[i], color_occ_r, color_occ_u, nb_km_min);
+
+                                const bool is_found = writeOutBinaryMutex(buffers_name[i].c_str(), buffers_name[i].length(), color_occ_u, buffer_res, pos_buffer_out, nb_km_min, mutex_file_out);
+
+                                l_nb_queries_found += static_cast<size_t>(is_found);
+                            }
 
                             std::memset(color_occ_u, 0, nb_colors * sizeof(uint32_t));
 
@@ -1794,6 +1964,8 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
                                 for (size_t j = 0; j < nb_colors; ++j) color_occ_r[j] = Roaring(); // Reset k-mer occurences for each color
                             }
+
+                            ++l_nb_queries_processed;
                         }
 
                         if (pos_buffer_out > 0){
@@ -1804,6 +1976,7 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
                         }
 
                         nb_queries_found += l_nb_queries_found;
+                        nb_queries_processed += l_nb_queries_processed;
 
                         // Clear buffers for next round
                         buffers_seq.clear();
@@ -1820,7 +1993,12 @@ bool ColoredCDBG<U>::search(const vector<string>& query_filenames, const string&
 
         for (auto& t : workers) t.join();
 
-        if (verbose) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries in at least one color. " << endl;
+        if (verbose) {
+
+            cout << "CompactedDBG::search(): Processed " << nb_queries_processed << " queries. " << endl;
+
+            if (!get_nb_found_km && !get_ratio_found_km) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries in at least one color. " << endl;
+        }
     }
 
     outfile.close();

@@ -96,7 +96,6 @@ class RepHash {
             if (hashes[1] < hashes[0]) swap(hashes[0], hashes[1]);
 
             return wyhash(hashes, sizeof(uint64_t) + sizeof(uint64_t), 0, _wyp);
-            //return (h ^ ht);
         }
 
         inline void setK(const size_t _k) {
@@ -207,7 +206,6 @@ class RepHash {
             if (hashes[1] < hashes[0]) swap(hashes[0], hashes[1]);
 
             return wyhash(hashes, sizeof(uint64_t) + sizeof(uint64_t), 0, _wyp);
-            //return (h.lo ^ ht.lo);
         }
 
         void init(const char *_s) {

@@ -1,15 +1,23 @@
 #ifndef BIFROST_MINIMIZER_IDX_HPP
 #define BIFROST_MINIMIZER_IDX_HPP
 
-#include <utility>
-#include <string>
-#include <iterator>
 #include <algorithm>
+#include <atomic>
+#include <iterator>
+#include <mutex>
+#include <thread>
+#include <string>
+#include <utility>
+
+#include "fastmod.h"
 
 #include "Kmer.hpp"
 #include "Lock.hpp"
 #include "TinyVector.hpp"
 #include "BooPHF.h"
+
+#define BIFROST_MI_MAX_OCCUPANCY 0.95
+#define BIFROST_MI_INIT_SZ 1024
 
 typedef boomphf::mphf<Minimizer, MinimizerHash> boophf_t;
 
@@ -26,12 +34,24 @@ class MinimizerIndex {
             typedef typename std::conditional<is_const, const uint8_t&, uint8_t&>::type MI_tinyv_sz_ref_t;
             typedef typename std::conditional<is_const, const uint8_t*, uint8_t*>::type MI_tinyv_sz_ptr_t;
 
-            iterator_() : ht(nullptr), h(0xffffffffffffffffULL) {}
-            iterator_(MI_ptr_t ht_) : ht(ht_), h(ht_->size_) {}
-            iterator_(MI_ptr_t ht_, size_t h_) :  ht(ht_), h(h_) {}
-            iterator_(const iterator_<false>& o) : ht(o.ht), h(o.h) {}
-            iterator_& operator=(const iterator_& o) { ht=o.ht; h=o.h; return *this; }
+            iterator_() : ht(nullptr), h(0xffffffffffffffffULL), psl(0xffffffffffffffffULL) {}
+            iterator_(MI_ptr_t ht_) : ht(ht_), h(0xffffffffffffffffULL), psl(0xffffffffffffffffULL) {}
+            iterator_(MI_ptr_t ht_, size_t h_) :  ht(ht_), h(h_), psl(0xffffffffffffffffULL) {}
+            iterator_(MI_ptr_t ht_, size_t h_, size_t psl_) :  ht(ht_), h(h_), psl(psl_) {}
+            iterator_(const iterator_<false>& o) : ht(o.ht), h(o.h), psl(o.psl) {}
 
+            iterator_& operator=(const iterator_& o) {
+  
+              if (this != &o) {
+                
+                ht=o.ht;
+                h=o.h;
+                psl=o.psl;
+              }
+              
+              return *this;
+            }
+  
             BFG_INLINE Minimizer getKey() const {
 
                 return ht->table_keys[h];
@@ -40,6 +60,11 @@ class MinimizerIndex {
             BFG_INLINE size_t getHash() const {
 
                 return h;
+            }
+            
+            BFG_INLINE size_t getPSL() const {
+              
+              return psl;
             }
 
             BFG_INLINE MI_tinyv_sz_ref_t getVectorSize() const {
@@ -71,14 +96,12 @@ class MinimizerIndex {
 
             iterator_& operator++() {
 
-                if (h == ht->size_) return *this;
+                h += static_cast<size_t>(h < ht->size_);
 
-                ++h;
+                while ((h < ht->size_) && ht->table_keys[h].isEmpty()) ++h;
 
-                for (; h < ht->size_; ++h) {
-
-                    if (!ht->table_keys[h].isEmpty() && !ht->table_keys[h].isDeleted()) break;
-                }
+                h |= static_cast<size_t>(h < ht->size_) - 1;
+                psl = 0xffffffffffffffffULL;
 
                 return *this;
             }
@@ -92,6 +115,21 @@ class MinimizerIndex {
 
                 return (ht != o.ht) || (h != o.h);
             }
+            
+            void get_to_first() {
+              
+              h = 0xffffffffffffffffULL;
+              psl = 0xffffffffffffffffULL;
+              
+              if ((ht != nullptr) && (ht->size_ != 0)) {
+                
+                h = 0;
+                
+                while ((h < ht->size_) && ht->table_keys[h].isEmpty()) ++h;
+                
+                h |= static_cast<size_t>(h < ht->size_) - 1;
+              }
+            }
 
             friend class iterator_<true>;
 
@@ -99,6 +137,7 @@ class MinimizerIndex {
 
             MI_ptr_t ht;
             size_t h;
+            size_t psl;
     };
 
     public:
@@ -109,7 +148,7 @@ class MinimizerIndex {
         typedef iterator_<false> iterator;
 
         MinimizerIndex();
-        MinimizerIndex(const size_t sz);
+        MinimizerIndex(const size_t sz, const double max_ratio_occupancy = BIFROST_MI_MAX_OCCUPANCY);
 
         MinimizerIndex(const MinimizerIndex& o);
         MinimizerIndex(MinimizerIndex&& o);
@@ -122,6 +161,11 @@ class MinimizerIndex {
         BFG_INLINE size_t size() const {
 
             return pop;
+        }
+        
+        BFG_INLINE size_t capacity() const {
+          
+          return size_;
         }
 
         BFG_INLINE bool empty() const {
@@ -147,26 +191,16 @@ class MinimizerIndex {
         iterator find(const size_t h);
         const_iterator find(const size_t h) const;
 
-        iterator erase(const_iterator it);
-        size_t erase(const Minimizer& minz);
-
+        size_t erase(const_iterator it);
+        
+        BFG_INLINE size_t erase(const Minimizer& minz) {
+          
+          const const_iterator it = find(minz);
+          
+          return erase(it);
+        }
+        
         pair<iterator, bool> insert(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
-
-        void init_threads();
-        void release_threads();
-
-        iterator find_p(const Minimizer& key);
-        const_iterator find_p(const Minimizer& key) const;
-
-        iterator find_p(const size_t h);
-        const_iterator find_p(const size_t h) const;
-
-        void release_p(const_iterator it) const;
-        void release_p(iterator it);
-
-        size_t erase_p(const Minimizer& minz);
-
-        pair<iterator, bool> insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
 
         pair<iterator, bool> add_unitig_p(const Minimizer& key, const size_t pos_id_unitig); // only if static
 
@@ -175,6 +209,18 @@ class MinimizerIndex {
 
         iterator end();
         const_iterator end() const;
+        
+        void recomputeMaxPSL(const size_t nb_threads = 1);
+
+        BFG_INLINE size_t get_mean_psl() const {
+
+          return sum_psl / (pop + 1); // Slightly biased computation but avoids to check for (psl == 0). Fine since we just need an approximate result.
+        }
+        
+        BFG_INLINE size_t get_max_psl() const {
+
+          return max_psl;
+        }
 
         bool is_static;
 
@@ -183,24 +229,19 @@ class MinimizerIndex {
         void clear_tables();
         void init_tables(const size_t sz);
         void reserve(const size_t sz);
+        void swap(const size_t i, const size_t j);
 
-        size_t size_, pop, num_empty;
+        double max_ratio_occupancy;
+
+        __uint128_t M_u64;
+
+        size_t size_, pop, max_psl, sum_psl;
 
         Minimizer* table_keys;
         packed_tiny_vector* table_tinyv;
         uint8_t* table_tinyv_sz;
 
         boophf_t* mphf;
-
-        mutable vector<SpinLock> lck_min;
-        mutable SpinLockRW lck_edit_table;
-
-        atomic<size_t> pop_p, num_empty_p;
-
-        // For future myself: lck_block_sz must be a poswer of 2. If you change it, change lck_block_div_shift accordingly.
-        // For future myself, this could automated in a much better looking implementation. 
-        static const size_t lck_block_sz;
-        static const size_t lck_block_div_shift;
 };
 
 /*class CompactedMinimizerIndex {
