@@ -287,9 +287,9 @@ int KmerCovIndex<T>::covAt(const size_t idx) const {
 }
 
 template<typename T>
-void KmerCovIndex<T>::cover(const size_t idx) {
+bool KmerCovIndex<T>::cover(const size_t idx) {
 
-    if (idx < sz){
+    if (idx < sz) {
 
         const int cov = covAt(idx);
 
@@ -303,8 +303,14 @@ void KmerCovIndex<T>::cover(const size_t idx) {
 
             block->bc_cov.add(idx_mod * cov_full + cov);
             block->bc_cov.runOptimize();
+
+            return ((cov+1) == cov_full);
         }
+
+        return true;
     }
+
+    return false;
 }
 
 template<typename T>

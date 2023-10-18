@@ -43,7 +43,8 @@ CompressedCoverage::CompressedCoverage(const CompressedCoverage& o) {
 CompressedCoverage::CompressedCoverage(CompressedCoverage&& o){
 
     asBits = o.asBits;
-    o.asBits = o.isFull() ? fullMask : tagMask;
+    //o.asBits = o.isFull() ? fullMask : tagMask;
+    o.asBits = tagMask;
 }
 
 CompressedCoverage& CompressedCoverage::operator=(const CompressedCoverage& o){
@@ -72,7 +73,8 @@ CompressedCoverage& CompressedCoverage::operator=(CompressedCoverage&& o){
         releasePointer();
 
         asBits = o.asBits;
-        o.asBits = o.isFull() ? fullMask : tagMask;
+        //o.asBits = o.isFull() ? fullMask : tagMask;
+        o.asBits = tagMask;
     }
 
     return *this;
@@ -217,13 +219,11 @@ string CompressedCoverage::toString() const {
 // pre:  0 <= start , end < cc.size()
 // post: the coverage of kmers: start,...,end (or reverse)
 //       has been increased by one
-void CompressedCoverage::cover(size_t start, size_t end) {
+bool CompressedCoverage::cover(size_t start, size_t end) {
 
     if (end < start) std::swap(start, end);
 
-    assert(end < size());
-
-    if (isFull()) return;
+    if (isFull()) return true;
     else if ((asBits & tagMask) == tagMask) { // local array
 
         uintptr_t s = 0x3;
@@ -242,7 +242,12 @@ void CompressedCoverage::cover(size_t start, size_t end) {
             asBits = (asBits & ~s) | val_tmp;
         }
 
-        if (isFull()) asBits = fullMask | (size() << 32);
+        if (isFull()) {
+
+            asBits = fullMask | (size() << 32);
+
+            return true;
+        }
     }
     else {
 
@@ -268,8 +273,16 @@ void CompressedCoverage::cover(size_t start, size_t end) {
 
         // Decrease filledcounter
         if (filled > 0) *(get32Pointer() + 1) -= filled;
-        if (isFull()) releasePointer();
+
+        if (isFull()) {
+
+            releasePointer();
+
+            return true;
+        }
     }
+
+    return false;
 }
 
 void CompressedCoverage::uncover(size_t start, size_t end) {

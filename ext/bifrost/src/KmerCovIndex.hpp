@@ -59,7 +59,7 @@ class KmerCovIndex {
         void setFull(const size_t idx);
         int covAt(const size_t idx) const;
 
-        void cover(const size_t idx);
+        bool cover(const size_t idx);
         void uncover(const size_t idx);
 
         Kmer getKmer(const size_t idx) const;
@@ -78,16 +78,22 @@ class KmerCovIndex {
             if (idx < sz) v_blocks[idx >> shift_div]->lck.release();
         }
 
-        BFG_INLINE void cover_thread_safe(const size_t idx) {
+        BFG_INLINE bool cover_thread_safe(const size_t idx) {
 
             if (idx < sz){
 
+                bool isFull = false;
+
                 v_blocks[idx >> shift_div]->lck.acquire();
 
-                cover(idx);
+                isFull = cover(idx);
 
                 v_blocks[idx >> shift_div]->lck.release();
+
+                return isFull;
             }
+
+            return false;
         }
 
         BFG_INLINE void uncover_thread_safe(const size_t idx) {
