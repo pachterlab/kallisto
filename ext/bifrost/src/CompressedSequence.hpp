@@ -37,7 +37,6 @@ class CompressedSequence {
 
         Kmer getKmer(size_t offset) const;
         Minimizer getMinimizer(size_t offset) const;
-        char getChar(const size_t offset) const;
 
         //bool compareKmer(const size_t offset, const Kmer& km) const;
         bool compareKmer(const size_t offset, const size_t length, const Kmer& km) const;
@@ -92,12 +91,17 @@ class CompressedSequence {
 
         BFG_INLINE void reserveLength(const size_t new_length) {
 
-            if (round_to_bytes(new_length) > capacity()) _resize_and_copy(round_to_bytes(new_length), size());
+           _resize_and_copy(round_to_bytes(new_length), size());
         }
 
-        BFG_INLINE char operator[](const size_t idx) const {
+        BFG_INLINE char operator[](const size_t offset) const {
 
-            return bases[(getPointer()[idx >> 2] >> ((idx & 0x3) << 1)) & 0x03];
+            return alpha[(getPointer()[offset >> 2] >> ((offset & 0x3) << 1)) & 0x03];
+        }
+
+        BFG_INLINE char getChar(const size_t offset) const {
+
+            return alpha[(getPointer()[offset >> 2] >> ((offset & 0x3) << 1)) & 0x03];
         }
 
         BFG_INLINE bool isShort() const {
@@ -110,6 +114,9 @@ class CompressedSequence {
             if (isShort()) return (asBits._size >> 1);
 
             return (asPointer._length >> 1);
+
+            //const bool is_short = isShort();
+            //return ((static_cast<size_t>(asBits._size) & (static_cast<size_t>(!is_short)-1)) + (static_cast<size_t>(asPointer._length) & (static_cast<size_t>(is_short)-1))) >> 1;
         }
 
         BFG_INLINE uint64_t hash(const uint64_t seed = 0) const {
@@ -121,13 +128,6 @@ class CompressedSequence {
 
         void _resize_and_copy(const size_t new_cap, const size_t copy_limit);
 
-        BFG_INLINE size_t capacity() const {
-
-            if (isShort()) return 31; // 31 bytes
-
-            return asPointer._capacity;
-        }
-
         BFG_INLINE size_t round_to_bytes(const size_t len) const {
 
             return (len+3)/4;
@@ -137,13 +137,13 @@ class CompressedSequence {
 
             asBits._size = 1; // short and size 0
 
-            memset(&asBits._arr[0], 0, 31); // clear other bits
+            memset(asBits._arr, 0, 15); // clear other bits
         }
 
         BFG_INLINE void setSize(const size_t size) {
 
-            if (isShort()) asBits._size = ((0x7F & size) << 1) | 0x01; // set short flag
-            else asPointer._length = (0x7FFFFFFF & size) << 1;
+            if (isShort()) asBits._size = ((0x7f & size) << 1) | 0x01; // set short flag
+            else asPointer._length = (0x7fffffffffffffff & size) << 1;
         }
 
         BFG_INLINE const unsigned char* getPointer() const {
@@ -153,22 +153,22 @@ class CompressedSequence {
             return asPointer._data;
         }
 
-        static const char bases[256];
-        static const uint8_t bits[256];
         static const uint8_t revBits[256];
 
         union {
 
             struct {
-                uint32_t _length; // size of sequence
-                uint32_t _capacity; // capacity of array allocated in bytes
+
+                uint64_t _length; // size of sequence
                 unsigned char *_data; // 0-based 2bit compressed dna string
-                unsigned char padding[16];
+
             } asPointer;
 
             struct {
+
                 uint8_t _size; // 7 bits can index up to 128
-                unsigned char _arr[31]; // can store 124 nucleotides
+                unsigned char _arr[15]; // can store 124 nucleotides
+
             } asBits;
         };
 };
