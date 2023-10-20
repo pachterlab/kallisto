@@ -176,6 +176,41 @@ int hamming(const char *a, const char *b) {
   return h;
 }
 
+int my_mkdir_kmer_index(const char *path, mode_t mode) {
+#ifdef _WIN64
+  return mkdir(path);
+#else
+  return mkdir(path,mode);
+#endif
+}
+
+std::string generate_tmp_file(std::string seed, std::string tmp_dir) {
+  struct stat stFileInfo;
+  auto intStat = stat(tmp_dir.c_str(), &stFileInfo);
+  if (intStat == 0) {
+    // file/dir exits
+    if (!S_ISDIR(stFileInfo.st_mode)) {
+      cerr << "Error: file " << tmp_dir << " exists and is not a directory" << endl;
+      exit(1);
+    }
+  } else {
+    // create directory
+    if (my_mkdir_kmer_index(tmp_dir.c_str(), 0777) == -1) {
+      cerr << "Error: could not create directory " << tmp_dir << endl;
+      exit(1);
+    }
+  }
+  std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  std::string tmp_file = "kallisto.";
+  srand((unsigned int)std::hash<std::string>{}(seed));
+  int pos;
+  while(tmp_file.length() < 32) {
+    pos = ((rand() % (base.size() - 1)));
+    tmp_file += base.substr(pos, 1);
+  }
+  return tmp_dir + "/" + tmp_file;
+}
+
 std::string generate_tmp_file(std::string seed) {
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
   std::string tmp_file = ".kallisto.";
@@ -220,7 +255,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
   // Generate random file name
-  std::string tmp_file = generate_tmp_file(opt.index);
+  std::string tmp_file = generate_tmp_file(opt.index, opt.tmp_dir);
   std::ofstream of(tmp_file);
   num_trans = 0;
 
@@ -366,7 +401,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   k = opt.k;
   std::cerr << "[build] k-mer length: " << k << std::endl;
   size_t ncolors = 0;
-  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
+  std::string tmp_file2 = generate_tmp_file("--" + opt.index, opt.tmp_dir);
   // Use an external input FASTA file (we'll still need to read it to determine number of targets though and we'll still write out a new FASTA file (TODO: optimize this out)
   std::cerr << "[build] Reading in FASTA file" << std::endl;
   std::ofstream of(tmp_file2); // Write external FASTA file into another (possibly temporary) file
@@ -700,7 +735,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   std::string cfc_str_f5;
   std::string cfc_str_f6;
   if (opt.aa) {
-    std::string tmp_file = generate_tmp_file("aa" + opt.index);
+    std::string tmp_file = generate_tmp_file("aa" + opt.index, opt.tmp_dir);
     std::ofstream of(tmp_file);
     size_t i = 0;
     for (auto& fasta : dlist_fasta_files) {
@@ -829,7 +864,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   // Some clean ups:
   if (opt.aa) { // Get rid of the temp file for translated aa
     struct stat stFileInfo;
-    std::string aa_tmp_file = generate_tmp_file("aa" + opt.index);
+    std::string aa_tmp_file = generate_tmp_file("aa" + opt.index, opt.tmp_dir);
     auto intStat = stat(aa_tmp_file.c_str(), &stFileInfo);
     if (intStat == 0) {
       std::remove(aa_tmp_file.c_str());
