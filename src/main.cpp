@@ -51,7 +51,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int aa_flag = 0;
   int distinguish_flag = 0;
   int skip_index_flag = 0;
-  const char *opt_string = "i:k:m:e:t:d:";
+  const char *opt_string = "i:k:m:e:t:d:T:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -65,6 +65,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"min-size", required_argument, 0, 'm'},
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
+    {"tmp", required_argument, 0, 'T'},
     {"d-list", required_argument, 0, 'd'},
     {"d-list-overhang", required_argument, 0, 'D'}, // Do we have to have a one-letter flag as well?
     {0,0,0,0}
@@ -106,6 +107,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     }
     case 't': {
       stringstream(optarg) >> opt.threads;
+      break;
+    }
+    case 'T': {
+      stringstream(optarg) >> opt.tmp_dir;
       break;
     }
     case 'd': {
@@ -1975,6 +1980,7 @@ void usageIndex() {
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index where sequences are distinguished by the sequence name" << endl
        << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
+       << "-T, --tmp=STRING            Temporary directory (default: tmp)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)" << endl
        << endl;
@@ -2133,6 +2139,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // create an index
+        opt.tmp_dir = (opt.tmp_dir.empty() ? "tmp" : opt.tmp_dir);
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
 
@@ -2141,7 +2148,7 @@ int main(int argc, char *argv[]) {
         if (opt.distinguish) index.BuildDistinguishingGraph(opt, out);
         else index.BuildTranscripts(opt, out);
         index.write(out, opt.threads);
-
+        rmdir(opt.tmp_dir.c_str()); // Remove temp directory if non-empty
       }
       cerr << endl;
     } else if (cmd == "inspect") {
