@@ -1912,7 +1912,11 @@ void PrintCite() {
 }
 
 void PrintVersion() {
-  cout << "kallisto, version " << KALLISTO_VERSION << endl;
+  cout << "kallisto, version " << KALLISTO_VERSION;
+#if KALLISTO_CPP_VERSION < 201703L
+std::cout << "."; // Just an internal use hidden "marker" so we know what C++ version kallisto was compiled in
+#endif
+  cout << endl;
 }
 
 void usage() {
