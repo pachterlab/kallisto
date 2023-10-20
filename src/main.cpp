@@ -1979,7 +1979,6 @@ void usageIndex() {
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index where sequences are distinguished by the sequence name" << endl
-       << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
        << "-T, --tmp=STRING            Temporary directory (default: tmp)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)" << endl
