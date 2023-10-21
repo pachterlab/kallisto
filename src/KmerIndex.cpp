@@ -176,16 +176,39 @@ int hamming(const char *a, const char *b) {
   return h;
 }
 
-std::string generate_tmp_file(std::string seed) {
+int my_mkdir_kmer_index(const char *path, mode_t mode) {
+#ifdef _WIN64
+  return mkdir(path);
+#else
+  return mkdir(path,mode);
+#endif
+}
+
+std::string generate_tmp_file(std::string seed, std::string tmp_dir) {
+  struct stat stFileInfo;
+  auto intStat = stat(tmp_dir.c_str(), &stFileInfo);
+  if (intStat == 0) {
+    // file/dir exits
+    if (!S_ISDIR(stFileInfo.st_mode)) {
+      cerr << "Error: file " << tmp_dir << " exists and is not a directory" << endl;
+      exit(1);
+    }
+  } else {
+    // create directory
+    if (my_mkdir_kmer_index(tmp_dir.c_str(), 0777) == -1) {
+      cerr << "Error: could not create directory " << tmp_dir << endl;
+      exit(1);
+    }
+  }
   std::string base = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  std::string tmp_file = ".kallisto.";
+  std::string tmp_file = "kallisto.";
   srand((unsigned int)std::hash<std::string>{}(seed));
   int pos;
   while(tmp_file.length() < 32) {
     pos = ((rand() % (base.size() - 1)));
     tmp_file += base.substr(pos, 1);
   }
-  return tmp_file;
+  return tmp_dir + "/" + tmp_file;
 }
 
 std::pair<size_t,size_t> KmerIndex::getECInfo() const {
@@ -220,7 +243,7 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
   std::cerr << "[build] k-mer length: " << k << std::endl;
 
   // Generate random file name
-  std::string tmp_file = generate_tmp_file(opt.index);
+  std::string tmp_file = generate_tmp_file(opt.index, opt.tmp_dir);
   std::ofstream of(tmp_file);
   num_trans = 0;
 
@@ -366,7 +389,7 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   k = opt.k;
   std::cerr << "[build] k-mer length: " << k << std::endl;
   size_t ncolors = 0;
-  std::string tmp_file2 = generate_tmp_file("--" + opt.index);
+  std::string tmp_file2 = generate_tmp_file("--" + opt.index, opt.tmp_dir);
   // Use an external input FASTA file (we'll still need to read it to determine number of targets though and we'll still write out a new FASTA file (TODO: optimize this out)
   std::cerr << "[build] Reading in FASTA file" << std::endl;
   std::ofstream of(tmp_file2); // Write external FASTA file into another (possibly temporary) file
@@ -374,7 +397,8 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   kseq_t *seq;
   int l = 0;
   size_t num_seqs = 0;
-  u_set_<std::string> external_input_names;
+  int max_color = 0;
+  u_set_<int> external_input_names;
   for (int i = 0; i < opt.transfasta.size(); i++) { // Currently, this should only be one file
     auto fasta = opt.transfasta[i];
     fp = opt.transfasta.size() == 1 && opt.transfasta[0] == "-" ? gzdopen(fileno(stdin), "r") : gzopen(fasta.c_str(), "r");
@@ -389,8 +413,10 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
       if (strname.length() == 0) {
         continue;
       }
-      external_input_names.insert(strname);
-      of << ">" << strname << "\n" << str << std::endl;
+      int color = std::atoi(strname.c_str());
+      external_input_names.insert(color);
+      if (color > max_color) max_color = color;
+      of << ">" << std::to_string(color) << "\n" << str << std::endl;
       num_seqs++;
     }
     gzclose(fp);
@@ -399,7 +425,9 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
   of.close();
   ncolors = external_input_names.size();
   std::cerr << "[build] Read in " << num_seqs << " sequences" << std::endl;
-  std::cerr << "[build] Detected " << ncolors << " colors" << std::endl;
+  std::cerr << "[build] Detected " << ncolors << " used colors" << std::endl;
+  ncolors = max_color+1; // +1 because color id is zero-indexed
+  std::cerr << "[build] Detected " << ncolors << " total colors" << std::endl;
 
   // Prepare some variables:
   num_trans = ncolors;
@@ -426,7 +454,11 @@ void KmerIndex::BuildDistinguishingGraph(const ProgramOptions& opt, std::ofstrea
     if (line.length() == 0) {
       continue;
     } else if (line[0] == '>') {
-      current_color = std::atoi(line.c_str()+1);
+      if (line.size() >= 1 && strncmp(line.c_str()+1, "d_list.", 7) == 0) {
+        current_color = onlist_sequences.cardinality();
+      } else {
+        current_color = std::atoi(line.c_str()+1);
+      }
       continue;
     }
     const auto& seq = line;
@@ -493,7 +525,8 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   // sequences to the graph and append those sequences to the tmp_file
   onlist_sequences = Roaring();
   onlist_sequences.addRange(0, num_trans);
-  DListFlankingKmers(opt, tmp_file);
+  u_set_<Kmer, KmerHash> dfks;
+  DListFlankingKmers(opt, tmp_file, dfks);
 
   // 1. write version
   out.write((char *)&INDEX_VERSION, sizeof(INDEX_VERSION));
@@ -532,6 +565,27 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   out.seekp(pos1);
 
   dbg.clear();
+  
+  uint64_t dfks_size = dfks.size();
+  uint64_t dlist_overhang = opt.d_list_overhang;
+  out.write((char*)&dfks_size, sizeof(dfks_size));
+  out.write((char*)&dlist_overhang, sizeof(dlist_overhang));
+  if (dfks.size() > 0) {
+    bool found_dummy_dfk = false;
+    out.write((char*)&dummy_dfk, sizeof(dummy_dfk)); // The first DFK is the dummy
+    for (auto dfk : dfks) {
+      if (dfk != dummy_dfk) {
+        out.write((char*)&dfk, sizeof(dfk));
+      } else {
+        found_dummy_dfk = true;
+      }
+    }
+    if (!found_dummy_dfk) {
+      // Should never happen
+      std::cerr << "Assertion failed: Dummy DFK Not Found" << std::endl;
+      exit(1);
+    }
+  }
 
   std::ifstream infile;
   infile.open(opt.index, std::ios::in | std::ios::binary);
@@ -552,15 +606,15 @@ void KmerIndex::BuildDeBruijnGraph(const ProgramOptions& opt, const std::string&
   }
 }
 
-void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file) {
+void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file, u_set_<Kmer, KmerHash>& kmers) {
 
   if (opt.d_list.empty()) return;
+  
+  auto kmers_special = kmers; // copy; kmers_special will be the ones we store as-is (i.e. not flanking); these are the entries where the FASTA name header is not populated
 
-  std::cerr << "[build] extracting distinguishing flanking k-mers from";
+  std::cerr << "[build] extracting D-list k-mers from";
   for (std::string s : opt.d_list) std::cerr << " \"" << s << "\""; 
   std::cerr << std::endl;
-
-  u_set_<Kmer, KmerHash> kmers;
   
   auto isInvalidKmer = [](const char* s, const int k) {
       int count_nonATCG = 0;
@@ -576,13 +630,21 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
   unsigned long overhang = opt.d_list_overhang;
   // Main worker thread
-  auto worker_function = [&, overhang](std::string& seq) {
+  auto worker_function = [&, overhang](std::string& seq, bool is_special) {
 
     int lb = -1, ub = -1;
     int pos = 0;
-
+    
     std::transform(seq.begin(), seq.end(),seq.begin(), ::toupper);
     u_set_<Kmer, KmerHash> kmers_;
+    if (is_special) { // Sequence has no name; it is "special"
+      int seqlen = seq.size() - k + 1; // number of k-mers
+      while (pos < seqlen) {
+        if (!isInvalidKmer(seq.c_str()+pos, k)) kmers_.emplace(seq.c_str()+pos);
+        ++pos;
+      }
+      return kmers_; // Return the special k-mers
+    }
     const_UnitigMap<Node> um;
     int seqlen = seq.size() - k + 1; // number of k-mers
     while (pos < seqlen) {
@@ -660,7 +722,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
   std::string cfc_str_f5;
   std::string cfc_str_f6;
   if (opt.aa) {
-    std::string tmp_file = generate_tmp_file("aa" + opt.index);
+    std::string tmp_file = generate_tmp_file("aa" + opt.index, opt.tmp_dir);
     std::ofstream of(tmp_file);
     size_t i = 0;
     for (auto& fasta : dlist_fasta_files) {
@@ -673,23 +735,24 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
         }
 
         const char * sequence = seq->seq.s;
+        bool is_special = (seq->name.l == 0);
 
         // Forward frame 1
         size_t seqlen1 = seq->seq.l;
         // Translate to comma-free code
         cfc_str_f1 = nn_to_cfc(sequence, seqlen1);
         // Write translated sequence to temporary file
-        of << ">" << i++ << "\n" << cfc_str_f1 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f1 << std::endl;
 
         // Forward frame 2
         const char * seq2 = sequence+1;
         cfc_str_f2 = nn_to_cfc(seq2, seqlen1 - 1);
-        of << ">" << i++ << "\n" << cfc_str_f2 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f2 << std::endl;
 
         // Forward frame 3
         const char * seq3 = sequence+2;
         cfc_str_f3 = nn_to_cfc(seq3, seqlen1 - 2);
-        of << ">" << i++ << "\n" << cfc_str_f3 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f3 << std::endl;
 
         // Get reverse complement of sequence
         // const char * to string
@@ -701,17 +764,17 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Rev comp frame 1
         cfc_str_f4 = nn_to_cfc(com_seq_char, seqlen1);
-        of << ">" << i++ << "\n" << cfc_str_f4 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f4 << std::endl;
 
         // Rev comp frame 2
         const char * seq5 = com_seq_char+1;
         cfc_str_f5 = nn_to_cfc(seq5, seqlen1-1);
-        of << ">" << i++ << "\n" << cfc_str_f5 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f5 << std::endl;
 
         // Rev comp frame 3
         const char * seq6 = com_seq_char+2;
         cfc_str_f6 = nn_to_cfc(seq6, seqlen1-2);
-        of << ">" << i++ << "\n" << cfc_str_f6 << std::endl;
+        of << ">" << (!is_special ? std::to_string(i++) : "") << "\n" << cfc_str_f6 << std::endl;
       }
       gzclose(fp);
       fp = 0;
@@ -736,13 +799,16 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       }
       std::string sequence = seq->seq.s;
       auto slen = sequence.size();
-      if (slen < max_rlen || max_threads_read <= 1) { // Small enough; no need to create a new thread
-        auto kmers_local = worker_function(sequence);
+      if (slen < max_rlen || max_threads_read <= 1 || seq->name.l == 0) { // Small enough (or "special" sequence); no need to create a new thread
+        bool is_special = (seq->name.l == 0);
+        auto kmers_local = worker_function(sequence, is_special);
         {
           // Preempting write access for kmer set
           std::unique_lock<std::mutex> lock(mutex_kmers);
+          bool is_special = (seq->name.l == 0);
           for (auto& kmer : kmers_local) {
-            kmers.insert(kmer);
+            if (!is_special) kmers.insert(kmer.rep());
+            else kmers_special.insert(kmer.rep());
           }
         }
         continue;
@@ -750,12 +816,12 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
       seqs_v[n % seqs_v.size()] = std::move(sequence);
       workers.emplace_back(
         [&, n] {
-          auto kmers_local = worker_function(seqs_v[n % seqs_v.size()]);
+          auto kmers_local = worker_function(seqs_v[n % seqs_v.size()], false);
           {
             // Preempting write access for kmer set
             std::unique_lock<std::mutex> lock(mutex_kmers);
             for (auto& kmer : kmers_local) {
-              kmers.insert(kmer);
+              kmers.insert(kmer.rep());
             }
           }
         }
@@ -770,12 +836,25 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     gzclose(fp);
     fp = 0;
   }
+  
+  // Some clean ups:
+  if (opt.aa) { // Get rid of the temp file for translated aa
+    struct stat stFileInfo;
+    std::string aa_tmp_file = generate_tmp_file("aa" + opt.index, opt.tmp_dir);
+    auto intStat = stat(aa_tmp_file.c_str(), &stFileInfo);
+    if (intStat == 0) {
+      std::remove(aa_tmp_file.c_str());
+    }
+  }
 
   size_t N = 0;
   size_t start = num_trans;
   size_t unique_flanking_kmers = 0;
+  size_t other_dlist_kmers = 0;
   std::ofstream outfile;
   outfile.open(tmp_file, std::ios_base::app);
+  bool added_dummy_dfk = false;
+  u_set_<Kmer, KmerHash> already_in_graph;
   for (const auto& kmer : kmers) {
     // Check whether flanking k-mer exists elsewhere in the graph
     // (may occur in the case of longer overhangs)
@@ -785,14 +864,23 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     //}
 
     // Insert all other flanking kmers into graph
-    dbg.add(kmer.toString());
+    const_UnitigMap<Node> um_ = dbg.find(kmer.rep());
+    if (!um_.isEmpty) { already_in_graph.insert(kmer.rep()); continue; }
+    if (!added_dummy_dfk) {
+      // const_UnitigMap<Node> um_ = dbg.find(kmer);
+      if (um_.isEmpty) {
+        dbg.add(kmer.rep().toString());
+        dummy_dfk = kmer.rep();
+        added_dummy_dfk = true;
+      }
+    }
 
     // Insert all other flanking kmers into tmp_file and transcript-related member variables
     std::string tx_name = "d_list." + std::to_string(N++);
 
     ++num_trans;
-    target_names_.push_back(tx_name);
-    target_lens_.push_back(k);
+    //target_names_.push_back(tx_name);
+    //target_lens_.push_back(k);
 
     outfile << ">"
             << tx_name
@@ -803,7 +891,40 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
     ++unique_flanking_kmers;
 
   }
+  for (const auto& kmer : kmers_special) { // Add these directly (not checking for flanking)
+    if (kmers.find(kmer.rep()) != kmers.end()) continue; // Already found; just continue
+    if (!added_dummy_dfk) {
+      const_UnitigMap<Node> um_ = dbg.find(kmer.rep());
+      if (um_.isEmpty) {
+        dbg.add(kmer.rep().toString());
+        dummy_dfk = kmer.rep();
+        added_dummy_dfk = true;
+      } else {
+        dummy_dfk = kmer.rep(); // for special k-mers, it's ok to make a k-mer already in the graph the dummy
+        added_dummy_dfk = true;
+      }
+    }
+    kmers.insert(kmer.rep()); // Add to the master k-mer set
+    already_in_graph.erase(kmer.rep()); // Erase from here if necessary (because these special D-listed k-mers are stringent filters)
+    std::string tx_name = "d_list." + std::to_string(N++);
+    ++num_trans;
+    //target_names_.push_back(tx_name);
+    //target_lens_.push_back(k);
+    outfile << ">"
+            << tx_name
+            << std::endl
+            << kmer.toString()
+            << std::endl;
+    ++other_dlist_kmers;
+  }
+  for (const auto& kmer : already_in_graph) {
+    if (kmer != dummy_dfk) kmers.erase(kmer);
+  }
+  if (!added_dummy_dfk) kmers.clear();
   std::cerr << "[build] identified " << unique_flanking_kmers << " distinguishing flanking k-mers" << std::endl;
+  if (other_dlist_kmers > 0) {
+    std::cerr << "[build] identified " << other_dlist_kmers << " other D-list k-mers" << std::endl;
+  }
 
   outfile.close();
 }
@@ -1018,6 +1139,11 @@ void KmerIndex::write(std::ofstream& out, int threads) {
 }
 
 void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int threads) {
+  
+  if (writeKmerTable) {
+    std::cerr << "KmerIndex::write() must have writeKmerTable set to false" << std::endl;
+    exit(1);
+  }
 
   std::ofstream out;
   out.open(index_out, std::ios::out | std::ios::binary);
@@ -1059,6 +1185,11 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
     tmp_size = 0;
     out.write((char *)&tmp_size, sizeof(tmp_size));
   }
+  // Don't write out a D-list:
+  uint64_t dlist_size = 0;
+  uint64_t dlist_overhang = 1;
+  out.write((char*)&dlist_size, sizeof(dlist_size));
+  out.write((char*)&dlist_overhang, sizeof(dlist_overhang));
 
   // 3. serialize nodes
   if (writeKmerTable) {
@@ -1164,6 +1295,26 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
     k = dbg.getK();
   }
   std::cerr << "[index] k-mer length: " << std::to_string(k) << std::endl;
+  
+  // 2.2 deserialize distinguishing flanking k-mers for D-list
+  uint64_t dlist_size;
+  uint64_t dlist_overhang;
+  in.read((char*)&dlist_size, sizeof(dlist_size));
+  in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
+  d_list.reserve(dlist_size);
+  for (size_t i = 0; i < dlist_size; i++) {
+    Kmer dfk;     
+    in.read((char*)&dfk, sizeof(dfk));
+    d_list.insert(dfk);   
+    if (i == 0) {    
+      dummy_dfk = dfk;
+      um_dummy = dbg.find(dummy_dfk);
+      if (um_dummy.isEmpty) {
+        std::cerr << "Error: Dummy k-mer not found in graph" << std::endl;
+        exit(1);
+      }                            
+    }                                          
+  }
 
   // 3. deserialize nodes
   Kmer kmer;
@@ -1232,6 +1383,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
 
   // 4. read number of targets
   in.read((char *)&num_trans, sizeof(num_trans));
+  num_trans -= dlist_size;
 
   // 5. read out target lengths
   target_lens_.clear();
@@ -1277,11 +1429,13 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   // delete the buffer
   delete[] buffer;
   buffer=nullptr;
+  
+  num_trans += dlist_size;
 
   std::cerr << "[index] number of targets: " << pretty_num(static_cast<size_t>(onlist_sequences.cardinality())) << std::endl;
   std::cerr << "[index] number of k-mers: " << pretty_num(dbg.nbKmers()) << std::endl;
   if (num_trans-onlist_sequences.cardinality() > 0) {
-    std::cerr << "[index] number of distinguishing flanking k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
+    std::cerr << "[index] number of D-list k-mers: " << pretty_num(static_cast<size_t>(num_trans-onlist_sequences.cardinality())) << std::endl;
   }
 
   in.close();
@@ -1292,7 +1446,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   
   if (!loadDlist) { // Destroy the D-list
     if (num_trans != onlist_sequences.cardinality()) {
-      std::cerr << "[index] not using the distinguishing flanking k-mers" << std::endl;
+      std::cerr << "[index] not using the D-list k-mers" << std::endl;
       num_trans = onlist_sequences.cardinality();
       target_names_.resize(num_trans);
       target_lens_.resize(num_trans);
@@ -1550,12 +1704,15 @@ void KmerIndex::match(const char *s, int l, std::vector<std::pair<const_UnitigMa
           }
           if (found2) {
             // great, a match (or nothing) see if we can move the k-mer forward
+            bool is_in_dlist = um2.isEmpty && d_list.size() > 0 && (d_list.find((kit2->first).rep()) != d_list.end()); // D-list (check after first jump)
             if (found2pos >= l-k) {
               v.push_back({um, l-k}); // push back a fake position
+              if (partial && is_in_dlist) { v.push_back({um_dummy, kit2->second}); return; } // D-list
               break; //
             } else {
               v.push_back({um, found2pos});
               kit = kit2; // move iterator to this new position
+              if (partial && is_in_dlist) { v.push_back({um_dummy, kit2->second}); return; } // D-list
             }
           } else {
             // this is weird, let's try the middle k-mer
@@ -1653,6 +1810,19 @@ donejumping:
           backOff = false;
           break; // break out of backoff for loop
         }
+      }
+    }
+  }
+  
+  // D-list:
+  KmerIterator kit_dlist(s);
+  if (d_list.size() > 0 && (v.size() > 0 || !partial)) {
+    for (int i = 0;  kit_dlist != kit_end; ++i,++kit_dlist) {
+      // need to check it
+      bool is_in_dlist = (d_list.find((kit_dlist->first).rep()) != d_list.end());
+      if (is_in_dlist) {
+        v.push_back({um_dummy, kit_dlist->second});
+        break;
       }
     }
   }

@@ -147,6 +147,7 @@ struct ProgramOptions {
   std::string transcriptsFile;
   std::string genemap;
   std::string priors;
+  std::string tmp_dir;
 
 ProgramOptions() :
   verbose(false),
