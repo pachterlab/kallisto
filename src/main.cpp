@@ -614,6 +614,27 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     ListSingleCellTechnologies();
     exit(1);
   }
+  
+  if (opt.technology.find('%') != std::string::npos) { // Process technology strings of format -x bc:umi:cdna%strand%parity
+    std::string first = opt.technology.substr(opt.technology.find("%") + 1);
+    if (first.length() >= 7 && first.substr(0,7) == "FORWARD") {
+      opt.strand_specific = true;
+      opt.strand = ProgramOptions::StrandType::FR;
+    } else if (first.length() >= 7 && first.substr(0,7) == "REVERSE") {
+      opt.strand_specific = true;
+      opt.strand = ProgramOptions::StrandType::RF;
+    }
+    if (first.find('%') != std::string::npos) {
+      std::string second = first.substr(first.find("%") + 1); 
+      if (second.length() >= 6 && second.substr(0,6) == "PAIRED") {
+        opt.single_end = false;
+        paired_end_flag = true;
+      } else {
+        opt.single_end = true;
+      }
+    }
+    opt.technology = opt.technology.substr(0, opt.technology.find("%"));
+  }
 
   if (verbose_flag) {
     opt.verbose = true;
