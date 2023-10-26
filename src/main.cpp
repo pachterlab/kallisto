@@ -496,7 +496,9 @@ void ListSingleCellTechnologies() {
   << "SCRBSeq          SCRB-Seq" << endl
   << "SmartSeq3        Smart-seq3" << endl
   << "SPLiT-seq        SPLiT-seq" << endl
+  << "STORM-seq        STORM-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
+  << "VASA-seq         VASA-seq" << endl
   << "Visium           10x Visium Spatial Transcriptomics" << endl
   << endl;
  }
@@ -1239,6 +1241,14 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,10,18));
       busopt.bc.push_back(BUSOptionSubstr(1,48,56));
       busopt.bc.push_back(BUSOptionSubstr(1,78,86));
+    } else if (opt.technology == "STORM-seq"){
+      busopt.nfiles = 2;
+      busopt.bc.push_back(BUSOptionSubstr(-1,-1,-1));
+      busopt.umi.push_back(BUSOptionSubstr(1,0,8));
+      busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+      busopt.seq.push_back(BUSOptionSubstr(1,14,0));
+      busopt.paired = true;
+      strand = ProgramOptions::StrandType::RF;
     } else if (opt.technology == "SCRBSEQ") {
       busopt.nfiles = 2;
       busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -1273,6 +1283,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
       busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
       busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "VASA-SEQ") {
+      busopt.nfiles = 1;
+      busopt.bc.push_back(BUSOptionSubstr(0,6,14));
+      busopt.umi.push_back(BUSOptionSubstr(0,0,6));
+      busopt.seq.push_back(BUSOptionSubstr(0,14,0));
       strand = ProgramOptions::StrandType::FR;
     } else {
       vector<int> files;
