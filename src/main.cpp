@@ -1241,6 +1241,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,10,18));
       busopt.bc.push_back(BUSOptionSubstr(1,48,56));
       busopt.bc.push_back(BUSOptionSubstr(1,78,86));
+      strand = ProgramOptions::StrandType::FR;
     } else if (opt.technology == "STORM-seq"){
       busopt.nfiles = 2;
       busopt.bc.push_back(BUSOptionSubstr(-1,-1,-1));
