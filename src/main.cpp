@@ -1193,7 +1193,6 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,10,18));
       busopt.bc.push_back(BUSOptionSubstr(1,48,56));
       busopt.bc.push_back(BUSOptionSubstr(1,78,86));
-      strand = ProgramOptions::StrandType::FR;
     } else if (opt.technology == "SCRBSEQ") {
       busopt.nfiles = 2;
       busopt.seq.push_back(BUSOptionSubstr(1,0,0));
