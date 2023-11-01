@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdint.h>
 #include <string>
+#include <limits>
 #include <cmath>
 #include <fstream>
 #include <assert.h>

@@ -1,6 +1,8 @@
 #ifndef BIFROST_COMPACTED_DBG_HPP
 #define BIFROST_COMPACTED_DBG_HPP
 
+#include <stddef.h>
+#include <limits>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
