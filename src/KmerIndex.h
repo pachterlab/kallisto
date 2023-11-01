@@ -94,7 +94,7 @@ struct KmerIndex {
 
   // If off-list is supplied, add off-listed kmers flanking the common
   // sequences to the graph and append those sequences to the tmp_file
-  void DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file);
+  void DListFlankingKmers(const ProgramOptions& opt, const std::string& tmp_file, u_set_<Kmer, KmerHash>& kmers);
   void BuildEquivalenceClasses(const ProgramOptions& opt, const std::string& tmp_file);
   // Colors the unitigs based on transcript usage. Unitigs may be polychrome,
   // i.e. have more than one color.
@@ -123,7 +123,7 @@ struct KmerIndex {
 
   CompactedDBG<Node> dbg;
   EcMapInv ecmapinv;
-  const size_t INDEX_VERSION = 12; // increase this every time you change the file format
+  const size_t INDEX_VERSION = 13; // increase this every time you change the file format
 
   std::vector<uint32_t> target_lens_;
 
@@ -136,6 +136,10 @@ struct KmerIndex {
   // Sequences not in off-list: 1
   // Sequences in off-list:     0
   Roaring onlist_sequences;
+
+  u_set_<Kmer, KmerHash> d_list;
+  Kmer dummy_dfk;
+  const_UnitigMap<Node> um_dummy;
 };
 
 #endif // KALLISTO_KMERINDEX_H

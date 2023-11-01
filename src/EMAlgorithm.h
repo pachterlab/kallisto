@@ -49,6 +49,49 @@ struct EMAlgorithm {
 
   ~EMAlgorithm() {}
 
+  static std::vector<double> read_priors(std::string path) {
+
+    std::cerr << "[   em] reading priors from file " << path << std::endl;
+    std::ifstream pfile(path);
+    std::string line;
+    std::vector<double> priors;
+    double p, sum = .0;
+
+    while (std::getline(pfile, line)) {
+
+      p = std::stod(line);
+      priors.push_back(p);
+      sum += p;
+    }
+
+    // If sum is greater than sum + eps, we got raw counts instead of priors,
+    // so we need to normalize them.
+    // We add a pseudocount to all raw counts, because if we set a zero prior,
+    // there is no returning from that
+    if (sum >= 1. + 1e-3) {
+
+      sum += priors.size();
+      for (size_t i = 0; i < priors.size(); ++i) {
+        
+        priors[i] = (priors[i] + 1.) / sum;
+      }
+    }
+
+    return std::move(priors);
+  }
+
+  void set_priors(std::vector<double>& priors) {
+
+    if (alpha_.size() == priors.size()) {
+
+      alpha_.assign(priors.begin(), priors.end());
+    } else {
+
+      std::cerr << "[   em] number of priors does not match number of transcripts." << std::endl;
+      std::cerr << "        defaulting to uniform priors." << std::endl;
+    }
+  }
+
   void run(size_t n_iter = 10000, size_t min_rounds=50, bool verbose = true, bool recomputeEffLen = true) {
     std::vector<double> next_alpha(alpha_.size(), 0.0);
 

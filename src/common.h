@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.50.0"
+#define KALLISTO_VERSION "0.50.1"
 
 // NOTE: MAKE SURE THIS FILE GETS INCLUDED FIRST IN ALL OTHER FILES AND BEFORE ANY EXTERNAL LIBRARIES
 
@@ -115,6 +115,7 @@ struct ProgramOptions {
   std::vector<std::string> batch_ids;
   std::vector<std::string> files;
   std::vector<std::string> d_list;
+  int d_list_overhang;
   bool plaintext;
   bool write_index;
   bool single_end;
@@ -145,6 +146,8 @@ struct ProgramOptions {
   std::string fldFile;
   std::string transcriptsFile;
   std::string genemap;
+  std::string priors;
+  std::string tmp_dir;
 
 ProgramOptions() :
   verbose(false),
@@ -183,7 +186,8 @@ ProgramOptions() :
   inspect_thorough(false),
   single_overhang(false),
   aa(false),
-  distinguish(false)
+  distinguish(false),
+  d_list_overhang(1)
   {}
 };
 

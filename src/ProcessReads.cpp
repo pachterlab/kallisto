@@ -215,13 +215,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
 
-
-
-  /*
-  for (int i = 0; i < 4096; i++) {
-    std::cout << i << " " << tc.bias5[i] << " " << tc.bias3[i] << "\n";
-    }*/
-
   // write output to outdir
   if (opt.write_index) {
     std::string outfile = opt.output + "/counts.txt";
@@ -656,23 +649,6 @@ void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
     }
   }
 
-  // debug and show breakpoints
-  /*
-  std::cout << "bplimit = " << bpLimit << ", sum = " << sum << std::endl;
-  std::cout << "breakpoints (" << breakpoints.size() << ") = {" << std::endl;
-  for (auto &x : breakpoints) {
-    int32_t tid = (int32_t) (x >> 32);
-    int32_t pos = (int32_t) ((x >> 1) & (0xFFFF)) - 1;
-    std::string chr = "*";
-    if (tid != -1) {
-      chr = model.chr[tid].name;
-    }
-    std::cout << "  " << chr << " (" << model.chr[tid].len << ") : " << pos << std::endl;
-  }
-
-  std::cout << "}" << std::endl;
-  */
-
   assert(opt.pseudobam);
   pseudobatchf_in.open(opt.output + "/pseudoaln.bin", std::ios::in | std::ios::binary);
   SR->reset();
@@ -987,7 +963,6 @@ void ReadProcessor::processBuffer() {
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
-      //std::cout << s1 << std::endl;
     }
 
     /* --  possibly modify the pseudoalignment  -- */
@@ -1470,8 +1445,8 @@ void BUSProcessor::processBuffer() {
     numreads++;
     v.clear();
     u = Roaring();
-    
-    bool match_partial = !busopt.paired && !index.dfk_onlist;
+
+    bool match_partial = !busopt.paired && !index.dfk_onlist && !busopt.aa;
 
     index.match(seq, seqlen, v, match_partial, busopt.aa);
 
@@ -1493,14 +1468,12 @@ void BUSProcessor::processBuffer() {
 
       // align remaining forward frames using the match function
       const char * seq3 = seq+1;
-      size_t seqlen3 = strlen(seq3);
       v3.clear();
-      index.match(seq3, seqlen3, v3, match_partial, busopt.aa);
+      index.match(seq3, seqlen-1, v3, match_partial, busopt.aa);
 
       const char * seq4 = seq+2;
-      size_t seqlen4 = strlen(seq4);
       v4.clear();
-      index.match(seq4, seqlen4, v4, match_partial, busopt.aa);
+      index.match(seq4, seqlen-2, v4, match_partial, busopt.aa);
 
       // get reverse complement of seq
       // const char * to string
@@ -1511,19 +1484,16 @@ void BUSProcessor::processBuffer() {
       const char * com_seq_char = com_seq.c_str();
 
       // align reverse complement frames using the match function
-      size_t seqlen5 = strlen(com_seq_char);
       v5.clear();
-      index.match(com_seq_char, seqlen5, v5, match_partial, busopt.aa);
+      index.match(com_seq_char, seqlen, v5, match_partial, busopt.aa);
 
       const char * seq6 = com_seq_char+1;
-      size_t seqlen6 = strlen(seq6);
       v6.clear();
-      index.match(seq6, seqlen6, v6, match_partial, busopt.aa);
+      index.match(seq6, seqlen-1, v6, match_partial, busopt.aa);
 
       const char * seq7 = com_seq_char+2;
-      size_t seqlen7 = strlen(seq7);
       v7.clear();
-      index.match(seq7, seqlen7, v7, match_partial, busopt.aa);
+      index.match(seq7, seqlen-2, v7, match_partial, busopt.aa);
 
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
@@ -1561,7 +1531,6 @@ void BUSProcessor::processBuffer() {
       b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
       b.flags |= (f) << 8;
       b.count = 1;
-      //std::cout << std::string(s1,10)  << "\t" << b.barcode << "\t" << std::string(s1+10,16) << "\t" << b.UMI << "\n";
       if (num) {
         b.flags = (uint32_t) flags[i / jmax];
       }

@@ -51,7 +51,7 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   int aa_flag = 0;
   int distinguish_flag = 0;
   int skip_index_flag = 0;
-  const char *opt_string = "i:k:m:e:t:d:";
+  const char *opt_string = "i:k:m:e:t:d:T:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -65,7 +65,9 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
     {"min-size", required_argument, 0, 'm'},
     {"ec-max-size", required_argument, 0, 'e'},
     {"threads", required_argument, 0, 't'},
+    {"tmp", required_argument, 0, 'T'},
     {"d-list", required_argument, 0, 'd'},
+    {"d-list-overhang", required_argument, 0, 'D'}, // Do we have to have a one-letter flag as well?
     {0,0,0,0}
   };
   int c;
@@ -107,6 +109,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       stringstream(optarg) >> opt.threads;
       break;
     }
+    case 'T': {
+      stringstream(optarg) >> opt.tmp_dir;
+      break;
+    }
     case 'd': {
       std::string d_list;
       stringstream(optarg) >> d_list;
@@ -115,6 +121,10 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
       while (std::getline(ss, filename, ',')) { 
         opt.d_list.push_back(filename);
       }
+      break;
+    }
+    case 'D': {
+      stringstream(optarg) >> opt.d_list_overhang;
       break;
     }
     default: break;
@@ -129,6 +139,11 @@ void ParseOptionsIndex(int argc, char **argv, ProgramOptions& opt) {
   }
   if (aa_flag) {
     opt.aa = true;
+    if (!opt.d_list.empty() && opt.d_list_overhang < 3) {
+        // cerr << "[index] WARNING --d-list-overhang set to < 3; should be >= 3 with --aa" << endl;
+        cerr << "[index] --d-list-overhang was set to 3 (with --aa, the d-list overhang must be >= 3)" << endl;
+        opt.d_list_overhang = 3;
+    }
   }
   if (distinguish_flag) {
     opt.distinguish = true;
@@ -206,7 +221,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:";
+  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:p:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -232,6 +247,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"gtf", required_argument, 0, 'g'},
     {"chromosomes", required_argument, 0, 'c'},
+    {"priors", required_argument, 0, 'p'},
     {0,0,0,0}
   };
   int c;
@@ -287,6 +303,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'd': {
       stringstream(optarg) >> opt.seed;
+      break;
+    }
+    case 'p': {
+      opt.priors = optarg;
       break;
     }
 
@@ -348,7 +368,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:";
+  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:p:";
   int matrix_to_files = 0;
   int matrix_to_directories = 0;
   int plaintext_flag = 0;
@@ -368,7 +388,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"gtf", required_argument, 0, 'G'},
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"seed", required_argument, 0, 'd'},
-    
+    {"priors", required_argument, 0, 'p'}, 
     {0,0,0,0}
   };
   int c;
@@ -431,6 +451,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
       opt.transcriptsFile = optarg;
       break;
     }
+    case 'p': {
+      opt.priors = optarg;
+      break;
+    }
     default: break;
     }
   }
@@ -472,7 +496,9 @@ void ListSingleCellTechnologies() {
   << "SCRBSeq          SCRB-Seq" << endl
   << "SmartSeq3        Smart-seq3" << endl
   << "SPLiT-seq        SPLiT-seq" << endl
+  << "STORM-seq        STORM-seq" << endl
   << "SureCell         SureCell for ddSEQ" << endl
+  << "VASA-seq         VASA-seq" << endl
   << "Visium           10x Visium Spatial Transcriptomics" << endl
   << endl;
  }
@@ -590,6 +616,27 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     ListSingleCellTechnologies();
     exit(1);
   }
+  
+  if (opt.technology.find('%') != std::string::npos) { // Process technology strings of format -x bc:umi:cdna%strand%parity
+    std::string first = opt.technology.substr(opt.technology.find("%") + 1);
+    if (first.length() >= 7 && first.substr(0,7) == "FORWARD") {
+      opt.strand_specific = true;
+      opt.strand = ProgramOptions::StrandType::FR;
+    } else if (first.length() >= 7 && first.substr(0,7) == "REVERSE") {
+      opt.strand_specific = true;
+      opt.strand = ProgramOptions::StrandType::RF;
+    }
+    if (first.find('%') != std::string::npos) {
+      std::string second = first.substr(first.find("%") + 1); 
+      if (second.length() >= 6 && second.substr(0,6) == "PAIRED") {
+        opt.single_end = false;
+        paired_end_flag = true;
+      } else {
+        opt.single_end = true;
+      }
+    }
+    opt.technology = opt.technology.substr(0, opt.technology.find("%"));
+  }
 
   if (verbose_flag) {
     opt.verbose = true;
@@ -638,7 +685,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   // throw warning when --aa is passed with paired-end arg 
   // paired-end currently not supported in --aa mode -> will automatically switch to single-end
   if (aa_flag) {
-    opt.aa =true;
+    opt.aa = true;
+    opt.dfk_onlist = true;
     opt.single_end = true;
     if (paired_end_flag) {
       cerr << "[bus] --paired ignored; --aa only supports single-end reads" << endl;
@@ -1193,6 +1241,15 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(1,10,18));
       busopt.bc.push_back(BUSOptionSubstr(1,48,56));
       busopt.bc.push_back(BUSOptionSubstr(1,78,86));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "STORM-seq"){
+      busopt.nfiles = 2;
+      busopt.bc.push_back(BUSOptionSubstr(-1,-1,-1));
+      busopt.umi.push_back(BUSOptionSubstr(1,0,8));
+      busopt.seq.push_back(BUSOptionSubstr(0,0,0));
+      busopt.seq.push_back(BUSOptionSubstr(1,14,0));
+      busopt.paired = true;
+      strand = ProgramOptions::StrandType::RF;
     } else if (opt.technology == "SCRBSEQ") {
       busopt.nfiles = 2;
       busopt.seq.push_back(BUSOptionSubstr(1,0,0));
@@ -1227,6 +1284,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       busopt.bc.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13, 9 + 12 + 9 + 13 + 9));          // bc3 CLS3
       busopt.umi.push_back(BUSOptionSubstr(0, 9 + 12 + 9 + 13 + 9, 9 + 12 + 9 + 13 + 9 + 8)); // umi
       busopt.seq.push_back(BUSOptionSubstr(1, 0, 0));
+      strand = ProgramOptions::StrandType::FR;
+    } else if (opt.technology == "VASA-SEQ") {
+      busopt.nfiles = 1;
+      busopt.bc.push_back(BUSOptionSubstr(0,6,14));
+      busopt.umi.push_back(BUSOptionSubstr(0,0,6));
+      busopt.seq.push_back(BUSOptionSubstr(0,14,0));
       strand = ProgramOptions::StrandType::FR;
     } else {
       vector<int> files;
@@ -1892,7 +1955,11 @@ void PrintCite() {
 }
 
 void PrintVersion() {
-  cout << "kallisto, version " << KALLISTO_VERSION << endl;
+  cout << "kallisto, version " << KALLISTO_VERSION;
+#if KALLISTO_CPP_VERSION < 201703L
+std::cout << "."; // Just an internal use hidden "marker" so we know what C++ version kallisto was compiled in
+#endif
+  cout << endl;
 }
 
 void usage() {
@@ -1950,7 +2017,7 @@ void usageIndex() {
        << "    --make-unique           Replace repeated target names with unique names" << endl
        << "    --aa                    Generate index from a FASTA-file containing amino acid sequences" << endl
        << "    --distinguish           Generate index where sequences are distinguished by the sequence name" << endl
-       << "-t, --threads=INT           Number of threads to use (default: 1)" << endl
+       << "-T, --tmp=STRING            Temporary directory (default: tmp)" << endl
        << "-m, --min-size=INT          Length of minimizers (default: automatically chosen)" << endl
        << "-e, --ec-max-size=INT       Maximum number of targets in an equivalence class (default: no maximum)" << endl
        << endl;
@@ -1997,6 +2064,10 @@ void usageEM(bool valid_input = true) {
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (default: -l, -s values are estimated from paired" << endl
        << "                               end data, but are required when using --single)" << endl
+       << "-p, --priors                  Priors for the EM algorithm, either as raw counts or as" << endl
+       << "                              probabilities. Pseudocounts are added to raw reads to"  << endl
+       << "                              prevent zero valued priors. Supplied in the same order" << endl
+       << "                              as the transcripts in the transcriptome" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
 
@@ -2038,6 +2109,10 @@ void usageTCCQuant(bool valid_input = true) {
        << "                              (note: -l, -s values only should be supplied when" << endl
        << "                               effective length normalization needs to be performed" << endl
        << "                               but --fragment-file is not specified)" << endl
+       << "-p, --priors                  Priors for the EM algorithm, either as raw counts or as" << endl
+       << "                              probabilities. Pseudocounts are added to raw reads to"  << endl
+       << "                              prevent zero valued priors. Supplied in the same order" << endl
+       << "                              as the transcripts in the transcriptome" << endl
        << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
        << "-g, --genemap                 File for mapping transcripts to genes" << endl
        << "                              (required for obtaining gene-level abundances)" << endl
@@ -2101,6 +2176,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       } else {
         // create an index
+        opt.tmp_dir = (opt.tmp_dir.empty() ? "tmp" : opt.tmp_dir);
         Kmer::set_k(opt.k);
         KmerIndex index(opt);
 
@@ -2109,7 +2185,7 @@ int main(int argc, char *argv[]) {
         if (opt.distinguish) index.BuildDistinguishingGraph(opt, out);
         else index.BuildTranscripts(opt, out);
         index.write(out, opt.threads);
-
+        rmdir(opt.tmp_dir.c_str()); // Remove temp directory if non-empty
       }
       cerr << endl;
     } else if (cmd == "inspect") {
@@ -2155,7 +2231,7 @@ int main(int argc, char *argv[]) {
       
       KmerIndex index(opt);
       index.load(opt);
-      
+
       bool guessChromosomes = true;
       Transcriptome model; // empty
       if (opt.genomebam) {
@@ -2370,10 +2446,6 @@ int main(int argc, char *argv[]) {
           collection.init_mean_fl_trunc( mean_fl, sd_fl );
           //fld.resize(MAX_FRAG_LEN,0); // no obersvations
           fld = trunc_gaussian_counts(0, MAX_FRAG_LEN, mean_fl, sd_fl, 10000);
-
-          // for (size_t i = 0; i < collection.mean_fl_trunc.size(); ++i) {
-          //   cout << "--- " << i << '\t' << collection.mean_fl_trunc[i] << endl;
-          // }
         }
 
         std::vector<int32_t> preBias(4096,1);
@@ -2383,11 +2455,12 @@ int main(int argc, char *argv[]) {
 
         auto fl_means = get_frag_len_means(index.target_lens_, collection.mean_fl_trunc);
 
-        //for (int i = 0; i < collection.bias3.size(); i++) {
-          //std::cout << i << "\t" << collection.bias3[i] << "\t" << collection.bias5[i] << "\n";
-        //}
-
         EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+        if (opt.priors != "") {
+          std::vector<double> priors = EMAlgorithm::read_priors(opt.priors);
+          em.set_priors(priors);
+          priors.clear();
+        }
         em.run(10000, 50, true, opt.bias);
 
         std::string call = argv_to_string(argc, argv);
@@ -2610,11 +2683,13 @@ int main(int argc, char *argv[]) {
         std::vector<std::vector<uint32_t>> FLDs;
         Transcriptome model; // empty model
 
-        std::ofstream transout_f((opt.output + "/transcripts.txt"));
-        for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
-          transout_f << index.target_names_[i] << "\n";
+        if (index.onlist_sequences.cardinality() > 0) {
+          std::ofstream transout_f((opt.output + "/transcripts.txt"));
+          for (size_t i = 0; i < index.onlist_sequences.cardinality(); i++) {
+            transout_f << index.target_names_[i] << "\n";
+          }
+          transout_f.close();
         }
-        transout_f.close();
         std::string prefix = opt.output + "/matrix";
         std::string abtsvfilename = opt.output + "/abundance.tsv";
         std::string abtsvprefix = opt.output + "/abundance";
@@ -2679,6 +2754,11 @@ int main(int argc, char *argv[]) {
         const bool gene_level_counting = !opt.genemap.empty() || !opt.gtfFile.empty();
 
         std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
+
+        std::vector<double> priors;
+        if (opt.priors != "") {
+          priors = EMAlgorithm::read_priors(opt.priors);
+        }
         auto EM_lambda = [&](int id) {
           std::cerr << "[quant] Processing sample/cell " << std::to_string(id) << std::endl;
           MinCollector collection(index, opt);
@@ -2710,6 +2790,7 @@ int main(int argc, char *argv[]) {
           }
 
           EMAlgorithm em(collection.counts, index, collection, fl_means, opt);
+          em.set_priors(priors);
           em.run(10000, 50, false, false);
 
           if (isMatrixFile) { // Update abundances matrix
@@ -2870,6 +2951,9 @@ int main(int argc, char *argv[]) {
             cerr << endl;
           }
         }; // end of EM_lambda
+
+        priors.clear();
+
 
         std::vector<std::thread> workers;
         int num_ids = nrow;

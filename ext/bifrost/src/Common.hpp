@@ -44,7 +44,7 @@ static const char alpha[4] = {'A','C','G','T'};
 
 BFG_INLINE bool isDNA(const char c) {
 
-    static const size_t DNAbits[4] = {0x0ULL, 0x10008A0010008AULL, 0x0ULL, 0x0ULL};
+    static const size_t DNAbits[4] = {0x0ULL, static_cast<size_t>(0x10008A0010008AULL), 0x0ULL, 0x0ULL};
 
     return static_cast<bool>((DNAbits[c >> 6] >> (c & 0x3F)) & 0x1ULL);
 }
