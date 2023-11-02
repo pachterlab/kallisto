@@ -6,7 +6,7 @@ EMAlgorithm Bootstrap::run_em() {
     EMAlgorithm em(counts, index_, tc_, mean_fls_, opt);
 
     //em.set_start(em_start);
-    em.run(10000, 50, false, false);
+    em.run(10000, 50, false, opt.bias);
     /* em.compute_rho(); */
 
     return em;
