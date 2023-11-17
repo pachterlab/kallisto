@@ -2,13 +2,13 @@
 #define BIFROST_SEARCH_CDBG_TCC
 
 template<typename U, typename G>
-vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const string& s, const bool exact, const bool insertion,
+std::vector<std::pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const std::string& s, const bool exact, const bool insertion,
                                                                                 const bool deletion, const bool substitution,
                                                                                 const bool or_exclusive_match) {
 
     struct hash_pair {
 
-        size_t operator()(const pair<size_t, Kmer>& p) const {
+        size_t operator()(const std::pair<size_t, Kmer>& p) const {
 
             return wyhash(&(p.first), sizeof(size_t), 0, _wyp) ^ p.second.hash();
         }
@@ -16,27 +16,27 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const 
 
     if (invalid){
 
-        cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     if (s.length() < k_){
 
-        cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     Roaring rpos;
 
-    vector<pair<size_t, UnitigMap<U, G>>> v_um;
+    std::vector<std::pair<size_t, UnitigMap<U, G>>> v_um;
 
-    string s_inexact;
+    std::string s_inexact;
 
-    unordered_set<pair<size_t, Kmer>, hash_pair> us_pos_km;
+    std::unordered_set<std::pair<size_t, Kmer>, hash_pair> us_pos_km;
 
-    auto comp_pair = [](const pair<size_t, UnitigMap<U, G>>& p1, const pair<size_t, UnitigMap<U, G>>& p2) {
+    auto comp_pair = [](const std::pair<size_t, UnitigMap<U, G>>& p1, const std::pair<size_t, UnitigMap<U, G>>& p2) {
 
         return (p1.first < p2.first);
     };
@@ -109,7 +109,7 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const 
 
             Minimizer minz;
 
-            pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
+            std::pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
 
             while (ki_s != ki_e) {
 
@@ -247,13 +247,13 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const 
 }
 
 template<typename U, typename G>
-vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence(   const string& s, const bool exact, const bool insertion,
+std::vector<std::pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence(   const std::string& s, const bool exact, const bool insertion,
                                                                             const bool deletion, const bool substitution,
                                                                             const double ratio_kmers, const bool or_exclusive_match) {
 
     struct hash_pair {
 
-        size_t operator()(const pair<size_t, Kmer>& p) const {
+        size_t operator()(const std::pair<size_t, Kmer>& p) const {
 
             return wyhash(&(p.first), sizeof(size_t), 0, _wyp) ^ p.second.hash();
         }
@@ -261,43 +261,43 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence(   cons
 
     if (invalid){
 
-        cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     if (ratio_kmers < 0.0){
 
-        cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is less than 0.0" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is less than 0.0" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     if (ratio_kmers > 1.0){
 
-        cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is greater than 1.0" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is greater than 1.0" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     if (s.length() < k_){
 
-        cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << std::endl;
 
-        return vector<pair<size_t, UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, UnitigMap<U, G>>>();
     }
 
     const size_t nb_km_min = static_cast<double>(s.length() - k_ + 1) * ratio_kmers;
 
     Roaring rpos;
 
-    vector<pair<size_t, UnitigMap<U, G>>> v_um;
+    std::vector<std::pair<size_t, UnitigMap<U, G>>> v_um;
 
-    string s_inexact;
+    std::string s_inexact;
 
-    unordered_set<pair<size_t, Kmer>, hash_pair> us_pos_km;
+    std::unordered_set<std::pair<size_t, Kmer>, hash_pair> us_pos_km;
 
-    auto comp_pair = [](const pair<size_t, UnitigMap<U, G>>& p1, const pair<size_t, UnitigMap<U, G>>& p2) {
+    auto comp_pair = [](const std::pair<size_t, UnitigMap<U, G>>& p1, const std::pair<size_t, UnitigMap<U, G>>& p2) {
 
         return (p1.first < p2.first);
     };
@@ -378,7 +378,7 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence(   cons
 
             Minimizer minz;
 
-            pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
+            std::pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
 
             while (ki_s != ki_e) {
 
@@ -523,13 +523,13 @@ vector<pair<size_t, UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence(   cons
 }
 
 template<typename U, typename G>
-vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const string& s, const bool exact, const bool insertion,
+std::vector<std::pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const std::string& s, const bool exact, const bool insertion,
                                                                                 const bool deletion, const bool substitution,
                                                                                 const bool or_exclusive_match) const {
 
     struct hash_pair {
 
-        size_t operator()(const pair<size_t, Kmer>& p) const {
+        size_t operator()(const std::pair<size_t, Kmer>& p) const {
 
             return wyhash(&(p.first), sizeof(size_t), 0, _wyp) ^ p.second.hash();
         }
@@ -537,27 +537,27 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 
     if (invalid){
 
-        cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     if (s.length() < k_){
 
-        cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     Roaring rpos;
 
-    vector<pair<size_t, const_UnitigMap<U, G>>> v_um;
+    std::vector<std::pair<size_t, const_UnitigMap<U, G>>> v_um;
 
-    string s_inexact;
+    std::string s_inexact;
 
-    unordered_set<pair<size_t, Kmer>, hash_pair> us_pos_km;
+    std::unordered_set<std::pair<size_t, Kmer>, hash_pair> us_pos_km;
 
-    auto comp_pair = [](const pair<size_t, const_UnitigMap<U, G>>& p1, const pair<size_t, const_UnitigMap<U, G>>& p2) {
+    auto comp_pair = [](const std::pair<size_t, const_UnitigMap<U, G>>& p1, const std::pair<size_t, const_UnitigMap<U, G>>& p2) {
 
         return (p1.first < p2.first);
     };
@@ -630,7 +630,7 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 
             Minimizer minz;
 
-            pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
+            std::pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
 
             while (ki_s != ki_e) {
 
@@ -768,13 +768,13 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 }
 
 template<typename U, typename G>
-vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const string& s, const bool exact, const bool insertion,
+std::vector<std::pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( const std::string& s, const bool exact, const bool insertion,
                                                                                 const bool deletion, const bool substitution,
                                                                                 const double ratio_kmers, const bool or_exclusive_match) const {
 
     struct hash_pair {
 
-        size_t operator()(const pair<size_t, Kmer>& p) const {
+        size_t operator()(const std::pair<size_t, Kmer>& p) const {
 
             return wyhash(&(p.first), sizeof(size_t), 0, _wyp) ^ p.second.hash();
         }
@@ -782,43 +782,43 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 
     if (invalid){
 
-        cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Graph is invalid and cannot be searched" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     if (ratio_kmers < 0.0){
 
-        cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is less than 0.0" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is less than 0.0" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     if (ratio_kmers > 1.0){
 
-        cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is greater than 1.0" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Ratio of k-mers is greater than 1.0" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     if (s.length() < k_){
 
-        cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << endl;
+        std::cerr << "CompactedDBG::searchSequence(): Query length is shorter than k-mer size" << std::endl;
 
-        return vector<pair<size_t, const_UnitigMap<U, G>>>();
+        return std::vector<std::pair<size_t, const_UnitigMap<U, G>>>();
     }
 
     const size_t nb_km_min = static_cast<double>(s.length() - k_ + 1) * ratio_kmers;
 
     Roaring rpos;
 
-    vector<pair<size_t, const_UnitigMap<U, G>>> v_um;
+    std::vector<std::pair<size_t, const_UnitigMap<U, G>>> v_um;
 
-    string s_inexact;
+    std::string s_inexact;
 
-    unordered_set<pair<size_t, Kmer>, hash_pair> us_pos_km;
+    std::unordered_set<std::pair<size_t, Kmer>, hash_pair> us_pos_km;
 
-    auto comp_pair = [](const pair<size_t, const_UnitigMap<U, G>>& p1, const pair<size_t, const_UnitigMap<U, G>>& p2) {
+    auto comp_pair = [](const std::pair<size_t, const_UnitigMap<U, G>>& p1, const std::pair<size_t, const_UnitigMap<U, G>>& p2) {
 
         return (p1.first < p2.first);
     };
@@ -899,7 +899,7 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 
             Minimizer minz;
 
-            pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
+            std::pair<size_t, bool> minz_pres = {0xffffffffffffffffULL, true};
 
             while (ki_s != ki_e) {
 
@@ -1044,49 +1044,49 @@ vector<pair<size_t, const_UnitigMap<U, G>>> CompactedDBG<U, G>::searchSequence( 
 }
 
 template<typename U, typename G>
-bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const string& out_filename_prefix,
+bool CompactedDBG<U, G>::search(const std::vector<std::string>& query_filenames, const std::string& out_filename_prefix,
                                 const double ratio_kmers, const bool inexact_search, const size_t nb_threads,
                                 const size_t verbose) const {
 
      if (invalid){
 
-        cerr << "CompactedDBG::search(): Graph is invalid and cannot be searched" << endl;
+        std::cerr << "CompactedDBG::search(): Graph is invalid and cannot be searched" << std::endl;
         return false;
     }
 
     if (nb_threads > std::thread::hardware_concurrency()){
 
-        cerr << "CompactedDBG::search(): Number of threads cannot be greater than or equal to " << std::thread::hardware_concurrency() << "." << endl;
+        std::cerr << "CompactedDBG::search(): Number of threads cannot be greater than or equal to " << std::thread::hardware_concurrency() << "." << std::endl;
         return false;
     }
 
     if (nb_threads <= 0){
 
-        cerr << "CompactedDBG::search(): Number of threads cannot be less than or equal to 0." << endl;
+        std::cerr << "CompactedDBG::search(): Number of threads cannot be less than or equal to 0." << std::endl;
         return false;
     }
 
-    const string out_tmp = out_filename_prefix + ".tsv";
+    const std::string out_tmp = out_filename_prefix + ".tsv";
 
     FILE* fp_tmp = fopen(out_tmp.c_str(), "w");
 
     if (fp_tmp == NULL) {
 
-        cerr << "CompactedDBG::search(): Could not open file " << out_tmp << " for writing." << endl;
+        std::cerr << "CompactedDBG::search(): Could not open file " << out_tmp << " for writing." << std::endl;
         return false;
     }
     else {
 
         fclose(fp_tmp);
 
-        if (std::remove(out_tmp.c_str()) != 0) cerr << "CompactedDBG::search(): Could not remove temporary file " << out_tmp << endl;
+        if (std::remove(out_tmp.c_str()) != 0) std::cerr << "CompactedDBG::search(): Could not remove temporary file " << out_tmp << std::endl;
     }
 
-    if (verbose) cout << "CompactedDBG::search(): Querying graph." << endl;
+    if (verbose) std::cout << "CompactedDBG::search(): Querying graph." << std::endl;
 
     const CompactedDBG<U, G>& dbg = *this;
 
-    string s;
+    std::string s;
 
     size_t file_id = 0;
 
@@ -1097,8 +1097,8 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
     FileParser fp(query_filenames);
 
-    ofstream outfile;
-    ostream out(0);
+    std::ofstream outfile;
+    std::ostream out(0);
 
     outfile.open(out_tmp.c_str());
     out.rdbuf(outfile.rdbuf());
@@ -1129,7 +1129,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
             for (auto& c : s) c &= 0xDF;
 
-            const vector<pair<size_t, const_UnitigMap<U, G>>> v = dbg.searchSequence(   s, true, inexact_search, inexact_search,
+            const std::vector<std::pair<size_t, const_UnitigMap<U, G>>> v = dbg.searchSequence(   s, true, inexact_search, inexact_search,
                                                                                         inexact_search, ratio_kmers, true);
 
             if (inexact_search){
@@ -1167,16 +1167,16 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
         delete[] buffer_res;
 
-        if (verbose) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries. " << endl;
+        if (verbose) std::cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries. " << std::endl;
     }
     else {
 
         {
             bool stop = false;
 
-            vector<thread> workers; // need to keep track of threads so we can join them
+            std::vector<std::thread> workers; // need to keep track of threads so we can join them
 
-            mutex mutex_files_in, mutex_file_out;
+            std::mutex mutex_files_in, mutex_file_out;
 
             std::atomic<size_t> nb_queries_found;
 
@@ -1190,8 +1190,8 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
                         char* buffer_res = new char[thread_seq_buf_sz];
 
-                        vector<string> buffers_seq;
-                        vector<string> buffers_name;
+                        std::vector<std::string> buffers_seq;
+                        std::vector<std::string> buffers_name;
 
                         while (true) {
 
@@ -1205,7 +1205,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
                                 size_t buffer_sz = 0;
 
-                                unique_lock<mutex> lock(mutex_files_in);
+                                std::unique_lock<std::mutex> lock(mutex_files_in);
 
                                 stop = !fp.read(s, file_id);
 
@@ -1214,7 +1214,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
                                     buffer_sz += s.length();
 
                                     buffers_seq.push_back(std::move(s));
-                                    buffers_name.push_back(string(fp.getNameString()));
+                                    buffers_name.push_back(std::string(fp.getNameString()));
 
                                     if (buffer_sz >= thread_seq_buf_sz) break;
                                     else stop = !fp.read(s, file_id);
@@ -1234,7 +1234,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
                                 for (auto& c : buffers_seq[i]) c &= 0xDF;
 
-                                const vector<pair<size_t, const_UnitigMap<U, G>>> v = dbg.searchSequence(   buffers_seq[i], true, inexact_search, inexact_search,
+                                const std::vector<std::pair<size_t, const_UnitigMap<U, G>>> v = dbg.searchSequence(   buffers_seq[i], true, inexact_search, inexact_search,
                                                                                                             inexact_search, ratio_kmers, true);
 
                                 if (inexact_search){
@@ -1249,7 +1249,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
                                 if (pos_buffer_out + l_name + l_query_res >= thread_seq_buf_sz){ // If next result cannot fit in the buffer
 
-                                    unique_lock<mutex> lock(mutex_file_out); // Get the output lock
+                                    std::unique_lock<std::mutex> lock(mutex_file_out); // Get the output lock
 
                                     out.write(buffer_res, pos_buffer_out); // Write result buffer
 
@@ -1272,7 +1272,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
                             if (pos_buffer_out > 0){ // Flush unresult written to final output
 
-                                unique_lock<mutex> lock(mutex_file_out);
+                                std::unique_lock<std::mutex> lock(mutex_file_out);
 
                                 out.write(buffer_res, pos_buffer_out);
                             }
@@ -1289,7 +1289,7 @@ bool CompactedDBG<U, G>::search(const vector<string>& query_filenames, const str
 
             for (auto& t : workers) t.join();
 
-            if (verbose) cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries. " << endl;
+            if (verbose) std::cout << "CompactedDBG::search(): Found " << nb_queries_found << " queries. " << std::endl;
         }
     }
 

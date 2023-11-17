@@ -53,8 +53,8 @@ class CompressedCoverage {
         bool isFull() const;
         void setFull();
 
-        vector<pair<int, int>> splittingVector() const;
-        pair<size_t, size_t> lowCoverageInfo() const;
+        std::vector<std::pair<int, int>> splittingVector() const;
+        std::pair<size_t, size_t> lowCoverageInfo() const;
 
         size_t size() const;
         std::string toString() const; // for debugging
@@ -166,7 +166,7 @@ template<typename T> struct CompressedCoverage_t {
 
     CompressedCoverage_t(size_t sz = 0, bool full = false) : ccov(sz, full) {}
     CompressedCoverage_t(const CompressedCoverage& c) : ccov(c) {}
-    CompressedCoverage_t(CompressedCoverage&& c) : ccov(move(c)) {}
+    CompressedCoverage_t(CompressedCoverage&& c) : ccov(std::move(c)) {}
 
     BFG_INLINE const T* getData() const { return &data; }
     BFG_INLINE T* getData() { return &data; }
@@ -179,7 +179,7 @@ template<> struct CompressedCoverage_t<void> {
 
     CompressedCoverage_t(size_t sz = 0, bool full = false) : ccov(sz, full) {}
     CompressedCoverage_t(const CompressedCoverage& c) : ccov(c) {}
-    CompressedCoverage_t(CompressedCoverage&& c) : ccov(move(c)) {}
+    CompressedCoverage_t(CompressedCoverage&& c) : ccov(std::move(c)) {}
 
     BFG_INLINE const void* getData() const { return nullptr; }
     BFG_INLINE void* getData() { return nullptr; }

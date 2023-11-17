@@ -4,7 +4,7 @@ KmerCovIndex<T>::KmerCovIndex() : sz(0), shift_div(__builtin_ffsll(block_sz) - 1
 template<typename T>
 KmerCovIndex<T>::KmerCovIndex(const KmerCovIndex& o) : sz(o.sz), shift_div(o.shift_div), mask_mod(o.mask_mod) {
 
-    v_blocks = vector<Block<T>*>(o.v_blocks.size());
+    v_blocks = std::vector<Block<T>*>(o.v_blocks.size());
 
     for (size_t i = 0; i < v_blocks.size(); ++i) {
 
@@ -19,7 +19,7 @@ KmerCovIndex<T>::KmerCovIndex(const KmerCovIndex& o) : sz(o.sz), shift_div(o.shi
 template<>
 inline KmerCovIndex<void>::KmerCovIndex(const KmerCovIndex& o) : sz(o.sz), shift_div(o.shift_div), mask_mod(o.mask_mod) {
 
-    v_blocks = vector<Block<void>*>(o.v_blocks.size());
+    v_blocks = std::vector<Block<void>*>(o.v_blocks.size());
 
     for (size_t i = 0; i < v_blocks.size(); ++i) {
 
@@ -31,7 +31,7 @@ inline KmerCovIndex<void>::KmerCovIndex(const KmerCovIndex& o) : sz(o.sz), shift
 }
 
 template<typename T>
-KmerCovIndex<T>::KmerCovIndex(KmerCovIndex&& o) :  sz(o.sz), shift_div(o.shift_div), mask_mod(o.mask_mod), v_blocks(move(o.v_blocks)) {
+KmerCovIndex<T>::KmerCovIndex(KmerCovIndex&& o) :  sz(o.sz), shift_div(o.shift_div), mask_mod(o.mask_mod), v_blocks(std::move(o.v_blocks)) {
 
     o.clear();
 }
@@ -53,7 +53,7 @@ KmerCovIndex<T>& KmerCovIndex<T>::operator=(const KmerCovIndex<T>& o) {
         shift_div = o.shift_div;
         mask_mod = o.mask_mod;
 
-        v_blocks = vector<Block<T>*>(o.v_blocks.size());
+        v_blocks = std::vector<Block<T>*>(o.v_blocks.size());
 
         for (size_t i = 0; i < v_blocks.size(); ++i) {
 
@@ -75,14 +75,14 @@ KmerCovIndex<T>& KmerCovIndex<T>::toData(KmerCovIndex<void>&& o, const size_t nb
     shift_div = o.shift_div;
     mask_mod = o.mask_mod;
 
-    v_blocks = vector<Block<T>*>(o.v_blocks.size(), nullptr);
+    v_blocks = std::vector<Block<T>*>(o.v_blocks.size(), nullptr);
 
     auto copyBlock = [&](const size_t start, const size_t end){
 
         for (size_t i = start; i < end; ++i) {
 
             v_blocks[i] = new Block<T>;
-            v_blocks[i]->bc_cov = move(o.v_blocks[i]->bc_cov);
+            v_blocks[i]->bc_cov = std::move(o.v_blocks[i]->bc_cov);
 
             std::copy(o.v_blocks[i]->km_block, o.v_blocks[i]->km_block + block_sz, v_blocks[i]->km_block);
 
@@ -95,7 +95,7 @@ KmerCovIndex<T>& KmerCovIndex<T>::toData(KmerCovIndex<void>&& o, const size_t nb
     if ((nb_threads == 1) || (v_blocks.size() < nb_threads)) copyBlock(0, v_blocks.size());
     else {
 
-        vector<thread> workers;
+        std::vector<std::thread> workers;
 
         const size_t slice = (v_blocks.size() / nb_threads) + 1;
 
@@ -106,7 +106,7 @@ KmerCovIndex<T>& KmerCovIndex<T>::toData(KmerCovIndex<void>&& o, const size_t nb
                 [&, t]{
 
                     const size_t start = t * slice;
-                    const size_t end = min(start + slice, v_blocks.size());
+                    const size_t end = std::min(start + slice, v_blocks.size());
 
                     if (start < v_blocks.size()) copyBlock(start, end);
                 }
@@ -132,7 +132,7 @@ inline KmerCovIndex<void>& KmerCovIndex<void>::operator=(const KmerCovIndex<void
         shift_div = o.shift_div;
         mask_mod = o.mask_mod;
 
-        v_blocks = vector<Block<void>*>(o.v_blocks.size());
+        v_blocks = std::vector<Block<void>*>(o.v_blocks.size());
 
         for (size_t i = 0; i < v_blocks.size(); ++i) {
 
@@ -238,7 +238,7 @@ bool KmerCovIndex<T>::set(const size_t idx, const Kmer& km, const size_t cov) {
     if (cov_ != cov) {
 
         if (cov_ != 0) block->bc_cov.remove(idx_mod * cov_full + cov_ - 1);
-        if (cov != 0) block->bc_cov.add(idx_mod * cov_full + min(cov, static_cast<size_t>(2)) - 1);
+        if (cov != 0) block->bc_cov.add(idx_mod * cov_full + std::min(cov, static_cast<size_t>(2)) - 1);
 
         block->bc_cov.runOptimize();
     }
@@ -411,7 +411,7 @@ void KmerCovIndex<T>::resize(const size_t new_sz) {
         Kmer km_empty;
 
         const size_t new_v_block_sz = (new_sz >> shift_div) + ((new_sz & mask_mod) != 0);
-        const size_t rounded_sz = min(new_v_block_sz << shift_div, sz);
+        const size_t rounded_sz = std::min(new_v_block_sz << shift_div, sz);
         const size_t nb_last_block = new_sz & mask_mod;
 
         for (size_t i = new_v_block_sz; i < v_blocks.size(); ++i) {
@@ -480,7 +480,7 @@ inline void KmerCovIndex<void>::resize(const size_t new_sz) {
         Kmer km_empty;
 
         const size_t new_v_block_sz = (new_sz >> shift_div) + ((new_sz & mask_mod) != 0);
-        const size_t rounded_sz = min(new_v_block_sz << shift_div, sz);
+        const size_t rounded_sz = std::min(new_v_block_sz << shift_div, sz);
 
         for (size_t i = new_v_block_sz; i < v_blocks.size(); ++i) {
 

@@ -1,9 +1,11 @@
 #include "MinimizerIndex.hpp"
 
+
+
 MinimizerIndex::MinimizerIndex() :  table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
                                     mphf(nullptr), is_static(false), size_(0), pop(0), num_empty(0)  {
 
-    init_tables(max(static_cast<size_t>(1024), lck_block_sz));
+    init_tables(std::max(static_cast<size_t>(1024), lck_block_sz));
 }
 
 MinimizerIndex::MinimizerIndex(const size_t sz) :   table_keys(nullptr), table_tinyv(nullptr), table_tinyv_sz(nullptr),
@@ -18,7 +20,7 @@ MinimizerIndex::MinimizerIndex(const size_t sz) :   table_keys(nullptr), table_t
 
         while (rdnup_sz < sz_with_empty) rdnup_sz <<= 1;
 
-        init_tables(max(rdnup_sz, lck_block_sz));
+        init_tables(std::max(rdnup_sz, lck_block_sz));
     }
 }
 
@@ -28,7 +30,7 @@ MinimizerIndex::MinimizerIndex(const MinimizerIndex& o) :   size_(o.size_), pop(
     table_tinyv = new packed_tiny_vector[size_];
     table_tinyv_sz = new uint8_t[size_];
 
-    lck_min = vector<SpinLock>(o.lck_min.size());
+    lck_min = std::vector<SpinLock>(o.lck_min.size());
 
     mphf = new boophf_t(*o.mphf);
     is_static = o.is_static;
@@ -52,7 +54,7 @@ MinimizerIndex::MinimizerIndex(MinimizerIndex&& o){
     table_tinyv = o.table_tinyv;
     table_tinyv_sz = o.table_tinyv_sz;
 
-    lck_min = vector<SpinLock>(o.lck_min.size());
+    lck_min =std::vector<SpinLock>(o.lck_min.size());
 
     mphf = o.mphf;
     is_static = o.is_static;
@@ -80,7 +82,7 @@ MinimizerIndex& MinimizerIndex::operator=(const MinimizerIndex& o) {
         table_tinyv = new packed_tiny_vector[size_];
         table_tinyv_sz = new uint8_t[size_];
 
-        lck_min = vector<SpinLock>(o.lck_min.size());
+        lck_min =std::vector<SpinLock>(o.lck_min.size());
 
         mphf = new boophf_t(*o.mphf);
         is_static = o.is_static;
@@ -111,7 +113,7 @@ MinimizerIndex& MinimizerIndex::operator=(MinimizerIndex&& o){
         table_tinyv = o.table_tinyv;
         table_tinyv_sz = o.table_tinyv_sz;
 
-        lck_min = vector<SpinLock>(o.lck_min.size());
+        lck_min =std::vector<SpinLock>(o.lck_min.size());
 
         mphf = o.mphf;
         is_static = o.is_static;
@@ -459,7 +461,7 @@ size_t MinimizerIndex::erase(const Minimizer& minz) {
     return oldpop - pop;
 }
 
-pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key, const packed_tiny_vector& ptv, const uint8_t& flag) {
+std::pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key, const packed_tiny_vector& ptv, const uint8_t& flag) {
 
     if (!is_static) {
         // Dynamic MinimizerIndex
@@ -518,7 +520,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert(const Minimizer& key
 
 void MinimizerIndex::init_threads() {
 
-    lck_min = vector<SpinLock>((size_ + lck_block_sz - 1) / lck_block_sz);
+    lck_min =std::vector<SpinLock>((size_ + lck_block_sz - 1) / lck_block_sz);
 
     pop_p = pop;
     num_empty_p = num_empty;
@@ -740,7 +742,7 @@ size_t MinimizerIndex::erase_p(const Minimizer& minz) {
     return l_pop;
 }
 
-pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag) {
+std::pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag) {
 
     bool is_deleted = false;
 
@@ -832,7 +834,7 @@ pair<MinimizerIndex::iterator, bool> MinimizerIndex::insert_p(const Minimizer& k
     lck_edit_table.release_reader(); // Just for safety
 }
 
-pair<MinimizerIndex::iterator, bool> MinimizerIndex::add_unitig_p(const Minimizer& key, const size_t pos_id_unitig) {
+std::pair<MinimizerIndex::iterator, bool> MinimizerIndex::add_unitig_p(const Minimizer& key, const size_t pos_id_unitig) {
     if (!is_static) {
         std::cerr << "Illegal operation on non-static MinimizerIndex: MinimizerIndex::add_unitig_p" << std::endl;
         exit(1);
@@ -963,7 +965,7 @@ void MinimizerIndex::reserve(const size_t sz) {
 
     empty_key.set_empty();
 
-    if (!lck_min.empty()) lck_min = vector<SpinLock>((size_ + lck_block_sz - 1) / lck_block_sz);
+    if (!lck_min.empty()) lck_min =std::vector<SpinLock>((size_ + lck_block_sz - 1) / lck_block_sz);
 
     std::fill(table_keys, table_keys + size_, empty_key);
 
@@ -1113,7 +1115,7 @@ CompactedMinimizerIndex::CompactedMinimizerIndex(const MinimizerIndex& mi, const
             {
                 bool stop = false;
 
-                vector<thread> workers; // need to keep track of threads so we can join them
+               std::vector<thread> workers; // need to keep track of threads so we can join them
 
                 mutex mutex_mi;
 

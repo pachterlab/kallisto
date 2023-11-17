@@ -2,7 +2,7 @@
 
 FastqFile::FastqFile() : kseq(NULL), file_no(0) { fnit = fnames.end(); }
 
-FastqFile::FastqFile(const vector<string> files) : kseq(NULL), fnames(files), file_no(0) {
+FastqFile::FastqFile(const std::vector<std::string> files) : kseq(NULL), fnames(files), file_no(0) {
 
     fnit = fnames.begin();
     fp = gzopen(fnit->c_str(), "r");
@@ -56,7 +56,7 @@ void FastqFile::reopen() {
 }
 
 // returns >=0 (length of seq), -1 end of last file, -2 truncated quality string
-int FastqFile::read_next(char* read, size_t* read_len, string &seq, size_t* seq_len, unsigned int* file_id, char* qual) {
+int FastqFile::read_next(char* read, size_t* read_len, std::string &seq, size_t* seq_len, unsigned int* file_id, char* qual) {
 
     int r;
 
@@ -82,7 +82,7 @@ int FastqFile::read_next(char* read, size_t* read_len, string &seq, size_t* seq_
 }
 
 // returns >=0 (length of seq), -1 end of last file, -2 truncated quality string
-int FastqFile::read_next(string &seq, size_t& id) {
+int FastqFile::read_next(std::string &seq, size_t& id) {
 
     const int r = kseq_read(kseq);
 
@@ -105,7 +105,7 @@ int FastqFile::read_next(string &seq, size_t& id) {
 // next_file_opened == true indicates the next file to read in the list has been opened:
 // first read entry of the file has not been read yet, method returns 0.
 // Else, method returns >= 0 (length of seq), -1 end of last file, -2 truncated quality string.
-int FastqFile::read_next(string &seq, size_t& id, bool& next_file_opened) {
+int FastqFile::read_next(std::string &seq, size_t& id, bool& next_file_opened) {
 
     const int r = kseq_read(kseq);
 
@@ -128,7 +128,7 @@ int FastqFile::read_next(string &seq, size_t& id, bool& next_file_opened) {
     return r;
 }
 
-int FastqFile::read_next(stringstream& ss, size_t& id, bool& next_file_opened) {
+int FastqFile::read_next(std::stringstream& ss, size_t& id, bool& next_file_opened) {
 
     const int r = kseq_read(kseq);
 
@@ -165,7 +165,7 @@ int FastqFile::read_next() {
     return r;
 }
 
-vector<string>::const_iterator FastqFile::open_next() {
+std::vector<std::string>::const_iterator FastqFile::open_next() {
 
     if (fnit != fnames.end()) {
         // close current file

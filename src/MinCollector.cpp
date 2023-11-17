@@ -74,7 +74,7 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
     return -1;
   }
 
-  vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
+  std::vector<Roaring> u_vector{u1, u3, u4, u5, u6, u7};
 
   // non-strict intersection
   // to-do: currently the different frames are treated as if they were paired reads

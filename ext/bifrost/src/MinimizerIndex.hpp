@@ -150,7 +150,7 @@ class MinimizerIndex {
         iterator erase(const_iterator it);
         size_t erase(const Minimizer& minz);
 
-        pair<iterator, bool> insert(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
+        std::pair<iterator, bool> insert(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
 
         void init_threads();
         void release_threads();
@@ -166,9 +166,9 @@ class MinimizerIndex {
 
         size_t erase_p(const Minimizer& minz);
 
-        pair<iterator, bool> insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
+        std::pair<iterator, bool> insert_p(const Minimizer& key, const packed_tiny_vector& v, const uint8_t& flag);
 
-        pair<iterator, bool> add_unitig_p(const Minimizer& key, const size_t pos_id_unitig); // only if static
+        std::pair<iterator, bool> add_unitig_p(const Minimizer& key, const size_t pos_id_unitig); // only if static
 
         iterator begin();
         const_iterator begin() const;
@@ -192,10 +192,10 @@ class MinimizerIndex {
 
         boophf_t* mphf;
 
-        mutable vector<SpinLock> lck_min;
+        mutable std::vector<SpinLock> lck_min;
         mutable SpinLockRW lck_edit_table;
 
-        atomic<size_t> pop_p, num_empty_p;
+        std::atomic<size_t> pop_p, num_empty_p;
 
         // For future myself: lck_block_sz must be a poswer of 2. If you change it, change lck_block_div_shift accordingly.
         // For future myself, this could automated in a much better looking implementation. 

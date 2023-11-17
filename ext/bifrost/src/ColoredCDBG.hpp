@@ -29,7 +29,7 @@
 */
 struct CCDBG_Build_opt : CDBG_Build_opt {
 
-    string filename_colors_in;
+    std::string filename_colors_in;
 
     bool outputColors;
 
@@ -123,9 +123,9 @@ class CCDBG_Data_t {
         * associated.
         * @return a string which is the serialization of the data.
         */
-        string serialize(const const_UnitigColorMap<U>& um_src) const {
+        std::string serialize(const const_UnitigColorMap<U>& um_src) const {
 
-            return string();
+            return std::string();
         }
 };
 
@@ -150,7 +150,7 @@ class CCDBG_Data_t {
 template<typename Unitig_data_t = void>
 class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage<Unitig_data_t>> {
 
-    static_assert(is_void<Unitig_data_t>::value || is_base_of<CCDBG_Data_t<Unitig_data_t>, Unitig_data_t>::value,
+    static_assert(std::is_void<Unitig_data_t>::value || std::is_base_of<CCDBG_Data_t<Unitig_data_t>, Unitig_data_t>::value,
                   "Type Unitig_data_t of data associated with vertices of class ColoredCDBG<Unitig_data_t> must "
                   " be void (no data) or a class extending class CCDBG_Data_t");
 
@@ -250,7 +250,7 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         * @param verbose is a boolean indicating if information message are printed during writing (true) or not (false).
         * @return a boolean indicating if the graph was successfully written.
         */
-        bool write(const string& prefix_output_fn, const size_t nb_threads = 1, const bool write_index_file = true, const bool compress_output = false, const bool verbose = false) const;
+        bool write(const std::string& prefix_output_fn, const size_t nb_threads = 1, const bool write_index_file = true, const bool compress_output = false, const bool verbose = false) const;
 
         /** Read a colored and compacted de Bruijn graph from disk. The graph (in GFA, FASTA or BFG format) must 
         * have been produced by Bifrost. By default, the function detects if an index file (BFI format) exists for the
@@ -262,7 +262,7 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         * @param verbose is a boolean indicating if information messages are printed during reading (true) or not (false).
         * @return a boolean indicating if the graph was successfully read.
         */
-        bool read(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
+        bool read(const std::string& input_graph_fn, const std::string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Read a colored and compacted de Bruijn graph from disk using an index file. The graph (in GFA, FASTA or BFG format)
         * must have been produced by Bifrost. 
@@ -273,7 +273,7 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         * @param verbose is a boolean indicating if information messages are printed during reading (true) or not (false).
         * @return a boolean indicating if the graph was successfully read.
         */
-        bool read(const string& input_graph_fn, const string& input_index_fn, const string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
+        bool read(const std::string& input_graph_fn, const std::string& input_index_fn, const std::string& input_colors_fn, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Merge a colored and compacted de Bruijn graph.
         * After merging, all unitigs and colors of the input graph have been added to and compacted with the current
@@ -315,7 +315,7 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         * @param verbose is a boolean indicating if information messages must be printed during the execution of the function.
         * @return a boolean indicating if the graphs have been successfully merged.
         */
-        bool merge(const vector<ColoredCDBG>& v, const size_t nb_threads = 1, const bool verbose = false);
+        bool merge(const std::vector<ColoredCDBG>& v, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Merge and clear multiple colored and compacted de Bruijn graphs.
         * After merging, all unitigs and colors of the input colored and compacted de Bruijn graphs have been added to and
@@ -329,33 +329,33 @@ class ColoredCDBG : public CompactedDBG<DataAccessor<Unitig_data_t>, DataStorage
         * @param verbose is a boolean indicating if information messages must be printed during the execution of the function.
         * @return a boolean indicating if the graphs have been successfully merged.
         */
-        bool merge(vector<ColoredCDBG>&& v, const size_t nb_threads = 1, const bool verbose = false);
+        bool merge(std::vector<ColoredCDBG>&& v, const size_t nb_threads = 1, const bool verbose = false);
 
         /** Get the name of a color. As colors match the input files, the color names match the input filenames.
         * @return a string which is either a color name or an empty string if the color ID is invalid or if the
         * colors have not yet been mapped to the unitigs.
         */
-        string getColorName (const size_t color_id) const;
+        std::string getColorName (const size_t color_id) const;
 
         /** Get the names of all colors. As colors match the input files, the color names match the input filenames.
         * @return a vector of strings for which each string is either a color name or an empty string if the color ID is
         * invalid or if the colors have not yet been mapped to the unitigs.
         */
-        vector<string> getColorNames() const;
+        std::vector<std::string> getColorNames() const;
 
         /** Get the number of colors in the graph.
         * @return the number of colors in the graph.
         */
         inline size_t getNbColors() const { return this->getData()->getNbColors(); }
 
-        bool search(const vector<string>& query_filenames, const string& out_filename_prefix,
+        bool search(const std::vector<std::string>& query_filenames, const std::string& out_filename_prefix,
                     const double ratio_kmers, const bool inexact_search, const size_t nb_threads,
                     const bool verbose = false) const;
 
     private:
 
-        void checkColors(const vector<string>& filename_seq_in) const;
-        bool loadColors(const string& input_graph_fn, const string& input_colors_fn, const size_t nb_threads, const bool verbose);
+        void checkColors(const std::vector<std::string>& filename_seq_in) const;
+        bool loadColors(const std::string& input_graph_fn, const std::string& input_colors_fn, const size_t nb_threads, const bool verbose);
 
         void initUnitigColors(const CCDBG_Build_opt& opt, const size_t max_nb_hash = 31);
         void buildUnitigColors(const size_t nb_threads);

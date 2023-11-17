@@ -103,8 +103,8 @@ class BitContainer {
         size_t size() const;
         inline size_t cardinality() const { return size(); }
 
-        bool write(ostream& stream_out) const;
-        bool read(istream& stream_in);
+        bool write(std::ostream& stream_out) const;
+        bool read(std::istream& stream_in);
 
         size_t getSizeInBytes() const;
 
@@ -130,8 +130,8 @@ class BitContainer {
 
     private:
 
-        void addSortedVector(const vector<uint32_t>& v);
-        void removeSortedVector(const vector<uint32_t>& v);
+        void addSortedVector(const std::vector<uint32_t>& v);
+        void removeSortedVector(const std::vector<uint32_t>& v);
 
         inline void releaseMemory(){
 
