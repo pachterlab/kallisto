@@ -1,5 +1,28 @@
 # kallisto
 
+___
+# dlist_discard_ambiguities branch
+Basic implementation of discarding ambiguities (note: This, unlike the other D-listing options, does NOT scan the full read; it only looks at the k-mers that it jumps to during pseudoalignment; I implemented it this way because those k-mers already exist in the DBG and I don't want).
+To use this, in your D-list file(s), the FASTA headers should be named ">>" and those sequences will then be used to identify sequences in common with those already in the index.
+Format of the D-list file(s) might look something like:
+```
+>>
+ATCGATCGAATCGTCATCGGATCGATCGAATCGTCATATCGCGGAATCGTCG
+>>
+GGATCGATCGAATCGTCATCGGATCGAGGGGTCGAATCGTCATATCGCGGAATCGTCGGGG
+>
+CCCCCCCCCACGGGGCCCCCCCCCACGGGGCCCCCCCCCACGGGGCCCCCCCCCACGG
+>hello
+TTTTCCCCAAAACCCCCACGGGTATATATATGGGCTTTTTTTTTGGAGAAAAAAAACCCCTTTTGCCCCACGG
+```
+The first two sequences (header is >>) means that we check for the common sequences between the sequence and the index (and those get put into an "off list").
+The third sequence (header is >) means that every k-mer in that sequence simply gets thrown in the D-list.
+The fourth sequence (header is > followed by some string) means the conventional distinguishing flanking k-mer (DFK) implementation; i.e. k-mers are only thrown into the D-list if they flank a unitig.
+In the --aa workflow, everything gets translated beforehand.
+Anyway, this is is just for exploration: We can figure out the cleanest way to do things or do polishing after you test it out. The tl;dr is that we have three options for the file supply to --d-list: Discarding reads with a) flanking k-mers, b) all k-mers, c) common k-mers.
+(The cleanest way might be to use klue -- but the cfc translation might be problematic so that's why I put these options in a branch of kallisto.)
+___
+
 __kallisto__ is a program for quantifying abundances of transcripts from
 RNA-Seq data, or more generally of target sequences using high-throughput
 sequencing reads. It is based on the novel idea of _pseudoalignment_ for
