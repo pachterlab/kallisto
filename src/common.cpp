@@ -6,30 +6,30 @@
 // Look-up maps for comma-free code
 // amino acid -> comma-free nuc_seq
 std::unordered_map<char, std::string>cfc_aa_map = {
-    {'F', "ACC"},
-    {'L', "ACA"},
-    {'I', "ATA"},
-    {'M', "ATC"},
-    {'V', "ATT"},
-    {'S', "CTA"},
-    {'P', "CTC"},
-    {'T', "CTT"},
-    {'A', "AGA"},
-    {'Y', "AGC"},
-    {'H', "AGT"},
-    {'Q', "AGG"},
-    {'N', "CGA"}, 
-    {'K', "CGC"},
-    {'D', "CGT"},
-    {'E', "CGG"},
-    {'C', "TGA"},
-    {'W', "TGC"},
-    {'R', "TGT"},
-    {'G', "TGG"},
+    {'F', "TAG"},
+    {'L', "GGG"},
+    {'I', "GTG"},
+    {'M', "CAG"},
+    {'V', "AGC"},
+    {'S', "TTC"},
+    {'P', "AGT"},
+    {'T', "GAC"},
+    {'A', "TCG"},
+    {'Y', "TAC"},
+    {'H', "GCA"},
+    {'Q', "TGA"},
+    {'N', "GTA"}, 
+    {'K', "CAT"},
+    {'D', "CTA"},
+    {'E', "CGA"},
+    {'C', "CGT"},
+    {'W', "ACT"},
+    {'R', "ATG"},
+    {'G', "GCT"},
     {'X', "NNN"},  // Amino acid not known
-    {'B', "CGT"},  // Represents either N or D - will translate as D here (N is only off by one base)
-    {'J', "ACA"},  // Represents either L or I - will translate as L here (I is only off by one base)
-    {'Z', "CGG"}   // Represents either E or Q - will translate as E here (Q is only off by one base)
+    {'B', "CTA"},  // Represents either N or D - will translate as D here (N is only off by one base)
+    {'J', "GGG"},  // Represents either L or I - will translate as L here (I is only off by one base)
+    {'Z', "CGA"}   // Represents either E or Q - will translate as E here (Q is only off by one base)
 };
 
 // nucleotide seq -> reverse complement
