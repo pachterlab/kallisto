@@ -1,5 +1,9 @@
 # kallisto
 
+___
+This branch contains an alternative code for translated alignment. Instead of using comma-free code, the amino acid and nucleotide sequences are translated to a code that maximizes the distance between amino acids that occur frequently ('max_ham_code' = Maximum Hamming distance Code), thereby maximizing the difference between reference sequences.
+___
+
 __kallisto__ is a program for quantifying abundances of transcripts from
 RNA-Seq data, or more generally of target sequences using high-throughput
 sequencing reads. It is based on the novel idea of _pseudoalignment_ for
