@@ -1701,7 +1701,7 @@ void BUSProcessor::processBuffer() {
       }
 
       if (busopt.long_read) {
-        if (findFragmentLength && flengoal > 0) { // && u.cardinality() == 1 && !v.empty()) {
+        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty()) {
           for ( auto tr : u) {
 	    flens_lr[tr] += seqlen;
 	    flens_lr_c[tr]++;
