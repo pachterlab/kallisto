@@ -1595,7 +1595,7 @@ void BUSProcessor::processBuffer() {
 
     bool novel = false; 
     double unmapped_r = 0; 
-    if (busopt.long_read) {
+    if (mp.opt.long_read) {
        unmapped_r = index.match_long(seq, seqlen, v, match_partial, busopt.aa);
        //std::cerr << unmapped_r << "," << std::endl;
        unmapped_list.push_back(unmapped_r);
@@ -1691,7 +1691,7 @@ void BUSProcessor::processBuffer() {
         b.flags = (uint32_t) flags[i / jmax];
       }
 
-      if (busopt.paired && getFragLenIfPaired && !busopt.long_read) {
+      if (busopt.paired && getFragLenIfPaired && !mp.opt.long_read) {
         if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
           // try to map the reads
           int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
@@ -1702,7 +1702,7 @@ void BUSProcessor::processBuffer() {
         }
       }
 
-      if (busopt.long_read) {
+      if (mp.opt.long_read) {
         if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty()) {
           for ( auto tr : u) {
 	    flens_lr[tr] += seqlen;
