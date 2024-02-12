@@ -2333,7 +2333,7 @@ int main(int argc, char *argv[]) {
         }
         // Write out fragment length distributions if reads paired-end:
         if (!opt.single_end || opt.long_read) {
-	  std::remove(opt.output + "/flens.txt"); 
+	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
             if (opt.long_read) {
@@ -2424,7 +2424,7 @@ int main(int argc, char *argv[]) {
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
-	  std::remove(opt.output + "/flens.txt"); 
+	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
             if (i != 0) {
@@ -2441,7 +2441,7 @@ int main(int argc, char *argv[]) {
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
-	  std::remove(opt.output + "/flens.txt"); 
+	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
             if (i > 0.0001) {
