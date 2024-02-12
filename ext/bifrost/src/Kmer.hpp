@@ -2,7 +2,7 @@
 #define BIFROST_KMER_HPP
 
 #ifndef MAX_KMER_SIZE
-#define MAX_KMER_SIZE 32
+#define MAX_KMER_SIZE 64
 #endif
 
 #ifndef MAX_GMER_SIZE
