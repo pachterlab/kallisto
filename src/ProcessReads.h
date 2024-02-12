@@ -199,8 +199,8 @@ public:
         if (opt.long_read) {
           tlencounts.assign(opt.batch_ids.size(), 0);
           std::cerr << "Is this assignment of batchFlens space causing abort?" << std::endl; std::cerr.flush();
-          batchFlens_lr.assign(opt.batch_ids.size(), std::vector<uint32_t>(index.target_lens,0));
-          batchFlens_lr_c.assign(opt.batch_ids.size(), std::vector<uint32_t>(index.target_lens,0));
+          batchFlens_lr.assign(opt.batch_ids.size(), std::vector<uint32_t>(index.target_lens_.size(),0));
+          batchFlens_lr_c.assign(opt.batch_ids.size(), std::vector<uint32_t>(index.target_lens_.size(),0));
           std::cerr << "Passed assignment of batchFlens" << std::endl; std::cerr.flush();
           batchUnmapped_list.assign(opt.batch_ids.size(), std::vector<double>(3000000/opt.batch_ids.size(),0));
         } else {
