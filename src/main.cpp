@@ -2417,7 +2417,7 @@ int main(int argc, char *argv[]) {
         }
         std::vector<uint32_t> fld;
 	std::vector<uint32_t> fld_c;
-        if (opt.busOptions.paired && !opt.busOptions.long_read) {
+        if (opt.busOptions.paired && !opt.long_read) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
           // Write out index:
@@ -2432,7 +2432,7 @@ int main(int argc, char *argv[]) {
           }
           flensout_f << "\n";
           flensout_f.close();
-        } else if (opt.busOptions.long_read) {
+        } else if (opt.long_read) {
 	  opt.busOptions.threshold = opt.threshold;
           fld = collection.flens_lr; // copy
 	  fld_c = collection.flens_lr_c; //copy 
