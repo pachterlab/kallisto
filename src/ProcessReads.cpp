@@ -1197,6 +1197,8 @@ void ReadProcessor::clear() {
   numreads=0;
   memset(buffer,0,bufsize);
   newEcs.clear();
+  flens_lr.clear();
+  flens_lr_c.clear(); 
   unmapped_list.clear();
   counts.clear();
   counts.resize(tc.counts.size(),0);
