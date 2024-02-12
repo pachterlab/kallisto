@@ -2336,7 +2336,7 @@ int main(int argc, char *argv[]) {
 	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
-            if (opt.long_read) {
+            if (opt.long_read && id == 0) {
 	      std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
 	      std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
  	      for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
