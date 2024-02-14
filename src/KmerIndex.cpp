@@ -1840,211 +1840,9 @@ double KmerIndex::match_long(const char *s, int l, std::vector<std::pair<const_U
     // translate nucleotide sequence to comma-free code (cfc)
     s_string = nn_to_cfc(s, l);
     s = s_string.c_str();
-
-    // if (countNonNN > 0) {
-    //   std::cerr << "[warning] found " << countNonNN << " non-standard nucleotides in the input sequence" << std::endl << "           which were translated to 'NNN'" << std::endl;
-    // }
-    // // reset countNonNN
-    // ::countNonNN = 0;
   }
-  //std::cerr << "E_rate_threshold : " << e_rate_threshold << std::endl; 
   int empty_count = 0; 
-  /***
-  KmerIterator kit(s), kit_end;
-  bool backOff = false;
-  int nextPos = 0; // nextPosition to check
-  Roaring rtmp;
-  for (int i = 0;  kit != kit_end; ++i,++kit) {
 
-    // need to check it
-    const_UnitigMap<Node> um = dbg.find(kit->first);
-    n = um.getData();
-
-    int pos = kit->second;
-
-    if (um.isEmpty) {
-       empty_count += 1; 
-    } else {
-      
-      if (partial) {
-        if (rtmp.isEmpty()) {
-          const auto& rtmp2 = um.getData()->ec[um.dist].getIndices();
-          if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
-        } else {
-          const auto& rtmp2 = um.getData()->ec[um.dist].getIndices();
-          if (!rtmp2.isEmpty()) rtmp &= rtmp2;
-          if (rtmp.isEmpty()) {
-            v.clear();
-            //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
-            if (l - empty_count > (.1*l)) { return true; } else { return false; } 
-          }
-        }
-      }
-
-      v.push_back({um, kit->second});
-
-      // Find start and end of O.G. kallisto contig w.r.t. the bifrost-kallisto
-      // unitig
-      size_t contig_start = 0, contig_length = um.size - k + 1;
-      auto p = n->get_mc_contig(um.dist);
-      contig_start += p.first;
-      contig_length = p.second - contig_start;
-
-      // Looks like kallisto thinks that canonical kmer means forward strand?
-      //bool forward = (um.strand == (kit->first == kit->first.rep()));
-      bool forward = um.strand;
-      int dist = (forward) ? (contig_length - 1 - (um.dist - contig_start)) : um.dist - contig_start;
-
-      // see if we can skip ahead
-      if (dist >= 2) {
-        // where should we jump to?
-        int nextPos = pos+dist; // default jump
-
-        if (pos + dist >= l-k) {
-          // if we can jump beyond the read, check the end
-          nextPos = l-k;
-        }
-
-        // check next position
-        KmerIterator kit2(kit);
-        kit2 += nextPos-pos;
-        if (kit2 != kit_end) {
-          const_UnitigMap<Node> um2 = dbg.find(kit2->first);
-          bool found2 = false;
-          int  found2pos = pos+dist;
-          if (um2.isEmpty) {
-            found2=true;
-            found2pos = pos;
-          } else if (um.isSameReferenceUnitig(um2) &&
-                     n->ec[um.dist] == um2.getData()->ec[um2.dist]) {
-            // um and um2 are on the same unitig and also share the same EC
-            found2=true;
-            found2pos = pos+dist;
-          }
-          if (found2) {
-            // great, a match (or nothing) see if we can move the k-mer forward
-            bool is_in_dlist = um2.isEmpty && d_list.size() > 0 && (d_list.find((kit2->first).rep()) != d_list.end()); // D-list (check after first jump)
-            if (found2pos >= l-k) {
-              v.push_back({um, l-k}); // push back a fake position
-              if (partial && is_in_dlist) { 
-                v.push_back({um_dummy, kit2->second}); 
-                //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
-                if (l - empty_count > (.1*l)) { return true; } else { return false; }
-              } // D-list
-              break; //
-            } else {
-              v.push_back({um, found2pos});
-              kit = kit2; // move iterator to this new position
-              if (partial && is_in_dlist) { 
-                v.push_back({um_dummy, kit2->second});
-                //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
-                if (l - empty_count > (.1*l)) { return true; } else { return false; } 
-              } // D-list
-            }
-          } else {
-            // this is weird, let's try the middle k-mer
-            bool foundMiddle = false;
-            if (dist > 4) {
-              int middlePos = (pos + nextPos)/2;
-              int middleContig = -1;
-              int found3pos = pos+dist;
-              KmerIterator kit3(kit);
-              kit3 += middlePos-pos;
-
-              if (kit3 != kit_end) {
-                const_UnitigMap<Node> um3 = dbg.find(kit3->first);
-                if (!um3.isEmpty) {
-                  if (um.isSameReferenceUnitig(um3) &&
-                      n->ec[um.dist] == um3.getData()->ec[um3.dist]) {
-                    foundMiddle = true;
-                    found3pos = middlePos;
-                  } else if (um2.isSameReferenceUnitig(um3) &&
-                             um2.getData()->ec[um2.dist] == um3.getData()->ec[um3.dist]) {
-                    foundMiddle = true;
-                    found3pos = pos+dist;
-                  }
-                }
-
-                if (foundMiddle) {
-                  if (partial) {
-                    if (rtmp.isEmpty()) {
-                      const auto& rtmp2 = um3.getData()->ec[um3.dist].getIndices();
-                      if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
-                    } else {
-                      const auto& rtmp2 = um3.getData()->ec[um3.dist].getIndices();
-                      if (!rtmp2.isEmpty()) rtmp &= rtmp2;
-                      if (rtmp.isEmpty()) {
-                        v.clear();
-                        //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
-                        if (l - empty_count > (.1*l)) { return true; } else { return false; }
-                      }
-                    }
-                  }
-                  v.push_back({um3, found3pos});
-                  if (nextPos >= l-k) {
-                    break;
-                  } else {
-                    kit = kit2;
-                  }
-                }
-              }
-            }
-
-            if (!foundMiddle) {
-              ++kit;
-              backOff = true;
-              goto donejumping; // sue me Dijkstra!
-            }
-          }
-        } else {
-          // the sequence is messed up at this point, let's just take the match
-          //v.push_back({dbGraph.ecs[val.contig], l-k});
-          break;
-        }
-      }
-    }
-
-donejumping:
-
-    if (backOff) {
-      // backup plan, let's play it safe and search incrementally for the rest, until nextStop
-      for (int j = 0; kit != kit_end; ++kit,++j) {
-        if (j==skip) {
-          j=0;
-        }
-        if (j==0) {
-          // need to check it
-          const_UnitigMap<Node> um4 = dbg.find(kit->first);
-          if (!um4.isEmpty) {
-            // if k-mer found
-            if (partial) {
-              if (rtmp.isEmpty()) {
-                const auto& rtmp2 = um4.getData()->ec[um4.dist].getIndices();
-                if (!rtmp2.isEmpty()) rtmp = std::move(rtmp2);
-              } else {
-                const auto& rtmp2 = um4.getData()->ec[um4.dist].getIndices();
-                if (!rtmp2.isEmpty()) rtmp &= rtmp2;
-                if (rtmp.isEmpty()) {
-                  v.clear();
-                  //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
-                  if (l - empty_count > (.1*l)) { return true; } else { return false; }
-                }
-              }
-            }
-            v.push_back({um4, kit->second}); // add equivalence class, and position
-          }
-        }
-
-        if (kit->second >= nextPos) {
-          backOff = false;
-          break; // break out of backoff for loop
-        }
-      }
-    }
-  }
-  ***/
-
-  
   Roaring rtmp;
   KmerIterator kit(s), kit_end;
   size_t proc = 0;
@@ -2226,13 +2024,13 @@ donejumping:
               } 
             }
           }
-        } //NOTE!!! When this if is outside of the check if nextPos is at the end of the kmer, then we allow for incrementally searching which is the correct behavior? 
+        //} //NOTE!!! When this if is outside of the check if nextPos is at the end of the kmer, then we allow for incrementally searching which is the correct behavior? 
         else {
           // the sequence is messed up at this point, let's just take the match
           //v.push_back({dbGraph.ecs[val.contig], l-k});
           break;
         }	
-      //}  //adding this corresponding to NOTE!!!
+      }  //adding this corresponding to NOTE!!!
     } 
     kit++;
     if (um.len >= 1) { 
@@ -2252,22 +2050,6 @@ donejumping:
       }
     }
   }
-
-  /***
-  size_t proc = 20;
-  int empty_count = 0; 
-  while (proc < l - k - 20) {
-    const_UnitigMap<Node> um = dbg.findUnitig(s, proc, l);
-    if (um.isEmpty) {
-      proc+=(int)((double)(l-40.0)/30.0); 
-      empty_count++; 
-      continue;
-    }      
-    v.push_back({um, proc});
- 
-    proc+=(int)((double)(l-40.0)/30.0);
-  }
-  ***/
 
   //std::cerr << "l: " << l << " empty_count: " << empty_count << std::endl;
   unmapped_ratio = (double)empty_count/(double)(l - k);
