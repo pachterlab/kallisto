@@ -54,6 +54,7 @@ struct MinCollector {
   int decreaseCount(const int ec);
 
   Roaring intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const;
+  Roaring modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const;
   int intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
@@ -61,6 +62,8 @@ struct MinCollector {
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const;
   int intersectKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                    std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const;
+  int modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                     std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const;
   int findEC(const std::vector<int32_t>& u) const;
 
