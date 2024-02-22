@@ -255,7 +255,7 @@ struct ComparePairsBySecond {
 Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   Roaring mode;
   if (v.empty()) {
-    return r;
+    return mode;
   }
   sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
@@ -293,7 +293,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
       // Don't intersect empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
         if (index.dfk_onlist) { // In case we want to not intersect D-list targets
-          includeDList(r, ec, index.onlist_sequences);
+          includeDList(mode, ec, index.onlist_sequences);
         }
         if (curCount > modeCount) {
           mode = std::move(lastEC); 
