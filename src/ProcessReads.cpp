@@ -1037,7 +1037,11 @@ void ReadProcessor::processBuffer() {
     }
 
     // collect the target information
-    int r = tc.intersectKmers(v1, v2, !paired, u);
+    if (mp.opt.long_read) {
+    	int r = tc.modeKmers(v1, v2, !paired, u);
+    } else {
+	int r = tc.intersectKmers(v1, v2, !paired, u);
+    }
     // Mask out off-listed kmers
     u &= index.onlist_sequences;
 
@@ -1655,7 +1659,11 @@ void BUSProcessor::processBuffer() {
     }
     else {
       // collect the target information
-      int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+      if (mp.opt.long_read) {
+      	int r = tc.modeKmers(v, v2, !busopt.paired, u);
+      } else {
+	int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+      }
     }
     
     if (!novel) {
