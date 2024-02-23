@@ -379,6 +379,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   int matrix_to_files = 0;
   int matrix_to_directories = 0;
   int plaintext_flag = 0;
+  int long_read_flag = 0; 
   static struct option long_options[] = {
     {"plaintext", no_argument, &plaintext_flag, 1},
     {"matrix-to-files", no_argument, &matrix_to_files, 1},
