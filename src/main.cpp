@@ -387,6 +387,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"txnames", required_argument, 0, 'T'},
     {"threads", required_argument, 0, 't'},
     {"fragment-file", required_argument, 0, 'f'},
+    {"long", no_argument, &long_read_flag, 1}, 
     {"fragment-length", required_argument, 0, 'l'},
     {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
@@ -464,6 +465,9 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     default: break;
     }
+  }
+  if (long_read_flag) {
+    opt.long_read = true;
   }
   if (matrix_to_files) {
     opt.matrix_to_files = true;
@@ -2152,6 +2156,7 @@ void usageTCCQuant(bool valid_input = true) {
        << "                              (default: equivalence classes are taken from the index)" << endl
        << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl
        << "                              (default: effective length normalization is not performed)" << endl
+       << "--long			 Use version of EM for long reads " << endl 
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (note: -l, -s values only should be supplied when" << endl
