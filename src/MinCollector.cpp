@@ -122,11 +122,11 @@ int MinCollector::modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
   Roaring u1 = modeECs(v1);
   Roaring i1 = intersectECs(v1);
-  if (!i1.isEmpty()) { u1 &= i1; }
+  if (u1.isEmpty()) { u1 = std::move(i1); }
   
   Roaring u2 = modeECs(v2);
   Roaring i2 = intersectECs(v2);
-  if (!i2.isEmpty()) { u2 &= i2; }
+  if (u2.isEmpty()) { u2 = std::move(i2); }
 
   if (u1.isEmpty() && u2.isEmpty()) {
     return -1;
@@ -300,7 +300,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
         if (index.dfk_onlist) { // In case we want to not intersect D-list targets
           includeDList(mode, ec, index.onlist_sequences);
         }
-        if (curCount > modeCount) {
+        if (curCount > modeCount && v[i].first.getData()->id <= index.target_lens_.size()) {
           mode = std::move(lastEC); 
           modeCount = curCount; 
           curCount = 0; 
@@ -323,7 +323,11 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
     return {};
   }
 
-  return mode;
+  if (modeCount > 1) {
+    return mode;
+  } else {
+    return {};
+  }
 }
 
 
