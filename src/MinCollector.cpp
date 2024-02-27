@@ -255,7 +255,7 @@ struct ComparePairsBySecond {
   }
 };
 
-Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   Roaring mode;
   if (v.empty()) {
     return mode;
@@ -269,69 +269,49 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
            return a.first.getData()->id < b.first.getData()->id;
          }
        }); // sort by contig, and then first position
-
   
   mode = v[0].first.getData()->ec[v[0].first.dist].getIndices();
   bool found_nonempty = !mode.isEmpty();
   Roaring lastEC = mode;
   Roaring ec;
   int modeCount = 0, curCount = 0; 
-
   for (int i = 1; i < v.size(); i++) {
-
     // Find a non-empty EC before we start taking the intersection
     if (!found_nonempty) {
       mode = v[i].first.getData()->ec[v[i].first.dist].getIndices();
-      if (!mode.isEmpty())
-      {
-        found_nonempty = 1;
-        modeCount+=1; 
-        curCount+=1; 
-      }
+      found_nonempty = !mode.isEmpty();
     }
-
-    if (v[i].first.isSameReferenceUnitig(v[i-1].first)) {
-      curCount+=1;
-    }
-
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
-
       ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       if (ec == lastEC && !ec.isEmpty()) {
-        curCount+=1;
-      }
+        curCount += 1; 
+      } 
       
-      // Don't consider empty EC (because of thresholding)
+      // Don't intersect empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
-        if (index.dfk_onlist) { // In case we want to not intersect D-list targets
-          includeDList(mode, ec, index.onlist_sequences);
-        }
-        if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
-          mode = std::move(lastEC); 
-          modeCount = curCount; 
-          curCount = 0; 
-        } else {
-          curCount = 0; 
-        }
-        lastEC = std::move(ec);
+         if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+           includeDList(mode, ec, index.onlist_sequences);
+         }
+         if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
+           mode = std::move(lastEC); 
+           modeCount = curCount; 
+         }
+         curCount = 0; 
+         lastEC = std::move(ec);
       }
     }
   }
-
   // find the range of support
   int minpos = std::numeric_limits<int>::max();
   int maxpos = 0;
-
   for (auto& x : v) {
     minpos = std::min(minpos, x.second);
     maxpos = std::max(maxpos, x.second);
   }
-
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
-
   if (modeCount > 2) {
     return mode;
   } else {
