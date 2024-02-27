@@ -286,10 +286,11 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
       {
         found_nonempty = 1;
         modeCount+=1; 
+        curCount+=1; 
       }
     }
 
-    if (v[i].first.isSameReferenceUnitig(v[i-1].first) && !v[i].first.getData()->ec[v[i].first.dist].getIndices().isEmpty()) {
+    if (v[i].first.isSameReferenceUnitig(v[i-1].first)) {
       curCount+=1;
     }
 
@@ -297,6 +298,9 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
 
       ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+      if (ec == lastEC && !ec.isEmpty()) {
+        curCount+=1;
+      }
       
       // Don't consider empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
