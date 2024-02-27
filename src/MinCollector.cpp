@@ -121,12 +121,10 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 int MinCollector::modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
   Roaring u1 = modeECs(v1);
-  Roaring i1 = intersectECs(v1);
-  if (u1.isEmpty()) { u1 = std::move(i1); }
+  if (u1.isEmpty()) { u1 = intersectECs(v1); }
   
   Roaring u2 = modeECs(v2);
-  Roaring i2 = intersectECs(v2);
-  if (u2.isEmpty()) { u2 = std::move(i2); }
+  if (u2.isEmpty()) { u2 = intersectECs(v2); }
 
   if (u1.isEmpty() && u2.isEmpty()) {
     return -1;
@@ -284,8 +282,16 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
     // Find a non-empty EC before we start taking the intersection
     if (!found_nonempty) {
       mode = v[i].first.getData()->ec[v[i].first.dist].getIndices();
-      found_nonempty = !mode.isEmpty();
+      if (!mode.isEmpty())
+      {
+        found_nonempty = 1;
+        modeCount+=1; 
+      }
     }
+
+    if (v[i].first.isSameReferenceUnitig(v[i-1].first) && !v[i].first.getData()->ec[v[i].first.dist].getIndices().isEmpty()) {
+        curCount += 1; 
+    } 
 
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
@@ -295,7 +301,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
         curCount += 1; 
       } 
       
-      // Don't intersect empty EC (because of thresholding)
+      // Don't consider empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
         if (index.dfk_onlist) { // In case we want to not intersect D-list targets
           includeDList(mode, ec, index.onlist_sequences);
