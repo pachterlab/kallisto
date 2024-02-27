@@ -1,17 +1,56 @@
-   
-  std::vector<int> intersect(const           
-  auto a = x.begin();   
-  auto b = y.begin();        while (a != x.end() && b != y.end()) {
-    if (*a < *b) {  
+#include "MinCollector.h"
+#include <algorithm>
+#include <limits>
+
+// utility functions
+
+std::vector<int> intersect(const std::vector<int>& x, const std::vector<int>& y) {
+  std::vector<int> v;
+  auto a = x.begin();
+  auto b = y.begin();
+  while (a != x.end() && b != y.end()) {
+    if (*a < *b) {
       ++a;
-    } else if (*b < *a) {  
+    } else if (*b < *a) {
       ++b;
     } else {
-      v.push_back(*a);    ector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
+      v.push_back(*a);
+      ++a;
+      ++b;
+    }
+  }
+  return v;
+}
+
+void MinCollector::init_mean_fl_trunc(double mean, double sd) {
+  auto tmp_trunc_fl = trunc_gaussian_fld(0, MAX_FRAG_LEN, mean, sd);
+  assert( tmp_trunc_fl.size() == mean_fl_trunc.size() );
+
+  std::copy( tmp_trunc_fl.begin(), tmp_trunc_fl.end(), mean_fl_trunc.begin() );
+
+  mean_fl = mean_fl_trunc[ MAX_FRAG_LEN - 1 ];
+
+  has_mean_fl = true;
+  has_mean_fl_trunc = true;
+}
+
+void includeDList(Roaring& u1, Roaring& u2, const Roaring& onlist_sequences) {
+  if ((u1 & onlist_sequences).cardinality() != u1.cardinality() || (u2 & onlist_sequences).cardinality() != u2.cardinality()) {
+    u1.add(onlist_sequences.cardinality());
+    u2.add(onlist_sequences.cardinality());
+  }
+}
+
+int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v3, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v4, 
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v5,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v6,
+                          std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v7, Roaring& r) const {
 
   // If a single kmer matches perfectly in the host genome in any frame, throw out the entire read
   Roaring u1 = intersectECs(v1);
-  if ((u1 & index.onlist_seque                                                nces).cardinality() != u1.cardinality()) return -1;
+  if ((u1 & index.onlist_sequences).cardinality() != u1.cardinality()) return -1;
   Roaring u3 = intersectECs(v3);
   if ((u3 & index.onlist_sequences).cardinality() != u3.cardinality()) return -1;
   Roaring u4 = intersectECs(v4);
