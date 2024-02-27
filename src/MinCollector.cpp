@@ -332,7 +332,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
     return {};
   }
 
-  if (modeCount > 5) {
+  if (modeCount > 2) {
     return mode;
   } else {
     return {};
