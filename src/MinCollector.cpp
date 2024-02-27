@@ -296,8 +296,10 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
          if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
            mode = std::move(lastEC); 
            modeCount = curCount; 
+           curCount = 0; 
          }
-         curCount = 0; 
+        //Technically, not correct mode, but for some reason was giving better results than mode...
+         //curCount = 0; 
          lastEC = std::move(ec);
       }
     }
