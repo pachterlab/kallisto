@@ -1055,7 +1055,7 @@ void ReadProcessor::processBuffer() {
       novel = true; 
     }
 
-    if (r == -1) {
+    if (mp.opt.long_read && r == -1) {
 	std::stringstream ss; 
 	std::string s(s1);
         s = "@unmapped\n"+s;
