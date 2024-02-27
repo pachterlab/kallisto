@@ -314,7 +314,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
-  if (modeCount > 1) {
+  if (modeCount > 5) {
     return mode;
   } else {
     return {};
