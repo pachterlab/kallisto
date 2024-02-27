@@ -1051,7 +1051,15 @@ void ReadProcessor::processBuffer() {
         exit(1);
         //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
       }
-      novel = 1; 
+      novel = true; 
+    }
+
+    if (r == -1) {
+	std::stringstream ss; 
+	std::string s(s1);
+        s = "@unmapped\n"+s;
+	ss << s; 
+	mp.outputNovel(ss);
     }
 
     /* --  possibly modify the pseudoalignment  -- */
