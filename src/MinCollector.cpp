@@ -289,13 +289,14 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
       }
     }
 
+    if (v[i].first.isSameReferenceUnitig(v[i-1].first) && !v[i].first.getData()->ec[v[i].first.dist].getIndices().isEmpty()) {
+      curCount+=1
+    }
+
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
 
       ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
-      if (ec == lastEC && !ec.isEmpty()) {
-        curCount += 1; 
-      } 
       
       // Don't consider empty EC (because of thresholding)
       if (!(ec == lastEC) && !ec.isEmpty()) {
@@ -305,6 +306,8 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
         if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
           mode = std::move(lastEC); 
           modeCount = curCount; 
+          curCount = 0; 
+        } else {
           curCount = 0; 
         }
         lastEC = std::move(ec);
