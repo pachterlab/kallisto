@@ -255,7 +255,7 @@ struct ComparePairsBySecond {
   }
 };
 
-MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   Roaring mode;
   if (v.empty()) {
     return mode;
