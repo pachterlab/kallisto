@@ -289,10 +289,6 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
       }
     }
 
-    if (v[i].first.isSameReferenceUnitig(v[i-1].first) && !v[i].first.getData()->ec[v[i].first.dist].getIndices().isEmpty()) {
-        curCount += 1; 
-    } 
-
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
 
