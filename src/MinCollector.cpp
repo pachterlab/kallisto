@@ -120,11 +120,11 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 
 int MinCollector::modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
-  Roaring u1 = modeECs(v1);
-  if (u1.isEmpty()) { u1 = intersectECs(v1); }
+  Roaring u1 = intersectECs(v1);
+  if (u1.isEmpty()) { u1 = modeECs(v1); }
   
-  Roaring u2 = modeECs(v2);
-  if (u2.isEmpty()) { u2 = intersectECs(v2); }
+  Roaring u2 = intersectECs(v2);
+  if (u2.isEmpty()) { u2 = modeECs(v2); }
 
   if (u1.isEmpty() && u2.isEmpty()) {
     return -1;
@@ -296,10 +296,10 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
          if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
            mode = std::move(lastEC); 
            modeCount = curCount; 
-           curCount = 0; 
+           //curCount = 0; 
          }
         //Technically, not correct mode, but for some reason was giving better results than mode...
-         //curCount = 0; 
+         curCount = 0; 
          lastEC = std::move(ec);
       }
     }
@@ -314,7 +314,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
-  if (modeCount > 5) {
+  if (modeCount > 0) {
     return mode;
   } else {
     return {};
