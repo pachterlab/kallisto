@@ -1055,7 +1055,7 @@ void ReadProcessor::processBuffer() {
       novel = true; 
     }
 
-    if (mp.opt.long_read && r == -1) {
+    if (mp.opt.long_read && (r == -1 || u.isEmpty())) {
 	std::stringstream ss; 
 	std::string s(s1);
         s = "@unmapped\n"+s;
@@ -1624,6 +1624,7 @@ void BUSProcessor::processBuffer() {
     }
 
     // process frames for commafree (to do: extend to paired-end reads)
+    int r = 0; 
     if (busopt.aa) {
       // initiate equivalence classes
       std::vector<std::pair<const_UnitigMap<Node>, int>> v3, v4, v5, v6, v7;
@@ -1664,17 +1665,25 @@ void BUSProcessor::processBuffer() {
 
       // intersect set of equivalence classes for each frame
       // NOTE: intersectKmers is called again further up. to-do: Do I need to modify that too?
-      int r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
+      r = tc.intersectKmersCFC(v, v3, v4, v5, v6, v7, u);
     }
     else {
       // collect the target information
       if (mp.opt.long_read) {
-      	int r = tc.modeKmers(v, v2, !busopt.paired, u);
+      	r = tc.modeKmers(v, v2, !busopt.paired, u);
       } else {
-	int r = tc.intersectKmers(v, v2, !busopt.paired, u);
+	r = tc.intersectKmers(v, v2, !busopt.paired, u);
       }
     }
-    
+
+    if (mp.opt.long_read && (r == -1 || u.isEmpty())) {
+	std::stringstream ss; 
+	std::string s(seq);
+        s = "@unmapped\n"+s;
+	ss << s; 
+	mp.outputNovel(ss);
+    }
+
     if (!novel) {
     if (!u.isEmpty()) {
       if (index.dfk_onlist) { // In case we want to not intersect D-list targets
