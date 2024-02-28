@@ -297,7 +297,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
          if (index.dfk_onlist) { // In case we want to not intersect D-list targets
            includeDList(mode, ec, index.onlist_sequences);
          }
-         if (curCount > modeCount && (v[i].first.getData()->id < index.target_lens_.size() || modeMultiMappping)) {
+         if (curCount > modeCount && (v[i].first.getData()->id < index.target_lens_.size() || modeMultiMapping)) {
            mode = std::move(lastEC); 
            modeCount = curCount; 
            //curCount = 0; 
