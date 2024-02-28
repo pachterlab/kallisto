@@ -272,6 +272,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   
   mode = v[0].first.getData()->ec[v[0].first.dist].getIndices();
   bool found_nonempty = !mode.isEmpty();
+  bool modeMultiMapping = false; 
   Roaring lastEC = mode;
   Roaring ec;
   int modeCount = 0, curCount = 0; 
@@ -280,6 +281,9 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
     if (!found_nonempty) {
       mode = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       found_nonempty = !mode.isEmpty();
+      if (found_nonempty && v[i].first.getData()->id > index.target_lens_.size()) {
+        modeMultiMapping = true; 
+      }
     }
     if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
         !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
@@ -293,7 +297,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
          if (index.dfk_onlist) { // In case we want to not intersect D-list targets
            includeDList(mode, ec, index.onlist_sequences);
          }
-         if (curCount > modeCount && v[i].first.getData()->id < index.target_lens_.size()) {
+         if (curCount > modeCount && (v[i].first.getData()->id < index.target_lens_.size() || modeMultiMappping)) {
            mode = std::move(lastEC); 
            modeCount = curCount; 
            //curCount = 0; 
