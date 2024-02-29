@@ -120,10 +120,10 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 
 int MinCollector::modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
-  Roaring u1 = intersectECs(v1);
+  Roaring u1 = intersectECs_long(v1);
   if (u1.isEmpty()) { u1 = modeECs(v1); }
   
-  Roaring u2 = intersectECs(v2);
+  Roaring u2 = intersectECs_long(v2);
   if (u2.isEmpty()) { u2 = modeECs(v2); }
 
   if (u1.isEmpty() && u2.isEmpty()) {
@@ -325,6 +325,73 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   }
 }
 
+Roaring MinCollector::intersectECs_long(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
+  Roaring r;
+  if (v.empty()) {
+    return r;
+  }
+  sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
+       {
+         if (a.first.isSameReferenceUnitig(b.first) &&
+             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
+           return a.second < b.second;
+         } else {
+           return a.first.getData()->id < b.first.getData()->id;
+         }
+       }); // sort by contig, and then first position
+
+  
+  r = v[0].first.getData()->ec[v[0].first.dist].getIndices();
+  bool found_nonempty = !r.isEmpty();
+  Roaring lastEC = r;
+  Roaring ec;
+  int curCount = 0; 
+
+  for (int i = 1; i < v.size(); i++) {
+
+    // Find a non-empty EC before we start taking the intersection
+    if (!found_nonempty) {
+      r = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+      found_nonempty = !r.isEmpty();
+    }
+
+    if (!v[i].first.isSameReferenceUnitig(v[i-1].first) ||
+        !(v[i].first.getData()->ec[v[i].first.dist] == v[i-1].first.getData()->ec[v[i-1].first.dist])) {
+      curCount++; 
+      ec = v[i].first.getData()->ec[v[i].first.dist].getIndices();
+
+      // Don't intersect empty EC (because of thresholding)
+      if (!(ec == lastEC) && !ec.isEmpty()) {
+        if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+          includeDList(r, ec, index.onlist_sequences);
+        }
+        if (curCount > 1) {
+          r &= ec;
+        }
+        if (r.isEmpty()) {
+          return r;
+        }
+        lastEC = std::move(ec);
+        curCount = 0; 
+      }
+    }
+  }
+
+  // find the range of support
+  int minpos = std::numeric_limits<int>::max();
+  int maxpos = 0;
+
+  for (auto& x : v) {
+    minpos = std::min(minpos, x.second);
+    maxpos = std::max(maxpos, x.second);
+  }
+
+  if ((maxpos-minpos + k) < min_range) {
+    return {};
+  }
+
+  return r;
+}
 
 Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v) const {
   Roaring r;
