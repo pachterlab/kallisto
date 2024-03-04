@@ -120,10 +120,10 @@ int MinCollector::intersectKmersCFC(std::vector<std::pair<const_UnitigMap<Node>,
 
 int MinCollector::modeKmers(std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v1,
                           std::vector<std::pair<const_UnitigMap<Node>, int32_t>>& v2, bool nonpaired, Roaring& r) const {
-  Roaring u1 = intersectECs_long(v1);
+  Roaring u1 = intersectECs(v1);
   if (u1.isEmpty()) { u1 = modeECs(v1); }
   
-  Roaring u2 = intersectECs_long(v2);
+  Roaring u2 = intersectECs(v2);
   if (u2.isEmpty()) { u2 = modeECs(v2); }
 
   if (u1.isEmpty() && u2.isEmpty()) {
