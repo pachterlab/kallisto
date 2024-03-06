@@ -2350,8 +2350,10 @@ int main(int argc, char *argv[]) {
               	  flensout_f << " ";
               	}
               	if (fld_lr_c[i] > 0.5) {
-	       	  flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
- 		} else {
+		  //Good results with comment below. 
+		  //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
+ 		  flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
+		} else {
 		  flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
 		}
 	      }
