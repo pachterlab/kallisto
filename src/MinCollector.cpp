@@ -281,7 +281,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
     if (!found_nonempty) {
       mode = v[i].first.getData()->ec[v[i].first.dist].getIndices();
       found_nonempty = !mode.isEmpty();
-      if (found_nonempty && v[i].first.getData()->id > index.target_lens_.size()) {
+      if (found_nonempty && mode.cardinality() == 1 ) {
         modeMultiMapping = true; 
       }
     }
@@ -297,7 +297,10 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
          if (index.dfk_onlist) { // In case we want to not intersect D-list targets
            includeDList(mode, ec, index.onlist_sequences);
          }
-         if (curCount > modeCount && (v[i].first.getData()->id < index.target_lens_.size() || modeMultiMapping)) {
+         if (curCount > modeCount && (ec.cardinality() == 1 || modeMultiMapping)) {
+           if (ec.cardinality() == 1) {
+             modeMultiMapping = false; 
+           }
            mode = std::move(lastEC); 
            modeCount = curCount; 
            //curCount = 0; 
