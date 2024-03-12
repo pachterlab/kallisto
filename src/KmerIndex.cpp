@@ -1847,10 +1847,16 @@ double KmerIndex::match_long(const char *s, int l, std::vector<std::pair<const_U
   KmerIterator kit(s), kit_end;
   size_t proc = 0;
   while (kit != kit_end) { //should be + 2?
-      //const_UnitigMap<Node> umU = dbg.findUnitig(s, proc, l);
-      //if (!umU.isEmpty) {
-      //  v.push_back({umU, proc});
-      //}
+      if (proc < l-k){
+        const_UnitigMap<Node> umU = dbg.findUnitig(s, proc, l);
+        if (!umU.isEmpty) {
+	  int numK = 0; 
+	  do {
+	    v.push_back({umU, proc});
+            numK++;
+	  } while (numK < int(umU.len/k));
+        }
+      }
 
       const_UnitigMap<Node> um = dbg.find(kit->first);
       //const_UnitigMap<Node> um = dbg.findUnitig(s, proc, l);     
@@ -2033,8 +2039,8 @@ double KmerIndex::match_long(const char *s, int l, std::vector<std::pair<const_U
       }  //adding this corresponding to NOTE!!!
     } 
     kit++;
-    if (um.len >= 1) { 
-      proc++; 
+    if (umU.len >= 1) { 
+      proc+=umU.len; 
     } else proc++; 
   }
   
