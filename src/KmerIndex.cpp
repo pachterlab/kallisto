@@ -2039,9 +2039,7 @@ double KmerIndex::match_long(const char *s, int l, std::vector<std::pair<const_U
       }  //adding this corresponding to NOTE!!!
     } 
     kit++;
-    if (umU.len >= 1) { 
-      proc+=umU.len; 
-    } else proc++; 
+    proc++; 
   }
   
   // D-list:
