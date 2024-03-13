@@ -303,9 +303,8 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
            }
            mode = std::move(lastEC); 
            modeCount = curCount; 
-           //curCount = 0; 
+           //curCount = 0; //Technically, not correct mode, but for some reason was giving better results than mode...
          }
-        //Technically, not correct mode, but for some reason was giving better results than mode...
          curCount = 0; 
          lastEC = std::move(ec);
       }
@@ -321,7 +320,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   if ((maxpos-minpos + k) < min_range) {
     return {};
   }
-  if (modeCount > 0) {
+  if (modeCount > 2) {
     return mode;
   } else {
     return {};
