@@ -260,6 +260,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   if (v.empty()) {
     return mode;
   }
+/***
   sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
          if (a.first.isSameReferenceUnitig(b.first) &&
@@ -269,6 +270,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
            return a.first.getData()->id < b.first.getData()->id;
          }
        }); // sort by contig, and then first position
+***/
   
   mode = v[0].first.getData()->ec[v[0].first.dist].getIndices();
   bool found_nonempty = !mode.isEmpty();
