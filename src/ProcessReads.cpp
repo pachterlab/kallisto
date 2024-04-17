@@ -1676,7 +1676,7 @@ void BUSProcessor::processBuffer() {
       }
     }
 
-    if (mp.opt.long_read && (r == -1 || u.isEmpty())) {
+    if (mp.opt.long_read && (r == -1 || u.isEmpty()) && mp.opt.unmapped) {
 	std::stringstream ss; 
 	std::string s(seq);
         s = "@unmapped\n"+s;
