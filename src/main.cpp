@@ -540,6 +540,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
+  std::cerr << "Beginning to parse options!" << std::endl << std::cerr.flush();
   const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
@@ -575,6 +576,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int list_flag = 0;
   int c;
   int option_index = 0;
+  
+  std::cerr << "Beginning loop to read parsed options!" << std::endl << std::cerr.flush();
   while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
 
@@ -660,6 +663,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     exit(1);
   }
   
+  std::cerr << "Beginning ifs with respect to technology in parse options!" << std::endl << std::cerr.flush();
   if (opt.technology.find('%') != std::string::npos) { // Process technology strings of format -x bc:umi:cdna%strand%parity
     std::string first = opt.technology.substr(opt.technology.find("%") + 1);
     if (first.length() >= 7 && first.substr(0,7) == "FORWARD") {
