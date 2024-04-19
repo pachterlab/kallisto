@@ -2939,7 +2939,7 @@ int main(int argc, char *argv[]) {
         }
         const bool gene_level_counting = !opt.genemap.empty() || !opt.gtfFile.empty();
 
-        std::cerr << "[quant] Running EM algorithm..."; std::endl;
+        std::cerr << "[quant] Running EM algorithm..." << std::endl;
 
         std::vector<double> priors;
         if (opt.priors != "") {
