@@ -540,7 +540,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
-  cerr << "Beginning to parse options!" << endl << cerr.flush();
+  cerr << "Beginning to parse options!" << endl;
   const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
@@ -577,7 +577,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int c;
   int option_index = 0;
   
-  cerr << "Beginning loop to read parsed options!" << endl << cerr.flush();
+  cerr << "Beginning loop to read parsed options!" << endl;
   while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
 
@@ -663,7 +663,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     exit(1);
   }
   
-  std::cerr << "Beginning ifs with respect to technology in parse options!" << std::endl << std::cerr.flush();
+  std::cerr << "Beginning ifs with respect to technology in parse options!" << std::endl;
   if (opt.technology.find('%') != std::string::npos) { // Process technology strings of format -x bc:umi:cdna%strand%parity
     std::string first = opt.technology.substr(opt.technology.find("%") + 1);
     if (first.length() >= 7 && first.substr(0,7) == "FORWARD") {
@@ -2282,9 +2282,9 @@ int main(int argc, char *argv[]) {
         usageBus();
         return 0;
       }
-      cerr << "ParseOptionsBus starts here..." << cerr.flush();
+      cerr << "ParseOptionsBus starts here..." << endl;
       ParseOptionsBus(argc-1, argv+1,opt);	    
-      cerr << "ParseOptionsBus is ended here..." << cerr.flush();
+      cerr << "ParseOptionsBus is ended here..." << endl;
       int64_t num_processed = 0;
       if (!CheckOptionsBus(opt)) {
         usageBus();
@@ -2939,7 +2939,7 @@ int main(int argc, char *argv[]) {
         }
         const bool gene_level_counting = !opt.genemap.empty() || !opt.gtfFile.empty();
 
-        std::cerr << "[quant] Running EM algorithm..."; std::cerr.flush();
+        std::cerr << "[quant] Running EM algorithm..."; std::endl;
 
         std::vector<double> priors;
         if (opt.priors != "") {
