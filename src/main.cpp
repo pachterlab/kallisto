@@ -540,7 +540,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
-  std::cerr << "Beginning to parse options!" << std::endl << std::cerr.flush();
+  cerr << "Beginning to parse options!" << endl << cerr.flush();
   const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
@@ -577,7 +577,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int c;
   int option_index = 0;
   
-  std::cerr << "Beginning loop to read parsed options!" << std::endl << std::cerr.flush();
+  cerr << "Beginning loop to read parsed options!" << endl << cerr.flush();
   while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
 
@@ -2282,7 +2282,9 @@ int main(int argc, char *argv[]) {
         usageBus();
         return 0;
       }
-      ParseOptionsBus(argc-1, argv+1,opt);
+      cerr << "ParseOptionsBus starts here..." << cerr.flush();
+      ParseOptionsBus(argc-1, argv+1,opt);	    
+      cerr << "ParseOptionsBus is ended here..." << cerr.flush();
       int64_t num_processed = 0;
       if (!CheckOptionsBus(opt)) {
         usageBus();
