@@ -148,6 +148,7 @@ struct ProgramOptions {
   std::string chromFile;
   std::string bedFile;
   std::string technology;
+  std::string platform; 
   std::string tagsequence;
   std::string tccFile;
   std::string ecFile;
