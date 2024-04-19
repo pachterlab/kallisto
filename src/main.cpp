@@ -222,7 +222,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
   int gbam_flag = 0;
   int fusion_flag = 0;
 
-  const char *opt_string = "t:i:l:s:o:n:m:d:b:g:c:p:";
+  const char *opt_string = "t:i:l:P:s:o:n:m:d:b:g:c:p:";
   static struct option long_options[] = {
     // long args
     {"verbose", no_argument, &verbose_flag, 1},
@@ -242,6 +242,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"index", required_argument, 0, 'i'},
     {"fragment-length", required_argument, 0, 'l'},
+    {"platform", required_argument, 0, 'P'},
     {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
     {"iterations", required_argument, 0, 'n'},
@@ -274,6 +275,10 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'l': {
       stringstream(optarg) >> opt.fld;
+      break;
+    }
+    case 'P': {
+      stringstream(optarg) >> opt.platform;
       break;
     }
     case 's': {
@@ -375,7 +380,7 @@ void ParseOptionsEM(int argc, char **argv, ProgramOptions& opt) {
 }
 
 void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
-  const char *opt_string = "o:i:T:e:f:l:s:t:g:G:b:d:p:";
+  const char *opt_string = "o:i:T:e:f:P:l:s:t:g:G:b:d:p:";
   int matrix_to_files = 0;
   int matrix_to_directories = 0;
   int plaintext_flag = 0;
@@ -389,6 +394,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"threads", required_argument, 0, 't'},
     {"fragment-file", required_argument, 0, 'f'},
     {"long", no_argument, &long_read_flag, 1}, 
+    {"platform", required_argument, 0, 'P'},
     {"fragment-length", required_argument, 0, 'l'},
     {"sd", required_argument, 0, 's'},
     {"output-dir", required_argument, 0, 'o'},
@@ -418,6 +424,11 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'f': {
       stringstream(optarg) >> opt.fldFile;
+      break;
+    }
+    case 'P': {
+      stringstream(optarg) >> opt.platform;
+      std::transform(opt.platform.begin(), opt.platform.end(),opt.platform.begin(), ::toupper);
       break;
     }
     case 'l': {
@@ -469,6 +480,12 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
   }
   if (long_read_flag) {
     opt.long_read = true;
+    if (opt.platform == "ONT") {
+	    opt.long_read = false; 
+    }
+    if (opt.platform == "PACBIO") {
+	    opt.long_read = true; 
+    }  
   }
   if (matrix_to_files) {
     opt.matrix_to_files = true;
@@ -549,7 +566,8 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"rf-stranded", no_argument, &strand_RF_flag, 1},
     {"unstranded", no_argument, &unstranded_flag, 1},
     {"paired", no_argument, &paired_end_flag, 1},
-    {"long", no_argument, &long_read_flag, 1},
+    {"long", no_argument, &long_read_flag, 1}, 
+    {"platform", required_argument, 0, 'P'},
     {"threshold", required_argument, 0, 'r'},
     {"error-rate", required_argument, 0, 'e'},
     {"unmapped", no_argument, &unmapped_flag, 1},
@@ -605,6 +623,11 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'n': {
       opt.num = true;
+      break;
+    }
+    case 'P': {
+      opt.platform = optarg;
+      std::transform(opt.platform.begin(), opt.platform.end(),opt.platform.begin(), ::toupper);
       break;
     }
     case 'e': {
