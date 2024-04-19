@@ -540,7 +540,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:T:B:N:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:B:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"dfk-onlist", no_argument, &dfk_onlist_flag, 1},
