@@ -479,13 +479,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
   }
   if (long_read_flag) {
-    opt.long_read = true;
-    if (opt.platform == "ONT") {
-	    opt.long_read = false; 
-    }
-    if (opt.platform == "PACBIO") {
-	    opt.long_read = true; 
-    }  
+    opt.long_read = true; 
   }
   if (matrix_to_files) {
     opt.matrix_to_files = true;
@@ -2893,7 +2887,7 @@ int main(int argc, char *argv[]) {
         size_t num_trans = index.num_trans;
 
         const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
-        if (calcEffLen && !opt.fldFile.empty()) { // Parse supplied fragment length distribution file
+        if (calcEffLen && !opt.fldFile.empty() && (opt.long_read && opt.platform == "PACBIO")) { // Parse supplied fragment length distribution file
           std::ifstream infld((opt.fldFile));
           if (infld.is_open()) {
             std::string line;
