@@ -620,7 +620,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
     case 'P': {
-      opt.platform = optarg;
+      stringstream(optarg) >> opt.platform;
       std::transform(opt.platform.begin(), opt.platform.end(),opt.platform.begin(), ::toupper);
       break;
     }
