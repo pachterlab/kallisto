@@ -2305,9 +2305,11 @@ int main(int argc, char *argv[]) {
         opt.bus_mode = true; // bus_mode = !batch_mode (however, if either is true, means we're writing BUS file)
         opt.single_end = false;
       }
-      
+
+      cerr << "About to load index..." << endl;
       KmerIndex index(opt);
       index.load(opt);
+      cerr << "Index loaded ended here..." << endl;
 
       if (opt.long_read) {
          double error_rate_threshold_tmp = ((1.0/opt.error_rate - 2*index.k) * opt.error_rate);
