@@ -2282,9 +2282,8 @@ int main(int argc, char *argv[]) {
         usageBus();
         return 0;
       }
-      cerr << "ParseOptionsBus starts here..." << endl;
+      
       ParseOptionsBus(argc-1, argv+1,opt);	    
-      cerr << "ParseOptionsBus is ended here..." << endl;
       int64_t num_processed = 0;
       if (!CheckOptionsBus(opt)) {
         usageBus();
@@ -2306,10 +2305,8 @@ int main(int argc, char *argv[]) {
         opt.single_end = false;
       }
 
-      cerr << "About to load index..." << endl;
       KmerIndex index(opt);
       index.load(opt);
-      cerr << "Index loaded ended here..." << endl;
 
       if (opt.long_read) {
          double error_rate_threshold_tmp = ((1.0/opt.error_rate - 2*index.k) * opt.error_rate);
@@ -2321,7 +2318,7 @@ int main(int argc, char *argv[]) {
                std::cerr << "Using computed threshold " << opt.threshold << std::endl;
             } else {
                opt.threshold = .8; 
-	       std::cerr << "Supplied and computed threshold are invalid, using default value of " << opt.threshold << std::endl; 
+	             std::cerr << "Supplied and computed threshold are invalid, using default value of " << opt.threshold << std::endl; 
     	    }	
             int suggested_k = int((1.0/opt.error_rate)/2.0) - 1; 
             if (suggested_k % 2 == 0) {
@@ -2364,20 +2361,20 @@ int main(int argc, char *argv[]) {
         }
         // Write out fragment length distributions if reads paired-end:
         if (!opt.single_end || opt.long_read) {
-	  std::remove((opt.output + "/flens.txt").c_str()); 
+	        std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
             if (opt.long_read && id == 0) {
-	      std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
-	      std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
- 	      for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
-            	if (i != 0) {
-              	  flensout_f << " ";
-              	}
-              	if (fld_lr_c[i] > 0.5) {
+	            std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
+	            std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
+ 	            for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
+            	   if (i != 0) {
+              	    flensout_f << " ";
+              	 }
+              	 if (fld_lr_c[i] > 0.5) {
 		  //Good results with comment below. 
 		  //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
- 		  flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
+ 		                flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
 		} else {
 		  flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
 		}
