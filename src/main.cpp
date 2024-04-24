@@ -2953,7 +2953,7 @@ int main(int argc, char *argv[]) {
           }
 
           std::vector<double> fl_means;
-          if (calcEffLen) {
+          if (calcEffLen && (opt.long_read && !(opt.platform == "ONT"))) {
             if (opt.fld != 0.0) {
               collection.init_mean_fl_trunc(opt.fld, opt.sd);
             } else {
