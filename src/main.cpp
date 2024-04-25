@@ -540,7 +540,6 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
-  cerr << "Beginning to parse options!" << endl;
   const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
@@ -577,7 +576,6 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int c;
   int option_index = 0;
   
-  cerr << "Beginning loop to read parsed options!" << endl;
   while (true) {
     c = getopt_long(argc,argv,opt_string, long_options, &option_index);
 
@@ -663,7 +661,6 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     exit(1);
   }
   
-  std::cerr << "Beginning ifs with respect to technology in parse options!" << std::endl;
   if (opt.technology.find('%') != std::string::npos) { // Process technology strings of format -x bc:umi:cdna%strand%parity
     std::string first = opt.technology.substr(opt.technology.find("%") + 1);
     if (first.length() >= 7 && first.substr(0,7) == "FORWARD") {
@@ -1166,6 +1163,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       }
       if (opt.long_read) {
 	busopt.long_read = true; 
+	busopt.single_end = true; 
         busopt.error_rate = opt.error_rate; 
       }
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
@@ -1228,7 +1226,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     auto& busopt = opt.busOptions;
     busopt.aa = opt.aa;
 
-    busopt.long_read = opt.long_read; 
+    busopt.long_read = opt.long_read;
     busopt.threshold = opt.threshold; 
     busopt.paired = false;
     busopt.keep_fastq_comments = false;
@@ -1367,7 +1365,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       //bool invalid = ParseTechnology(opt.technology, values, files, errorList, bcValues);
       bool valid = ParseTechnology(opt.technology, busopt, errorList);
       
-      if (busopt.seq.size() == 2 && !opt.single_end) {
+      if (busopt.seq.size() == 2 && !opt.single_end && !opt.long_read) {
         busopt.paired = true;
       }
       
