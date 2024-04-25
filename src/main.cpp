@@ -1163,7 +1163,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
       }
       if (opt.long_read) {
 	busopt.long_read = true; 
-	busopt.single_end = true; 
+	busopt.paired = false; 
         busopt.error_rate = opt.error_rate; 
       }
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
