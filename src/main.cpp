@@ -2483,15 +2483,14 @@ int main(int argc, char *argv[]) {
           }
           flensout_f << "\n";
           flensout_f.close();
-
+          std::cerr << "Finished fragment length write out line 2487" << std::endl;
           if (opt.unmapped) {
             std::ofstream um_f((opt.output + "/unmapped_ratio.txt"));
                 std::vector<double> unmapped_l = collection.unmapped_list;
                 for ( size_t i = 0 ; i < unmapped_l.size(); ++i ) {
                   if (i != 0) {
                     um_f << ",";
-                  }
-                  std::cerr << "Collection has " << unmapped_l[i] << "," << std::endl; 
+                  } 
                   um_f << unmapped_l[i];
                 }
              um_f.close();
@@ -2501,7 +2500,7 @@ int main(int argc, char *argv[]) {
           index.write((opt.output + "/index.saved"), false, opt.threads);
         }
       }
-     
+      std::cerr << "Reached ECList write out " << std::endl;
       writeECList(ecfilename, index);
       
       // write transcript names
@@ -2510,6 +2509,7 @@ int main(int argc, char *argv[]) {
         transout_f << index.target_names_[i] << "\n";
       }
       transout_f.close();
+      
       
       for (const auto& elem : index.ecmapinv) {
         if (elem.first.cardinality() == 1) {
