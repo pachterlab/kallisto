@@ -2410,7 +2410,9 @@ int main(int argc, char *argv[]) {
            }
          }
       } else {
+	std::cerr << "Start ProcessBusReads " << std::endl;
         num_processed = ProcessBUSReads(MP, opt);
+	std::cerr << "Returned from ProcessBusReads " << std::endl;
         for (int i = 0; i <= 32; i++) {
           if (MP.bus_bc_len[i] > MP.bus_bc_len[bclen]) {
             bclen = i;
