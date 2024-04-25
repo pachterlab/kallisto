@@ -2308,9 +2308,9 @@ int main(int argc, char *argv[]) {
 
       if (opt.long_read) {
          double error_rate_threshold_tmp = ((1.0/opt.error_rate - 2*index.k) * opt.error_rate);
-            std::cerr << "Suggested threshold for novel reads to " << error_rate_threshold_tmp << std::endl;
+            //std::cerr << "Suggested threshold for novel reads to " << error_rate_threshold_tmp << std::endl;
 	    if (1 > opt.threshold > 0) {
-               std::cerr << "Using supplied threshold " << opt.threshold << std::endl;  
+               //std::cerr << "Using supplied threshold " << opt.threshold << std::endl;  
             } else if (0 < error_rate_threshold_tmp < 1) {
                opt.threshold = error_rate_threshold_tmp;
                std::cerr << "Using computed threshold " << opt.threshold << std::endl;
@@ -2318,12 +2318,14 @@ int main(int argc, char *argv[]) {
                opt.threshold = .8; 
 	             std::cerr << "Supplied and computed threshold are invalid, using default value of " << opt.threshold << std::endl; 
     	    }	
+	    /***
             int suggested_k = int((1.0/opt.error_rate)/2.0) - 1; 
             if (suggested_k % 2 == 0) {
                std::cerr << "Suggested kmer length for error rate is: " << suggested_k-1 << std::endl;
             } else {
                std::cerr << "Suggested kmer length for error rate is: " << suggested_k << std::endl;
             }
+	    ***/
       }
 
       bool guessChromosomes = true;
@@ -2357,7 +2359,7 @@ int main(int argc, char *argv[]) {
         if (!opt.single_end || opt.technology.empty() || opt.busOptions.paired || opt.busOptions.umi[0].fileno == -1) {
           index.write((opt.output + "/index.saved"), false, opt.threads);
         }
-        // Write out fragment length distributions if reads paired-end:
+        // Write out fragment length distributions if reads paired-end or long:
         if (!opt.single_end || opt.long_read) {
 	        std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
@@ -2372,7 +2374,7 @@ int main(int argc, char *argv[]) {
               	 if (fld_lr_c[i] > 0.5) {
 		  //Good results with comment below. 
 		  //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
- 		                flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
+ 		  flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
 		} else {
 		  flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
 		}
@@ -2390,6 +2392,8 @@ int main(int argc, char *argv[]) {
      	     }     
            }
            flensout_f.close();
+	std::cerr << "Wrote out flens.txt line 2395 " << std::endl;
+            
          if (opt.unmapped) {
             std::ofstream um_f((opt.output + "/unmapped_ratio.txt"));
             for (size_t id = 0; id < opt.batch_ids.size(); id++) {
