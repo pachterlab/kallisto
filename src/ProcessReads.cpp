@@ -272,7 +272,7 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
-
+  std::cerr << "[~warn] about to return from processBUSReads, pseudoaligned." << std::endl;
   return numreads;
 }
 
