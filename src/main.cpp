@@ -2364,13 +2364,11 @@ int main(int argc, char *argv[]) {
         if (!opt.single_end || opt.long_read) {
 	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
-	  std::cerr << "about to write flens.txt line 2367; batch_ids.size() = " << opt.batch_ids.size() << std::endl;
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
             if (opt.long_read) {
 		    //Should I be using batchFlens?
 	            std::vector<uint32_t> fld_lr = MP.batchFlens_lr[id];
 	            std::vector<uint32_t> fld_lr_c = MP.batchFlens_lr_c[id];
-		    std::cerr << "about to write flens.txt line 2373; fld_lr.size() = " << fld_lr.size() << std::endl;
  	            for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
             	        if (i != 0) {
               	            flensout_f << " ";
@@ -2396,7 +2394,6 @@ int main(int argc, char *argv[]) {
      	     }     
            }
            flensout_f.close();
-	   std::cerr << "Wrote out flens.txt line 2395 " << std::endl;
             
          if (opt.unmapped) {
             std::ofstream um_f((opt.output + "/unmapped_ratio.txt"));
@@ -2414,9 +2411,7 @@ int main(int argc, char *argv[]) {
            }
          }
       } else {
-	std::cerr << "Start ProcessBusReads " << std::endl;
         num_processed = ProcessBUSReads(MP, opt);
-	std::cerr << "Returned from ProcessBusReads " << std::endl;
         for (int i = 0; i <= 32; i++) {
           if (MP.bus_bc_len[i] > MP.bus_bc_len[bclen]) {
             bclen = i;
@@ -2510,7 +2505,6 @@ int main(int argc, char *argv[]) {
           index.write((opt.output + "/index.saved"), false, opt.threads);
         }
       }
-      std::cerr << "Reached ECList write out " << std::endl;
       writeECList(ecfilename, index);
       
       // write transcript names
