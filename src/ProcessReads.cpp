@@ -1398,7 +1398,7 @@ void BUSProcessor::processBuffer() {
       flengoal = 0;
     } else {
       if (busopt.long_read) {
-	  if (mp.opt.batch_mode) {
+	  if (!mp.opt.batch_mode) {
         	flens_lr.resize(tc.flens_lr.size(), 0); 
         	flens_lr_c.resize(tc.flens_lr_c.size(), 0); 
 	  } else {
