@@ -2366,10 +2366,10 @@ int main(int argc, char *argv[]) {
           std::ofstream flensout_f((opt.output + "/flens.txt"));
 	  std::cerr << "about to write flens.txt line 2367; batch_ids.size() = " << opt.batch_ids.size() << std::endl;
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
-            if (opt.long_read && id == 0) {
+            if (opt.long_read) {
 		    //Should I be using batchFlens?
-	            std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
-	            std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
+	            std::vector<uint32_t> fld_lr = MP.batchFlens_lr[id];
+	            std::vector<uint32_t> fld_lr_c = MP.batchFlens_lr_c[id];
 		    std::cerr << "about to write flens.txt line 2373; fld_lr.size() = " << fld_lr.size() << std::endl;
  	            for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
             	        if (i != 0) {
