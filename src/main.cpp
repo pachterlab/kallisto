@@ -2370,6 +2370,7 @@ int main(int argc, char *argv[]) {
 		    //Should I be using batchFlens?
 	            std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
 	            std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
+		    std::cerr << "about to write flens.txt line 2373; fld_lr.size() = " << fld_lr.size() << std::endl;
  	            for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
             	        if (i != 0) {
               	            flensout_f << " ";
@@ -2377,7 +2378,7 @@ int main(int argc, char *argv[]) {
               	         if (fld_lr_c[i] > 0.5) {
 		             //Good results with comment below. 
 		             //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
- 		             flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
+ 		             flensout_f << std::fabs(index.target_lens_[i] - ((double)fld_lr[i] / (double)fld_lr_c[i]) - index.k);
 		         } else {
 		              flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
 		         }
