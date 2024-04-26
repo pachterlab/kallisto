@@ -160,7 +160,6 @@ int64_t ProcessBatchReads(MasterProcessor& MP, const ProgramOptions& opt) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
   std::cerr << std::endl;
-  std::cerr << "[~warn] about to return from processBatchReads, pseudoaligned." << std::endl;
 
   return numreads;
 
@@ -219,7 +218,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
- std::cerr << "[~warn] about to return from processReads, pseudoaligned." << std::endl;
   // write output to outdir
   if (opt.write_index) {
     std::string outfile = opt.output + "/counts.txt";
@@ -228,7 +226,6 @@ int64_t ProcessReads(MasterProcessor& MP, const  ProgramOptions& opt) {
     MP.tc.write(of);
     of.close();
   }
-  std::cerr << "[~warn] about to return from processReads after write index, pseudoaligned." << std::endl;
 
   return numreads;
 }
@@ -273,7 +270,6 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   if (nummapped == 0) {
     std::cerr << "[~warn] no reads pseudoaligned." << std::endl;
   }
-  std::cerr << "[~warn] about to return from processBUSReads, pseudoaligned." << std::endl;
   return numreads;
 }
 
