@@ -2176,7 +2176,8 @@ void usageTCCQuant(bool valid_input = true) {
        << "                              (default: equivalence classes are taken from the index)" << endl
        << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl
        << "                              (default: effective length normalization is not performed)" << endl
-       << "--long			 Use version of EM for long reads " << endl 
+       << "--long			                    Use version of EM for long reads " << endl 
+       << "-P, --platform.               [PacBio or ONT] used for sequencing " << endl 
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
        << "                              (note: -l, -s values only should be supplied when" << endl
