@@ -498,8 +498,8 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
       auto &bflen_lr_c = batchFlens_lr_c[id];
       auto &tcount = batchFlens_lr_c[id];
       for (int i = 0; i < flens_lr.size(); i++) {
-        tc.flens_lr[i] += bflen_lr[i];
-        tc.flens_lr_c[i] += bflen_lr_c[i];
+        bflens_lr[i] += bflen_lr[i];
+        bflens_lr_c[i] += bflen_lr_c[i];
 	tcount[i] += bflen_lr_c[i];
       }
 
@@ -1398,13 +1398,8 @@ void BUSProcessor::processBuffer() {
       flengoal = 0;
     } else {
       if (busopt.long_read) {
-	  if (!mp.opt.batch_mode) {
-        	flens_lr.resize(tc.flens_lr.size(), 0); 
-        	flens_lr_c.resize(tc.flens_lr_c.size(), 0); 
-	  } else {
-		batchFlens_lr.resize(opt.batch_ids.size(), tc.flens_lr.size(), 0); 
-        	batchFlens_lr_c.resize(opt.batch_ids.size(), tc.flens_lr_c.size(), 0); 
-	  }
+        flens_lr.resize(tc.flens_lr.size(), 0); 
+        flens_lr_c.resize(tc.flens_lr_c.size(), 0); 
       } else {
         flens.resize(tc.flens.size(), 0);
       }
@@ -1736,19 +1731,11 @@ void BUSProcessor::processBuffer() {
 
       if (mp.opt.long_read) {
         if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty()) {
-	   if (mp.opt.batch_mode){
-	      for ( auto tr : u) {
-	       batchFlens_lr[id][tr] += seqlen;
-	       batchFlens_lr_c[id][tr]++;
-	       flengoal--;
-    	     } 
-	   } else {
              for ( auto tr : u) {
 	       flens_lr[tr] += seqlen;
 	       flens_lr_c[tr]++;
 	       flengoal--;
     	     }    	
-	   }
 	}
         if(findFragmentLength && mp.opt.unmapped) {
 	  unmapped_list.push_back(unmapped_r); 
