@@ -2362,25 +2362,27 @@ int main(int argc, char *argv[]) {
         }
         // Write out fragment length distributions if reads paired-end or long:
         if (!opt.single_end || opt.long_read) {
-	        std::remove((opt.output + "/flens.txt").c_str()); 
+	  std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
+	  std::cerr << "about to write flens.txt line 2367; batch_ids.size() = " << opt.batch_ids.size() << std::endl;
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
             if (opt.long_read && id == 0) {
+		    //Should I be using batchFlens?
 	            std::vector<uint32_t> fld_lr = MP.tc.flens_lr;//MP.batchFlens_lr[id];
 	            std::vector<uint32_t> fld_lr_c = MP.tc.flens_lr_c;//MP.batchFlens_lr_c[id];
  	            for ( size_t i = 0 ; i < fld_lr.size(); ++i ) {
-            	   if (i != 0) {
-              	    flensout_f << " ";
-              	 }
-              	 if (fld_lr_c[i] > 0.5) {
-		  //Good results with comment below. 
-		  //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
- 		  flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
-		} else {
-		  flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
-		}
-	      }
-                flensout_f << "\n";
+            	        if (i != 0) {
+              	            flensout_f << " ";
+              	         }
+              	         if (fld_lr_c[i] > 0.5) {
+		             //Good results with comment below. 
+		             //flensout_f << std::fabs((double)fld_lr[i] / (double)fld_lr_c[i] - index.k);//index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - k); // take mean of recorded uniquely aligning read lengths 
+ 		             flensout_f << std::fabs(index.target_lens_[i] - (double)fld_lr[i] / (double)fld_lr_c[i] - index.k);
+		         } else {
+		              flensout_f << std::fabs(index.target_lens_[i] - index.k);//index.target_lens_[i]); 
+		         }
+	             }
+                     flensout_f << "\n";
 	      } else {
 		std::vector<uint32_t> fld = MP.batchFlens[id];	
 		for ( size_t i = 0 ; i < fld.size(); ++i ) {
@@ -2393,7 +2395,7 @@ int main(int argc, char *argv[]) {
      	     }     
            }
            flensout_f.close();
-	std::cerr << "Wrote out flens.txt line 2395 " << std::endl;
+	   std::cerr << "Wrote out flens.txt line 2395 " << std::endl;
             
          if (opt.unmapped) {
             std::ofstream um_f((opt.output + "/unmapped_ratio.txt"));
