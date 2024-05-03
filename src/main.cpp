@@ -928,8 +928,9 @@ bool CheckOptionsBus(ProgramOptions& opt) {
   }
 
   if (opt.long_read && opt.error_rate <= 0) {
-    std::cerr << "Error: invalid error-rate; must be greater than zero" << std::endl; 
-    ret = false; 
+    //hiding for release, not used for this version
+    //std::cerr << "No sequencing error-rate: invalid error-rate; must be greater than zero" << std::endl; 
+    //ret = false; 
   }
 
   // check files
@@ -1162,8 +1163,8 @@ bool CheckOptionsBus(ProgramOptions& opt) {
         busopt.paired = true;
       }
       if (opt.long_read) {
-	busopt.long_read = true; 
-	busopt.paired = false; 
+	      busopt.long_read = true; 
+	      busopt.paired = false; 
         busopt.error_rate = opt.error_rate; 
       }
       busopt.umi.push_back(BUSOptionSubstr(-1,-1,-1));
@@ -2064,10 +2065,10 @@ void usageBus() {
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
-       << "    --long                  	 Treat reads as long" << endl
-       << "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
-       << "    --threshold		 Threshold for rate of unmapped kmers per read" << endl
-       << "    --unmapped		 Computed ratio of unmapped kmers for first 1M reads" << endl 
+       << "    --long                  	Treat reads as long" << endl
+       //<< "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
+       << "    --threshold		            Threshold for rate of unmapped kmers per read" << endl
+       << "    --unmapped		              Computed ratio of unmapped kmers for first 1M reads" << endl 
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --batch-barcodes          Records both batch and extracted barcode in BUS file" << endl
