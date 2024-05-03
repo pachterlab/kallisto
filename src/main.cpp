@@ -563,7 +563,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
     {"long", no_argument, &long_read_flag, 1}, 
     {"platform", required_argument, 0, 'P'},
     {"threshold", required_argument, 0, 'r'},
-    {"error-rate", required_argument, 0, 'e'},
+    //{"error-rate", required_argument, 0, 'e'},
     {"unmapped", no_argument, &unmapped_flag, 1},
     {"aa", no_argument, &aa_flag, 1},
     {"inleaved", no_argument, &interleaved_flag, 1},
@@ -927,7 +927,12 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     ret = false;
   }
 
-  if (opt.long_read && opt.error_rate <= 0) {
+  if (opt.long_read && !(0 < opt.threshold < 1)) { 
+     std::cerr << "Threshold not in (0,1). Setting default threshold for unmapped kmers to 0.8" << std::endl;
+     opt.threshold = 0.8;
+  }
+
+  if (opt.long_read) { //opt.error_rate <= 0) {
     //hiding for release, not used for this version
     //std::cerr << "No sequencing error-rate: invalid error-rate; must be greater than zero" << std::endl; 
     //ret = false; 
@@ -2068,7 +2073,7 @@ void usageBus() {
        << "    --long                  	Treat reads as long" << endl
        //<< "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
        << "    --threshold		            Threshold for rate of unmapped kmers per read" << endl
-       << "    --unmapped		              Computed ratio of unmapped kmers for first 1M reads" << endl 
+       //<< "    --unmapped		              Computed ratio of unmapped kmers for first 1M reads and output unmapped reads" << endl 
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --batch-barcodes          Records both batch and extracted barcode in BUS file" << endl
@@ -2127,8 +2132,6 @@ void usageEM(bool valid_input = true) {
        << "    --seed=INT                Seed for the bootstrap sampling (default: 42)" << endl
        << "    --plaintext               Output plaintext instead of HDF5" << endl
        << "    --single                  Quantify single-end reads" << endl
-       << "    --long                  	 Quantify long reads" << endl
-       << "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
        << "    --single-overhang         Include reads where unobserved rest of fragment is" << endl
        << "                              predicted to lie outside a transcript" << endl
        << "    --fr-stranded             Strand specific reads, first read forward" << endl
@@ -2363,7 +2366,7 @@ int main(int argc, char *argv[]) {
         }
         // Write out fragment length distributions if reads paired-end or long:
         if (!opt.single_end || opt.long_read) {
-	  std::remove((opt.output + "/flens.txt").c_str()); 
+	        std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for (size_t id = 0; id < opt.batch_ids.size(); id++) {
             if (opt.long_read) {
@@ -2451,14 +2454,14 @@ int main(int argc, char *argv[]) {
           }
         }
         std::vector<uint32_t> fld;
-	std::vector<uint32_t> fld_c;
+	      std::vector<uint32_t> fld_c;
         if (opt.busOptions.paired && !opt.long_read) {
           fld = collection.flens; // copy
           collection.compute_mean_frag_lens_trunc();
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
-	  std::remove((opt.output + "/flens.txt").c_str()); 
+	        std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
             if (i != 0) {
@@ -2469,13 +2472,13 @@ int main(int argc, char *argv[]) {
           flensout_f << "\n";
           flensout_f.close();
         } else if (opt.long_read) {
-	  opt.busOptions.threshold = opt.threshold;
+	        opt.busOptions.threshold = opt.threshold;
           fld = collection.flens_lr; // copy
-	  fld_c = collection.flens_lr_c; //copy 
+	        fld_c = collection.flens_lr_c; //copy 
           // Write out index:
           index.write((opt.output + "/index.saved"), false, opt.threads);
           // Write out fragment length distribution:
-	  std::remove((opt.output + "/flens.txt").c_str()); 
+	        std::remove((opt.output + "/flens.txt").c_str()); 
           std::ofstream flensout_f((opt.output + "/flens.txt"));
           for ( size_t i = 0 ; i < fld.size(); ++i ) {
             if (i > 0.0001) {
@@ -2577,26 +2580,6 @@ int main(int argc, char *argv[]) {
         if (opt.fusion) {
           // need full transcript sequences
           index.loadTranscriptSequences();
-        }
-
-        if (opt.long_read) {
-           double error_rate_threshold_tmp = ((1.0/opt.error_rate - 2*index.k) * opt.error_rate);
-           std::cerr << "Suggested threshold for novel reads to " << error_rate_threshold_tmp << std::endl;
-             if (1 > opt.threshold > 0) {
-                std::cerr << "Using supplied threshold " << opt.threshold << std::endl;
-             } else if (0 < error_rate_threshold_tmp < 1) {
-                opt.threshold = error_rate_threshold_tmp;
-                std::cerr << "Using computed threshold " << opt.threshold << std::endl;
-             } else {
-                opt.threshold = .8;
-                std::cerr << "Supplied and computed threshold are invalid, using default value of " << opt.threshold      << std::endl;
-             }
-             int suggested_k = int((1.0/opt.error_rate)/2.0) - 1;
-             if (suggested_k % 2 == 0) {
-                std::cerr << "Suggested kmer length for error rate is: " << suggested_k-1 << std::endl;
-             } else {
-                std::cerr << "Suggested kmer length for error rate is: " << suggested_k << std::endl;
-             }
         }
 
         bool guessChromosomes = false;
