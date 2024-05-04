@@ -180,6 +180,7 @@ ProgramOptions() :
   matrix_to_directories(false),
   batch_mode(false),
   bus_mode(false),
+  unmapped(false),
   bam(false),
   num(false),
   plaintext(false),

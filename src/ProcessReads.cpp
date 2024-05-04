@@ -864,7 +864,7 @@ ReadProcessor::ReadProcessor(const KmerIndex& index, const ProgramOptions& opt, 
 
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
-   unmapped_list.reserve(seqs.size()); 
+   if (opt.unmapped) unmapped_list.reserve(seqs.size()); 
    counts.reserve((int) (tc.counts.size() * 1.25));
    clear();
 }
@@ -1038,7 +1038,7 @@ void ReadProcessor::processBuffer() {
     if (mp.opt.long_read) {
     	r = tc.modeKmers(v1, v2, !paired, u);
     } else {
-	r = tc.intersectKmers(v1, v2, !paired, u);
+      r = tc.intersectKmers(v1, v2, !paired, u);
     }
     // Mask out off-listed kmers
     u &= index.onlist_sequences;
@@ -1053,15 +1053,15 @@ void ReadProcessor::processBuffer() {
     }
 
     if (mp.opt.long_read && (r == -1 || u.isEmpty()) && mp.opt.unmapped) {
-	std::stringstream ss; 
-	std::string s(s1);
-        s = "@unmapped\n"+s;
-	ss << s; 
-	mp.outputNovel(ss);
+      std::stringstream ss; 
+      std::string s(s1);
+      s = "@unmapped\n"+s;
+      ss << s; 
+      mp.outputNovel(ss);
     }
 
     /* --  possibly modify the pseudoalignment  -- */
-    if (!novel) {
+    if (!novel || !mp.opt.long_read) {
 	    // If we have paired end reads where one end maps or single end reads, check if some transcsripts
 	    // are not compatible with the mean fragment length
 	    if (!mp.opt.single_overhang && !u.isEmpty() && (!paired || v1.empty() || v2.empty()) && tc.has_mean_fl) {
@@ -1071,39 +1071,39 @@ void ReadProcessor::processBuffer() {
 	      int p = -1;
 	      const_UnitigMap<Node> um;
 	      Kmer km;
-
+	      
 	      if (!v1.empty()) {
-		auto res = findFirstMappingKmer(v1);
-		um = res.first;
-		p = res.second;
-		km = um.getMappedHead();
+	        auto res = findFirstMappingKmer(v1);
+	        um = res.first;
+	        p = res.second;
+	        km = um.getMappedHead();
 	      }
 	      if (!v2.empty()) {
-		auto res = findFirstMappingKmer(v2);
-		um = res.first;
-		p = res.second;
-		km = um.getMappedHead();
+	        auto res = findFirstMappingKmer(v2);
+	        um = res.first;
+	        p = res.second;
+	        km = um.getMappedHead();
 	      }
-
+	      
 	      // for each transcript in the pseudoalignment
 	      for (auto tr : u) {
-
-		auto x = index.findPosition(tr, km, um, p);
-		// if the fragment is within bounds for this transcript, keep it
-		if (x.second && x.first + fl <= (int)index.target_lens_[tr]) {
-		  vtmp.add(tr);
-		} else {
-		  //pass
-		}
-		if (!x.second && x.first - fl >= 0) {
-		  vtmp.add(tr);
-		} else {
-		  //pass
-		}
+	        
+	        auto x = index.findPosition(tr, km, um, p);
+	        // if the fragment is within bounds for this transcript, keep it
+	        if (x.second && x.first + fl <= (int)index.target_lens_[tr]) {
+	          vtmp.add(tr);
+	        } else {
+	          //pass
+	        }
+	        if (!x.second && x.first - fl >= 0) {
+	          vtmp.add(tr);
+	        } else {
+	          //pass
+	        }
 	      }
-
+	      
 	      if (vtmp.cardinality() < u.cardinality()) {
-		u = vtmp; // copy
+	        u = vtmp; // copy
 	      }
 	    }
 
@@ -1114,91 +1114,91 @@ void ReadProcessor::processBuffer() {
 	    // find the ec
 	    if (!u.isEmpty()) {
 	      std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
-
+	      
 	      // count the pseudoalignment
 	      auto elem = index.ecmapinv.find(u);
 	      if (elem == index.ecmapinv.end()) {
-		// something we haven't seen before
-		newEcs.push_back(u);
+	        // something we haven't seen before
+	        newEcs.push_back(u);
 	      } else if (elem->second >= counts.size()) { // handle race condition (if counts isn't updated yet)
-		newEcs.push_back(u);
+	        newEcs.push_back(u);
 	      } else {
-		// add to count vector
-		++counts[elem->second];
+	        // add to count vector
+	        ++counts[elem->second];
 	      }
-
+	      
 	      /* -- collect extra information -- */
 	      // collect bias info
 	      if (findBias && !u.isEmpty() && biasgoal > 0) {
-		// collect sequence specific bias info
-
-		if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
-		  biasgoal--;
-		}
+	        // collect sequence specific bias info
+	        
+	        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
+	          biasgoal--;
+	        }
 	      }
-
+	      
 	      // collect fragment length info
 	      if (!mp.opt.long_read && findFragmentLength && flengoal > 0 && paired && u.cardinality() == 1 && !v1.empty() && !v2.empty()) {
-		// try to map the reads
-		int tl = index.mapPair(s1, l1, s2, l2);
-		if (0 < tl && tl < flens.size()) {
-		  flens[tl]++;
-		  flengoal--;
-		}
+	        // try to map the reads
+	        int tl = index.mapPair(s1, l1, s2, l2);
+	        if (0 < tl && tl < flens.size()) {
+	          flens[tl]++;
+	          flengoal--;
+	        }
 	      }
 	      
 	      if (mp.opt.long_read) {
-        	if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v1.empty()) {
-          	  for ( auto tr : u) {
-	    	    flens_lr[tr] += l1;
-	    	    flens_lr_c[tr]++;
-	    	    flengoal--;
-    	  	  }    			
-		}
-                if (findFragmentLength && mp.opt.unmapped)
-		{
-		   unmapped_list.push_back(unmapped_r); 	    
-		}
-      	     }
-       // pseudobam     
-     if (mp.opt.pseudobam) {
-       PseudoAlignmentInfo info;
-       info.id = (paired) ? (i/2) : i; // read id
-       info.paired = paired;
-       if (!u.isEmpty()) {
-         info.r1empty = v1.empty();
-         info.r2empty = v2.empty();
-         const_UnitigMap<Node> um;
-         info.k1pos = -1;
-         info.k2pos = -1;
-         if (!info.r1empty) {
-           auto res = findFirstMappingKmer(v1);
-           info.k1pos = res.second;
-         }
-         if (!info.r2empty) {
-           auto res = findFirstMappingKmer(v2);
-           info.k1pos = res.second;
-         }
- 
-         info.ec = u;
-       }
-       pseudobatch.aln.push_back(std::move(info));
-     }
-    }
+	        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v1.empty()) {
+	          for ( auto tr : u) {
+	            flens_lr[tr] += l1;
+	            flens_lr_c[tr]++;
+	            flengoal--;
+	          }    			
+	        }
+	        if (findFragmentLength && mp.opt.unmapped)
+	        {
+	          unmapped_list.push_back(unmapped_r); 	    
+	        }
+	      }
+	    }
+	    // pseudobam     
+	    if (mp.opt.pseudobam) {
+	      PseudoAlignmentInfo info;
+	      info.id = (paired) ? (i/2) : i; // read id
+	      info.paired = paired;
+	      if (!u.isEmpty()) {
+	        info.r1empty = v1.empty();
+	        info.r2empty = v2.empty();
+	        const_UnitigMap<Node> um;
+	        info.k1pos = -1;
+	        info.k2pos = -1;
+	        if (!info.r1empty) {
+	          auto res = findFirstMappingKmer(v1);
+	          info.k1pos = res.second;
+	        }
+	        if (!info.r2empty) {
+	          auto res = findFirstMappingKmer(v2);
+	          info.k1pos = res.second;
+	        }
+	        
+	        info.ec = u;
+	      }
+	      pseudobatch.aln.push_back(std::move(info));
+	    }
 
     } else { // now address reads that are considered novel and need to be written to novel fastq and processed later. 
-	std::stringstream ss; 
-	if (u.isEmpty()) {
-          std::string s(s1);
-          s = "@novel_disjointIntersect\n"+s;
-          ss << s; 
-	  mp.outputNovel(ss);
-	} else {
-	  std::string s(s1);
-          s = "@novel_tooManyEmptyKmers\n"+s;
-	  ss << s; 
-	  mp.outputNovel(ss);
-	}
+      std::stringstream ss; 
+      if (u.isEmpty()) {
+        std::string s(s1);
+        s = "@novel_disjointIntersect\n"+s;
+        ss << s; 
+        mp.outputNovel(ss);
+      } else {
+        std::string s(s1);
+        s = "@novel_tooManyEmptyKmers\n"+s;
+        ss << s; 
+        mp.outputNovel(ss);
+      }
     }
    }
 }
@@ -1225,7 +1225,7 @@ BUSProcessor::BUSProcessor(/*const*/ KmerIndex& index, const ProgramOptions& opt
    buffer = new char[bufsize];
    seqs.reserve(bufsize/50);
    newEcs.reserve(1000);
-   unmapped_list.reserve(seqs.size()); 
+   if (opt.unmapped) unmapped_list.reserve(seqs.size()); 
    bv.reserve(1000);
    counts.reserve((int) (tc.counts.size() * 1.25));
    memset(&bc_len[0],0,sizeof(bc_len));
@@ -1364,17 +1364,13 @@ void BUSProcessor::processBuffer() {
   if (mp.opt.batch_mode) {
     tcount = mp.tlencounts[id];
   }
-  bool findFragmentLength;
+  bool findFragmentLength = tcount < 10000 && busopt.paired;
   if (busopt.long_read) {
     findFragmentLength = tcount < 1000000; 
-  } else {
-    findFragmentLength = busopt.paired && tcount < 10000;
   }
   if (mp.opt.batch_mode) {
     if (busopt.long_read) {
       findFragmentLength = (mp.tlencount < 1000000); 
-    } else {
-      findFragmentLength = (mp.opt.fld == 0) && (mp.tlencount < 10000);
     }
   }
 
@@ -1669,107 +1665,107 @@ void BUSProcessor::processBuffer() {
       if (mp.opt.long_read) {
       	r = tc.modeKmers(v, v2, !busopt.paired, u);
       } else {
-	r = tc.intersectKmers(v, v2, !busopt.paired, u);
+        r = tc.intersectKmers(v, v2, !busopt.paired, u);
       }
     }
 
     if (mp.opt.long_read && (r == -1 || u.isEmpty()) && mp.opt.unmapped) {
-	std::stringstream ss; 
-	std::string s(seq);
-        s = "@unmapped\n"+s;
-	ss << s; 
-	mp.outputNovel(ss);
+      std::stringstream ss; 
+      std::string s(seq);
+      s = "@unmapped\n"+s;
+      ss << s; 
+      mp.outputNovel(ss);
     }
 
-    if (!novel) {
-    if (!u.isEmpty()) {
-      if (index.dfk_onlist) { // In case we want to not intersect D-list targets
-        auto usize = u.cardinality();
-        u &= index.onlist_sequences;
-        if (u.cardinality() != usize && !(usize > 0 && u.cardinality() == 0)) {
-          // Add if a D-list elem exists but not if ALL elems are D-listed
-          u.add(index.onlist_sequences.cardinality());
+    if (!novel || !mp.opt.long_read) {
+      if (!u.isEmpty()) {
+        if (index.dfk_onlist) { // In case we want to not intersect D-list targets
+          auto usize = u.cardinality();
+          u &= index.onlist_sequences;
+          if (u.cardinality() != usize && !(usize > 0 && u.cardinality() == 0)) {
+            // Add if a D-list elem exists but not if ALL elems are D-listed
+            u.add(index.onlist_sequences.cardinality());
+          }
+        } else { // Normal/standard workflow:
+          // Mask out off-listed kmers
+          u &= index.onlist_sequences;
         }
-      } else { // Normal/standard workflow:
-        // Mask out off-listed kmers
-        u &= index.onlist_sequences;
       }
-    }
-
-    if (doStrandSpecificityIfPossible && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
-      doStrandSpecificity(u, mp.opt.strand, v, v2);
-    }
-
-    // find the ec
-    if (!u.isEmpty()) {
-      BUSData b;
-      uint32_t f = 0;
-      b.flags = 0;
-      b.barcode = stringToBinary(bc, blen, f);
-      b.flags |= f;
-      b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
-      b.flags |= (f) << 8;
-      b.count = 1;
-      if (num) {
-        b.flags = (uint32_t) flags[i / jmax];
+      
+      if (doStrandSpecificityIfPossible && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
+        doStrandSpecificity(u, mp.opt.strand, v, v2);
       }
-
-      if (busopt.paired && getFragLenIfPaired && !mp.opt.long_read) {
-        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
-          // try to map the reads
-          int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
-          if (0 < tl && tl < flens.size()) {
-            flens[tl]++;
-            flengoal--;
+      
+      // find the ec
+      if (!u.isEmpty()) {
+        BUSData b;
+        uint32_t f = 0;
+        b.flags = 0;
+        b.barcode = stringToBinary(bc, blen, f);
+        b.flags |= f;
+        b.UMI = check_tag_sequence || bulk_like ? umi_binary : stringToBinary(umi, ulen, f);
+        b.flags |= (f) << 8;
+        b.count = 1;
+        if (num) {
+          b.flags = (uint32_t) flags[i / jmax];
+        }
+        
+        if (busopt.paired && getFragLenIfPaired && !mp.opt.long_read) {
+          if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty() && !v2.empty()) {
+            // try to map the reads
+            int tl = index.mapPair(seq, seqlen, seq2, seqlen2);
+            if (0 < tl && tl < flens.size()) {
+              flens[tl]++;
+              flengoal--;
+            }
           }
         }
-      }
-
-      if (mp.opt.long_read) {
-        if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty()) {
-             for ( auto tr : u) {
-	       flens_lr[tr] += seqlen;
-	       flens_lr_c[tr]++;
-	       flengoal--;
-    	     }    	
-	}
-        if(findFragmentLength && mp.opt.unmapped) {
-	  unmapped_list.push_back(unmapped_r); 
-	}
-      }
-
-      // count the pseudoalignment
-      std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
-      auto elem = index.ecmapinv.find(u);
-      if (elem == index.ecmapinv.end()) {
-        // something we haven't seen before
-        //newEcs.push_back(u); // don't store newEcs (it's redundant)
-        newB.push_back({b, u});
-      } /*else if (elem->second >= counts.size()) {
-          newEcs.push_back(u);
-          newB.push_back({b, u});
-      } */ else {
-        // add to count vector
-        //++counts[elem->second]; // don't store counts; we have BUS records that we can count up
-        // push back BUS record
-        b.ec = elem->second;
-        bv.push_back(b);
-      }
-    }
-    } else {
-       // now address reads that are considered novel and need to be written to novel fastq and processed later.
-        std::stringstream ss;
-        if (u.isEmpty()) {
-	  std::string s(seq);
-	  s = "@novel_disjointIntersect\n"+s;
-          ss << s;
-          mp.outputNovel(ss);
-        } else {
-	  std::string s(seq);
-          s = "@novel_tooManyEmptyKmers\n"+s;
-	  ss << s; 
-          mp.outputNovel(ss);
+        
+        if (mp.opt.long_read) {
+          if (findFragmentLength && flengoal > 0 && u.cardinality() == 1 && !v.empty()) {
+            for ( auto tr : u) {
+              flens_lr[tr] += seqlen;
+              flens_lr_c[tr]++;
+              flengoal--;
+            }    	
+          }
+          if(findFragmentLength && mp.opt.unmapped) {
+            unmapped_list.push_back(unmapped_r); 
+          }
         }
+        
+        // count the pseudoalignment
+        std::lock_guard<std::mutex> lock(mp.transfer_locks[local_id]);
+        auto elem = index.ecmapinv.find(u);
+        if (elem == index.ecmapinv.end()) {
+          // something we haven't seen before
+          //newEcs.push_back(u); // don't store newEcs (it's redundant)
+          newB.push_back({b, u});
+        } /*else if (elem->second >= counts.size()) {
+ newEcs.push_back(u);
+ newB.push_back({b, u});
+        } */ else {
+          // add to count vector
+          //++counts[elem->second]; // don't store counts; we have BUS records that we can count up
+          // push back BUS record
+          b.ec = elem->second;
+          bv.push_back(b);
+        }
+      }
+    } else {
+      // now address reads that are considered novel and need to be written to novel fastq and processed later.
+      std::stringstream ss;
+      if (u.isEmpty()) {
+        std::string s(seq);
+        s = "@novel_disjointIntersect\n"+s;
+        ss << s;
+        mp.outputNovel(ss);
+      } else {
+        std::string s(seq);
+        s = "@novel_tooManyEmptyKmers\n"+s;
+        ss << s; 
+        mp.outputNovel(ss);
+      }
     } 
 
     if (mp.opt.pseudobam) {
