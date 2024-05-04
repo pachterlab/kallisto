@@ -85,7 +85,7 @@ struct EMAlgorithm {
     if (alpha_.size() == priors.size()) {
 
       alpha_.assign(priors.begin(), priors.end());
-    } else {
+    } else if (priors.size() != 0) {
 
       std::cerr << "[   em] number of priors does not match number of transcripts." << std::endl;
       std::cerr << "        defaulting to uniform priors." << std::endl;
