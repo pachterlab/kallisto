@@ -2080,9 +2080,9 @@ void usageBus() {
        << "    --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse" << endl
        << "    --unstranded              Treat all read as non-strand-specific" << endl
        << "    --paired                  Treat reads as paired" << endl
-       << "    --long                  	Treat reads as long" << endl
+       << "    --long                    Treat reads as long" << endl
        //<< "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
-       << "    --threshold		            Threshold for rate of unmapped kmers per read" << endl
+       << "    --threshold               Threshold for rate of unmapped kmers per read" << endl
        //<< "    --unmapped		              Computed ratio of unmapped kmers for first 1M reads and output unmapped reads" << endl 
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
