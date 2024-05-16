@@ -1,7 +1,7 @@
 #ifndef KALLISTO_COMMON_H
 #define KALLISTO_COMMON_H
 
-#define KALLISTO_VERSION "0.50.1"
+#define KALLISTO_VERSION "0.51.0"
 
 // NOTE: MAKE SURE THIS FILE GETS INCLUDED FIRST IN ALL OTHER FILES AND BEFORE ANY EXTERNAL LIBRARIES
 
@@ -180,6 +180,7 @@ ProgramOptions() :
   matrix_to_directories(false),
   batch_mode(false),
   bus_mode(false),
+  unmapped(false),
   bam(false),
   num(false),
   plaintext(false),

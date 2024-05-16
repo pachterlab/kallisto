@@ -1209,6 +1209,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   }
 
   // 4. write number of targets
+  num_trans -= d_list.size();
   out.write((char *)&num_trans, sizeof(num_trans));
 
   // 5. write out target lengths

@@ -540,7 +540,7 @@ void ParseOptionsBus(int argc, char **argv, ProgramOptions& opt) {
   int batch_barcodes_flag = 0;
   int dfk_onlist_flag = 0;
 
-  const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:N:";
+  const char *opt_string = "i:o:x:t:lbng:c:T:P:r:e:B:N:";
   static struct option long_options[] = {
     {"verbose", no_argument, &verbose_flag, 1},
     {"dfk-onlist", no_argument, &dfk_onlist_flag, 1},
@@ -897,6 +897,16 @@ void ParseOptionsH5Dump(int argc, char **argv, ProgramOptions& opt) {
 }
 
 bool CheckOptionsBus(ProgramOptions& opt) {
+  // Initialize BUS options (to ensure no variables are uninitialized for good measure); BUS options shouldn't be intialized before this
+  opt.busOptions.nfiles = 1;
+  opt.busOptions.keep_fastq_comments = false;
+  opt.busOptions.paired = false;
+  opt.busOptions.long_read = false;
+  opt.busOptions.unmapped = false;
+  opt.busOptions.error_rate = 0.0;
+  opt.busOptions.threshold = 0.8;
+  opt.busOptions.aa = false;
+  
   bool ret = true;
 
   cerr << endl;
@@ -2072,7 +2082,7 @@ void usageBus() {
        << "    --paired                  Treat reads as paired" << endl
        << "    --long                    Treat reads as long" << endl
        //<< "    --error_rate              Estimated error rate of long reads (required for --long)" << endl
-       << "    --threshold		 Threshold for rate of unmapped kmers per read" << endl
+       << "    --threshold               Threshold for rate of unmapped kmers per read" << endl
        //<< "    --unmapped		              Computed ratio of unmapped kmers for first 1M reads and output unmapped reads" << endl 
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
@@ -2111,8 +2121,8 @@ void usageh5dump() {
 void usageInspect() {
   cout << "kallisto " << KALLISTO_VERSION << endl << endl
        << "Usage: kallisto inspect INDEX-file" << endl << endl
-       << "Required arguments:" << endl
-       << "-i, --index=STRING            Filename for the kallisto index to be used for" << endl;
+       << "Optional arguments:" << endl
+       << "-t                      Number of threads" << endl << endl;
 }
 
 void usageEM(bool valid_input = true) {
@@ -2180,7 +2190,7 @@ void usageTCCQuant(bool valid_input = true) {
        << "                              (default: equivalence classes are taken from the index)" << endl
        << "-f, --fragment-file=FILE      File containing fragment length distribution" << endl
        << "                              (default: effective length normalization is not performed)" << endl
-       << "--long			 Use version of EM for long reads " << endl 
+       << "--long                        Use version of EM for long reads " << endl 
        << "-P, --platform.               [PacBio or ONT] used for sequencing " << endl 
        << "-l, --fragment-length=DOUBLE  Estimated average fragment length" << endl
        << "-s, --sd=DOUBLE               Estimated standard deviation of fragment length" << endl
@@ -2879,7 +2889,7 @@ int main(int argc, char *argv[]) {
         size_t num_trans = index.num_trans;
 
         const bool calcEffLen = !opt.fldFile.empty() || opt.fld != 0.0;
-        if (calcEffLen && !opt.fldFile.empty() && (opt.long_read && opt.platform == "PACBIO")) { // Parse supplied fragment length distribution file
+        if (calcEffLen && !opt.fldFile.empty() && (!opt.long_read || opt.platform == "PACBIO")) { // Parse supplied fragment length distribution file
           std::ifstream infld((opt.fldFile));
           if (infld.is_open()) {
             std::string line;
@@ -2940,7 +2950,7 @@ int main(int argc, char *argv[]) {
           }
 
           std::vector<double> fl_means;
-          if (calcEffLen && (opt.long_read && !(opt.platform == "ONT"))) {
+          if (calcEffLen && (!opt.long_read || !(opt.platform == "ONT"))) {
             if (opt.fld != 0.0) {
               collection.init_mean_fl_trunc(opt.fld, opt.sd);
             } else {
