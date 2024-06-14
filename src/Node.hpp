@@ -6,8 +6,8 @@
 #include <set>
 
 #include <CompactedDBG.hpp>
-#include <BlockArray.hpp>
-#include <SparseVector.hpp>
+#include "BlockArray.hpp"
+#include "SparseVector.hpp"
 
 // Unitig to transcript
 struct u2t {

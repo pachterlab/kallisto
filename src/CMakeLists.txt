@@ -10,21 +10,11 @@ endif(USE_BAM)
 add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 
 #add_library(kallisto_core ${sources} ${headers})
-#target_include_directories( PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+#target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB_RECURSE sources *.cpp)
-file(GLOB_RECURSE headers *.h *.hpp)
-list(REMOVE_ITEM sources ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-add_executable(kallisto ${sources} ${headers} main.cpp)
-
-if (WIN32 OR (DEFINED ENV{RELEASE_OS} AND "$ENV{RELEASE_OS}" STREQUAL "windows"))
-    set_target_properties(kallisto PROPERTIES LINK_FLAGS "-Wl,--allow-multiple-definition")
-endif()
-#add_executable(kallisto main.cpp)
+add_executable(kallisto main.cpp ${sources} ${headers})
 
 find_package( Threads REQUIRED )
-
 ExternalProject_Get_Property(bifrost install_dir)
 if (USE_BAM)
 target_link_libraries(kallisto  pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a)
@@ -48,7 +38,7 @@ endif(LINK MATCHES static)
 
 
 if(USE_HDF5)
-    find_package( HDF5 REQUIRED )
+    #find_package( HDF5 COMPONENTS CXX REQUIRED )
 endif(USE_HDF5)
 
 if (NOT ZLIBNG)
@@ -73,19 +63,14 @@ if (ZLIBNG)
     endif(WIN32)
 endif(ZLIBNG)
 
-
-if (WIN32)
-target_link_libraries(kallisto ws2_32)
-endif(WIN32)
-
 if(USE_HDF5)
-    if(HDF5_FOUND)
+    #if(HDF5_FOUND)
         include_directories( ${HDF5_INCLUDE_DIRS} )
-        #target_link_libraries(  ${HDF5_LIBRARIES} )
+        #target_link_libraries( kallisto_core ${HDF5_LIBRARIES} )
         target_link_libraries( kallisto ${HDF5_LIBRARIES} )
-    else()
-        message(FATAL_ERROR "HDF5 not found. Required to output files")
-    endif()
+    #else()
+    #    message(FATAL_ERROR "HDF5 not found. Required to output files")
+    #endif()
 endif(USE_HDF5)
 
 if(LINK MATCHES static)

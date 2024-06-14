@@ -97,7 +97,7 @@ void TinyBitmap::clear() {
 
     if (tiny_bmp != nullptr){
 
-        posix_memalign_free(tiny_bmp);
+        free(tiny_bmp);
         tiny_bmp = nullptr;
     }
 }
@@ -745,7 +745,7 @@ size_t TinyBitmap::runOptimize() {
                     tiny_bmp_new[1] = new_cardinality;
                     tiny_bmp_new[2] = getOffset();
 
-                    posix_memalign_free(tiny_bmp);
+                    free(tiny_bmp);
 
                     tiny_bmp = tiny_bmp_new;
 
@@ -793,7 +793,7 @@ size_t TinyBitmap::runOptimize() {
 
                     tiny_bmp_new[k] = tiny_bmp[cardinality + 2];
 
-                    posix_memalign_free(tiny_bmp);
+                    free(tiny_bmp);
 
                     tiny_bmp = tiny_bmp_new;
 
@@ -826,7 +826,7 @@ size_t TinyBitmap::shrinkSize() {
 
     std::copy(tiny_bmp, tiny_bmp + new_sz, new_t_bmp);
 
-    posix_memalign_free(tiny_bmp);
+    free(tiny_bmp);
     tiny_bmp = new_t_bmp;
 
     tiny_bmp[0] = (tiny_bmp[0] & ~sz_mask) | (new_sz << 3);
@@ -939,7 +939,7 @@ bool TinyBitmap::change_sz(const uint16_t sz_min) {
         std::memset(tiny_bmp_new, 0, new_sz * sizeof(uint16_t));
         std::copy(tiny_bmp, tiny_bmp + (new_sz >= sz ? sz : sz_min), tiny_bmp_new);
 
-        posix_memalign_free(tiny_bmp);
+        free(tiny_bmp);
 
         tiny_bmp = tiny_bmp_new;
         tiny_bmp[0] = (tiny_bmp[0] & ~sz_mask) | (new_sz << 3);
@@ -1060,7 +1060,7 @@ bool TinyBitmap::switch_mode(const uint16_t sz_min, const uint16_t new_mode) {
         }
     }
 
-    if (tiny_bmp_new != nullptr) posix_memalign_free(tiny_bmp_new);
+    if (tiny_bmp_new != nullptr) free(tiny_bmp_new);
 
     return true;
 }

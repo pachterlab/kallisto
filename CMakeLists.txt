@@ -62,9 +62,9 @@ ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
-        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
-    BUILD_COMMAND make lib-static
+    CONFIGURE_COMMAND "" #autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
+        #--prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
+    BUILD_COMMAND "" #make lib-static
     INSTALL_COMMAND ""
 )
 endif(USE_BAM)
