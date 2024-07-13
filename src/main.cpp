@@ -2547,6 +2547,7 @@ int main(int argc, char *argv[]) {
         std::string(std::to_string(num_unique)),
         KALLISTO_VERSION,
         std::string(std::to_string(index.INDEX_VERSION)),
+	std::string(std::to_string(index.k)),
         start_time,
         call,
         opt.aa ? std::to_string(collection.cardinality_clashes) : "");
