@@ -189,6 +189,8 @@ Optional arguments:
                               (default: equivalence classes are taken from the index)
 -f, --fragment-file=FILE      File containing fragment length distribution
                               (default: effective length normalization is not performed)
+--long                        Use version of EM for long reads
+-p, --platform=STRING         [PacBio or ONT] used for sequencing
 -l, --fragment-length=DOUBLE  Estimated average fragment length
 -s, --sd=DOUBLE               Estimated standard deviation of fragment length
                               (note: -l, -s values only should be supplied when
@@ -235,6 +237,7 @@ Optional arguments:
     --rf-stranded             Strand specific reads for UMI-tagged reads, first read reverse
     --unstranded              Treat all read as non-strand-specific
     --paired                  Treat reads as paired
+    --long                    Treat reads as long
     --aa                      Align to index generated from a FASTA-file containing amino acid sequences
     --inleaved                Specifies that input is an interleaved FASTQ file
     --batch-barcodes          Records both batch and extracted barcode in BUS file
