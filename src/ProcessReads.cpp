@@ -241,6 +241,13 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   size_t nummapped = 0;
   bool paired = !opt.single_end && !opt.long_read;
 
+  if (paired) {
+    std::cerr << "[quant] running in paired-end mode" << std::endl;
+  } else if (opt.long_read) {
+    std::cerr << "[quant] running in long read mode" << std::endl;
+  } else {
+    std::cerr << "[quant] running in single-end mode" << std::endl;
+  }
   for (int i = 0, si=1; i < opt.files.size(); si++) {
     auto& busopt = opt.busOptions;
     std::cerr << "[quant] will process sample " << si<< ": ";

@@ -937,7 +937,7 @@ bool CheckOptionsBus(ProgramOptions& opt) {
     ret = false;
   }
 
-  if (opt.long_read && !(0 < opt.threshold < 1)) { 
+  if (opt.long_read && !(0 < opt.threshold && opt.threshold < 1)) { 
      std::cerr << "Threshold not in (0,1). Setting default threshold for unmapped kmers to 0.8" << std::endl;
      opt.threshold = 0.8;
   }
@@ -2324,9 +2324,9 @@ int main(int argc, char *argv[]) {
       if (opt.long_read) {
          double error_rate_threshold_tmp = ((1.0/opt.error_rate - 2*index.k) * opt.error_rate);
             //std::cerr << "Suggested threshold for novel reads to " << error_rate_threshold_tmp << std::endl;
-	    if (1 > opt.threshold > 0) {
+	    if (1 > opt.threshold && opt.threshold > 0) {
                //std::cerr << "Using supplied threshold " << opt.threshold << std::endl;  
-            } else if (0 < error_rate_threshold_tmp < 1) {
+            } else if (0 < error_rate_threshold_tmp && error_rate_threshold_tmp < 1) {
                opt.threshold = error_rate_threshold_tmp;
                std::cerr << "Using computed threshold " << opt.threshold << std::endl;
             } else {
