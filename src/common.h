@@ -135,6 +135,8 @@ struct ProgramOptions {
   bool make_unique;
   bool fusion;
   bool dfk_onlist;
+  bool do_union;
+  bool no_jump;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   std::string gfa; // used for inspect
@@ -200,7 +202,9 @@ ProgramOptions() :
   single_overhang(false),
   aa(false),
   distinguish(false),
-  d_list_overhang(1)
+  d_list_overhang(1),
+  do_union(false),
+  no_jump(false)
   {}
 };
 
