@@ -58,7 +58,28 @@ std::pair<const_UnitigMap<Node>, int> findFirstMappingKmer(const std::vector<std
   return std::make_pair(um, p);
 }
 
-void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v2) {
+void doStrandSpecificity(Roaring& u, const ProgramOptions::StrandType strand, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v, const std::vector<std::pair<const_UnitigMap<Node>, int32_t> >& v2, bool comprehensive = false) {
+  if (comprehensive) { // Comprehensive means we check every position's strand specificity (not used in standard usage)
+    Roaring final_u;
+    for (int i = 0; i < v.size(); i++) {
+      Roaring u_ = u; // for union and shades and no-jump
+      std::vector<std::pair<const_UnitigMap<Node>, int32_t> > v_;
+      std::vector<std::pair<const_UnitigMap<Node>, int32_t> > v2_;
+      v_.push_back(v[i]); 
+      doStrandSpecificity(u_, strand, v_, v2, false);
+      final_u |= u_;
+    }
+    for (int i = 0; i < v2.size(); i++) {
+      Roaring u_ = u; // for union and shades and no-jump
+      std::vector<std::pair<const_UnitigMap<Node>, int32_t> > v_;
+      std::vector<std::pair<const_UnitigMap<Node>, int32_t> > v2_;
+      v2_.push_back(v2[i]); 
+      doStrandSpecificity(u_, strand, v_, v2, false);
+      final_u |= u_;
+    }
+    u = final_u;
+    return;
+  }
   int p = -1;
   const_UnitigMap<Node> um;
   Roaring vtmp;
@@ -241,6 +262,13 @@ int64_t ProcessBUSReads(MasterProcessor& MP, const  ProgramOptions& opt) {
   size_t nummapped = 0;
   bool paired = !opt.single_end && !opt.long_read;
 
+  if (paired) {
+    std::cerr << "[quant] running in paired-end mode" << std::endl;
+  } else if (opt.long_read) {
+    std::cerr << "[quant] running in long read mode" << std::endl;
+  } else {
+    std::cerr << "[quant] running in single-end mode" << std::endl;
+  }
   for (int i = 0, si=1; i < opt.files.size(); si++) {
     auto& busopt = opt.busOptions;
     std::cerr << "[quant] will process sample " << si<< ": ";
@@ -1108,7 +1136,12 @@ void ReadProcessor::processBuffer() {
 	    }
 
 	    if (mp.opt.strand_specific && !u.isEmpty()) {
-	      doStrandSpecificity(u, mp.opt.strand, v1, v2);
+	      bool comprehensive = false;
+	      if (mp.opt.do_union || mp.opt.no_jump) comprehensive = true;
+	      // Begin Shading
+	      if (index.use_shade) comprehensive = true;
+	      // End Shading
+	      doStrandSpecificity(u, mp.opt.strand, v1, v2, comprehensive);
 	    }
 
 	    // find the ec
@@ -1693,7 +1726,12 @@ void BUSProcessor::processBuffer() {
       }
       
       if (doStrandSpecificityIfPossible && mp.opt.strand_specific && !u.isEmpty()) { // Strand-specificity
-        doStrandSpecificity(u, mp.opt.strand, v, v2);
+        bool comprehensive = false;
+        if (mp.opt.do_union || mp.opt.no_jump) comprehensive = true;
+        // Begin Shading
+        if (index.use_shade) comprehensive = true;
+        // End Shading
+        doStrandSpecificity(u, mp.opt.strand, v, v2, comprehensive);
       }
       
       // find the ec
