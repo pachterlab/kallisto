@@ -1,0 +1,119 @@
+# Instructions for making linux kallisto binaries
+
+# Setup docker
+
+sudo apt install docker.io  # version 20.10.25-0ubuntu1~20.04.1
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+
+# Exit and log back in
+
+# Run docker
+
+mkdir -p kallisto_docker
+cd kallisto_docker
+uid=$(id -u $USER|tr -d "\n" )
+gid=$(id -g $USER|tr -d "\n" )
+docker run --rm dockbuild/centos7:latest > ./dockbuild
+chmod +x dockbuild
+./dockbuild
+docker run --rm dockbuild/centos7-devtoolset7-gcc7:latest > dockbuild-centos7-devtoolset7-gcc7-latest
+docker run -ti -v ./:/work -e BUILDER_UID=$uid -e BUILDER_GID=$gid -e BUILDER_USER=$USER -e BUILDER_GROUP=$USER --platform linux dockbuild/centos7-devtoolset7-gcc7:latest bash -c "bash"
+
+# Download and compile HDF5
+
+export PATH=$PATH:/usr/lib64/
+wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
+tar -xzvf hdf5-1.14.4-2.tar.gz
+cd hdf5-1.14.4-2
+./configure --enable-static
+make
+cd ..
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src/.libs/
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src/H5FDsubfiling/
+cp -f /work/hdf5-1.14.4-2/src/H5FDsubfiling/*.h /work/hdf5-1.14.4-2/src/
+
+# Download and compile kallisto
+
+# Set these paths again (in case we just want to start from this point)
+export PATH=$PATH:/usr/lib64/
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src/.libs/
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src/H5FDsubfiling/
+
+os="linux"
+function prep_kallisto() {
+rm -rf kallisto
+git clone https://github.com/pachterlab/kallisto
+cd kallisto
+sed -i 's/autoconf/autoconf \&\& make -j CFLAGS=-D_GNU_SOURCE lib-static \&\& aclocal \&\& autoheader \&\& autoconf \&\& automake --force-missing --add-missing \|\| autoconf /' CMakeLists.txt
+rm -f ext/bifrost/src/CMakeLists.txt
+echo "file(GLOB sources *.cpp roaring.c)" > ext/bifrost/src/CMakeLists.txt
+echo "file(GLOB headers *.h *.hpp *.hh *.tcc)" >> ext/bifrost/src/CMakeLists.txt
+echo "list(REMOVE_ITEM sources Bifrost.cpp)" >> ext/bifrost/src/CMakeLists.txt
+echo 'add_definitions(-DMAX_KMER_SIZE=${MAX_KMER_SIZE})' >> ext/bifrost/src/CMakeLists.txt
+echo 'add_definitions(-DMAX_GMER_SIZE=${MAX_GMER_SIZE})' >> ext/bifrost/src/CMakeLists.txt
+echo 'add_library(bifrost_static STATIC ${sources} ${headers})' >> ext/bifrost/src/CMakeLists.txt
+echo 'set_target_properties(bifrost_static PROPERTIES OUTPUT_NAME "bifrost")' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_include_directories(bifrost_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})' >> ext/bifrost/src/CMakeLists.txt
+echo "find_package(ZLIB REQUIRED)" >> ext/bifrost/src/CMakeLists.txt
+echo "find_package(Threads REQUIRED)" >> ext/bifrost/src/CMakeLists.txt
+echo 'target_link_libraries(bifrost_static PUBLIC Threads::Threads ${ZLIB_LIBRARIES})' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_link_libraries(bifrost_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../../hdf5-1.12.1-linux-centos7-x86_64-gcc485-static/lib/libz.a)' >> ext/bifrost/src/CMakeLists.txt
+echo 'add_executable(Bifrost Bifrost.cpp)' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_link_libraries(Bifrost PRIVATE bifrost_static)' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_include_directories(bifrost_static PUBLIC ${ZLIB_INCLUDE_DIRS})' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(TARGETS Bifrost DESTINATION bin)' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(TARGETS bifrost_static DESTINATION lib)' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(FILES ${headers} DESTINATION include/bifrost)' >> ext/bifrost/src/CMakeLists.txt
+sed -i '/include_directories( ${HDF5_INCLUDE_DIRS} )/a \
+        target_link_libraries(kallisto dl)\n        target_link_libraries(kallisto_core dl)\n        target_link_libraries( kallisto_core /work/hdf5-1.14.4-2/src/.libs/libhdf5.a )\n        target_link_libraries( kallisto /work/hdf5-1.14.4-2/src/.libs/libhdf5.a )' src/CMakeLists.txt
+sed -i '/HDF5_LIBRARIES/d' src/CMakeLists.txt
+mkdir build
+cd build
+}
+
+# standard build
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DBUILD_FUNCTESTING=ON -DZLIBNG=ON
+make
+version=$(./src/kallisto version|cut -d' ' -f3|tr -d '\n')
+mkdir kallisto
+mv ./src/kallisto ./kallisto/
+cp -R ../test/ ./kallisto/test/
+cp ../README.md ./kallisto/
+cp ../license.txt ./kallisto/
+tar --no-xattrs --exclude='._*' -czvf kallisto_${os}-v${version}.tar.gz kallisto
+cp kallisto_${os}-v${version}.tar.gz ../../
+cd ../../
+
+# long k-mer build
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DBUILD_FUNCTESTING=ON  -DMAX_KMER_SIZE=64 -DZLIBNG=ON
+make
+version=$(./src/kallisto version|cut -d' ' -f3|tr -d '\n')
+cp src/kallisto ../../kallisto_${os}-v${version}_kmer64
+cd ../../
+
+# Disable opt build
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DBUILD_FUNCTESTING=ON -DENABLE_AVX2=OFF -DCOMPILATION_ARCH=OFF -DZLIBNG=ON
+make
+version=$(./src/kallisto version|cut -d' ' -f3|tr -d '\n')
+mv src/kallisto ../../kallisto_${os}-v${version}_optoff
+cd ../../
+
+# Disable opt build but have long k-mer
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DBUILD_FUNCTESTING=ON -DENABLE_AVX2=OFF -DCOMPILATION_ARCH=OFF -DMAX_KMER_SIZE=64 -DZLIBNG=ON
+make
+version=$(./src/kallisto version|cut -d' ' -f3|tr -d '\n')
+mv src/kallisto ../../kallisto_${os}-v${version}_optoff_k64
+cd ../../
+
+

@@ -32,7 +32,7 @@ git clone https://github.com/pachterlab/kallisto
 cd kallisto
 mkdir build
 cd build
-cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DMAX_KMER_SIZE=64
+cmake .. -DUSE_HDF5=ON -DUSE_BAM=ON -DBUILD_FUNCTESTING=ON -DMAX_KMER_SIZE=64
 make
 version=$(./src/kallisto version|cut -d' ' -f3|tr -d '\n')
 cp src/kallisto ../../kallisto_${os}-v${version}_kmer64
