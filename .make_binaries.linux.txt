@@ -34,6 +34,11 @@ export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src
 export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/src/H5FDsubfiling/
 cp -f /work/hdf5-1.14.4-2/src/H5FDsubfiling/*.h /work/hdf5-1.14.4-2/src/
 
+# Download the HDF5 static libraries (not necessary; though we'll use its libz.a later)
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.12/hdf5-1.12.1/bin/unix/hdf5-1.12.1-linux-centos7-x86_64-gcc485-static.tar.gz
+tar -xzvf hdf5-1.12.1-linux-centos7-x86_64-gcc485-static.tar.gz
+
+
 # Download and compile kallisto
 
 # Set these paths again (in case we just want to start from this point)

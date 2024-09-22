@@ -1,0 +1,181 @@
+# A hacky windows compilation (note: doesn't support htslib or --bam)
+
+# Setup docker
+
+sudo apt install docker.io  # version 20.10.25-0ubuntu1~20.04.1
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+
+# Exit and log back in
+
+# Run docker
+
+mkdir -p kallisto_docker_windows
+cd kallisto_docker_windows
+docker run --rm dockcross/windows-static-x64:20221217-6afd127 > ./dockcross-windows-static-x64
+chmod +x ./dockcross-windows-static-x64
+./dockcross-windows-static-x64 bash
+
+
+
+
+export PATH=$PATH:/usr/lib/
+wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
+tar -xzvf hdf5-1.14.4-2.tar.gz
+cd hdf5-1.14.4-2
+./configure --host=x86_64-w64-mingw32 --enable-static --disable-shared --disable-hl
+make
+make install
+cd ..
+
+export PATH=$PATH:$(pwd)/hdf5-1.14.4-2/hdf5/lib:$(pwd)/hdf5-1.14.4-2/hdf5/include
+
+wget http://www.zlib.net/zlib-1.3.1.tar.gz
+tar -xvzf zlib-1.3.1.tar.gz
+cd zlib-1.3.1
+./configure --static
+make
+
+
+os="windows"
+version="0.51.1" # NEED TO SET THIS MANUALLY
+
+function prep_kallisto() {
+rm -rf kallisto
+git clone https://github.com/pachterlab/kallisto
+cd kallisto
+sed -i '/find_package( HDF5 REQUIRED )/d' src/CMakeLists.txt
+sed -i '/if(USE_HDF5)/a \
+set(HDF5_INCLUDE_DIRS /work/hdf5-1.14.4-2/hdf5/include) \nset(HDF5_LIBRARIES /work/hdf5-1.14.4-2/hdf5/lib/libhdf5.a)' src/CMakeLists.txt
+sed -i '/if(HDF5_FOUND)/,/endif()/c\include_directories( ${HDF5_INCLUDE_DIRS} )\ntarget_link_libraries( kallisto_core ${HDF5_LIBRARIES} )\ntarget_link_libraries( kallisto ${HDF5_LIBRARIES} )' src/CMakeLists.txt
+
+echo "file(GLOB sources *.cpp roaring.c)" > ext/bifrost/src/CMakeLists.txt
+echo "file(GLOB headers *.h *.hpp *.hh *.tcc)" >> ext/bifrost/src/CMakeLists.txt
+echo "list(REMOVE_ITEM sources Bifrost.cpp)" >> ext/bifrost/src/CMakeLists.txt
+echo 'add_definitions(-DMAX_KMER_SIZE=${MAX_KMER_SIZE})' >> ext/bifrost/src/CMakeLists.txt
+echo 'add_definitions(-DMAX_GMER_SIZE=${MAX_GMER_SIZE})' >> ext/bifrost/src/CMakeLists.txt
+echo 'add_library(bifrost_static STATIC ${sources} ${headers})' >> ext/bifrost/src/CMakeLists.txt
+echo 'set_target_properties(bifrost_static PROPERTIES OUTPUT_NAME "bifrost")' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_include_directories(bifrost_static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})' >> ext/bifrost/src/CMakeLists.txt
+echo "find_package(Threads REQUIRED)" >> ext/bifrost/src/CMakeLists.txt
+echo 'target_link_libraries(bifrost_static PUBLIC Threads::Threads)' >> ext/bifrost/src/CMakeLists.txt
+
+
+echo 'include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../ext/zlib-ng/zlib-ng)' >> ext/bifrost/src/CMakeLists.txt
+echo 'include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../ext/zlib-ng/)' >> ext/bifrost/src/CMakeLists.txt
+
+echo 'target_link_libraries(bifrost_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../ext/zlib-ng/zlib-ng/libz.a)' >> ext/bifrost/src/CMakeLists.txt
+
+
+echo 'target_link_libraries(bifrost_static PRIVATE psapi)' >> ext/bifrost/src/CMakeLists.txt
+
+echo 'add_executable(Bifrost Bifrost.cpp)' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_link_libraries(Bifrost PRIVATE bifrost_static)' >> ext/bifrost/src/CMakeLists.txt
+echo 'target_include_directories(bifrost_static PUBLIC)' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(TARGETS Bifrost DESTINATION bin)' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(TARGETS bifrost_static DESTINATION lib)' >> ext/bifrost/src/CMakeLists.txt
+echo 'install(FILES ${headers} DESTINATION include/bifrost)' >> ext/bifrost/src/CMakeLists.txt
+
+find ext/bifrost/ -type f -exec sed -i 's/zlib.h/zlib-ng\/zlib.h/g' {} +
+find ext/bifrost -type f -exec sed -i 's/max(1UL,/max(static_cast<size_t>(1),/g' {} +
+
+sed -i '12s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp = static_cast<uint16_t*>(_aligned_malloc(sz * sizeof(uint16_t), 8)); if (tiny_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '45s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp = static_cast<uint16_t*>(_aligned_malloc(sz * sizeof(uint16_t), 8)); if (tiny_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '101s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp = static_cast<uint16_t*>(_aligned_malloc(sizes[0] * sizeof(uint16_t), 8)); if (tiny_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '704s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp_new = static_cast<uint16_t*>(_aligned_malloc(new_sz * sizeof(uint16_t), 8)); if (tiny_bmp_new == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '759s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp_new = static_cast<uint16_t*>(_aligned_malloc(new_sz * sizeof(uint16_t), 8)); if (tiny_bmp_new == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '808s|const int aligned_alloc = posix_memalign([^;]*);|new_t_bmp = static_cast<uint16_t*>(_aligned_malloc(new_sz * sizeof(uint16_t), 8)); if (new_t_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '866s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp = static_cast<uint16_t*>(_aligned_malloc(sz * sizeof(uint16_t), 8)); if (tiny_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '920s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp_new = static_cast<uint16_t*>(_aligned_malloc(new_sz * sizeof(uint16_t), 8)); if (tiny_bmp_new == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+sed -i '938s|const int aligned_alloc = posix_memalign([^;]*);|tiny_bmp = static_cast<uint16_t*>(_aligned_malloc(new_sz * sizeof(uint16_t), 8)); if (tiny_bmp == nullptr) { cerr << "Memory allocation failed." << endl; }|' ext/bifrost/src/TinyBitmap.cpp
+
+
+# Replace free with _aligned_free
+sed -i 's/free(tiny_bmp);/_aligned_free(tiny_bmp);/g' ext/bifrost/src/TinyBitmap.cpp
+sed -i 's/free(tiny_bmp_new);/_aligned_free(tiny_bmp_new);/g' ext/bifrost/src/TinyBitmap.cpp
+# Replace aligned_alloc checks with pointer nullptr checks
+sed -i 's/if (aligned_alloc != 0)/if (tiny_bmp == nullptr)/g' ext/bifrost/src/TinyBitmap.cpp
+sed -i 's/if (aligned_alloc != 0)/if (tiny_bmp_new == nullptr)/g' ext/bifrost/src/TinyBitmap.cpp
+sed -i 's/if (aligned_alloc != 0)/if (new_t_bmp == nullptr)/g' ext/bifrost/src/TinyBitmap.cpp
+# Update error messages related to aligned_alloc
+sed -i 's/<< aligned_alloc/<< "memory allocation error"/g' ext/bifrost/src/TinyBitmap.cpp
+cd ext/htslib
+autoconf
+aclocal
+autoheader
+autoconf
+autoreconf -i
+automake --force-missing --add-missing || autoconf
+cd ../../
+
+sed -i 's/autoconf/autoconf \&\& make -j CFLAGS=-D_GNU_SOURCE lib-static \&\& aclocal \&\& autoheader \&\& autoconf \&\&  autoreconf -i \&\& automake --force-missing --add-missing \|\| autoconf  /' CMakeLists.txt
+
+sed -i 's/&& ${PROJECT_SOURCE_DIR}/\&\& env CPPFLAGS=-I\/work\/zlib-1.3.1 LDFLAGS="-L\/work\/zlib-1.3.1 -lz" ${PROJECT_SOURCE_DIR}/' ./CMakeLists.txt
+
+sed -i 's|/configure|/configure --host=x86_64-w64-mingw32 --disable-bz2 --disable-lzma|g' CMakeLists.txt
+sed -i 's/-lbz2//' ext/htslib/Makefile
+sed -i 's/-llzma//' ext/htslib/Makefile
+
+find ./ -type f \( -name "*.cpp" -o -name "*.hpp" -name "*.c" -name "*.h" -name "*.hpp" -name "*.tcc" \) -exec sed -i '
+s/\bbyte\b/std::byte/g
+s/\bunsigned long overhang\b/size_t overhang/g
+' {} +
+find ./ -type f \( -name "*.cpp" -o -name "*.c" -o -name "*.h" -o -name "*.hpp" -o -name "*.tcc" \) -exec sed -i '1i\
+#ifndef WIN32_LEAN_AND_MEAN\
+#define WIN32_LEAN_AND_MEAN\
+#endif' {} +
+
+sed -i 's/libz\.lib/libz\.a/g' src/CMakeLists.txt
+
+sed -i '/target_link_libraries(kallisto/s/$/\nset(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--allow-multiple-definition")/' src/CMakeLists.txt
+sed -i '/set(CMAKE_BUILD_TYPE/s/$/\nset(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--allow-multiple-definition")/' CMakeLists.txt
+
+
+
+mkdir build
+cd build
+}
+
+
+# standard build
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DBUILD_FUNCTESTING=ON -DZLIBNG=ON
+make
+mkdir kallisto
+mv ./src/kallisto.exe ./kallisto/
+cp -R ../test/ ./kallisto/test/
+cp ../README.md ./kallisto/
+cp ../license.txt ./kallisto/
+tar --no-xattrs --exclude='._*' -czvf kallisto_${os}-v${version}.tar.gz kallisto
+cp kallisto_${os}-v${version}.tar.gz ../../
+cd ../../
+
+
+# long k-mer build
+
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DMAX_KMER_SIZE=64 -DZLIBNG=ON
+make
+cp src/kallisto.exe ../../kallisto_${os}-v${version}_kmer64.exe
+cd ../../
+
+# Disable opt build
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DENABLE_AVX2=OFF -DCOMPILATION_ARCH=OFF -DZLIBNG=ON
+make
+mv src/kallisto.exe ../../kallisto_${os}-v${version}_optoff.exe
+cd ../../
+
+# Disable opt build but have long k-mer
+
+prep_kallisto
+cmake .. -DUSE_HDF5=ON -DENABLE_AVX2=OFF -DCOMPILATION_ARCH=OFF -DMAX_KMER_SIZE=64 -DZLIBNG=ON
+make
+mv src/kallisto.exe ../../kallisto_${os}-v${version}_optoff_k64.exe
+cd ../../
+
+
+
