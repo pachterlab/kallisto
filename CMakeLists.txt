@@ -26,6 +26,7 @@ option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
 option(USE_BAM "Compile with HTSLIB support" OFF) # OFF by default
 
 if(USE_HDF5)
+    cmake_policy(SET CMP0074 NEW)
     add_compile_definitions("USE_HDF5=ON")
 endif(USE_HDF5)
 
@@ -78,9 +79,9 @@ ExternalProject_Add(htslib
     PREFIX ${PROJECT_SOURCE_DIR}/ext/htslib
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/htslib
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
-        --prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
-    BUILD_COMMAND make lib-static
+    CONFIGURE_COMMAND "" #autoreconf -i && autoheader &&  autoconf && ${PROJECT_SOURCE_DIR}/ext/htslib/configure
+        #--prefix=${PREFIX} --disable-bz2 --disable-lzma --disable-libcurl
+    BUILD_COMMAND "" #make lib-static
     INSTALL_COMMAND ""
 )
 endif(USE_BAM)

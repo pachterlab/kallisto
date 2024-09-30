@@ -40,7 +40,7 @@
                 if (++retry > RETRY_THRESHOLD){
 
                     retry = 0;
-                    this_thread::yield();
+                    std::this_thread::yield();
                 }
                 //#if defined(__SSE2__)
                 //else _mm_pause();
@@ -105,7 +105,7 @@ class SpinLock {
                     if (_bits.compare_exchange_weak(prev_bits, new_bits)) return;
                 }
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
             }
         }
 
@@ -125,7 +125,7 @@ class SpinLock {
                 if (((prev_bits & MASK_READER) == 0) && _bits.compare_exchange_weak(prev_bits, HAS_WRITER)) return;
                 if ((prev_bits & HAS_WRITER_WAITING) == 0) _bits.fetch_or(HAS_WRITER_WAITING);
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
             }
         }
 
@@ -166,7 +166,7 @@ class SpinLockRW {
 
                 if ((prev_bits < HAS_WRITER_WAITING) && _bits.compare_exchange_weak(prev_bits, prev_bits + 1)) return;
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
             }
         }
 
@@ -187,7 +187,7 @@ class SpinLockRW {
 
                 if (((prev_bits & MASK_READER) == 0) && _bits.compare_exchange_weak(prev_bits, prev_bits | HAS_WRITER)) return;
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
             }
         }
 
@@ -256,7 +256,7 @@ class SpinLockRW_MCS {
 
             while (lock_pool[prev_reader_id].is_locked){
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -282,7 +282,7 @@ class SpinLockRW_MCS {
 
             while (lock_pool[prev_reader_id].is_locked){
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -290,7 +290,7 @@ class SpinLockRW_MCS {
 
             while (load_lock_pool){
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -348,8 +348,8 @@ class Hybrid_SpinLockRW_MCS {
             if (nb_threads <= std::thread::hardware_concurrency()) lcks[mask_id].bits = mask_full;
             else {
 
-                cerr << "Hybrid_SpinLockRW_MCS(): Number of threads required is greater than number of threads possible on this machine (" <<
-                std::thread::hardware_concurrency() << ")" << endl;
+                std::cerr << "Hybrid_SpinLockRW_MCS(): Number of threads required is greater than number of threads possible on this machine (" <<
+                std::thread::hardware_concurrency() << ")" << std::endl;
             }
         }
 
@@ -365,7 +365,7 @@ class Hybrid_SpinLockRW_MCS {
 
             while (lcks[prev_].bits != mask_full){
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -407,7 +407,7 @@ class Hybrid_SpinLockRW_MCS {
             // Skipping this step and just spinning on *load* would make all writers access the same ressource at the same moment
             while (lcks[prev_].bits != mask_full){
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -421,7 +421,7 @@ class Hybrid_SpinLockRW_MCS {
 
                 if (++retry > RETRY_THRESHOLD){
 
-                    this_thread::yield();
+                    std::this_thread::yield();
 
                     if ((retry & RETRY_THRESHOLD_MAX) == 0) {
 
@@ -445,7 +445,7 @@ class Hybrid_SpinLockRW_MCS {
 
             while (load){ // Wait that all readers are done reading -> GLOBAL SPIN
 
-                if (++retry > RETRY_THRESHOLD) this_thread::yield();
+                if (++retry > RETRY_THRESHOLD) std::this_thread::yield();
                 //#if defined(__SSE2__)
                 //else _mm_pause();
                 //#endif
@@ -480,9 +480,9 @@ class Hybrid_SpinLockRW_MCS {
         };
 
         Lock lcks[M];
-        atomic<size_t> load;
+        std::atomic<size_t> load;
         const int padding1[14];
-        atomic<size_t> id;
+        std::atomic<size_t> id;
         const int padding2[14];
         size_t id_w;
         const int padding3[14];

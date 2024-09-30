@@ -25,11 +25,10 @@
 
 #define NB_STREAMCOUNTER_PER_READHASHER 4
 
-using namespace std;
 
 struct KmerStream_Build_opt {
 
-    vector<string> files;
+    std::vector<std::string> files;
 
     bool verbose;
 
@@ -1146,9 +1145,9 @@ class ReadHasherMinimizer {
             for (size_t i = 0; i < NB_STREAMCOUNTER_PER_READHASHER; ++i) sc_km[i] = o.sc_km[i];
         }
 
-        ReadHasherMinimizer(ReadQualityHasherMinimizer&& o) : k(o.k), g(o.g), sc_min(move(o.sc_min)) {
+        ReadHasherMinimizer(ReadQualityHasherMinimizer&& o) : k(o.k), g(o.g), sc_min(std::move(o.sc_min)) {
 
-            for (size_t i = 0; i < NB_STREAMCOUNTER_PER_READHASHER; ++i) sc_km[i] = move(o.sc_km[i]);
+            for (size_t i = 0; i < NB_STREAMCOUNTER_PER_READHASHER; ++i) sc_km[i] = std::move(o.sc_km[i]);
         }
 
         ReadHasherMinimizer(const ReadQualityHasherMinimizer& o) : k(o.k), g(o.g), sc_min(o.sc_min) {
@@ -1585,49 +1584,49 @@ class KmerStream {
 
             if (nb_threads <= 0){
 
-                cerr << "KmerStream::KmerStream(): Number of threads cannot be less than or equal to 0" << endl;
+                std::cerr << "KmerStream::KmerStream(): Number of threads cannot be less than or equal to 0" << std::endl;
                 invalid = true;
             }
 
             if (nb_threads > max_threads){
 
-                cerr << "KmerStream::KmerStream(): Number of threads cannot be greater than or equal to " << max_threads << endl;
+                std::cerr << "KmerStream::KmerStream(): Number of threads cannot be greater than or equal to " << max_threads << std::endl;
                 invalid = true;
             }
 
             if (k == 0){
 
-                cerr << "KmerStream::KmerStream(): Length k of k-mers cannot be less than or equal to 0" << endl;
+                std::cerr << "KmerStream::KmerStream(): Length k of k-mers cannot be less than or equal to 0" << std::endl;
                 invalid = true;
             }
 
             if (g <= 0){
 
-                cerr << "KmerStream::KmerStream(): Length g of minimizers cannot be less than or equal to 0" << endl;
+                std::cerr << "KmerStream::KmerStream(): Length g of minimizers cannot be less than or equal to 0" << std::endl;
                 invalid = true;
             }
 
             if (g > k){
 
-                cerr << "KmerStream::KmerStream(): Length g of minimizers cannot be greater than length k of k-mers" << endl;
+                std::cerr << "KmerStream::KmerStream(): Length g of minimizers cannot be greater than length k of k-mers" << std::endl;
                 invalid = true;
             }
 
             if (e <= 0){
 
-                cerr << "KmerStream::KmerStream(): Guaranteed error rate cannot be less than or equal to 0" << endl;
+                std::cerr << "KmerStream::KmerStream(): Guaranteed error rate cannot be less than or equal to 0" << std::endl;
                 invalid = true;
             }
 
             if ((q_base != 33) && (q_base != 64)){
 
-                cerr << "KmerStream::KmerStream(): Quality score can only be PHREAD+64 (q_base=64) or PHREAD+33 (q_base=33)" << endl;
+                std::cerr << "KmerStream::KmerStream(): Quality score can only be PHREAD+64 (q_base=64) or PHREAD+33 (q_base=33)" << std::endl;
                 invalid = true;
             }
 
             if (opt.files.size() == 0) {
 
-                cerr << "KmerStream::KmerStream(): Missing input files" << endl;
+                std::cerr << "KmerStream::KmerStream(): Missing input files" << std::endl;
                 invalid = true;
             }
             else {
@@ -1641,7 +1640,7 @@ class KmerStream {
 
                     if (intStat != 0) {
 
-                        cerr << "KmerStream::KmerStream(): File not found: " << s << endl;
+                        std::cerr << "KmerStream::KmerStream(): File not found: " << s << std::endl;
                         invalid = true;
                     }
                     else {
@@ -1650,7 +1649,7 @@ class KmerStream {
 
                         if (format == -1){
 
-                            cerr << "KmerStream::KmerStream(): Input file " << s << " does not exist, is ill-formed or is not in FASTA/FASTQ/GFA format." << endl;
+                            std::cerr << "KmerStream::KmerStream(): Input file " << s << " does not exist, is ill-formed or is not in FASTA/FASTQ/GFA format." << std::endl;
 
                             invalid = true;
                         }
@@ -1664,19 +1663,19 @@ class KmerStream {
             if (invalid) exit(1);
 
             {
-                if (verbose) cout << "KmerStream::KmerStream(): Start computing k-mer cardinality estimations (1/2)" << endl;
+                if (verbose) std::cout << "KmerStream::KmerStream(): Start computing k-mer cardinality estimations (1/2)" << std::endl;
 
                 rqh.initialize(e, q, q_base, k, g);
 
                 if (files_with_quality.size() != 0) nb_threads > 1 ? RunThreadedQualityStream() : RunQualityStream();
 
-                rsh = move(rqh);
+                rsh = std::move(rqh);
 
-                if (verbose) cout << "KmerStream::KmerStream(): Start computing k-mer cardinality estimations (1/2)" << endl;
+                if (verbose) std::cout << "KmerStream::KmerStream(): Start computing k-mer cardinality estimations (1/2)" << std::endl;
 
                 if (files_no_quality.size() != 0) nb_threads > 1 ? RunThreadedSequenceStream() : RunSequenceStream();
 
-                if (verbose) cout << "KmerStream::KmerStream(): Finished" << endl;
+                if (verbose) std::cout << "KmerStream::KmerStream(): Finished" << std::endl;
 
                 //rsh.join(rqh);
             }
@@ -1702,7 +1701,7 @@ class KmerStream {
 
             size_t file_id = 0;
 
-            string seq;
+            std::string seq;
 
             while (fp.read(seq, file_id)){
 
@@ -1723,7 +1722,7 @@ class KmerStream {
             const size_t max_len_seq = rndup(static_cast<size_t>(1024 + k - 1));
             const size_t thread_seq_buf_sz = BUFFER_SIZE;
 
-            string seq, qual;
+            std::string seq, qual;
 
             FileParser fp(files_with_quality);
 
@@ -1784,11 +1783,11 @@ class KmerStream {
             };
 
             {
-                vector<thread> workers; // need to keep track of threads so we can join them
+                std::vector<std::thread> workers; // need to keep track of threads so we can join them
 
                 bool stop = false;
 
-                mutex mutex_file;
+                std::mutex mutex_file;
 
                 rqh.init_threads();
 
@@ -1809,7 +1808,7 @@ class KmerStream {
                             while (true) {
 
                                 {
-                                    unique_lock<mutex> lock(mutex_file);
+                                    std::unique_lock<std::mutex> lock(mutex_file);
 
                                     if (stop){
 
@@ -1822,7 +1821,7 @@ class KmerStream {
 
                                     //curr_tot_bp += buffer_sz;
 
-                                    //if (curr_tot_bp/1000000000 != prev_tot_bp/1000000000) cout << "KmerStream::KmerStream(): Processed " << curr_tot_bp << " bp." << endl;
+                                    //if (curr_tot_bp/1000000000 != prev_tot_bp/1000000000) std::cout << "KmerStream::KmerStream(): Processed " << curr_tot_bp << " bp." << std::endl;
 
                                     //prev_tot_bp = curr_tot_bp;
                                 }
@@ -1850,7 +1849,7 @@ class KmerStream {
 
             size_t file_id = 0;
 
-            string seq;
+            std::string seq;
 
             FileParser fp(files_no_quality);
 
@@ -1873,7 +1872,7 @@ class KmerStream {
 
             FileParser fp(files_no_quality);
 
-            string s;
+            std::string s;
 
             auto reading_function = [&](char* seq_buf, size_t& seq_buf_sz) {
 
@@ -1926,9 +1925,9 @@ class KmerStream {
             };
 
             {
-                vector<thread> workers; // need to keep track of threads so we can join them
+                std::vector<std::thread> workers; // need to keep track of threads so we can join them
 
-                mutex mutex_file;
+                std::mutex mutex_file;
 
                 bool stop = false;
 
@@ -1947,7 +1946,7 @@ class KmerStream {
                             while (true) {
 
                                 {
-                                    unique_lock<mutex> lock(mutex_file);
+                                    std::unique_lock<std::mutex> lock(mutex_file);
 
                                     if (stop) {
 
@@ -1986,8 +1985,8 @@ class KmerStream {
         ReadQualityHasherMinimizer rqh;
         ReadHasherMinimizer rsh;
 
-        vector<string> files_no_quality;
-        vector<string> files_with_quality;
+        std::vector<std::string> files_no_quality;
+        std::vector<std::string> files_with_quality;
 
         bool verbose;
         bool invalid;

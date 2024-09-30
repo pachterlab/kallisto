@@ -54,12 +54,12 @@ class KmerIterator : public std::iterator<std::input_iterator_tag, std::pair<Kme
             return !operator==(o);
         }
 
-        BFG_INLINE const pair<Kmer, int>& operator*() const {
+        BFG_INLINE const std::pair<Kmer, int>& operator*() const {
 
             return p;
         }
 
-        BFG_INLINE const pair<Kmer, int>* operator->() const {
+        BFG_INLINE const std::pair<Kmer, int>* operator->() const {
 
             return &p;
         }
@@ -68,7 +68,7 @@ class KmerIterator : public std::iterator<std::input_iterator_tag, std::pair<Kme
 
         const char* str;
         bool invalid;
-        pair<Kmer, int> p;
+        std::pair<Kmer, int> p;
         int pos_s, pos_e;
 };
 

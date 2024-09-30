@@ -29,12 +29,12 @@ class UnitigColors {
 
     public:
 
-        typedef pair<UnitigColors, size_t> SharedUnitigColors;
+        typedef std::pair<UnitigColors, size_t> SharedUnitigColors;
 
         /** @class UnitigColors_const_iterator
         * @brief See UnitigColors::const_iterator
         */
-        class UnitigColors_const_iterator : public std::iterator<std::forward_iterator_tag, pair<size_t, size_t>> {
+        class UnitigColors_const_iterator : public std::iterator<std::forward_iterator_tag, std::pair<size_t, size_t>> {
 
             friend class UnitigColors;
 
@@ -70,9 +70,9 @@ class UnitigColors {
                 * @return a pair p of integers representing the position of a k-mer in the unitig (p.first)
                 * and the ID of the color associated with the k-mer at the given position (p.second).
                 */
-                inline pair<size_t, size_t> operator*() const {
+                inline std::pair<size_t, size_t> operator*() const {
 
-                    return make_pair(ck_id % um_sz, ck_id / um_sz);
+                    return std::make_pair(ck_id % um_sz, ck_id / um_sz);
                 }
 
                 /**
@@ -281,7 +281,7 @@ class UnitigColors {
         * opened prior to the call of this function and it won't be closed by this function.
         * @return a boolean indicating if the write was successful.
         */
-        bool write(ostream& stream_out, const bool copy_UnitigColors = true) const;
+        bool write(std::ostream& stream_out, const bool copy_UnitigColors = true) const;
 
         /**
         * Read a UnitigColors from a stream.
@@ -289,7 +289,7 @@ class UnitigColors {
         * opened prior to the call of this function and it won't be closed by this function.
         * @return a boolean indicating if the write was successful.
         */
-        bool read(istream& stream_in);
+        bool read(std::istream& stream_in);
 
         /**
         * Size of the UnitigColors in bytes.

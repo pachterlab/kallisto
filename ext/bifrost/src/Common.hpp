@@ -38,7 +38,6 @@
 #define BFG_METABIN_FORMAT_HEADER 0x267c3d5d
 #define BFG_GRAPHBIN_FORMAT_HEADER 0x7e215f3f
 
-using namespace std;
 
 static const char alpha[4] = {'A','C','G','T'};
 
@@ -89,9 +88,9 @@ BFG_INLINE char reverse_complement(const char nuc){
     }
 }
 
-BFG_INLINE string reverse_complement(const string& s){
+BFG_INLINE std::string reverse_complement(const std::string& s){
 
-    string seq(s);
+    std::string seq(s);
 
     reverse(seq.begin(), seq.end());
 
@@ -129,9 +128,9 @@ BFG_INLINE string reverse_complement(const string& s){
     return seq;
 }
 
-BFG_INLINE string reverse_complement(const char* s){
+BFG_INLINE std::string reverse_complement(const char* s){
 
-    string seq(s);
+    std::string seq(s);
 
     reverse(seq.begin(), seq.end());
 
@@ -208,14 +207,14 @@ BFG_INLINE uint16_t rndup(uint16_t v) {
     return v;
 }
 
-BFG_INLINE bool check_file_exists(const string& filename) {
+BFG_INLINE bool check_file_exists(const std::string& filename) {
 
     struct stat stFileInfo;
 
     return (stat(filename.c_str(), &stFileInfo) == 0);
 }
 
-BFG_INLINE uint32_t crc32_checksum(istream& in) {
+BFG_INLINE uint32_t crc32_checksum(std::istream& in) {
 
     unsigned char buffer[65536];
 
@@ -234,12 +233,12 @@ BFG_INLINE uint32_t crc32_checksum(istream& in) {
     return crc;
 }
 
-BFG_INLINE uint32_t crc32_checksum(const string& fn) {
+BFG_INLINE uint32_t crc32_checksum(const std::string& fn) {
 
     if ((fn.length() == 0) || !check_file_exists(fn)) return 0;
 
-    ifstream infile;
-    istream in(0);
+    std::ifstream infile;
+    std::istream in(0);
 
     infile.open(fn.c_str());
     in.rdbuf(infile.rdbuf());

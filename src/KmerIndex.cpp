@@ -190,13 +190,13 @@ std::string generate_tmp_file(std::string seed, std::string tmp_dir) {
   if (intStat == 0) {
     // file/dir exits
     if (!S_ISDIR(stFileInfo.st_mode)) {
-      cerr << "Error: file " << tmp_dir << " exists and is not a directory" << endl;
+      std::cerr << "Error: file " << tmp_dir << " exists and is not a directory" << std::endl;
       exit(1);
     }
   } else {
     // create directory
     if (my_mkdir_kmer_index(tmp_dir.c_str(), 0777) == -1) {
-      cerr << "Error: could not create directory " << tmp_dir << endl;
+      std::cerr << "Error: could not create directory " << tmp_dir << std::endl;
       exit(1);
     }
   }
@@ -662,7 +662,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
         // Add trailing kmer to set
         if (ub > lb && ub + k < seq.length()) {
-          for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+          for (int i = 0; i < std::min<unsigned long>(seq.length() - ub, overhang); ++i) {
             // Add up to #overhang trailing k-mers to set
             if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
           }
@@ -694,7 +694,7 @@ void KmerIndex::DListFlankingKmers(const ProgramOptions& opt, const std::string&
 
     // Add last trailing kmer to set
     if (ub > lb && ub + k < seq.length()) {
-      for (int i = 0; i < std::min(seq.length() - ub, overhang); ++i) {
+      for (int i = 0; i < std::min<unsigned long>(seq.length() - ub, overhang); ++i) {
         // Add up to #overhang trailing k-mers to set
         if (!isInvalidKmer(seq.c_str() + ub + i, k)) kmers_.emplace(seq.c_str() + ub + i);
       }

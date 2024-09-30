@@ -34,9 +34,9 @@ bool UnitigMap<U, G, is_const>::isSameReferenceUnitig(const UnitigMap& o) const 
 }
 
 template<typename U, typename G, bool is_const>
-string UnitigMap<U, G, is_const>::mappedSequenceToString() const {
+std::string UnitigMap<U, G, is_const>::mappedSequenceToString() const {
 
-    if (isEmpty) return string();
+    if (isEmpty) return std::string();
 
     if (strand){
 
@@ -55,9 +55,9 @@ string UnitigMap<U, G, is_const>::mappedSequenceToString() const {
 }
 
 template<typename U, typename G, bool is_const>
-string UnitigMap<U, G, is_const>::referenceUnitigToString() const {
+std::string UnitigMap<U, G, is_const>::referenceUnitigToString() const {
 
-    if (isEmpty) return string();
+    if (isEmpty) return std::string();
     if (isShort) return cdbg->km_unitigs.getKmer(pos_unitig).toString();
     if (isAbundant) return cdbg->h_kmers_ccov.find(pos_unitig).getKey().toString();
 
@@ -250,7 +250,7 @@ UnitigMap<U, G, is_const> UnitigMap<U, G, is_const>::getKmerMapping(const size_t
 template<typename U, typename G, bool is_const>
 typename UnitigMap<U, G, is_const>::Unitig_data_ptr_t UnitigMap<U, G, is_const>::getData() const {
 
-    return getData_<is_void<U>::value>();
+    return getData_<std::is_void<U>::value>();
 }
 
 template<typename U, typename G, bool is_const>
@@ -305,7 +305,7 @@ typename std::enable_if<is_void, Unitig<U>>::type UnitigMap<U, G, is_const>::spl
 template<typename U, typename G, bool is_const>
 Unitig<U> UnitigMap<U, G, is_const>::splitData(const bool last_split) const {
 
-    return splitData_<is_void<U>::value>(last_split);
+    return splitData_<std::is_void<U>::value>(last_split);
 }
 
 template<typename U, typename G, bool is_const>

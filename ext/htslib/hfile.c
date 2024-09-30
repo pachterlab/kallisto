@@ -512,7 +512,7 @@ static int fd_flush(hFILE *fpv)
 #ifdef HAVE_FDATASYNC
         ret = fdatasync(fp->fd);
 #else
-        ret = fsync(fp->fd);
+        //ret = fsync(fp->fd);
 #endif
         // Ignore invalid-for-fsync(2) errors due to being, e.g., a pipe,
         // and operation-not-supported errors (Mac OS X)

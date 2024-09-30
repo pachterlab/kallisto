@@ -44,7 +44,7 @@ class StreamCounter {
         StreamCounter(const double e_, const int seed_ = 0) :   e(e_), seed(seed_), sumCount(0),
                                                                 shift_div_idx(__builtin_ffsll(block_sz) - 1), mask_mod_idx(block_sz - 1) {
 
-            const size_t numcounts = max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192));
+            const size_t numcounts = std::max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192));
 
             sz = rndup((numcounts + countsPerLong - 1) / countsPerLong);
             mask = (sz * countsPerLong) - 1;
@@ -158,7 +158,7 @@ class StreamCounter {
             seed = seed_;
             sumCount = 0;
 
-            const size_t numcounts = max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192));
+            const size_t numcounts = std::max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192));
 
             sz = rndup((numcounts + countsPerLong - 1) / countsPerLong);
             mask = (sz * countsPerLong) - 1;
@@ -458,7 +458,7 @@ class StreamCounter {
 
         StreamCounter(double e_, int seed_ = 0) : MAX_TABLE(32), maxVal(3ULL), countWidth(2), countsPerLong(32), e(e_), seed(seed_), sumCount(0) {
 
-            const size_t numcounts = max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192)); // approx 3 std-dev, true with 0.001 prob.
+            const size_t numcounts = std::max(static_cast<size_t>(48.0/(e*e) + 1), static_cast<size_t>(8192)); // approx 3 std-dev, true with 0.001 prob.
 
             size = (numcounts + countsPerLong - 1) / countsPerLong; // size is number of uint64_t's use
             size = roundUpPowerOfTwo(size);

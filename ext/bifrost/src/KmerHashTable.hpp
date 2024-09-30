@@ -95,7 +95,7 @@ struct KmerHashTable {
 
             while (rdnup_sz < sz_with_empty) rdnup_sz <<= 1;
 
-            init_tables(max(rdnup_sz, static_cast<size_t>(2)));
+            init_tables(std::max(rdnup_sz, static_cast<size_t>(2)));
         }
     }
 
@@ -494,7 +494,7 @@ struct MinimizerHashTable {
 
             while (rdnup_sz < sz_with_empty) rdnup_sz <<= 1;
 
-            init_tables(max(rdnup_sz, static_cast<size_t>(2)));
+            init_tables(std::max(rdnup_sz, static_cast<size_t>(2)));
         }
     }
 

@@ -40,8 +40,8 @@ class KmerCovIndex {
 
         BFG_INLINE static void setFullCoverage(const size_t cov_max) {
 
-            cov_full = min(cov_max, static_cast<size_t>(2));
-            cov_full = max(cov_full, static_cast<size_t>(1));
+            cov_full = std::min(cov_max, static_cast<size_t>(2));
+            cov_full = std::max(cov_full, static_cast<size_t>(1));
         }
 
         BFG_INLINE static size_t getFullCoverage() {
@@ -127,7 +127,7 @@ class KmerCovIndex {
         size_t mask_mod;
         size_t sz;
 
-        vector<Block<T>*> v_blocks;
+        std::vector<Block<T>*> v_blocks;
 };
 
 // Declare template specializations for type void

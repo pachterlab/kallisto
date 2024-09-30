@@ -9,7 +9,7 @@
 
 #include "Kmer.hpp"
 
-using namespace std;
+//using namespace std;
 
 struct minHashResult {
 
@@ -209,7 +209,7 @@ class minHashIterator {
         int k; // Length of k-mers
         int g; // Length of minimizers
         HF hf; // Rolling hash function
-        deque<minHashResult> v; //Hash values and positions of a same minimizer with k-mer at position p
+        std::deque<minHashResult> v; //Hash values and positions of a same minimizer with k-mer at position p
         int p; // Position of current k-mer traversed in the sequence
         bool invalid; // If sequence is invalid (iterating on k-mers out of bounds, etc.)
         bool nh; // If true, minimizer of k-mers km cannot start at position 0 or k-g
@@ -340,7 +340,7 @@ class preAllocMinHashIterator {
 
                 invalid = false;
 
-                v = vector<minHashResult>(n - g + 1);
+                v = std::vector<minHashResult>(n - g + 1);
                 hf.setK(g);
 
                 operator++();
@@ -486,7 +486,7 @@ class preAllocMinHashIterator {
         int k; // Length of k-mers
         int g; // Length of minimizers
         HF hf; // Rolling hash function
-        vector<minHashResult> v; //Hash values and positions of a same minimizer with k-mer at position p
+        std::vector<minHashResult> v; //Hash values and positions of a same minimizer with k-mer at position p
         size_t p_cur_start;
         size_t p_cur_end;
         int p; // Position of current k-mer traversed in the sequence
@@ -502,9 +502,9 @@ class preAllocMinHashIterator {
 
             if (!invalid && (o.p + n <= o.n)){
 
-                vector<minHashResult> v_tmp(o.v.begin() + o.p_cur_start, o.v.begin() + o.p_cur_end);
+                std::vector<minHashResult> v_tmp(o.v.begin() + o.p_cur_start, o.v.begin() + o.p_cur_end);
 
-                v = move(v_tmp);
+                v = std::move(v_tmp);
 
                 for (auto& min_h : v) min_h.pos -= o.p;
             }
