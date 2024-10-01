@@ -5,7 +5,7 @@
 
 #include "ProcessReads.h"
 #include "PseudoBam.h"
-#include "Fusion.hpp"
+#include "Fusion.h"
 #include "BUSData.h"
 #include "BUSTools.h"
 #include "Node.hpp"
@@ -1029,6 +1029,8 @@ void ReadProcessor::processBuffer() {
     } else {
       index.match(s1, l1, v1, !paired);
     }
+
+
     if (paired) {
       index.match(s2, l2, v2, !paired);
     }
@@ -1045,9 +1047,36 @@ void ReadProcessor::processBuffer() {
 
     if (u.isEmpty()) {
       if (mp.opt.fusion && !(v1.empty() || v2.empty())) {
-        std::cerr << "TODO: Implement fusion" << std::endl;
-        exit(1);
-        //searchFusion(index,mp.opt,tc,mp,ec,names[i-1].first,s1,v1,names[i].first,s2,v2,paired);
+        // make sure that none of the d-list k-mers mapped
+        bool findFusion = true;
+        for (const auto& um : v1) {
+          if (um.first == index.um_dummy) {
+            findFusion = false;
+            break;
+          }
+        }
+
+        for (const auto& um : v2) {
+          if (um.first == index.um_dummy) {
+            findFusion = false;
+            break;
+          }
+        }
+
+        if (findFusion) {
+          const char* n1 = 0;
+          const char* n2 = 0;
+          if (paired) {
+            n1 = names[i-1].first;
+            n2 = names[i].first;
+          } else {
+            n1 = names[i].first;
+          }
+          searchFusion(index,mp.opt,tc,mp,
+                    n1,s1,v1,
+                    n2,s2,v2,
+                    paired);
+        }
       }
       novel = true; 
     }
@@ -1086,8 +1115,7 @@ void ReadProcessor::processBuffer() {
 	      }
 	      
 	      // for each transcript in the pseudoalignment
-	      for (auto tr : u) {
-	        
+	      for (auto tr : u) {        
 	        auto x = index.findPosition(tr, km, um, p);
 	        // if the fragment is within bounds for this transcript, keep it
 	        if (x.second && x.first + fl <= (int)index.target_lens_[tr]) {
@@ -1095,6 +1123,7 @@ void ReadProcessor::processBuffer() {
 	        } else {
 	          //pass
 	        }
+
 	        if (!x.second && x.first - fl >= 0) {
 	          vtmp.add(tr);
 	        } else {
@@ -1130,8 +1159,7 @@ void ReadProcessor::processBuffer() {
 	      /* -- collect extra information -- */
 	      // collect bias info
 	      if (findBias && !u.isEmpty() && biasgoal > 0) {
-	        // collect sequence specific bias info
-	        
+	        // collect sequence specific bias info	        
 	        if (tc.countBias(s1, (paired) ? s2 : nullptr, v1, v2, paired, bias5)) {
 	          biasgoal--;
 	        }
