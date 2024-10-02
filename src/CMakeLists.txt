@@ -13,8 +13,8 @@ endif()
 
 add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 
-#add_library(kallisto_core ${sources} ${headers})
-#target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(kallisto_core ${sources} ${headers})
+target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kallisto main.cpp ${sources} ${headers})
 
@@ -49,8 +49,14 @@ if (NOT ZLIBNG)
 find_package( ZLIB REQUIRED )
 
 if ( ZLIB_FOUND )
-    include_directories( ${ZLIB_INCLUDE_DIRS} )
-    target_link_libraries(kallisto  ${ZLIB_LIBRARIES})
+    if (DEFINED ZLIB_INCLUDE_DIRS)
+        include_directories( ${ZLIB_INCLUDE_DIRS} )
+    elseif (DEFINED ZLIB_INCLUDE_DIR)
+        include_directories( ${ZLIB_INCLUDE_DIR} )
+    else()
+        message(FATAL_ERROR "zlib found but no include directories are set.")
+    endif()
+    target_link_libraries(kallisto kallisto_core ${ZLIB_LIBRARIES})
 else()
     message(FATAL_ERROR "zlib not found. Required for to output files" )
 endif( ZLIB_FOUND )
