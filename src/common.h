@@ -91,6 +91,9 @@ struct BUSOptions {
 };
 
 struct ProgramOptions {
+  bool force_bam = false; // --bam
+  bool force_cram = false; // --cram
+  std::string bam_or_cram; // "bam" or "cram" to force output format
   bool verbose;
   bool aa;
   bool distinguish;
@@ -159,6 +162,7 @@ struct ProgramOptions {
   std::string genemap;
   std::string priors;
   std::string tmp_dir;
+  std::string reference_fasta; // chemin vers la référence pour CRAM
 
 ProgramOptions() :
   verbose(false),

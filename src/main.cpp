@@ -415,7 +415,8 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     {"gtf", required_argument, 0, 'G'},
     {"bootstrap-samples", required_argument, 0, 'b'},
     {"seed", required_argument, 0, 'd'},
-    {"priors", required_argument, 0, 'p'}, 
+  {"priors", required_argument, 0, 'p'}, 
+  {"cram-reference", required_argument, 0, 1001}, // nouvelle option pour CRAM
     {0,0,0,0}
   };
   int c;
@@ -427,7 +428,7 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
       break;
     }
 
-    switch (c) {
+  switch (c) {
     case 0:
       break;
     case 't': {
@@ -485,6 +486,10 @@ void ParseOptionsTCCQuant(int argc, char **argv, ProgramOptions& opt) {
     }
     case 'p': {
       opt.priors = optarg;
+      break;
+    }
+    case 1001: {
+      opt.reference_fasta = optarg;
       break;
     }
     default: break;
@@ -2130,7 +2135,8 @@ void usageBus() {
        << "    --aa                      Align to index generated from a FASTA-file containing amino acid sequences" << endl
        << "    --inleaved                Specifies that input is an interleaved FASTQ file" << endl
        << "    --batch-barcodes          Records both batch and extracted barcode in BUS file" << endl
-       << "    --verbose                 Print out progress information every 1M proccessed reads" << endl;
+  << "    --verbose                 Print out progress information every 1M proccessed reads" << endl
+  << "    --cram-reference=FASTA    Output CRAM using the provided FASTA reference (must be the same as for the index, enables .cram output)" << endl;
 }
 
 void usageIndex() {

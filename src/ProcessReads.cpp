@@ -649,24 +649,52 @@ void MasterProcessor::update(const std::vector<uint32_t>& c, const std::vector<R
 void MasterProcessor::processAln(const EMAlgorithm& em, bool useEM = true) {
   // open bamfile and fetch header
   std::string bamfn = opt.output + "/pseudoalignments.bam";
+  bool is_cram = false;
+  // Mutually exclusive BAM/CRAM flags
+  if (opt.force_bam && opt.force_cram) {
+    std::cerr << "Error: --bam and --cram cannot be used together." << std::endl;
+    exit(1);
+  }
+  if (opt.force_cram) {
+    if (opt.reference_fasta.empty()) {
+      std::cerr << "[kallisto] Warning: --cram specified but --cram-reference missing. Falling back to BAM output." << std::endl;
+      bamfn = opt.output + "/pseudoalignments.bam";
+      is_cram = false;
+    } else {
+      bamfn = opt.output + "/pseudoalignments.cram";
+      is_cram = true;
+    }
+  } else if (opt.force_bam) {
+    bamfn = opt.output + "/pseudoalignments.bam";
+    is_cram = false;
+  } else if (opt.reference_fasta.size() > 0) {
+    bamfn = opt.output + "/pseudoalignments.cram";
+    is_cram = true;
+  } else if (bamfn.size() >= 5 && bamfn.substr(bamfn.size()-5) == ".cram") {
+    is_cram = true;
+  }
+
   if (opt.pseudobam) {
     if (opt.genomebam) {
       bamh = createPseudoBamHeaderGenome(model);
-
       bamfps = new htsFile*[numSortFiles];
       for (int i = 0; i < numSortFiles; i++) {
-        bamfps[i] = sam_open((opt.output + "/tmp." + std::to_string(i) + ".bam").c_str(), "wb1");
+        std::string tmpFile = opt.output + "/tmp." + std::to_string(i) + (is_cram ? ".cram" : ".bam");
+        bamfps[i] = sam_open(tmpFile.c_str(), is_cram ? "wc" : "wb1");
         int r = sam_hdr_write(bamfps[i], bamh);
+        if (is_cram && opt.reference_fasta.size() > 0) {
+          hts_set_fai_filename(bamfps[i], opt.reference_fasta.c_str());
+        }
       }
-
     } else {
       bamh = createPseudoBamHeaderTrans(index);
-      bamfp = sam_open(bamfn.c_str(), "wb");
+      bamfp = sam_open(bamfn.c_str(), is_cram ? "wc" : "wb");
       int r = sam_hdr_write(bamfp, bamh);
+      if (is_cram && opt.reference_fasta.size() > 0) {
+        hts_set_fai_filename(bamfp, opt.reference_fasta.c_str());
+      }
     }
-
     if (opt.threads > 1 && !opt.genomebam) {
-      // makes no sens to use threads on unsorted bams
       hts_set_threads(bamfp, opt.threads);
     }
   }

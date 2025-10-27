@@ -23,7 +23,7 @@ add_compile_definitions("MAX_KMER_SIZE=${MAX_KMER_SIZE}")
 
 
 option(USE_HDF5 "Compile with HDF5 support" OFF) #OFF by default
-option(USE_BAM "Compile with HTSLIB support" OFF) # OFF by default
+option(USE_BAM "Compile with HTSLIB support" ON) # ON by défaut
 
 if(USE_HDF5)
     add_compile_definitions("USE_HDF5=ON")
