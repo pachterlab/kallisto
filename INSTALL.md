@@ -21,6 +21,13 @@ Installation
     ```
     cd kallisto
     ```
+1. Setup the htslib code [https://github.com/samtools/htslib](htslib)
+
+    ```cd ext/htslib
+    autoheader
+    autoconf
+    cd ..
+    ```
 
 1. Make a build directory and move there
 
@@ -39,6 +46,7 @@ Installation
 
     This is only required when one of the `CMakeLists.txt` files changes or new
     source files are introduced. It will make a new set of `Makefile`s
+
 
 1. Build the code
 
