@@ -381,13 +381,18 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         target_names_.push_back(name);
 
         // Begin Shading
-        shadeToColorTranscriptMap.push_back(-1);
+        if (!shadeToColorTranscriptMap.empty()) {
+             shadeToColorTranscriptMap.push_back(-1);
+        }
         auto shade_info = shadedTargetName(name);
         if (shade_info.first != "") {
           std::string tname = shade_info.first;
           std::string variant = shade_info.second;
           auto it = std::find(target_names_.begin(), target_names_.end(), tname);
           if (it != target_names_.end()) {
+            if (shadeToColorTranscriptMap.empty()) {
+                 shadeToColorTranscriptMap.resize(target_names_.size(), -1);
+            }
             shadeToColorTranscriptMap.back() =
                 std::distance(target_names_.begin(), it);
             num_shades++;
@@ -1552,7 +1557,6 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   target_names_.clear();
   target_names_.reserve(num_trans);
   shadeToColorTranscriptMap.clear();
-  shadeToColorTranscriptMap.assign(num_trans, -1);
   num_shades = 0;
 
   size_t bufsz = 1024;
@@ -1580,6 +1584,9 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
       std::string variant = shade_info.second;
       auto it = std::find(target_names_.begin(), target_names_.end(), tname);
       if (it != target_names_.end()) {
+        if (shadeToColorTranscriptMap.empty()) {
+             shadeToColorTranscriptMap.resize(num_trans, -1);
+        }
         shadeToColorTranscriptMap[i] = std::distance(target_names_.begin(), it);
         num_shades++;
       }
