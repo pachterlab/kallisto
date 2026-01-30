@@ -381,14 +381,21 @@ void KmerIndex::BuildTranscripts(const ProgramOptions& opt, std::ofstream& out) 
         target_names_.push_back(name);
 
         // Begin Shading
+        if (!shadeToColorTranscriptMap.empty()) {
+             shadeToColorTranscriptMap.push_back(-1);
+        }
         auto shade_info = shadedTargetName(name);
         if (shade_info.first != "") {
           std::string tname = shade_info.first;
           std::string variant = shade_info.second;
           auto it = std::find(target_names_.begin(), target_names_.end(), tname);
           if (it != target_names_.end()) {
-            shadeToColorTranscriptMap[target_names_.size() - 1] =
+            if (shadeToColorTranscriptMap.empty()) {
+                 shadeToColorTranscriptMap.resize(target_names_.size(), -1);
+            }
+            shadeToColorTranscriptMap.back() =
                 std::distance(target_names_.begin(), it);
+            num_shades++;
           }
         }
         // End Shading
@@ -1134,8 +1141,7 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
 
       trinfos[n->id].push_back(tr);
       // Begin Shading
-      auto it = shadeToColorTranscriptMap.find(tr.trid);
-      if (it != shadeToColorTranscriptMap.end()) {
+      if (tr.trid < shadeToColorTranscriptMap.size() && shadeToColorTranscriptMap[tr.trid] != -1) {
         tr.trid = shadeToColorTranscriptMap[tr.trid];
         trinfos[n->id].push_back(tr);  // Add the color of the original transcript as well
       }
@@ -1168,8 +1174,8 @@ void KmerIndex::BuildEquivalenceClasses(const ProgramOptions& opt, const std::st
   std::cerr << "[build] target de Bruijn graph has " << dbg.size() << " contigs and contains "
             << dbg.nbKmers() << " k-mers " << std::endl;
   // Begin Shading
-  if (shadeToColorTranscriptMap.size() != 0) {
-    std::cerr << "[build] number of shades: " << std::to_string(shadeToColorTranscriptMap.size())
+  if (num_shades != 0) {
+    std::cerr << "[build] number of shades: " << std::to_string(num_shades)
               << std::endl;
   }
   // End Shading
@@ -1550,6 +1556,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   // 6. read in target ids
   target_names_.clear();
   target_names_.reserve(num_trans);
+  shadeToColorTranscriptMap.clear();
+  num_shades = 0;
 
   size_t bufsz = 1024;
   buffer = new char[bufsz];
@@ -1576,7 +1584,11 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
       std::string variant = shade_info.second;
       auto it = std::find(target_names_.begin(), target_names_.end(), tname);
       if (it != target_names_.end()) {
+        if (shadeToColorTranscriptMap.empty()) {
+             shadeToColorTranscriptMap.resize(num_trans, -1);
+        }
         shadeToColorTranscriptMap[i] = std::distance(target_names_.begin(), it);
+        num_shades++;
       }
       use_shade = true;
       shade_sequences.add(i);
@@ -1606,8 +1618,8 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
               << std::endl;
   }
   // Begin Shading
-  if (shadeToColorTranscriptMap.size() != 0) {
-    std::cerr << "[build] number of shades: " << std::to_string(shadeToColorTranscriptMap.size())
+  if (num_shades != 0) {
+    std::cerr << "[build] number of shades: " << std::to_string(num_shades)
               << std::endl;
   }
   // End Shading
