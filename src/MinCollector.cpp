@@ -295,7 +295,7 @@ Roaring MinCollector::modeECs(std::vector<std::pair<const_UnitigMap<Node>, int32
   sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
          if (a.first.isSameReferenceUnitig(b.first) &&
-             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
+             a.first.getData()->get_mc_contig(a.first.dist).first == b.first.getData()->get_mc_contig(b.first.dist).first) {
            return a.second < b.second;
          } else {
            return a.first.getData()->id < b.first.getData()->id;
@@ -368,7 +368,7 @@ Roaring MinCollector::intersectECs_long(std::vector<std::pair<const_UnitigMap<No
   sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
          if (a.first.isSameReferenceUnitig(b.first) &&
-             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
+             a.first.getData()->get_mc_contig(a.first.dist).first == b.first.getData()->get_mc_contig(b.first.dist).first) {
            return a.second < b.second;
          } else {
            return a.first.getData()->id < b.first.getData()->id;
@@ -436,7 +436,7 @@ Roaring MinCollector::intersectECs(std::vector<std::pair<const_UnitigMap<Node>, 
   sort(v.begin(), v.end(), [&](const std::pair<const_UnitigMap<Node>, int>& a, const std::pair<const_UnitigMap<Node>, int>& b)
        {
          if (a.first.isSameReferenceUnitig(b.first) &&
-             a.first.getData()->ec[a.first.dist] == b.first.getData()->ec[b.first.dist]) {
+             a.first.getData()->get_mc_contig(a.first.dist).first == b.first.getData()->get_mc_contig(b.first.dist).first) {
            return a.second < b.second;
          } else {
            return a.first.getData()->id < b.first.getData()->id;

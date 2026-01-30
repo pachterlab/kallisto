@@ -81,6 +81,7 @@ struct KmerIndex {
     no_jump = opt.no_jump;
     // Begin Shading
     use_shade = false;
+    num_shades = 0;
     // End Shading
   }
 
@@ -155,7 +156,8 @@ struct KmerIndex {
   
   // Begin Shading
   // Here, we use the concepts of "shades" as proposed by in Ornaments by Adduri & Kim, 2024 for bias-corrected allele-specific expression estimation
-  std::unordered_map<int, int> shadeToColorTranscriptMap;
+  std::vector<int> shadeToColorTranscriptMap;
+  int num_shades;
   Roaring shade_sequences;
   bool use_shade;
   // End Shading
