@@ -42,7 +42,7 @@ endif(LINK MATCHES static)
 
 
 if(USE_HDF5)
-    #find_package( HDF5 COMPONENTS CXX REQUIRED )
+    find_package( HDF5 COMPONENTS CXX REQUIRED )
 endif(USE_HDF5)
 
 if (NOT ZLIBNG)
@@ -74,13 +74,13 @@ if (ZLIBNG)
 endif(ZLIBNG)
 
 if(USE_HDF5)
-    #if(HDF5_FOUND)
+    if(HDF5_FOUND)
         include_directories( ${HDF5_INCLUDE_DIRS} )
-        #target_link_libraries( kallisto_core ${HDF5_LIBRARIES} )
+        target_link_libraries( kallisto_core ${HDF5_LIBRARIES} )
         target_link_libraries( kallisto ${HDF5_LIBRARIES} )
-    #else()
-    #    message(FATAL_ERROR "HDF5 not found. Required to output files")
-    #endif()
+    else()
+        message(FATAL_ERROR "HDF5 not found. Required to output files")
+    endif()
 endif(USE_HDF5)
 
 if(LINK MATCHES static)
