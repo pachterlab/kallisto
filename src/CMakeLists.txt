@@ -2,10 +2,11 @@ file(GLOB sources *.cpp)
 file(GLOB headers *.h *.hpp)
 
 list(REMOVE_ITEM sources main.cpp)
+# Note: gpumain.cu is not in sources since it's a .cu file, not .cpp
 
-if (USE_BAM)
 include_directories(../ext/htslib)
-endif(USE_BAM)
+include_directories(../ext/cuda/cuCollections/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT MAX_KMER_SIZE)
 set(MAX_KMER_SIZE "32")
@@ -16,15 +17,42 @@ add_compile_options(-Wno-subobject-linkage) # Suppress bifrost warning
 add_library(kallisto_core ${sources} ${headers})
 target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
+# add_executable(kallisto main.cpp)
 add_executable(kallisto main.cpp ${sources} ${headers})
+add_executable(gpukallisto gpumain.cu GPUProcessReads.cu GPUKernels.cu GPUIndex.cu)
+
+# Set CUDA properties for gpukallisto
+set_target_properties(gpukallisto PROPERTIES
+    CUDA_SEPARABLE_COMPILATION ON
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    CUDA_STANDARD 17
+)
+
+# Add required CUDA flags for cuCollections and per-thread default streams
+target_compile_options(gpukallisto PRIVATE
+    $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+    $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+    $<$<COMPILE_LANGUAGE:CUDA>:--default-stream per-thread>
+)
 
 find_package( Threads REQUIRED )
 ExternalProject_Get_Property(bifrost install_dir)
+
+target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
+find_package(nvcomp REQUIRED)
+target_link_libraries(gpukallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a cuco CUDA::cudart nvcomp::nvcomp)
+
 if (USE_BAM)
 target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a  -DMAX_KMER_SIZE=${MAX_KMER_SIZE})
 else()
 target_link_libraries(kallisto kallisto_core pthread ${install_dir}/build/src/libbifrost.a -DMAX_KMER_SIZE=${MAX_KMER_SIZE})
 endif(USE_BAM)
+
+# Link gpukallisto against bifrost (provides roaring bitmap, Kmer, UnitigMap, etc.)
+target_link_libraries(gpukallisto ${install_dir}/build/src/libbifrost.a)
+
+add_dependencies(kallisto bifrost)
+add_dependencies(gpukallisto bifrost)
 
 if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
@@ -42,7 +70,7 @@ endif(LINK MATCHES static)
 
 
 if(USE_HDF5)
-    #find_package( HDF5 COMPONENTS CXX REQUIRED )
+    find_package( HDF5 COMPONENTS CXX REQUIRED )
 endif(USE_HDF5)
 
 if (NOT ZLIBNG)
@@ -57,6 +85,7 @@ if ( ZLIB_FOUND )
         message(FATAL_ERROR "zlib found but no include directories are set.")
     endif()
     target_link_libraries(kallisto kallisto_core ${ZLIB_LIBRARIES})
+    target_link_libraries(gpukallisto ${ZLIB_LIBRARIES})
 else()
     message(FATAL_ERROR "zlib not found. Required for to output files" )
 endif( ZLIB_FOUND )

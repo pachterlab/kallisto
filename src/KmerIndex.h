@@ -11,7 +11,7 @@
 #include <limits>
 
 #include "common.h"
-#include "Kmer.hpp"
+// #include "Kmer.hpp"
 #include "hash.hpp"
 #include "CompactedDBG.hpp"
 #include "Node.hpp"
@@ -113,7 +113,7 @@ struct KmerIndex {
 
   // note opt is not const
   // load methods
-  void load(ProgramOptions& opt, bool loadKmerTable = true, bool loadDlist = true);
+  void load(ProgramOptions& opt, bool loadKmerTable = true, bool loadDlist = true, bool gpuMode = false);
   void loadTranscriptSequences() const;
   void loadECsFromFile(const ProgramOptions& opt);
   void loadTranscriptsFromFile(const ProgramOptions& opt);

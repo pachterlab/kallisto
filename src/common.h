@@ -124,6 +124,7 @@ struct ProgramOptions {
   int d_list_overhang;
   bool plaintext;
   bool write_index;
+  bool build_gpu_index;
   bool single_end;
   bool long_read;
   bool unmapped;
@@ -137,6 +138,7 @@ struct ProgramOptions {
   bool dfk_onlist;
   bool do_union;
   bool no_jump;
+  bool em_only;
   enum class StrandType {None, FR, RF};
   StrandType strand;
   std::string gfa; // used for inspect
@@ -166,7 +168,7 @@ ProgramOptions() :
   k(31),
   g(0),
   max_ec_size(-1),
-  iterations(500),
+  iterations(10000),
   skip(1),
   seed(42),
   error_rate(0.0),
@@ -187,6 +189,7 @@ ProgramOptions() :
   num(false),
   plaintext(false),
   write_index(false),
+  build_gpu_index(false),
   single_end(false),
   long_read(false),
   strand_specific(false),
@@ -204,7 +207,8 @@ ProgramOptions() :
   distinguish(false),
   d_list_overhang(1),
   do_union(false),
-  no_jump(false)
+  no_jump(false),
+  em_only(false)
   {}
 };
 

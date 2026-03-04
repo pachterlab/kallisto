@@ -1,0 +1,97 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is the main workflow that runs on every PR and push to main
+name: pr
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
+
+# Only runs one instance of this workflow at a time for a given PR and cancels any in-progress runs when a new one starts.
+concurrency:
+  group: ${{ github.workflow }}-on-${{ github.event_name }}-from-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  doxygen-check:
+    name: Doxygen check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Run Doxygen Check with CI Script
+        run: |
+          ./ci/doxygen_check.sh
+        shell: bash -euxo pipefail {0}
+
+  compute-matrix:
+    name: Compute matrix
+    runs-on: ubuntu-latest
+    outputs:
+      DEVCONTAINER_VERSION: ${{steps.set-outputs.outputs.DEVCONTAINER_VERSION}}
+      NVCC_FULL_MATRIX: ${{steps.set-outputs.outputs.NVCC_FULL_MATRIX}}
+      CUDA_VERSIONS: ${{steps.set-outputs.outputs.CUDA_VERSIONS}}
+      HOST_COMPILERS: ${{steps.set-outputs.outputs.HOST_COMPILERS}}
+      PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Compute matrix outputs
+        id: set-outputs
+        run: |
+          .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yml pull_request
+
+  ci:
+    name: CUDA${{ matrix.cuda_version }} ${{ matrix.compiler }}
+    needs: compute-matrix
+    uses: ./.github/workflows/dispatch-build-and-test.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda_version: ${{ fromJSON(needs.compute-matrix.outputs.CUDA_VERSIONS) }}
+        compiler: ${{ fromJSON(needs.compute-matrix.outputs.HOST_COMPILERS) }}
+    with:
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX)[ format('{0}-{1}', matrix.cuda_version, matrix.compiler) ]) }}
+      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+
+  verify-devcontainers:
+    name: Verify Dev Containers
+    uses: ./.github/workflows/verify-devcontainers.yml
+
+  # This job is the final job that runs after all other jobs and is used for branch protection status checks.
+  # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
+  # https://github.com/orgs/community/discussions/26822#discussioncomment-5122101
+  ci-success:
+    runs-on: ubuntu-latest
+    name: CI success
+    if: ${{ always() }} # need to use always() instead of !cancelled() because skipped jobs count as success
+    needs:
+      - ci
+      - verify-devcontainers
+    steps:
+      - name: Check status of all precursor jobs
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+            || contains(needs.*.result, 'skipped')
+          }}
+        run: exit 1

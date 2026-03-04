@@ -30,7 +30,7 @@ public:
   // checks if r is equal between two objects (only r is considered, nothing else):
   bool operator==(const SparseVector<T>& other) const;
   char operator[] (size_t i); // Returns strandedness: (pos & 0x7FFFFFFF) == pos, for transcript id: i; could also return 2 if ambiguous (e.g. for tx i, a + part and a - part exist in this block)
-  const char operator[] (size_t i) const;
+  char operator[] (size_t i) const;
   
   // Serialization/Deserialization
   void serialize(std::ostream& out) const;

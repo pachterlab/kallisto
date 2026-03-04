@@ -26,7 +26,7 @@ class Node : public CDBG_Data_t<Node> {
   // Each kmer in the unitig can have a different equivalence class
   BlockArray<SparseVector<uint32_t>> ec;
 
-  Node() : id(-1) {
+  Node() : id(uint32_t(-1)) {
   }
 
   // Returns [j, k), j<=i, k>=i, where j-1 is the last kmer to have a

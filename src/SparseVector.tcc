@@ -361,7 +361,7 @@ char SparseVector<T>::operator[] (size_t i) {
 }
 
 template <class T>
-const char SparseVector<T>::operator[] (size_t i) const {
+char SparseVector<T>::operator[] (size_t i) const {
   if (r.contains(i)) {
     if (flag == 2) {
       return (tinyarr[r.rank(i) - 1]);

@@ -1387,7 +1387,7 @@ void KmerIndex::write(const std::string& index_out, bool writeKmerTable, int thr
   out.close();
 }
 
-void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
+void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist, bool gpuMode) {
   if (opt.index.empty() && !loadKmerTable) {
     // Make an index from transcript and EC files
     loadTranscriptsFromFile(opt);
@@ -1447,19 +1447,29 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   uint64_t dlist_overhang;
   in.read((char*)&dlist_size, sizeof(dlist_size));
   in.read((char*)&dlist_overhang, sizeof(dlist_overhang));
-  d_list.reserve(dlist_size);
-  for (size_t i = 0; i < dlist_size; i++) {
-    Kmer dfk;
-    in.read((char*)&dfk, sizeof(dfk));
-    d_list.insert(dfk);
-    if (i == 0) {
-      dummy_dfk = dfk;
-      um_dummy = dbg.find(dummy_dfk);
-      if (um_dummy.isEmpty) {
-        std::cerr << "Error: Dummy k-mer not found in graph" << std::endl;
-        exit(1);
+  if (gpuMode) {
+    // GPU mode: skip D-list k-mers entirely (just advance the stream)
+    in.ignore(dlist_size * sizeof(Kmer));
+  } else {
+    d_list.reserve(dlist_size);
+    for (size_t i = 0; i < dlist_size; i++) {
+      Kmer dfk;
+      in.read((char*)&dfk, sizeof(dfk));
+      d_list.insert(dfk);
+      if (i == 0) {
+        dummy_dfk = dfk;
+        um_dummy = dbg.find(dummy_dfk);
+        if (um_dummy.isEmpty) {
+          std::cerr << "Error: Dummy k-mer not found in graph" << std::endl;
+          exit(1);
+        }
       }
     }
+  }
+
+  // In GPU mode, skip positional data in node deserialization
+  if (gpuMode) {
+    load_positional_info = false;
   }
 
   // 3. deserialize nodes
@@ -1533,6 +1543,33 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
   std::vector<std::pair<char*, std::pair<Kmer, uint32_t>>>().swap(
       in_buf_v);  // potentially free up memory
   std::vector<std::thread>().swap(workers);
+
+  // 3.5 GPU mode: build ecmapinv from node EC data
+  if (gpuMode) {
+    ecmapinv.clear();
+    // reserve approximately number of contigs
+    ecmapinv.reserve(dbg.size());
+    int32_t ec_id = 0;
+    std::vector<SparseVector<uint32_t>> vals;
+    for (const const_UnitigMap<Node>& contig : dbg) {
+      auto n = contig.getData();
+      n->ec.get_vals(vals);
+      int j = 0;
+      size_t contigpos = 0;
+      while (contigpos < contig.len) {
+        auto mc = n->ec.get_block_at(contigpos);
+        const auto& val = vals[j];
+        const Roaring& trs = val.getIndices();
+        if (ecmapinv.find(trs) == ecmapinv.end()) {
+          ecmapinv.insert({trs, ec_id});
+          ec_id++;
+        }
+        contigpos = mc.second;
+        ++j;
+      }
+    }
+    std::cerr << "[index] number of equivalence classes: " << pretty_num(ecmapinv.size()) << std::endl;
+  }
 
   // 4. read number of targets
   in.read((char*)&num_trans, sizeof(num_trans));
@@ -1618,7 +1655,7 @@ void KmerIndex::load(ProgramOptions& opt, bool loadKmerTable, bool loadDlist) {
     loadECsFromFile(opt);
   }
 
-  if (!loadDlist) {  // Destroy the D-list
+  if (!loadDlist || gpuMode) {  // Destroy the D-list
     if (num_trans != onlist_sequences.cardinality()) {
       std::cerr << "[index] not using the D-list k-mers" << std::endl;
       num_trans = onlist_sequences.cardinality();
@@ -1764,6 +1801,20 @@ int KmerIndex::mapPair(const char* s1, int l1, const char* s2, int l2) const {
   }
 }
 
+#ifdef USE_KALLISTO_NAIVE_MATCH
+// use:  match(s,l,v)
+// pre:  v is initialized
+// post: v contains all equiv classes for the k-mers in s
+void KmerIndex::match(const char *s, int l, std::vector<std::pair<KmerEntry, int>>& v) const {
+  KmerIterator kit(s), kit_end;
+  for (; kit != kit_end; ++kit) {
+    auto search = kmap.find(kit->first.rep());
+    if (search != kmap.end()) {
+      v.push_back({search->second, kit->second});
+    }
+  }
+}
+#else
 // use:  match(s,l,v)
 // pre:  v is initialized
 // post: v contains all equiv classes for the k-mers in s
@@ -2037,6 +2088,7 @@ void KmerIndex::match(const char* s, int l, std::vector<std::pair<const_UnitigMa
     }
   }
 }
+#endif
 
 // use:  match_long(s,l,v)
 // pre:  v is initialized

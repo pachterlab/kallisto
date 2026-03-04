@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: build and test
+
+defaults:
+  run:
+    shell: bash -eo pipefail {0}
+
+on:
+  workflow_call:
+    inputs:
+      cpu: {type: string, required: true}
+      test_name: {type: string, required: false}
+      build_script: {type: string, required: false}
+      test_script: {type: string, required: false}
+      container_image: {type: string, required: false}
+      run_tests: {type: boolean, required: false, default: true}
+
+jobs:
+  build:
+    name: Build ${{inputs.test_name}}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: Build ${{inputs.test_name}}
+      runner: linux-${{inputs.cpu}}-cpu16
+      image:  ${{ inputs.container_image }}
+      command: |
+        ${{ inputs.build_script }}
+
+  test:
+    needs: build
+    if:  ${{ !cancelled() && ( needs.build.result == 'success' || needs.build.result == 'skipped' ) && inputs.run_tests}}
+    name: Test ${{inputs.test_name}}
+    uses: ./.github/workflows/run-as-coder.yml
+    with:
+      name: Test ${{inputs.test_name}}
+      runner: linux-${{inputs.cpu}}-gpu-v100-latest-1
+      image: ${{inputs.container_image}}
+      command: |
+        nvidia-smi
+        ${{ inputs.test_script }}

@@ -1,0 +1,26 @@
+# Simplified CMakeLists for cuCollections as a header-only library
+cmake_minimum_required(VERSION 3.23.1)
+
+project(CUCO VERSION 0.0.1 LANGUAGES CXX CUDA)
+
+# cuCollections is header-only, so we just create an interface library
+add_library(cuco INTERFACE)
+
+# Add the include directory
+target_include_directories(cuco INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Set C++ standard requirements
+target_compile_features(cuco INTERFACE cxx_std_17)
+
+# Link CUDA runtime
+find_package(CUDAToolkit REQUIRED)
+target_link_libraries(cuco INTERFACE CUDA::cudart)
+
+# Set CUDA architectures if not already set
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+endif()
+

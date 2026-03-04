@@ -2907,6 +2907,22 @@ int main(int argc, char *argv[]) {
         plaintext_writer(opt.output + "/abundance.tsv", em.target_names_, em.alpha_, em.eff_lens_,
                          index.target_lens_);
 
+        {
+          std::ofstream ecf(opt.output + "/counts_cpu.txt");
+          for (const auto& it : index.ecmapinv) {
+            int ec_id = it.second;
+            ecf << ec_id << "\t" << collection.counts[ec_id] << "\t";
+            bool first = true;
+            for (uint32_t tr : it.first) {
+              if (!first) ecf << ",";
+              ecf << tr;
+              first = false;
+            }
+            ecf << "\n";
+          }
+          ecf.close();
+        }
+
         if (opt.bootstrap > 0 && num_pseudoaligned == 0) {
           // this happens if nothing aligns, then we write an empty bootstrap file
           for (int b = 0; b < opt.bootstrap; b++) {

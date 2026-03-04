@@ -1,0 +1,41 @@
+ci:
+    autofix_commit_msg: |
+      [pre-commit.ci] auto code formatting
+    autofix_prs: true
+    autoupdate_branch: ''
+    autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+    autoupdate_schedule: quarterly
+    skip: []
+    submodules: false
+
+repos:
+      - repo: https://github.com/pre-commit/mirrors-clang-format
+        rev: v20.1.4
+        hooks:
+              - id: clang-format
+                types_or: [c, c++, cuda]
+                args: ['-fallback-style=none', '-style=file', '-i']
+      - repo: local
+        hooks:
+              - id: check-doxygen
+                name: check-doxygen
+                entry: ./ci/pre-commit/doxygen.sh
+                files: ^include/
+                types_or: [file]
+                language: system
+                pass_filenames: false
+                verbose: true
+              - id: check-example-links
+                name: check-example-links
+                entry: ./ci/pre-commit/example_links.py
+                files: ^examples/
+                types: [cuda]
+                language: python
+                pass_filenames: false
+                verbose: true
+                additional_dependencies:
+                  - --extra-index-url=https://pypi.anaconda.org/rapidsai-wheels-nightly/simple
+                  - gitpython
+
+default_language_version:
+      python: python3

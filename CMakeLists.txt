@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.23.1)
 
-project(kallisto)
+project(kallisto LANGUAGES CXX CUDA)
 
 include(GNUInstallDirs)
 
@@ -31,6 +31,12 @@ if(USE_HDF5)
     cmake_policy(SET CMP0074 NEW)
     add_compile_definitions("USE_HDF5=ON")
 endif(USE_HDF5)
+
+option(USE_KALLISTO_NAIVE_MATCH "Use naive match implementation in KmerIndex::match()" OFF) #OFF by default
+
+if(USE_KALLISTO_NAIVE_MATCH)
+    add_compile_definitions("USE_KALLISTO_NAIVE_MATCH")
+endif(USE_KALLISTO_NAIVE_MATCH)
 
 if(NOT USE_BAM)
     add_compile_definitions("NO_HTSLIB=ON")
@@ -79,6 +85,17 @@ ELSE(LINK MATCHES shared)
     message("shared build")
 ENDIF(LINK MATCHES static)
 
+
+# Enable CUDA and set architecture
+enable_language(CUDA)
+find_package(CUDAToolkit REQUIRED)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+endif()
+
+# Add cuCollections as header-only library (using simplified CMakeLists)
+# We use a simplified version to avoid RAPIDS cmake requirements (CMake 3.30+)
+include(ext/cuda/cuCollections/SimpleCMakeLists.txt)
 
 include(ExternalProject)
 if (USE_BAM)
