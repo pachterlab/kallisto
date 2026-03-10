@@ -1,21 +1,12 @@
 ---
-layout: page
+layout: none
 ---
-{% include JB/setup %}
 
-<!-- Read [Jekyll Quick Start](http://jekyllbootstrap.com/usage/jekyll-quick-start.html) //-->
+<meta http-equiv="refresh" content="0; url=https://kallisto.readthedocs.io/en/latest/">
 
-<p align="center">
-  <a href="about.html">
-    <img src="bear.jpg" width="70%">
-  </a>
-</p>
-<!---
-[<img src = "kallisto_bus_overview.png">](about.html)
--->
+<script>
+  window.location.replace("https://kallisto.readthedocs.io/en/latest/");
+</script>
 
-<p align="center">
-  <a href="download.html">
-    <button type="button" class="btn btn-success">Download & Install</button>
-  </a>
-</p>
+If you are not redirected automatically, go to  
+https://kallisto.readthedocs.io/en/latest/
