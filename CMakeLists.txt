@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.23.1)
 
-project(kallisto LANGUAGES CXX CUDA)
+project(kallisto LANGUAGES CXX OBJCXX)
+# CUDA is enabled separately below if the toolkit is available
 
 include(GNUInstallDirs)
 
@@ -86,16 +87,28 @@ ELSE(LINK MATCHES shared)
 ENDIF(LINK MATCHES static)
 
 
-# Enable CUDA and set architecture
-enable_language(CUDA)
-find_package(CUDAToolkit REQUIRED)
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+# Enable CUDA if available (not required for metalkallisto on Apple)
+find_package(CUDAToolkit QUIET)
+if(CUDAToolkit_FOUND)
+    enable_language(CUDA)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 70 75 80 86 89 90)
+    endif()
+    # Add cuCollections as header-only library
+    # We use a simplified version to avoid RAPIDS cmake requirements (CMake 3.30+)
+    include(ext/cuda/cuCollections/SimpleCMakeLists.txt)
+    set(CUDA_AVAILABLE TRUE)
+else()
+    message(STATUS "CUDA toolkit not found; skipping gpukallisto target")
+    set(CUDA_AVAILABLE FALSE)
 endif()
 
-# Add cuCollections as header-only library (using simplified CMakeLists)
-# We use a simplified version to avoid RAPIDS cmake requirements (CMake 3.30+)
-include(ext/cuda/cuCollections/SimpleCMakeLists.txt)
+# Apple Metal frameworks (used for metalkallisto target)
+if(APPLE)
+    find_library(METAL_FRAMEWORK Metal REQUIRED)
+    find_library(MPS_FRAMEWORK MetalPerformanceShaders REQUIRED)
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+endif()
 
 include(ExternalProject)
 if (USE_BAM)
@@ -114,7 +127,7 @@ ExternalProject_Add(bifrost
     PREFIX ${PROJECT_SOURCE_DIR}/ext/bifrost
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/ext/bifrost
     BUILD_IN_SOURCE 1
-    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DMAX_KMER_SIZE=${MAX_KMER_SIZE} -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_CXX_FLAGS=${PROJECT_BIFROST_CMAKE_CXX_FLAGS} ${DO_ENABLE_AVX2} ${DO_ENABLE_COMPILATION_ARCH}
+    CONFIGURE_COMMAND mkdir -p build && cd build && cmake .. -DMAX_KMER_SIZE=${MAX_KMER_SIZE} -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_CXX_FLAGS=${PROJECT_BIFROST_CMAKE_CXX_FLAGS} ${DO_ENABLE_AVX2} ${DO_ENABLE_COMPILATION_ARCH} -DCMAKE_POLICY_VERSION_MINIMUM=3.5
     BUILD_COMMAND cd build && make
     INSTALL_COMMAND ""
 )

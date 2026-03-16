@@ -19,40 +19,117 @@ target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # add_executable(kallisto main.cpp)
 add_executable(kallisto main.cpp ${sources} ${headers})
-add_executable(gpukallisto gpumain.cu GPUProcessReads.cu GPUKernels.cu GPUIndex.cu)
-
-# Set CUDA properties for gpukallisto
-set_target_properties(gpukallisto PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
-    CUDA_STANDARD 17
-)
-
-# Add required CUDA flags for cuCollections and per-thread default streams
-target_compile_options(gpukallisto PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
-    $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
-    $<$<COMPILE_LANGUAGE:CUDA>:--default-stream per-thread>
-)
-
 find_package( Threads REQUIRED )
 ExternalProject_Get_Property(bifrost install_dir)
 
-target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
-find_package(nvcomp REQUIRED)
-target_link_libraries(gpukallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a cuco CUDA::cudart nvcomp::nvcomp)
+target_link_libraries(kallisto kallisto_core pthread ${install_dir}/build/src/libbifrost.a)
 
 if (USE_BAM)
-target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a  -DMAX_KMER_SIZE=${MAX_KMER_SIZE})
-else()
-target_link_libraries(kallisto kallisto_core pthread ${install_dir}/build/src/libbifrost.a -DMAX_KMER_SIZE=${MAX_KMER_SIZE})
+target_link_libraries(kallisto ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
 endif(USE_BAM)
 
-# Link gpukallisto against bifrost (provides roaring bitmap, Kmer, UnitigMap, etc.)
-target_link_libraries(gpukallisto ${install_dir}/build/src/libbifrost.a)
-
 add_dependencies(kallisto bifrost)
-add_dependencies(gpukallisto bifrost)
+
+if(CUDA_AVAILABLE)
+    add_executable(gpukallisto gpumain.cu GPUProcessReads.cu GPUKernels.cu GPUIndex.cu)
+
+    # Set CUDA properties for gpukallisto
+    set_target_properties(gpukallisto PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        CUDA_STANDARD 17
+    )
+
+    # Add required CUDA flags for cuCollections and per-thread default streams
+    target_compile_options(gpukallisto PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+        $<$<COMPILE_LANGUAGE:CUDA>:--default-stream per-thread>
+    )
+
+    find_package(nvcomp REQUIRED)
+    target_link_libraries(gpukallisto kallisto_core pthread
+        ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a
+        cuco CUDA::cudart nvcomp::nvcomp)
+
+    # Link gpukallisto against bifrost
+    target_link_libraries(gpukallisto ${install_dir}/build/src/libbifrost.a)
+
+    add_dependencies(gpukallisto bifrost)
+endif(CUDA_AVAILABLE)
+
+# ============================================================================
+# metalkallisto — Apple Metal port (macOS / Apple Silicon only)
+# ============================================================================
+if(APPLE)
+    # Compile kallisto.metal -> .air -> .metallib at build time
+    set(METAL_SRC  ${CMAKE_CURRENT_SOURCE_DIR}/kernels/kallisto.metal)
+    set(METAL_AIR  ${CMAKE_CURRENT_BINARY_DIR}/kallisto.air)
+    set(METAL_LIB  ${CMAKE_CURRENT_BINARY_DIR}/kallisto.metallib)
+
+    execute_process(
+        COMMAND xcrun -f metal
+        OUTPUT_VARIABLE METAL_EXECUTABLE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE METAL_FIND_RESULT
+    )
+    if(NOT METAL_FIND_RESULT EQUAL 0 OR METAL_EXECUTABLE STREQUAL "")
+        message(FATAL_ERROR "Unable to locate the Metal compiler via xcrun -f metal")
+    endif()
+    get_filename_component(METAL_BIN_DIR "${METAL_EXECUTABLE}" DIRECTORY)
+    set(METALLIB_EXECUTABLE "${METAL_BIN_DIR}/metallib")
+
+    add_custom_command(
+        OUTPUT  ${METAL_AIR}
+        COMMAND ${METAL_EXECUTABLE} -c ${METAL_SRC} -o ${METAL_AIR}
+        DEPENDS ${METAL_SRC}
+        COMMENT "Compiling Metal shader to AIR"
+    )
+    add_custom_command(
+        OUTPUT  ${METAL_LIB}
+        COMMAND ${METALLIB_EXECUTABLE} ${METAL_AIR} -o ${METAL_LIB}
+        DEPENDS ${METAL_AIR}
+        COMMENT "Linking Metal AIR to metallib"
+    )
+    add_custom_target(kallisto_metallib DEPENDS ${METAL_LIB})
+
+    add_executable(metalkallisto
+        metalmain.mm
+        MetalUtils.mm
+        MetalIndex.mm
+        MetalPipeline.mm
+        MetalEM.mm
+        MetalProcessReads.mm
+    )
+
+    add_dependencies(metalkallisto kallisto_metallib bifrost)
+
+    set_target_properties(metalkallisto PROPERTIES
+        OBJCXX_STANDARD 17
+        OBJCXX_STANDARD_REQUIRED ON
+    )
+
+    target_compile_definitions(metalkallisto PRIVATE
+        METALLIB_PATH="${METAL_LIB}"
+    )
+
+    target_include_directories(metalkallisto PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${EXT_PROJECTS_DIR}/bifrost/build/src
+        ${EXT_PROJECTS_DIR}/bifrost/src
+    )
+
+    # install_dir already set by ExternalProject_Get_Property(bifrost install_dir) above
+    target_link_libraries(metalkallisto
+        kallisto_core
+        pthread
+        ${install_dir}/build/src/libbifrost.a
+        ${METAL_FRAMEWORK}
+        ${MPS_FRAMEWORK}
+        ${FOUNDATION_FRAMEWORK}
+    )
+    # zlib is linked below, after find_package(ZLIB) is called
+endif(APPLE)
 
 if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
@@ -85,7 +162,12 @@ if ( ZLIB_FOUND )
         message(FATAL_ERROR "zlib found but no include directories are set.")
     endif()
     target_link_libraries(kallisto kallisto_core ${ZLIB_LIBRARIES})
-    target_link_libraries(gpukallisto ${ZLIB_LIBRARIES})
+    if(CUDA_AVAILABLE AND TARGET gpukallisto)
+        target_link_libraries(gpukallisto ${ZLIB_LIBRARIES})
+    endif()
+    if(APPLE AND TARGET metalkallisto)
+        target_link_libraries(metalkallisto ${ZLIB_LIBRARIES})
+    endif()
 else()
     message(FATAL_ERROR "zlib not found. Required for to output files" )
 endif( ZLIB_FOUND )

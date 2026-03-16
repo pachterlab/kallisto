@@ -30,6 +30,9 @@ struct BenchmarkStats {
   double wall_clock_total_ms = 0.0;
   double wall_clock_pipeline_ms = 0.0;
   int batch_count = 0;
+
+  // Kmer count tracking
+  uint64_t total_kmers = 0;
 };
 
 // Global benchmark statistics (defined in GPUProcessReads.cu)
