@@ -5,6 +5,9 @@
 #include "GPUProcessReads.cuh"
 #include "GPUPipeline.cuh"
 #include "GPUIndexFormat.h"
+#include "GPUBusProcess.cuh"
+#include "BusOptionsParser.h"
+#include <sys/stat.h>
 // #include "Kmer.hpp"
 
 #include <getopt.h>
@@ -73,6 +76,212 @@ void usageConvertIndex() {
        << "-i, --index=STRING            Input kallisto index (.idx)" << endl
        << "-o, --output=STRING            Output GPU index (.gpuidx)" << endl << endl
        << "Converts a kallisto index to the lightweight GPU index format for faster loading." << endl;
+}
+
+void usageBusGPU() {
+  cout << "gpukallisto " << KALLISTO_VERSION << endl
+       << "Generates BUS files for single-cell sequencing using GPU acceleration" << endl << endl
+       << "Usage: gpukallisto bus [arguments] FASTQ-files" << endl << endl
+       << "Required arguments:" << endl
+       << "-i, --index=STRING            Filename for the kallisto index (.idx or .gpuidx)" << endl
+       << "-o, --output-dir=STRING       Directory to write output to" << endl
+       << "-x, --technology=STRING       Single-cell technology used (e.g. 10xv3, dropseq) or"
+       << " bc:umi:cdna" << endl << endl
+       << "Optional arguments:" << endl
+       << "-l, --list                    List the supported technologies and exit" << endl
+       << "-t, --threads=INT             Number of threads to use (default: 1)" << endl
+       << "    --unstranded              Disable strand-specific filtering (currently required for"
+       << " v1)" << endl
+       << "    --verbose                 Print verbose progress" << endl << endl
+       << "Notes (v1 scope):" << endl
+       << "  - Only 2-file presets/custom -x with one BC piece on file 0, one UMI piece on file 0,"
+       << " and one cDNA piece on file 1 are supported." << endl
+       << "  - --unstranded is required (presets that default to fr/rf-stranded must be passed"
+       << " --unstranded)." << endl;
+}
+
+static bool file_exists(const std::string& fn) {
+  struct stat st;
+  return stat(fn.c_str(), &st) == 0;
+}
+
+bool CheckOptionsBusGPU(ProgramOptions& opt) {
+  bool ret = true;
+
+  if (opt.index.empty()) {
+    cerr << "Error: kallisto index file missing" << endl;
+    ret = false;
+  } else if (!file_exists(opt.index)) {
+    cerr << "Error: kallisto index file not found " << opt.index << endl;
+    ret = false;
+  }
+
+  if (opt.output.empty()) {
+    cerr << "Error: need to specify output directory with -o" << endl;
+    ret = false;
+  } else {
+    struct stat st;
+    auto s = stat(opt.output.c_str(), &st);
+    if (s == 0) {
+      if (!S_ISDIR(st.st_mode)) {
+        cerr << "Error: " << opt.output << " exists and is not a directory" << endl;
+        ret = false;
+      }
+    } else {
+#ifdef _WIN32
+      if (mkdir(opt.output.c_str()) != 0) {
+#else
+      if (mkdir(opt.output.c_str(), 0777) != 0) {
+#endif
+        cerr << "Error: could not create directory " << opt.output << endl;
+        ret = false;
+      }
+    }
+  }
+
+  if (opt.technology.empty()) {
+    cerr << "Error: -x/--technology is required" << endl;
+    ret = false;
+    return ret;
+  }
+
+  // Reject unsupported v1 features early.
+  if (opt.batch_mode) {
+    cerr << "Error: -B/--batch is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.bam) {
+    cerr << "Error: --bam is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.long_read) {
+    cerr << "Error: --long is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.aa) {
+    cerr << "Error: --aa is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.genomebam || opt.pseudobam) {
+    cerr << "Error: --genomebam/--bam is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.input_interleaved_nfiles != 0) {
+    cerr << "Error: --inleaved is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.record_batch_bus_barcode) {
+    cerr << "Error: --batch-barcodes is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (!opt.tagsequence.empty()) {
+    cerr << "Error: -T/--tag is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.num) {
+    cerr << "Error: --num is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.max_num_reads != 0) {
+    cerr << "Error: -N/--numReads is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.do_union) {
+    cerr << "Error: --union is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  if (opt.no_jump) {
+    cerr << "Error: --no-jump is not supported in gpukallisto bus (v1)" << endl;
+    ret = false;
+  }
+  // Single end bus runs use file 0 for BC/UMI, file 1 for cDNA, so we treat
+  // it as paired-end (two-file) input internally.
+  opt.single_end = false;
+
+  // Files: must be exactly 2 input fastq files (one batch).
+  if (opt.files.empty()) {
+    cerr << "Error: missing read files (expected exactly 2)" << endl;
+    ret = false;
+  } else if (opt.files.size() != 2) {
+    cerr << "Error: gpukallisto bus (v1) requires exactly 2 input files (got "
+         << opt.files.size() << ")" << endl;
+    ret = false;
+  } else {
+    for (const auto& fn : opt.files) {
+      if (!file_exists(fn)) {
+        cerr << "Error: file not found " << fn << endl;
+        ret = false;
+      }
+    }
+  }
+  if (!ret) return ret;
+
+  // Apply preset technology / parse custom -x.
+  auto& busopt = opt.busOptions;
+  busopt = BUSOptions{};
+  busopt.nfiles = 1;
+  busopt.keep_fastq_comments = false;
+  busopt.paired = false;
+  busopt.long_read = false;
+  busopt.unmapped = false;
+  busopt.error_rate = 0.0;
+  busopt.threshold = 0.8;
+  busopt.aa = false;
+
+  std::vector<std::string> errs;
+  ProgramOptions::StrandType preset_strand = ProgramOptions::StrandType::None;
+  bool ok = bus_parser::ApplyBusPresetTechnology(opt, preset_strand, errs);
+  if (!ok) {
+    for (const auto& e : errs) cerr << e << endl;
+    return false;
+  }
+
+  // v1 strand: --unstranded must be set (or be the technology's default).
+  bool unstranded = (opt.strand == ProgramOptions::StrandType::None);
+  if (!unstranded) {
+    cerr << "Error: gpukallisto bus (v1) only supports --unstranded; pass"
+         << " --unstranded to override the technology default" << endl;
+    ret = false;
+  }
+  if (preset_strand != ProgramOptions::StrandType::None && !unstranded) {
+    cerr << "Error: technology " << opt.technology
+         << " defaults to a stranded mode; --unstranded is required for v1" << endl;
+    ret = false;
+  }
+  // Force unstranded behavior for downstream bookkeeping.
+  opt.strand_specific = false;
+  opt.strand = ProgramOptions::StrandType::None;
+
+  // v1 shape: 2 files, 1 BC piece on file 0, 1 UMI piece on file 0, 1 cDNA piece on file 1.
+  if (busopt.nfiles != 2) {
+    cerr << "Error: gpukallisto bus (v1) requires a 2-file technology (got nfiles="
+         << busopt.nfiles << ")" << endl;
+    ret = false;
+  }
+  if (busopt.bc.size() != 1 || busopt.bc[0].fileno != 0 || busopt.bc[0].start < 0 ||
+      busopt.bc[0].stop <= busopt.bc[0].start) {
+    cerr << "Error: gpukallisto bus (v1) requires exactly one BC piece on file 0" << endl;
+    ret = false;
+  }
+  if (busopt.umi.size() != 1 || busopt.umi[0].fileno != 0 || busopt.umi[0].start < 0 ||
+      busopt.umi[0].stop <= busopt.umi[0].start) {
+    cerr << "Error: gpukallisto bus (v1) requires exactly one UMI piece on file 0" << endl;
+    ret = false;
+  }
+  if (busopt.seq.size() != 1 || busopt.seq[0].fileno != 1) {
+    cerr << "Error: gpukallisto bus (v1) requires exactly one cDNA piece on file 1" << endl;
+    ret = false;
+  }
+  if (busopt.paired) {
+    cerr << "Error: gpukallisto bus (v1) does not support paired cDNA reads" << endl;
+    ret = false;
+  }
+
+  if (opt.threads <= 0) opt.threads = 1;
+
+  opt.bus_mode = true;
+
+  return ret;
 }
 
 
@@ -259,7 +468,41 @@ int main(int argc, char** argv) {
     ProgramOptions opt;
     string cmd(argv[1]);
 
-    if (cmd == "convert-index") {
+    if (cmd == "bus") {
+      if (argc == 2) {
+        usageBusGPU();
+        return 0;
+      }
+      bus_parser::ParseOptionsBus(argc - 1, argv + 1, opt);
+      if (!CheckOptionsBusGPU(opt)) {
+        cerr << endl;
+        usageBusGPU();
+        return 1;
+      }
+      GPURunStats run_stats;
+      if (is_gpu_index(opt.index)) {
+        GPUIndex gpu_idx;
+        auto setup_start = std::chrono::high_resolution_clock::now();
+        if (!gpu_idx.load(opt.index)) {
+          cerr << "Error: failed to load GPU index " << opt.index << endl;
+          return 1;
+        }
+        Kmer::set_k(gpu_idx.k);
+        auto setup_end = std::chrono::high_resolution_clock::now();
+        g_benchmark_stats.setup_index_load_ms +=
+            std::chrono::duration_cast<std::chrono::microseconds>(setup_end - setup_start).count() / 1000.0;
+        gpu_bus_run(opt, gpu_idx, start_time, argc, argv, &run_stats);
+      } else {
+        auto setup_start = std::chrono::high_resolution_clock::now();
+        KmerIndex index(opt);
+        index.load(opt, true, true, /*gpuMode=*/true);
+        auto setup_end = std::chrono::high_resolution_clock::now();
+        g_benchmark_stats.setup_index_load_ms +=
+            std::chrono::duration_cast<std::chrono::microseconds>(setup_end - setup_start).count() / 1000.0;
+        gpu_bus_run(opt, index, start_time, argc, argv, &run_stats);
+      }
+      return 0;
+    } else if (cmd == "convert-index") {
       if (argc < 6) {
         usageConvertIndex();
         return 1;

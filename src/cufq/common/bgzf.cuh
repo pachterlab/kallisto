@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <string>
 #include <vector>
 
 // BGZF block header structure (RFC 1952 + SAM spec)
@@ -40,6 +42,16 @@ inline bool is_bgzf_memory(const char* data, size_t size) {
     return header->id1 == 31 && header->id2 == 139 &&
            header->cm == 8 && (header->flg & 4) &&
            header->si1 == 66 && header->si2 == 67;
+}
+
+// Check BGZF format from file header only (no full-file read)
+inline bool is_bgzf_file(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+    char buf[sizeof(BgzfHeader)];
+    f.read(buf, sizeof(buf));
+    if (static_cast<size_t>(f.gcount()) < sizeof(BgzfHeader)) return false;
+    return is_bgzf_memory(buf, sizeof(BgzfHeader));
 }
 
 // Parse BGZF blocks from memory buffer (no file seeks!)

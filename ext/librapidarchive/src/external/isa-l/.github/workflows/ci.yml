@@ -1,0 +1,143 @@
+name: Continous integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+
+permissions:
+  contents: read
+
+jobs:
+  check_format:
+    env:
+      CLANGFORMAT: clang-format-18
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 2
+      - name: Install clang-format-18
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 18
+          sudo apt install -y clang-format-18
+      - name: Run format check
+        run: bash tools/check_format.sh
+
+  run_tests_unix:
+    needs: check_format
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-13  # x86_64
+          - macos-14  # arm64
+        assembler:
+          - nasm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install build dependencies (Linux)
+        run: sudo apt install ${{ matrix.assembler }}
+        if: runner.os == 'Linux'
+      - name: Install build dependencies (Macos)
+        run: brew install ${{ matrix.assembler }} automake autoconf coreutils libtool
+        if: runner.os == 'macOS'
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure
+          bash -c 'make -j $(nproc)'
+      - name: Run tests
+        run: bash tools/test_checks.sh
+      - name: Run extended tests
+        run: bash tools/test_extended.sh
+
+  run_tests_mingw_linux_64:
+    needs: check_format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install build dependencies (Linux)
+        run: sudo apt install nasm mingw-w64
+      - name: Build
+        shell: bash
+        run: |
+          make -j $(nproc) -f Makefile.unx programs/igzip tests arch=mingw host_cpu=x86_64
+      # wine does not seem available, hence cannot run tests.
+
+  run_tests_mingw_linux_32:
+    needs: check_format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install build dependencies (Linux)
+        run: sudo apt install nasm mingw-w64
+      - name: Build
+        shell: bash
+        run: |
+          make -j $(nproc) -f Makefile.unx programs/igzip tests arch=mingw host_cpu=base_aliases CC=i686-w64-mingw32-gcc
+
+  run_tests_mingw_windows_64:
+    needs: check_format
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.2
+      - name: Build
+        shell: bash
+        run: |
+          make -j $(nproc) -f Makefile.unx programs/igzip tests SIM= arch=mingw host_cpu=x86_64 AR=x86_64-w64-mingw32-gcc-ar
+      - name: Run tests
+        shell: bash
+        run: |
+          # autoconf is missing, hence simulates test_checks.sh
+          make -j $(nproc) -f Makefile.unx check D=TEST_SEED=0 SIM= arch=mingw host_cpu=x86_64 AR=x86_64-w64-mingw32-gcc-ar
+      - name: Run extended tests
+        shell: bash
+        run: |
+          # simulates test_extended.sh
+          make -j $(nproc) -f Makefile.unx perf D=TEST_SEED=0 SIM= arch=mingw host_cpu=x86_64 AR=x86_64-w64-mingw32-gcc-ar
+          make -j $(nproc) -f Makefile.unx test D=TEST_SEED=0 SIM= arch=mingw host_cpu=x86_64 AR=x86_64-w64-mingw32-gcc-ar
+
+  # seems like i686-w64-mingw32-gcc is not available on windows runner.
+
+  run_tests_windows:
+    needs: check_format
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Set MSVC developer prompt
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+      - name: Install nasm
+        uses: ilammy/setup-nasm@v1.5.2
+      - name: Build
+        run: |
+          nmake -f Makefile.nmake || exit /b 1
+          nmake checks -f Makefile.nmake || exit /b 1
+          nmake perfs -f Makefile.nmake || exit /b 1
+      - name: Run perf apps
+        run: nmake perf -f Makefile.nmake || exit /b 1
+      - name: Run checks
+        run: nmake check -f Makefile.nmake || exit /b 1
+
+  run_tests_linux-riscv64-v:
+    needs: check_format
+    runs-on: run_tests_linux-riscv64-v
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Build
+        run: |
+          ./autogen.sh
+          ./configure
+          bash -c 'make -j $(nproc)'
+      - name: Run tests
+        run: bash tools/test_checks.sh
+      - name: Run extended tests
+        run: bash tools/test_extended.sh

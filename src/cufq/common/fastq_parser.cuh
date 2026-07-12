@@ -10,7 +10,7 @@
 #include "utils.cuh"
 
 // Kernel to mark newline positions (1 for '\n', 0 otherwise)
-__global__ void mark_newlines_kernel(const char* __restrict__ data,
+inline __global__ void mark_newlines_kernel(const char* __restrict__ data,
                                       uint32_t* __restrict__ marks,
                                       size_t size) {
     size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -23,7 +23,7 @@ __global__ void mark_newlines_kernel(const char* __restrict__ data,
 // After inclusive scan, scan[i] = number of newlines up to and including position i
 // Line type = (scan[i] - 1) % 4 for the character AFTER the newline
 // We want line type 1 (sequence line)
-__global__ void find_sequence_positions_kernel(
+inline __global__ void find_sequence_positions_kernel(
     const char* __restrict__ data,
     const uint32_t* __restrict__ scan,
     uint32_t* __restrict__ seq_starts,
@@ -49,7 +49,7 @@ __global__ void find_sequence_positions_kernel(
 }
 
 // Kernel to compute sequence lengths (distance to next newline)
-__global__ void compute_sequence_lengths_kernel(
+inline __global__ void compute_sequence_lengths_kernel(
     const char* __restrict__ data,
     const uint32_t* __restrict__ seq_starts,
     SeqDescriptor* __restrict__ descriptors,
@@ -76,7 +76,7 @@ __global__ void compute_sequence_lengths_kernel(
 }
 
 // Alternative: vectorized length computation using scan results
-__global__ void compute_sequence_lengths_fast_kernel(
+inline __global__ void compute_sequence_lengths_fast_kernel(
     const uint32_t* __restrict__ scan,
     const uint32_t* __restrict__ seq_starts,
     SeqDescriptor* __restrict__ descriptors,

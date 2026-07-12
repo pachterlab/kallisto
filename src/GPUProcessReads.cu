@@ -135,7 +135,7 @@ static void process_batch(
     GPUECMap& gpu_ecmap,
     GPUECMapInv& gpu_ecmapinv
 ) {
-    bool is_paired = (d_loader.r1_count > 0);
+    bool is_paired = (d_loader.read_count > d_loader.r1_count);
 
     // Kmer extraction
     cudaEvent_t kmer_start, kmer_stop;
@@ -248,10 +248,8 @@ void gpu_run(ProgramOptions& opt, const KmerIndex& index, GPURunStats* out_stats
     return load_has_data;
   };
 
-  // Start loading first batch in background - file reading overlaps with GPU setup below
-  request_load(curr);
-
-  // Build GPU data structures while files are being read from disk
+  // Build GPU data structures before starting the loader thread (avoids concurrent
+  // CUDA use from loader and main during EC map construction).
   auto d_map = build_kmer_to_ec_map(index);
 
   std::cout << "[Building GPU EC Map]" << std::endl;
@@ -269,7 +267,10 @@ void gpu_run(ProgramOptions& opt, const KmerIndex& index, GPURunStats* out_stats
   PairIntersector pair_intersector;
   ReadECLookup ec_lookup;
 
-  // Wait for first batch (file reading should have overlapped with GPU setup)
+  // Start loading first batch (rapidgzip CPU decompress / BGZF GPU decompress)
+  request_load(curr);
+
+  // Wait for first batch
   bool has_data = wait_load();
 
   auto pipeline_start = std::chrono::high_resolution_clock::now();
@@ -427,12 +428,7 @@ void gpu_run(ProgramOptions& opt, const GPUIndex& index, GPURunStats* out_stats)
     return load_has_data;
   };
 
-  // Start loading first batch in background - file reading overlaps with GPU setup below
-  request_load(curr);
-
-  int64_t total_processed = 0;
-
-  // Build GPU data structures while files are being read from disk
+  // Build GPU structures before loader thread (see gpu_run).
   std::cout << "[Building GPU k-mer to EC map from contigs]" << std::endl;
   auto d_map = build_kmer_to_ec_map_from_contigs(index);
 
@@ -451,10 +447,13 @@ void gpu_run(ProgramOptions& opt, const GPUIndex& index, GPURunStats* out_stats)
   PairIntersector pair_intersector;
   ReadECLookup ec_lookup;
 
+  request_load(curr);
+
   // Wait for first batch (file reading should have overlapped with GPU setup)
   bool has_data = wait_load();
 
   auto pipeline_start = std::chrono::high_resolution_clock::now();
+  int64_t total_processed = 0;
 
   while (has_data) {
     int next = 1 - curr;

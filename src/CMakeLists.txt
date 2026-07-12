@@ -1,7 +1,8 @@
 file(GLOB sources *.cpp)
 file(GLOB headers *.h *.hpp)
 
-list(REMOVE_ITEM sources main.cpp)
+list(FILTER sources EXCLUDE REGEX ".*/main\\.cpp$")
+list(FILTER sources EXCLUDE REGEX ".*/RapidGzipReader\\.cpp$")
 # Note: gpumain.cu is not in sources since it's a .cu file, not .cpp
 
 include_directories(../ext/htslib)
@@ -19,7 +20,18 @@ target_include_directories(kallisto_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # add_executable(kallisto main.cpp)
 add_executable(kallisto main.cpp ${sources} ${headers})
-add_executable(gpukallisto gpumain.cu GPUProcessReads.cu GPUKernels.cu GPUIndex.cu)
+
+add_library(rapidgzip_reader STATIC RapidGzipReader.cpp)
+target_compile_features(rapidgzip_reader PUBLIC cxx_std_17)
+if(USE_RAPIDGZIP)
+    target_link_libraries(rapidgzip_reader PUBLIC rapidgzip::rapidgzip)
+    target_compile_definitions(rapidgzip_reader PUBLIC USE_RAPIDGZIP=1)
+else()
+    find_package(ZLIB REQUIRED)
+    target_link_libraries(rapidgzip_reader PUBLIC ZLIB::ZLIB)
+endif()
+
+add_executable(gpukallisto gpumain.cu GPUProcessReads.cu GPUKernels.cu GPUIndex.cu GPUBusProcess.cu)
 
 # Set CUDA properties for gpukallisto
 set_target_properties(gpukallisto PROPERTIES
@@ -40,7 +52,12 @@ ExternalProject_Get_Property(bifrost install_dir)
 
 target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a)
 find_package(nvcomp REQUIRED)
-target_link_libraries(gpukallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a cuco CUDA::cudart nvcomp::nvcomp)
+target_link_libraries(gpukallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a cuco CUDA::cudart nvcomp::nvcomp rapidgzip_reader)
+
+if(USE_RAPIDGZIP)
+    target_compile_definitions(gpukallisto PRIVATE USE_RAPIDGZIP=1)
+    target_compile_features(gpukallisto PRIVATE cxx_std_17)
+endif()
 
 if (USE_BAM)
 target_link_libraries(kallisto kallisto_core pthread ${CMAKE_CURRENT_SOURCE_DIR}/../ext/htslib/libhts.a ${install_dir}/build/src/libbifrost.a  -DMAX_KMER_SIZE=${MAX_KMER_SIZE})
@@ -52,7 +69,7 @@ endif(USE_BAM)
 target_link_libraries(gpukallisto ${install_dir}/build/src/libbifrost.a)
 
 add_dependencies(kallisto bifrost)
-add_dependencies(gpukallisto bifrost)
+add_dependencies(gpukallisto bifrost rapidgzip_reader)
 
 if(LINK MATCHES static)
     set(BUILD_SHARED_LIBS OFF)
@@ -123,4 +140,20 @@ else()
 endif(LINK MATCHES static)
 
 
-install(TARGETS kallisto DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS kallisto gpukallisto DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+if(USE_RAPIDGZIP)
+    add_executable(cufq_benchmark cufq/benchmark_load_parse.cu)
+    set_target_properties(cufq_benchmark PROPERTIES
+        CUDA_SEPARABLE_COMPILATION ON
+        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+        CUDA_STANDARD 17
+    )
+    target_compile_options(cufq_benchmark PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-extended-lambda>
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>
+    )
+    target_link_libraries(cufq_benchmark CUDA::cudart nvcomp::nvcomp rapidgzip_reader ${ZLIB_LIBRARIES})
+    target_compile_definitions(cufq_benchmark PRIVATE USE_RAPIDGZIP=1)
+    target_compile_features(cufq_benchmark PRIVATE cxx_std_17)
+endif()

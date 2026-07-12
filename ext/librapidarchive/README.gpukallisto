@@ -1,0 +1,30 @@
+# librapidarchive (rapidgzip) vendored for gpukallisto
+
+Pinned commit: `1221a30bb548b305a69e5715f2bc348ba37ac243`
+
+Upstream: https://github.com/mxmlnkn/librapidarchive
+
+Used for multithreaded CPU gzip decompression via `rapidgzip::ParallelGzipReader`
+when input FASTQ files are regular gzip (not BGZF).
+
+This is a **trimmed vendored copy**: C++ library sources and bundled dependencies
+only (no python bindings, benchmark results, tests, or tools).
+
+Bundled deps under `src/external/`: zlib-ng, rpmalloc, isa-l (igzip+crc), cxxopts.
+
+## Refreshing (requires network)
+
+```bash
+./scripts/vendor_librapidarchive.sh   # clone, vendor deps, trim
+```
+
+## Building without rapidgzip
+
+`USE_RAPIDGZIP` defaults to ON. If the tree is missing or incomplete, CMake falls
+back to single-threaded zlib gzip:
+
+```bash
+cmake -DUSE_RAPIDGZIP=OFF ..
+```
+
+License: Apache-2.0 OR MIT (see LICENSE-APACHE and LICENSE-MIT).

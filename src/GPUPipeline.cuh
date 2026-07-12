@@ -831,16 +831,22 @@ struct NewECHandler {
   NewECHandler(int initial_num_ecs)
     : next_ec_id(initial_num_ecs), total_new_ec_count(0), total_new_read_count(0) {}
 
-  void handle_batch(const PairIntersector& pairs, ReadECLookup& ec_lookup,
-                    GPUECMapInv& gpu_ecmapinv, GPUECMap& gpu_ecmap,
-                    ECCounter& ec_counter) {
-    if (ec_lookup.read_count == 0 || pairs.pair_count == 0) return;
+  // Generic implementation: works on either PairIntersector or ReadTranscriptIntersector.
+  // Caller passes the device pointers/sizes for the per-read transcript set.
+  void handle_batch_impl(uint64_t source_count,
+                         const int* tx_data, uint64_t tx_data_size,
+                         const uint64_t* tx_offsets,
+                         const uint64_t* tx_sizes,
+                         ReadECLookup& ec_lookup,
+                         GPUECMapInv& gpu_ecmapinv, GPUECMap& gpu_ecmap,
+                         ECCounter& ec_counter) {
+    if (ec_lookup.read_count == 0 || source_count == 0) return;
 
     uint64_t n = ec_lookup.read_count;
 
-    // Step 1: Filter novel pair indices (ec == -1 and tx_size > 0)
+    // Step 1: Filter novel indices (ec == -1 and tx_size > 0)
     const int* d_ecs = ec_lookup.read_ecs_final.data().get();
-    const uint64_t* d_sizes = pairs.pair_transcript_sizes.data().get();
+    const uint64_t* d_sizes = tx_sizes;
 
     thrust::device_vector<uint64_t> novel_indices(n);
     auto novel_end = thrust::copy_if(
@@ -905,21 +911,21 @@ struct NewECHandler {
       std::vector<uint64_t> h_novel_hashes(num_novel);
       thrust::copy(novel_hashes.begin(), novel_hashes.end(), h_novel_hashes.begin());
 
-      // Copy pair transcript data to host
-      std::vector<uint64_t> h_offsets(pairs.pair_count + 1);
-      thrust::copy(pairs.pair_transcript_offsets.begin(),
-                   pairs.pair_transcript_offsets.begin() + pairs.pair_count + 1,
+      // Copy per-read transcript data to host
+      std::vector<uint64_t> h_offsets(source_count + 1);
+      thrust::copy(thrust::device_pointer_cast(tx_offsets),
+                   thrust::device_pointer_cast(tx_offsets) + source_count + 1,
                    h_offsets.begin());
-      std::vector<uint64_t> h_sizes(pairs.pair_count);
-      thrust::copy(pairs.pair_transcript_sizes.begin(),
-                   pairs.pair_transcript_sizes.begin() + pairs.pair_count,
+      std::vector<uint64_t> h_sizes(source_count);
+      thrust::copy(thrust::device_pointer_cast(tx_sizes),
+                   thrust::device_pointer_cast(tx_sizes) + source_count,
                    h_sizes.begin());
 
-      uint64_t total_tx = h_offsets[pairs.pair_count];
+      uint64_t total_tx = h_offsets[source_count];
       std::vector<int> h_transcripts(total_tx);
       if (total_tx > 0) {
-        thrust::copy(pairs.pair_transcripts.begin(),
-                     pairs.pair_transcripts.begin() + total_tx,
+        thrust::copy(thrust::device_pointer_cast(tx_data),
+                     thrust::device_pointer_cast(tx_data) + total_tx,
                      h_transcripts.begin());
       }
 
@@ -981,10 +987,10 @@ struct NewECHandler {
     gpu_ecmapinv.hash_map.find(novel_hashes.begin(), novel_hashes.end(), novel_ec_ids.begin());
 
     // Step 10: Verify re-found results against updated GPUECMap
-    const int* d_pair_tx = pairs.pair_transcripts.data().get();
-    const uint64_t* d_pair_off = pairs.pair_transcript_offsets.data().get();
-    const uint64_t* d_pair_sz = pairs.pair_transcript_sizes.data().get();
-    uint64_t d_pair_max_tx = pairs.pair_transcripts.size();
+    const int* d_pair_tx = tx_data;
+    const uint64_t* d_pair_off = tx_offsets;
+    const uint64_t* d_pair_sz = tx_sizes;
+    uint64_t d_pair_max_tx = tx_data_size;
     const int* d_ecmap_tx = gpu_ecmap.transcripts.data().get();
     const uint64_t* d_ecmap_off = gpu_ecmap.offsets.data().get();
     size_t d_ecmap_num_ecs = gpu_ecmap.num_ecs;
@@ -1035,6 +1041,32 @@ struct NewECHandler {
       }
     );
     cudaStreamSynchronize(0);
+  }
+
+  // Paired-end wrapper
+  void handle_batch(const PairIntersector& pairs, ReadECLookup& ec_lookup,
+                    GPUECMapInv& gpu_ecmapinv, GPUECMap& gpu_ecmap,
+                    ECCounter& ec_counter) {
+    handle_batch_impl(
+      pairs.pair_count,
+      pairs.pair_transcripts.data().get(),
+      pairs.pair_transcripts.size(),
+      pairs.pair_transcript_offsets.data().get(),
+      pairs.pair_transcript_sizes.data().get(),
+      ec_lookup, gpu_ecmapinv, gpu_ecmap, ec_counter);
+  }
+
+  // Single-end wrapper: novel ECs are minted from the raw per-read intersector output.
+  void handle_batch(const ReadTranscriptIntersector& intersector, ReadECLookup& ec_lookup,
+                    GPUECMapInv& gpu_ecmapinv, GPUECMap& gpu_ecmap,
+                    ECCounter& ec_counter) {
+    handle_batch_impl(
+      intersector.read_count,
+      intersector.read_transcripts.data().get(),
+      intersector.read_transcripts.size(),
+      intersector.read_transcript_offsets.data().get(),
+      intersector.read_transcript_sizes.data().get(),
+      ec_lookup, gpu_ecmapinv, gpu_ecmap, ec_counter);
   }
 
   int total_new_ecs() const { return total_new_ec_count; }

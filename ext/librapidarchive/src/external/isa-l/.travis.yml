@@ -1,0 +1,86 @@
+language: c
+sudo: required
+matrix:
+  include:
+    ### OS X
+    - os: osx
+      osx_image: xcode12.5
+      addons:
+        homebrew:
+          packages:
+            - nasm
+      env: C_COMPILER=clang
+
+    ### linux gcc and format check
+    - os: linux
+      dist: bionic
+      addons:
+        apt:
+          packages:
+            - nasm
+      install:
+        # Install newer indent to check formatting
+        - sudo apt-get install texinfo
+        - wget http://archive.ubuntu.com/ubuntu/pool/main/i/indent/indent_2.2.12.orig.tar.xz -O /tmp/indent.tar.xz
+        - tar -xJf /tmp/indent.tar.xz -C /tmp/
+        - pushd /tmp/indent-2.2.12 && ./configure --prefix=/usr && make && sudo make install && popd
+      env: C_COMPILER=gcc
+
+    ### linux clang
+    - os: linux
+      dist: bionic
+      addons:
+        apt:
+          packages:
+            - nasm
+      env: C_COMPILER=clang
+
+    ### linux older gcc
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.7
+            - nasm
+      env: C_COMPILER=gcc-4.7
+
+    ### arm64: gcc-5.4
+    - os: linux
+      dist: bionic
+      arch: arm64
+      env: C_COMPILER=gcc
+
+    ### arm64: gcc-5.4 extended tests
+    - os: linux
+      dist: bionic
+      arch: arm64
+      env: TEST_TYPE=ext
+
+    ### linux extended tests
+    - os: linux
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - binutils-mingw-w64-x86-64
+            - gcc-mingw-w64-x86-64
+            - wine
+            - nasm
+      env: TEST_TYPE=ext
+
+before_install:
+  - if [ -n "${C_COMPILER}" ]; then export CC="${C_COMPILER}"; fi
+  - if [ -n "${AS_ASSEMBL}" ]; then export AS="${AS_ASSEMBL}"; fi
+
+before_script:
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get -q update; fi
+
+script:
+  - if [ -n "${CC}" ]; then $CC --version; fi
+  - if [ -n "${AS}" ]; then $AS --version || echo No version; fi
+  - ./tools/test_autorun.sh "${TEST_TYPE}"

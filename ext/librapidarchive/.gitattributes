@@ -1,0 +1,5 @@
+# https://github.com/github-linguist/linguist/blob/master/docs/overrides.md
+# https://github.com/github-linguist/linguist/blob/4ac734c15a96f9e16fd12330d0cb8de82274f700/lib/linguist/languages.yml#L895
+# Avoid line conversions for the ground-truth data files or else the base64-256KiB file and others will be larger
+# than 256KiB on Windows, which uses \r\n!
+src/tests/data/** -text

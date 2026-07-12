@@ -7,6 +7,12 @@
 
 #include "CompactedDBG.hpp"
 
+#ifdef __CUDACC__
+#define KALLISTO_BUSDATA_HD __host__ __device__
+#else
+#define KALLISTO_BUSDATA_HD
+#endif
+
 const uint32_t BUSFORMAT_VERSION = 1;
 
 struct BUSTranscript {
@@ -34,7 +40,7 @@ struct BUSData {
   uint32_t count;
   uint32_t flags;
   uint32_t pad;
-  BUSData() : barcode(0), UMI(0), count(0), flags(0), pad(0) {}
+  KALLISTO_BUSDATA_HD BUSData() : barcode(0), UMI(0), count(0), flags(0), pad(0) {}
 };
 
 uint64_t stringToBinary(const std::string &s, uint32_t &flag);

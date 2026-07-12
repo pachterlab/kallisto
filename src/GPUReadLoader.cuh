@@ -2,12 +2,11 @@
 #define GPU_READ_LOADER_CUH
 
 // GPU-accelerated FASTQ file reader
-// Supports BGZF (GPU decompression via nvcomp) and gzip (CPU decompression fallback)
+// Supports BGZF (GPU decompression via nvcomp) and gzip (multithreaded rapidgzip CPU decompression)
 
 #include <cuda_runtime.h>
 #include <nvcomp.h>
 #include <nvcomp/deflate.h>
-#include <zlib.h>
 
 #include <string>
 #include <vector>
@@ -25,8 +24,11 @@
 #include "cufq/common/bgzf.cuh"
 #include "cufq/common/fastq_parser.cuh"
 #include "cufq/common/utils.cuh"
+#include "RapidGzipReader.h"
 #include "common.h"
 #include "BenchmarkStats.h"
+
+#include <memory>
 
 // ============================================================================
 // Macros
@@ -206,7 +208,7 @@ private:
 // ============================================================================
 // GPU kernel: count newlines in data
 // ============================================================================
-__global__ void gpu_read_count_newlines_kernel(
+inline __global__ void gpu_read_count_newlines_kernel(
     const char* __restrict__ data,
     size_t size,
     uint32_t* count
@@ -233,7 +235,7 @@ __global__ void gpu_read_count_newlines_kernel(
 // ============================================================================
 // GPU kernel: find record boundary (last complete FASTQ record)
 // ============================================================================
-__global__ void gpu_read_find_record_boundary_kernel(
+inline __global__ void gpu_read_find_record_boundary_kernel(
     const char* __restrict__ data,
     size_t size,
     uint32_t skip_lines,
@@ -265,11 +267,33 @@ __global__ void gpu_read_find_record_boundary_kernel(
 }
 
 // ============================================================================
+// GPU kernel: walk back from a SEQ-line offset to find the '@' header start
+// of that record. Used to slice surplus parsed records into a leftover buffer.
+// ============================================================================
+inline __global__ void gpu_read_find_record_header_start_kernel(
+    const char* __restrict__ data,
+    uint64_t seq_offset,
+    size_t* __restrict__ out_pos
+) {
+    if (blockIdx.x != 0 || threadIdx.x != 0) return;
+    if (seq_offset < 2) {
+        *out_pos = 0;
+        return;
+    }
+    // data[seq_offset-1] is '\n' that ends the '@' header line.
+    // Walk back from seq_offset-2 to find the previous '\n' (end of prev qual)
+    // or beginning of buffer. The byte immediately after that newline is '@'.
+    size_t pos = seq_offset - 2;
+    while (pos > 0 && data[pos] != '\n') pos--;
+    *out_pos = (data[pos] == '\n') ? pos + 1 : pos;
+}
+
+// ============================================================================
 // GPU kernel: convert SeqDescriptor + base_offset to read metadata arrays
 // Preserves ALL reads in order (short reads get kmer_count=0) so that
 // R1[i] and R2[i] remain paired. valid_count tracks stats only.
 // ============================================================================
-__global__ void convert_descriptors_kernel(
+inline __global__ void convert_descriptors_kernel(
     const SeqDescriptor* __restrict__ descriptors,
     uint32_t num_sequences,
     uint64_t base_offset,
@@ -333,8 +357,10 @@ struct GPUReadLoader {
           d_rb_count_r1_(nullptr), d_rb_boundary_r1_(nullptr),
           d_rb_count_r2_(nullptr), d_rb_boundary_r2_(nullptr),
           decomp_r1_(nullptr), decomp_r2_(nullptr),
-          gz_r1_(nullptr), gz_r2_(nullptr),
-          h_gz_buf_r1_(nullptr), h_gz_buf_r2_(nullptr)
+          h_gz_buf_r1_(nullptr), h_gz_buf_r2_(nullptr),
+          d_leftover_r1_(nullptr), d_leftover_r2_(nullptr),
+          leftover_size_r1_(0), leftover_size_r2_(0),
+          leftover_capacity_r1_(0), leftover_capacity_r2_(0)
     {
         files_ = opt.files;
 
@@ -367,14 +393,16 @@ struct GPUReadLoader {
         delete decomp_r1_;
         delete decomp_r2_;
 
-        // Close gzip handles
-        if (gz_r1_) gzclose(gz_r1_);
-        if (gz_r2_) gzclose(gz_r2_);
+        rapidgzip_r1_.reset();
+        rapidgzip_r2_.reset();
 
         if (d_rb_count_r1_) cudaFree(d_rb_count_r1_);
         if (d_rb_boundary_r1_) cudaFree(d_rb_boundary_r1_);
         if (d_rb_count_r2_) cudaFree(d_rb_count_r2_);
         if (d_rb_boundary_r2_) cudaFree(d_rb_boundary_r2_);
+
+        if (d_leftover_r1_) cudaFree(d_leftover_r1_);
+        if (d_leftover_r2_) cudaFree(d_leftover_r2_);
 
         cudaStreamDestroy(stream_r1_);
         cudaStreamDestroy(stream_r2_);
@@ -390,24 +418,25 @@ struct GPUReadLoader {
             exit(1);
         }
 
-        // Read R1 file into pinned memory
-        read_file_to_pinned(files_[0], &h_file_r1_, &file_size_r1_);
-
-        // Detect format from R1
-        is_bgzf_ = is_bgzf_memory(h_file_r1_, file_size_r1_);
+        // Detect format from file header (avoid reading entire file for gzip)
+        is_bgzf_ = is_bgzf_file(files_[0]);
 
         if (!is_bgzf_) {
             std::cerr << "[warning] Input files are not BGZF format. "
-                      << "Using CPU decompression (slower). "
-                      << "Convert with: bgzip -c file.fastq > file.fastq.bgz" << std::endl;
-        }
-
-        if (num_files_ >= 2) {
-            // Read R2 file into pinned memory
-            read_file_to_pinned(files_[1], &h_file_r2_, &file_size_r2_);
+                      << "Using multithreaded rapidgzip CPU decompression. "
+                      << "For GPU decompression use: bgzip -c file.fastq > file.fastq.bgz"
+                      << std::endl;
         }
 
         const size_t PARTIAL_MAX = 64 * 1024;
+
+        if (is_bgzf_) {
+            read_file_to_pinned(files_[0], &h_file_r1_, &file_size_r1_);
+
+            if (num_files_ >= 2) {
+                read_file_to_pinned(files_[1], &h_file_r2_, &file_size_r2_);
+            }
+        }
 
         if (is_bgzf_) {
             // Parse BGZF block headers
@@ -431,35 +460,16 @@ struct GPUReadLoader {
                 CUDA_CHECK(cudaMalloc(&d_partial_r2_, PARTIAL_MAX));
             }
         } else {
-            // gzip fallback: open with zlib
-            gz_r1_ = gzopen(files_[0].c_str(), "rb");
-            if (!gz_r1_) {
-                std::cerr << "Error: Cannot open " << files_[0] << std::endl;
-                exit(1);
-            }
-            gzbuffer(gz_r1_, 256 * 1024);
+            // gzip: multithreaded rapidgzip decompression
+            rapidgzip_r1_ = std::make_unique<RapidGzipReader>(files_[0], 0, 4ULL * 1024 * 1024);
 
-            // Free pinned file memory (not needed for gzip path)
-            cudaFreeHost(h_file_r1_);
-            h_file_r1_ = nullptr;
-
-            // Allocate pinned buffers for CPU decompression
             CUDA_CHECK(cudaMallocHost(&h_gz_buf_r1_, batch_size_));
 
-            // Allocate GPU buffers
             CUDA_CHECK(cudaMalloc(&d_decomp_r1_, batch_size_ + PARTIAL_MAX));
             CUDA_CHECK(cudaMalloc(&d_partial_r1_, PARTIAL_MAX));
 
             if (num_files_ >= 2) {
-                gz_r2_ = gzopen(files_[1].c_str(), "rb");
-                if (!gz_r2_) {
-                    std::cerr << "Error: Cannot open " << files_[1] << std::endl;
-                    exit(1);
-                }
-                gzbuffer(gz_r2_, 256 * 1024);
-
-                cudaFreeHost(h_file_r2_);
-                h_file_r2_ = nullptr;
+                rapidgzip_r2_ = std::make_unique<RapidGzipReader>(files_[1], 0, 4ULL * 1024 * 1024);
 
                 CUDA_CHECK(cudaMallocHost(&h_gz_buf_r2_, batch_size_));
                 CUDA_CHECK(cudaMalloc(&d_decomp_r2_, batch_size_ + PARTIAL_MAX));
@@ -635,19 +645,24 @@ private:
         const size_t PARTIAL_MAX = 64 * 1024;
 
         // Check if R1 is done
-        bool r1_done = (block_idx_r1_ >= blocks_r1_.size());
-        bool r2_done = (num_files_ < 2) || (block_idx_r2_ >= blocks_r2_.size());
+        bool r1_blocks_done = (block_idx_r1_ >= blocks_r1_.size());
+        bool r2_blocks_done = (num_files_ < 2) || (block_idx_r2_ >= blocks_r2_.size());
+        bool r1_done = r1_blocks_done && (leftover_size_r1_ == 0);
+        bool r2_done = r2_blocks_done && (leftover_size_r2_ == 0);
 
         if (r1_done && r2_done) return false;
 
         size_t max_blocks_limit = decomp_r1_->max_blocks();
 
-        // === Collect R1 blocks ===
+        // === Collect R1 blocks (cap so leftover + new_decomp <= batch_size_) ===
+        size_t r1_budget = (leftover_size_r1_ < batch_size_)
+                               ? (batch_size_ - leftover_size_r1_)
+                               : 0;
         size_t batch_start_r1 = block_idx_r1_;
         size_t batch_uncomp_r1 = 0;
         size_t batch_block_count_r1 = 0;
         while (block_idx_r1_ < blocks_r1_.size() &&
-               batch_uncomp_r1 + blocks_r1_[block_idx_r1_].uncompressed_size <= batch_size_ &&
+               batch_uncomp_r1 + blocks_r1_[block_idx_r1_].uncompressed_size <= r1_budget &&
                batch_block_count_r1 < max_blocks_limit) {
             batch_uncomp_r1 += blocks_r1_[block_idx_r1_].uncompressed_size;
             block_idx_r1_++;
@@ -655,14 +670,17 @@ private:
         }
         size_t num_blocks_r1 = block_idx_r1_ - batch_start_r1;
 
-        // === Collect R2 blocks ===
+        // === Collect R2 blocks (cap so leftover + new_decomp <= batch_size_) ===
         size_t batch_start_r2 = block_idx_r2_;
         size_t num_blocks_r2 = 0;
-        if (num_files_ >= 2 && !r2_done) {
+        if (num_files_ >= 2 && !r2_blocks_done) {
+            size_t r2_budget = (leftover_size_r2_ < batch_size_)
+                                   ? (batch_size_ - leftover_size_r2_)
+                                   : 0;
             size_t batch_uncomp_r2 = 0;
             size_t batch_block_count_r2 = 0;
             while (block_idx_r2_ < blocks_r2_.size() &&
-                   batch_uncomp_r2 + blocks_r2_[block_idx_r2_].uncompressed_size <= batch_size_ &&
+                   batch_uncomp_r2 + blocks_r2_[block_idx_r2_].uncompressed_size <= r2_budget &&
                    batch_block_count_r2 < max_blocks_limit) {
                 batch_uncomp_r2 += blocks_r2_[block_idx_r2_].uncompressed_size;
                 block_idx_r2_++;
@@ -671,19 +689,33 @@ private:
             num_blocks_r2 = block_idx_r2_ - batch_start_r2;
         }
 
-        if (num_blocks_r1 == 0 && num_blocks_r2 == 0) return false;
+        if (num_blocks_r1 == 0 && num_blocks_r2 == 0 &&
+            leftover_size_r1_ == 0 && leftover_size_r2_ == 0) {
+            return false;
+        }
 
         bool is_last_batch_r1 = (block_idx_r1_ >= blocks_r1_.size());
         bool is_last_batch_r2 = (num_files_ < 2) || (block_idx_r2_ >= blocks_r2_.size());
 
-        // === Copy partial record data from previous batch ===
-        if (partial_size_r1_ > 0) {
-            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_, d_partial_r1_, partial_size_r1_,
+        // === Copy leftover (surplus parsed records from previous batch) at the
+        //     start of d_decomp, then partial fragment, then new decompressed.
+        if (leftover_size_r1_ > 0) {
+            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_, d_leftover_r1_, leftover_size_r1_,
                                        cudaMemcpyDeviceToDevice, stream_r1_));
         }
-        if (num_files_ >= 2 && partial_size_r2_ > 0) {
-            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_, d_partial_r2_, partial_size_r2_,
+        if (partial_size_r1_ > 0) {
+            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_ + leftover_size_r1_, d_partial_r1_,
+                                       partial_size_r1_, cudaMemcpyDeviceToDevice,
+                                       stream_r1_));
+        }
+        if (num_files_ >= 2 && leftover_size_r2_ > 0) {
+            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_, d_leftover_r2_, leftover_size_r2_,
                                        cudaMemcpyDeviceToDevice, stream_r2_));
+        }
+        if (num_files_ >= 2 && partial_size_r2_ > 0) {
+            CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_ + leftover_size_r2_, d_partial_r2_,
+                                       partial_size_r2_, cudaMemcpyDeviceToDevice,
+                                       stream_r2_));
         }
 
         // === Decompress ===
@@ -691,18 +723,21 @@ private:
         if (num_blocks_r1 > 0) {
             new_decomp_size_r1 = decomp_r1_->decompress_batch(
                 h_file_r1_, blocks_r1_, batch_start_r1, num_blocks_r1,
-                d_decomp_r1_ + partial_size_r1_);
+                d_decomp_r1_ + leftover_size_r1_ + partial_size_r1_);
         }
 
         size_t new_decomp_size_r2 = 0;
         if (num_blocks_r2 > 0) {
             new_decomp_size_r2 = decomp_r2_->decompress_batch(
                 h_file_r2_, blocks_r2_, batch_start_r2, num_blocks_r2,
-                d_decomp_r2_ + partial_size_r2_);
+                d_decomp_r2_ + leftover_size_r2_ + partial_size_r2_);
         }
 
-        size_t total_size_r1 = partial_size_r1_ + new_decomp_size_r1;
-        size_t total_size_r2 = partial_size_r2_ + new_decomp_size_r2;
+        size_t total_size_r1 = leftover_size_r1_ + partial_size_r1_ + new_decomp_size_r1;
+        size_t total_size_r2 = leftover_size_r2_ + partial_size_r2_ + new_decomp_size_r2;
+        // The leftover and partial buffers have been consumed for this batch.
+        leftover_size_r1_ = 0;
+        leftover_size_r2_ = 0;
 
         // Sync both streams
         CUDA_CHECK(cudaStreamSynchronize(stream_r1_));
@@ -811,9 +846,54 @@ private:
 
         uint32_t r2_valid = read_count - r1_valid;
 
-        // Paired-end equalization: truncate to min(r1, r2) so pairs match
+        // Paired-end equalization: truncate to min(r1, r2) so pairs match.
+        // Surplus parsed records on the larger side are saved as a leftover
+        // buffer (their bytes from '@' header onwards) so that the next batch
+        // can re-parse them. This preserves all reads instead of dropping them.
         if (num_files_ >= 2 && r1_valid != r2_valid) {
             uint32_t pair_count = std::min(r1_valid, r2_valid);
+
+            // Save R1 surplus bytes for next batch
+            if (pair_count > 0 && r1_valid > pair_count) {
+                size_t boundary = find_record_start_offset(
+                    d_decomp_r1_, *parser_r1_, pair_count,
+                    d_rb_boundary_r1_, stream_r1_);
+                size_t surplus = (total_size_r1 > boundary)
+                                     ? (total_size_r1 - boundary)
+                                     : 0;
+                grow_leftover(&d_leftover_r1_, &leftover_capacity_r1_, surplus);
+                if (surplus > 0) {
+                    CUDA_CHECK(cudaMemcpyAsync(d_leftover_r1_,
+                                               d_decomp_r1_ + boundary,
+                                               surplus,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream_r1_));
+                    CUDA_CHECK(cudaStreamSynchronize(stream_r1_));
+                }
+                leftover_size_r1_ = surplus;
+                partial_size_r1_ = 0;
+            }
+            // Save R2 surplus bytes for next batch
+            if (pair_count > 0 && r2_valid > pair_count) {
+                size_t boundary = find_record_start_offset(
+                    d_decomp_r2_, *parser_r2_, pair_count,
+                    d_rb_boundary_r2_, stream_r2_);
+                size_t surplus = (total_size_r2 > boundary)
+                                     ? (total_size_r2 - boundary)
+                                     : 0;
+                grow_leftover(&d_leftover_r2_, &leftover_capacity_r2_, surplus);
+                if (surplus > 0) {
+                    CUDA_CHECK(cudaMemcpyAsync(d_leftover_r2_,
+                                               d_decomp_r2_ + boundary,
+                                               surplus,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream_r2_));
+                    CUDA_CHECK(cudaStreamSynchronize(stream_r2_));
+                }
+                leftover_size_r2_ = surplus;
+                partial_size_r2_ = 0;
+            }
+
             if (pair_count < r1_valid) {
                 thrust::copy(
                     read_id_to_offset.begin() + r1_valid,
@@ -864,37 +944,49 @@ private:
     bool load_gzip_batch() {
         const size_t PARTIAL_MAX = 64 * 1024;
 
-        bool r1_done = gz_r1_ ? gzeof(gz_r1_) : true;
-        bool r2_done = (num_files_ < 2) || (gz_r2_ ? gzeof(gz_r2_) : true);
+        bool r1_eof = !rapidgzip_r1_ || rapidgzip_r1_->eof();
+        bool r2_eof = (num_files_ < 2) || !rapidgzip_r2_ || rapidgzip_r2_->eof();
 
-        if (r1_done && r2_done && partial_size_r1_ == 0 && partial_size_r2_ == 0) return false;
+        bool r1_done = r1_eof && partial_size_r1_ == 0 && leftover_size_r1_ == 0;
+        bool r2_done = r2_eof && partial_size_r2_ == 0 && leftover_size_r2_ == 0;
+        if (r1_done && r2_done) return false;
 
         // === CPU decompress R1 ===
         size_t parse_size_r1 = 0;
-        if (!r1_done || partial_size_r1_ > 0) {
-            // Copy partial from previous batch
-            if (partial_size_r1_ > 0) {
-                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_, d_partial_r1_, partial_size_r1_,
+        if (!r1_eof || partial_size_r1_ > 0 || leftover_size_r1_ > 0) {
+            // Copy leftover (surplus parsed records from previous batch) + partial
+            if (leftover_size_r1_ > 0) {
+                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_, d_leftover_r1_, leftover_size_r1_,
                                            cudaMemcpyDeviceToDevice, stream_r1_));
             }
+            if (partial_size_r1_ > 0) {
+                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_ + leftover_size_r1_, d_partial_r1_,
+                                           partial_size_r1_, cudaMemcpyDeviceToDevice,
+                                           stream_r1_));
+            }
 
-            // CPU decompress into pinned memory
+            // Cap read budget so leftover + partial + new <= batch_size_
+            size_t r1_budget = 0;
+            if (leftover_size_r1_ + partial_size_r1_ < batch_size_) {
+                r1_budget = batch_size_ - leftover_size_r1_ - partial_size_r1_;
+            }
             int bytes_r1 = 0;
-            if (!r1_done) {
-                bytes_r1 = gzread(gz_r1_, h_gz_buf_r1_, batch_size_);
-                if (bytes_r1 < 0) bytes_r1 = 0;
+            if (!r1_eof && r1_budget > 0) {
+                ssize_t n = rapidgzip_r1_->read(h_gz_buf_r1_, r1_budget);
+                bytes_r1 = (n > 0) ? static_cast<int>(n) : 0;
             }
 
             if (bytes_r1 > 0) {
-                // H2D transfer
-                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r1_ + partial_size_r1_, h_gz_buf_r1_,
-                                           bytes_r1, cudaMemcpyHostToDevice, stream_r1_));
+                CUDA_CHECK(cudaMemcpyAsync(
+                    d_decomp_r1_ + leftover_size_r1_ + partial_size_r1_,
+                    h_gz_buf_r1_, bytes_r1, cudaMemcpyHostToDevice, stream_r1_));
             }
 
-            size_t total_r1 = partial_size_r1_ + bytes_r1;
+            size_t total_r1 = leftover_size_r1_ + partial_size_r1_ + bytes_r1;
             CUDA_CHECK(cudaStreamSynchronize(stream_r1_));
+            leftover_size_r1_ = 0;
 
-            bool is_last_r1 = (gzeof(gz_r1_) != 0);
+            bool is_last_r1 = rapidgzip_r1_->eof();
             if (!is_last_r1 && total_r1 > 0) {
                 launch_newline_count(d_decomp_r1_, total_r1, stream_r1_, d_rb_count_r1_);
                 parse_size_r1 = finish_record_boundary(d_decomp_r1_, total_r1, stream_r1_,
@@ -915,27 +1007,39 @@ private:
 
         // === CPU decompress R2 ===
         size_t parse_size_r2 = 0;
-        if (num_files_ >= 2 && (!r2_done || partial_size_r2_ > 0)) {
-            if (partial_size_r2_ > 0) {
-                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_, d_partial_r2_, partial_size_r2_,
+        if (num_files_ >= 2 &&
+            (!r2_eof || partial_size_r2_ > 0 || leftover_size_r2_ > 0)) {
+            if (leftover_size_r2_ > 0) {
+                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_, d_leftover_r2_, leftover_size_r2_,
                                            cudaMemcpyDeviceToDevice, stream_r2_));
             }
+            if (partial_size_r2_ > 0) {
+                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_ + leftover_size_r2_, d_partial_r2_,
+                                           partial_size_r2_, cudaMemcpyDeviceToDevice,
+                                           stream_r2_));
+            }
 
+            size_t r2_budget = 0;
+            if (leftover_size_r2_ + partial_size_r2_ < batch_size_) {
+                r2_budget = batch_size_ - leftover_size_r2_ - partial_size_r2_;
+            }
             int bytes_r2 = 0;
-            if (!r2_done) {
-                bytes_r2 = gzread(gz_r2_, h_gz_buf_r2_, batch_size_);
-                if (bytes_r2 < 0) bytes_r2 = 0;
+            if (!r2_eof && r2_budget > 0) {
+                ssize_t n = rapidgzip_r2_->read(h_gz_buf_r2_, r2_budget);
+                bytes_r2 = (n > 0) ? static_cast<int>(n) : 0;
             }
 
             if (bytes_r2 > 0) {
-                CUDA_CHECK(cudaMemcpyAsync(d_decomp_r2_ + partial_size_r2_, h_gz_buf_r2_,
-                                           bytes_r2, cudaMemcpyHostToDevice, stream_r2_));
+                CUDA_CHECK(cudaMemcpyAsync(
+                    d_decomp_r2_ + leftover_size_r2_ + partial_size_r2_,
+                    h_gz_buf_r2_, bytes_r2, cudaMemcpyHostToDevice, stream_r2_));
             }
 
-            size_t total_r2 = partial_size_r2_ + bytes_r2;
+            size_t total_r2 = leftover_size_r2_ + partial_size_r2_ + bytes_r2;
             CUDA_CHECK(cudaStreamSynchronize(stream_r2_));
+            leftover_size_r2_ = 0;
 
-            bool is_last_r2 = (gzeof(gz_r2_) != 0);
+            bool is_last_r2 = rapidgzip_r2_->eof();
             if (!is_last_r2 && total_r2 > 0) {
                 launch_newline_count(d_decomp_r2_, total_r2, stream_r2_, d_rb_count_r2_);
                 parse_size_r2 = finish_record_boundary(d_decomp_r2_, total_r2, stream_r2_,
@@ -1007,15 +1111,57 @@ private:
 
         uint32_t r2_valid = read_count - r1_valid;
 
-        // Paired-end equalization: truncate to min(r1, r2) so pairs match
+        // Paired-end equalization: truncate to min(r1, r2) so pairs match.
+        // Surplus parsed records on the larger side are saved as a leftover
+        // buffer so the next batch can re-parse them (preserving all reads).
         if (num_files_ >= 2 && r1_valid != r2_valid) {
             uint32_t pair_count = std::min(r1_valid, r2_valid);
+
+            // Total bytes in d_decomp_r1_ for this batch (parsed + new partial)
+            size_t total_size_r1 = parse_size_r1 + partial_size_r1_;
+            size_t total_size_r2 = parse_size_r2 + partial_size_r2_;
+
+            if (pair_count > 0 && r1_valid > pair_count) {
+                size_t boundary = find_record_start_offset(
+                    d_decomp_r1_, *parser_r1_, pair_count,
+                    d_rb_boundary_r1_, stream_r1_);
+                size_t surplus = (total_size_r1 > boundary)
+                                     ? (total_size_r1 - boundary)
+                                     : 0;
+                grow_leftover(&d_leftover_r1_, &leftover_capacity_r1_, surplus);
+                if (surplus > 0) {
+                    CUDA_CHECK(cudaMemcpyAsync(d_leftover_r1_,
+                                               d_decomp_r1_ + boundary,
+                                               surplus,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream_r1_));
+                    CUDA_CHECK(cudaStreamSynchronize(stream_r1_));
+                }
+                leftover_size_r1_ = surplus;
+                partial_size_r1_ = 0;
+            }
+            if (pair_count > 0 && r2_valid > pair_count) {
+                size_t boundary = find_record_start_offset(
+                    d_decomp_r2_, *parser_r2_, pair_count,
+                    d_rb_boundary_r2_, stream_r2_);
+                size_t surplus = (total_size_r2 > boundary)
+                                     ? (total_size_r2 - boundary)
+                                     : 0;
+                grow_leftover(&d_leftover_r2_, &leftover_capacity_r2_, surplus);
+                if (surplus > 0) {
+                    CUDA_CHECK(cudaMemcpyAsync(d_leftover_r2_,
+                                               d_decomp_r2_ + boundary,
+                                               surplus,
+                                               cudaMemcpyDeviceToDevice,
+                                               stream_r2_));
+                    CUDA_CHECK(cudaStreamSynchronize(stream_r2_));
+                }
+                leftover_size_r2_ = surplus;
+                partial_size_r2_ = 0;
+            }
+
             // Rebuild metadata arrays: keep first pair_count R1 reads and first pair_count R2 reads
-            // R1 reads are at [0..r1_valid), R2 reads are at [r1_valid..read_count)
-            // We want [0..pair_count) from R1, [r1_valid..r1_valid+pair_count) from R2
-            // Move R2 reads down to start at pair_count
             if (pair_count < r1_valid) {
-                // Need to shift R2 reads from [r1_valid..] to [pair_count..]
                 thrust::copy(
                     read_id_to_offset.begin() + r1_valid,
                     read_id_to_offset.begin() + r1_valid + pair_count,
@@ -1035,10 +1181,8 @@ private:
             }
             read_count = 2 * pair_count;
             r1_valid = pair_count;
-            // Recompute kmer_count from the truncated arrays
             running_kmer_count = 0;
             if (read_count > 0) {
-                // kmer_count = last read's kmer_first + last read's kmer_count
                 uint64_t last_kmer_first = 0;
                 uint32_t last_kmer_cnt = 0;
                 CUDA_CHECK(cudaMemcpy(&last_kmer_first,
@@ -1085,9 +1229,9 @@ private:
     BatchDecompressor* decomp_r1_;
     BatchDecompressor* decomp_r2_;
 
-    // gzip state
-    gzFile gz_r1_;
-    gzFile gz_r2_;
+    // gzip state (multithreaded rapidgzip)
+    std::unique_ptr<RapidGzipReader> rapidgzip_r1_;
+    std::unique_ptr<RapidGzipReader> rapidgzip_r2_;
     char* h_gz_buf_r1_;
     char* h_gz_buf_r2_;
 
@@ -1107,6 +1251,57 @@ private:
     size_t* d_rb_boundary_r1_;
     uint32_t* d_rb_count_r2_;
     size_t* d_rb_boundary_r2_;
+
+    // Leftover surplus parsed bytes carried over to the next batch when one
+    // side ends up with more parsed records than the other. The contents are
+    // [start of '@' header of first surplus record .. end of decompressed buffer]
+    // (i.e. they include any cross-block-boundary partial fragment too, so when
+    // leftover is non-zero the partial buffer is logically empty for that side).
+    char* d_leftover_r1_;
+    char* d_leftover_r2_;
+    size_t leftover_size_r1_;
+    size_t leftover_size_r2_;
+    size_t leftover_capacity_r1_;
+    size_t leftover_capacity_r2_;
+
+    void grow_leftover(char** dptr, size_t* capacity, size_t needed) {
+        if (*capacity >= needed) return;
+        if (*dptr) cudaFree(*dptr);
+        size_t new_cap = needed;
+        // Round up to 1MiB granularity to avoid frequent reallocations
+        const size_t align = 1024 * 1024;
+        new_cap = ((new_cap + align - 1) / align) * align;
+        CUDA_CHECK(cudaMalloc(dptr, new_cap));
+        *capacity = new_cap;
+    }
+
+    // Find byte offset of the '@' header start for record `record_idx` in d_buf,
+    // given the device-side seq-offset array (uint64_t per descriptor).
+    // Issues a tiny kernel; sync on `stream` afterwards.
+    size_t find_record_start_offset(
+        const char* d_buf,
+        const FastqParser& parser,
+        uint32_t record_idx,
+        size_t* d_out_scratch,
+        cudaStream_t stream
+    ) {
+        // Copy descriptors[record_idx].offset to host
+        SeqDescriptor desc;
+        CUDA_CHECK(cudaMemcpyAsync(
+            &desc,
+            const_cast<FastqParser&>(parser).device_descriptors() + record_idx,
+            sizeof(SeqDescriptor), cudaMemcpyDeviceToHost, stream));
+        CUDA_CHECK(cudaStreamSynchronize(stream));
+        if (desc.offset == 0) return 0;
+        // Tiny single-thread kernel walks back to '@' header start.
+        gpu_read_find_record_header_start_kernel<<<1, 1, 0, stream>>>(
+            d_buf, static_cast<uint64_t>(desc.offset), d_out_scratch);
+        size_t out_pos = 0;
+        CUDA_CHECK(cudaMemcpyAsync(&out_pos, d_out_scratch, sizeof(size_t),
+                                   cudaMemcpyDeviceToHost, stream));
+        CUDA_CHECK(cudaStreamSynchronize(stream));
+        return out_pos;
+    }
 };
 
 #endif // GPU_READ_LOADER_CUH
